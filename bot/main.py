@@ -1,0 +1,70 @@
+import asyncio
+import logging
+import os
+from aiogram import Bot, Dispatcher
+from aiogram.client.default import DefaultBotProperties
+from aiogram.enums import ParseMode
+from aiogram.fsm.storage.memory import MemoryStorage
+
+from bot.config import BOT_TOKEN
+from database.engine import engine
+from database.models import Base
+import database.models_v2  # noqa: F401
+import database.models_v3  # noqa: F401
+from bot.handlers import (
+    start, profile, duel, guardian, ranking, admin, missions,
+    sects, cultivation, master, arena, accounts, shop, crafting, dual, marriage, pets, death
+)
+from bot.health import start_health_server
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+
+async def on_startup():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    logger.info("Database tables created (v1 + v2 + v3).")
+
+
+async def main():
+    if not BOT_TOKEN:
+        raise ValueError("BOT_TOKEN is not set in .env")
+
+    port = int(os.getenv("PORT", 8080))
+    await start_health_server(port)
+
+    bot = Bot(
+        token=BOT_TOKEN,
+        default=DefaultBotProperties(parse_mode=ParseMode.HTML)
+    )
+    dp = Dispatcher(storage=MemoryStorage())
+
+    # بدون چک اجباری کانال
+
+    dp.include_router(start.router)
+    dp.include_router(profile.router)
+    dp.include_router(duel.router)
+    dp.include_router(guardian.router)
+    dp.include_router(ranking.router)
+    dp.include_router(missions.router)
+    dp.include_router(sects.router)
+    dp.include_router(cultivation.router)
+    dp.include_router(master.router)
+    dp.include_router(arena.router)
+    dp.include_router(accounts.router)
+    dp.include_router(shop.router)
+    dp.include_router(crafting.router)
+    dp.include_router(dual.router)
+    dp.include_router(marriage.router)
+    dp.include_router(pets.router)
+    dp.include_router(death.router)
+    dp.include_router(admin.router)
+
+    await on_startup()
+    logger.info("Bot starting (no channel lock)...")
+    await dp.start_polling(bot)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

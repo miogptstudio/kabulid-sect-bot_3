@@ -1,0 +1,81 @@
+:root {
+  --bg: var(--tg-theme-bg-color, #0f0f12);
+  --text: var(--tg-theme-text-color, #f2f2f2);
+  --hint: var(--tg-theme-hint-color, #8a8a9a);
+  --btn: var(--tg-theme-button-color, #6c5ce7);
+  --btn-text: var(--tg-theme-button-text-color, #fff);
+  --secondary: var(--tg-theme-secondary-bg-color, #1a1a22);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: system-ui, "Segoe UI", Tahoma, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.5;
+}
+#app { max-width: 480px; margin: 0 auto; padding: 12px 14px 24px; }
+header { text-align: center; padding: 16px 0 8px; }
+header h1 { font-size: 1.35rem; }
+.sub { color: var(--hint); font-size: 0.85rem; }
+.tabs {
+  display: flex;
+  gap: 6px;
+  margin: 14px 0;
+  overflow-x: auto;
+}
+.tab {
+  flex: 1;
+  min-width: 70px;
+  border: none;
+  border-radius: 10px;
+  padding: 8px 6px;
+  background: var(--secondary);
+  color: var(--text);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.tab.active {
+  background: var(--btn);
+  color: var(--btn-text);
+}
+.panel { display: none; }
+.panel.active { display: block; }
+.card {
+  background: var(--secondary);
+  border-radius: 14px;
+  padding: 14px 16px;
+  font-size: 0.92rem;
+}
+.card h2 { font-size: 1rem; margin-bottom: 10px; }
+.row {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.row:last-child { border-bottom: none; }
+.muted { color: var(--hint); font-size: 0.85rem; }
+.rank-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.medal { font-size: 1.2rem; width: 28px; text-align: center; }
+.hint { color: var(--hint); margin-top: 8px; font-size: 0.85rem; }
+code {
+  background: rgba(0,0,0,0.3);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.85em;
+}
+footer {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 0.8rem;
+  color: var(--hint);
+}
+footer a { color: var(--btn); text-decoration: none; }
+.error { color: #ff7675; }

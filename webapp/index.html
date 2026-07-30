@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Kabulid Sect — مینی‌اپ</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <header>
+      <h1>⚔️ فرقه کابولید</h1>
+      <p class="sub">مینی‌اپ ربات</p>
+    </header>
+
+    <nav class="tabs">
+      <button class="tab active" data-tab="profile">پروفایل</button>
+      <button class="tab" data-tab="ranking">لیدربورد</button>
+      <button class="tab" data-tab="missions">مأموریت</button>
+      <button class="tab" data-tab="sects">فرقه‌ها</button>
+    </nav>
+
+    <main>
+      <section id="profile" class="panel active">
+        <div id="profile-content" class="card">در حال بارگذاری…</div>
+      </section>
+      <section id="ranking" class="panel">
+        <div id="ranking-content" class="card">در حال بارگذاری…</div>
+      </section>
+      <section id="missions" class="panel">
+        <div id="missions-content" class="card">
+          <p>مأموریت‌ها را از ربات با دستور <code>/missions</code> مدیریت کنید.</p>
+          <p class="hint">نسخه کامل مأموریت داخل مینی‌اپ به‌زودی.</p>
+        </div>
+      </section>
+      <section id="sects" class="panel">
+        <div id="sects-content" class="card">در حال بارگذاری…</div>
+      </section>
+    </main>
+
+    <footer>
+      <a href="https://t.me/kabulid_manhua" target="_blank">کانال</a>
+      ·
+      <span>نسخه وب ۱.۰</span>
+    </footer>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
