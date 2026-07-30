@@ -66,7 +66,7 @@ class User(Base):
     # Relations
     medals: Mapped[list["Medal"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     achievements: Mapped[list["UserAchievement"]] = relationship(back_populates="user", cascade="all, delete-orphan")
-    accounts: Mapped[list["Account"]] = relationship(back_populates="owner", cascade="all, delete-orphan")
+    accounts: Mapped[list["Account"]] = relationship(back_populates="owner", cascade="all, delete-orphan", foreign_keys="[Account.owner_id]")
     missions_progress: Mapped[list["UserMission"]] = relationship(back_populates="user", cascade="all, delete-orphan")
 
     @property
