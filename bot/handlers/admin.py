@@ -28,8 +28,9 @@ async def cmd_admin(message: Message):
             username=message.from_user.username
         )
 
-    if not (is_config_admin(message.from_user.id) or user.role in (ROLE_LEADER, ROLE_DEPUTY)):
-        await message.answer("⛔️ دسترسی نداری.")
+    # فقط سازنده ربات (ADMIN_IDS)
+    if not is_config_admin(message.from_user.id):
+        await message.answer("⛔️ پنل ادمین فقط برای سازنده ربات است.")
         return
 
     text = (

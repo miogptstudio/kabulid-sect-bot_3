@@ -48,14 +48,16 @@ async def cmd_sects(message: Message):
         text += f"\n⚔️ شمشیر رتبه تو: <b>{sword}</b>"
     
     text += (
-        "\n\nدستورات:\n"
-        "/createsect &lt;نام&gt; &lt;نوع&gt; — ساخت (نیاز قلمرو بالا+)\n"
-        "/joinsect &lt;نام&gt;\n"
-        "/mysect\n"
-        "/challengeleader — چالش رهبری (ماهانه)\n"
+        "\n\n<b>دستورات فرقه:</b>\n"
+        "/createsect نام نوع — ساخت فرقه (تذهیب بالا+)\n"
+        "  انواع: ارتدوکس / بی‌طرف / شیطانی\n"
+        "/joinsect نام — <b>عضو شدن</b> در فرقه\n"
+        "/mysect — وضعیت فرقه و امتیاز مشارکت تو\n"
+        "/challengeleader — چالش صندلی رهبر (ماهی یک‌بار)\n"
         "/betray — خیانت و ترک فرقه\n"
-        "/territories — قلمروها\n"
-        "/conquer &lt;نام قلمرو&gt;"
+        "/territories — لیست قلمروها\n"
+        "/conquer نام — تصاحب قلمرو\n\n"
+        "<b>عضوگیری:</b> بقیه را دعوت کن /joinsect را بزنند."
     )
     await message.answer(text)
 
@@ -162,13 +164,85 @@ async def cmd_challenge(message: Message):
             return
         
         challenge = result
-        # حل ساده: ۵۰٪ شانس (بعداً می‌تونه دوئل واقعی بشه)
-        won = random.random() > 0.45
+        from services.power import calc_power
+        leader = await session.get(__import__("database.models", fromlist=["User"]).User, sect.leader_id)
+        p1 = await calc_power(session, user)
+        p2 = await calc_power(session, leader) if leader else {"total": 50}
+        # شانس بر اساس قدرت
+        ratio = p1["total"] / max(p1["total"] + p2["total"], 1)
+        won = random.random() < max(0.2, min(0.8, ratio))
         msg = await resolve_challenge(session, challenge, won)
-        await message.answer(
-            f"⚔️ چالش رهبری فرقه <b>{sect.name}</b>\n\n{msg}\n\n"
-            f"⚠️ فقط رهبری همین فرقه عوض می‌شود؛ کنترل کل ربات فقط مال صاحب ربات است."
+        if msg == "LOST_NEED_PARDON":
+            user.is_dead = True
+            await session.commit()
+            from aiogram.utils.keyboard import InlineKeyboardBuilder
+            builder = InlineKeyboardBuilder()
+            builder.button(
+                text="بخشیدن چالش‌گر 🙏",
+                callback_data=f"pardon:{sect.leader_id}:{user.id}"
+            )
+            builder.button(
+                text="رها کردن به مرگ",
+                callback_data=f"nopardon:{sect.leader_id}:{user.id}"
+            )
+            builder.adjust(1)
+            await message.answer(
+                f"⚔️ چالش رهبری <b>{sect.name}</b> شکست خورد.\n"
+                f"{user.full_name} در آستانه مرگ است.\n"
+                f"فقط رهبر می‌تواند ببخشد یا رها کند.",
+                reply_markup=builder.as_markup(),
+            )
+        else:
+            await message.answer(
+                f"⚔️ چالش رهبری فرقه <b>{sect.name}</b>\n\n{msg}"
+            )
+
+
+@router.callback_query(F.data.startswith("pardon:"))
+async def cb_pardon(callback: CallbackQuery):
+    parts = callback.data.split(":")
+    leader_id, target_id = int(parts[1]), int(parts[2])
+    async with async_session() as session:
+        from database.models import User
+        actor = await get_or_create_user(
+            session, callback.from_user.id,
+            callback.from_user.full_name, callback.from_user.username
         )
+        if actor.id != leader_id:
+            await callback.answer("فقط رهبر!", show_alert=True)
+            return
+        target = await session.get(User, target_id)
+        if target:
+            target.is_dead = False
+            if hasattr(target, "lifespan"):
+                target.lifespan = max(target.lifespan or 0, 20)
+            await session.commit()
+        await callback.message.edit_text(f"🙏 {target.full_name if target else 'فرد'} بخشیده شد و زنده ماند.")
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("nopardon:"))
+async def cb_nopardon(callback: CallbackQuery):
+    parts = callback.data.split(":")
+    leader_id, target_id = int(parts[1]), int(parts[2])
+    async with async_session() as session:
+        from database.models import User
+        actor = await get_or_create_user(
+            session, callback.from_user.id,
+            callback.from_user.full_name, callback.from_user.username
+        )
+        if actor.id != leader_id:
+            await callback.answer("فقط رهبر!", show_alert=True)
+            return
+        target = await session.get(User, target_id)
+        if target:
+            target.is_dead = True
+            target.world = "زیرین"
+            await session.commit()
+        await callback.message.edit_text(
+            f"💀 {target.full_name if target else 'فرد'} بخشیده نشد. /afterdeath برای انتخاب سرنوشت."
+        )
+    await callback.answer()
 
 
 @router.message(Command("betray", "خیانت"))
@@ -229,3 +303,66 @@ async def cmd_conquer(message: Message):
             return
         msg = await conquer_territory(session, sect, territory)
         await message.answer(msg)
+
+
+@router.message(Command("transferleader", "واگذاری‌رهبری"))
+async def cmd_transfer(message: Message):
+    if not message.reply_to_message:
+        await message.answer("روی پیام عضو فرقه ریپلای کن و /transferleader بزن.")
+        return
+    from services.sects import transfer_leadership
+    async with async_session() as session:
+        leader = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
+        t = message.reply_to_message.from_user
+        new_l = await get_or_create_user(session, t.id, t.full_name, t.username)
+        msg = await transfer_leadership(session, leader, new_l)
+    await message.answer(msg)
+
+
+@router.message(Command("newsect"))
+async def cmd_newsect_buttons(message: Message):
+    """ساخت فرقه با دکمه نوع"""
+    parts = (message.text or "").split(maxsplit=1)
+    if len(parts) < 2:
+        await message.answer("فرمت: /newsect نام‌فرقه\nبعد نوع را با دکمه انتخاب کن.")
+        return
+    name = parts[1].strip()[:32]
+    from aiogram.utils.keyboard import InlineKeyboardBuilder
+    builder = InlineKeyboardBuilder()
+    for t in ["ارتدوکس", "بی‌طرف", "شیطانی"]:
+        builder.button(text=t, callback_data=f"secttype:{message.from_user.id}:{t}:{name}")
+    builder.adjust(1)
+    await message.answer(
+        f"فرقه «{name}» — نوع را انتخاب کن:",
+        reply_markup=builder.as_markup(),
+    )
+
+
+@router.callback_query(F.data.startswith("secttype:"))
+async def cb_sect_type(callback: CallbackQuery):
+    # secttype:uid:type:name — type and name may have issues; use split max 3
+    parts = callback.data.split(":", 3)
+    if len(parts) < 4:
+        await callback.answer("خطا")
+        return
+    owner = int(parts[1])
+    if callback.from_user.id != owner:
+        await callback.answer("مال تو نیست!", show_alert=True)
+        return
+    sect_type, name = parts[2], parts[3]
+    async with async_session() as session:
+        user = await get_or_create_user(
+            session, callback.from_user.id,
+            callback.from_user.full_name, callback.from_user.username
+        )
+        try:
+            sect = await create_sect(session, name, sect_type, user)
+            await callback.message.edit_text(
+                f"✅ فرقه <b>{sect.name}</b> ({sect_type}) ساخته شد.\nتو رهبر هستی."
+            )
+        except ValueError as e:
+            await callback.message.edit_text(str(e))
+    await callback.answer()

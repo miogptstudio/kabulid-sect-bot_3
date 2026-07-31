@@ -1,14 +1,18 @@
+import random
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from database.models_v2 import Cultivation, CULTIVATION_REALMS
 from database.models_v3 import CultivationTechnique, UserTechnique
 from database.models import User
 
-ENERGY_PER_STAGE = 100
-ROOT_UNLOCK_ENERGY = 200  # انرژی لازم برای رسیدن به ریشه پنج‌عنصر
+from bot.config import ENERGY_PER_STAGE, ROOT_UNLOCK_ENERGY
 
 
 DEFAULT_TECHNIQUES = [
+    {"name": "تنفس اژدها", "description": "تنفس قوی برای قلمرو بالا", "grade": "بالا", "energy_bonus": 0, "required_root": None},
+    {"name": "جریان آسمانی", "description": "تکنیک قلمرو پیشرفته", "grade": "پیشرفته", "energy_bonus": 1, "required_root": None},
+    {"name": "سکوت مرگ", "description": "تکنیک دنیای زیرین", "grade": "بالا", "energy_bonus": 0, "required_root": "ریشه روح"},
+
     {
         "name": "تنفس پایه",
         "description": "تکنیک ساده تذهیب برای مبتدیان",
@@ -20,14 +24,14 @@ DEFAULT_TECHNIQUES = [
         "name": "جریان پنج‌عنصر",
         "description": "تکنیک متوسط بر پایه پنج عنصر",
         "grade": "متوسط",
-        "energy_bonus": 8,
+        "energy_bonus": 0,
         "required_root": "ریشه پنج‌عنصر"
     },
     {
         "name": "شعله‌ی درونی",
         "description": "تکنیک آتشین برای ریشه آتش",
         "grade": "متوسط",
-        "energy_bonus": 12,
+        "energy_bonus": 0,
         "required_root": "ریشه آتش"
     },
 ]
@@ -129,9 +133,23 @@ async def add_energy(session: AsyncSession, user_id: int, amount: int) -> dict:
         messages = []
         
         if cult.energy >= ROOT_UNLOCK_ENERGY:
-            cult.spiritual_root = "ریشه پنج‌عنصر"
+            # ریشه شانسی (احتمال‌های مختلف)
+            roots = [
+                ("ریشه پنج‌عنصر", 40),
+                ("ریشه آتش", 12),
+                ("ریشه آب", 12),
+                ("ریشه چوب", 12),
+                ("ریشه فلز", 12),
+                ("ریشه خاک", 12),
+            ]
+            names, weights = zip(*roots)
+            chosen = random.choices(names, weights=weights, k=1)[0]
+            cult.spiritual_root = chosen
             cult.energy = 0
-            messages.append("🌟 ریشه معنوی پنج‌عنصر بیدار شد! حالا می‌تونی تکنیک یاد بگیری و تذهیب واقعی کنی.")
+            messages.append(
+                f"🌟 ریشه معنوی «{chosen}» بیدار شد!\n"
+                f"حالا می‌تونی تکنیک یاد بگیری و تذهیب واقعی کنی."
+            )
         
         await session.commit()
         return {

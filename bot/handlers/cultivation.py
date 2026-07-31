@@ -159,18 +159,39 @@ async def cmd_give_tech(message: Message):
 
 @router.message(Command("meditate", "مدیتیت"))
 async def cmd_meditate(message: Message):
-    await do_gather(message, amount=25)
+    await do_gather(message, amount=1)
 
 
 @router.message(GatherQiFilter())
 async def text_gather_qi(message: Message):
-    await do_gather(message, amount=20)
+    try:
+        from bot.config import GATHER_ENERGY_AMOUNT
+        amt = GATHER_ENERGY_AMOUNT
+    except Exception:
+        amt = 1
+    await do_gather(message, amount=amt)
 
 
-async def do_gather(message: Message, amount: int = 20):
+async def do_gather(message: Message, amount: int = 1):
     user_id = message.from_user.id
     now = datetime.utcnow()
-    
+
+    async with async_session() as session:
+        user = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
+        if user.gender not in ("مرد", "زن"):
+            await message.answer(
+                "⚧ قبل از تذهیب باید جنسیت را مشخص کنی.\n"
+                "با /gender انتخاب کن.\n"
+                "⚠️ بعد از انتخاب، قابل تغییر نیست."
+            )
+            return
+        if user.is_dead:
+            await message.answer("💀 مرده‌ای. /afterdeath")
+            return
+
     last = _last_gather.get(user_id)
     if last and (now - last).total_seconds() < COOLDOWN_SECONDS:
         remaining = int(COOLDOWN_SECONDS - (now - last).total_seconds())
@@ -243,7 +264,21 @@ async def cmd_solo(message: Message):
         
         # انرژی پایه
         result = await add_energy(session, user.id, 12)
-        text = "🔥 خودارضایی انجام شد (+۱۲ انرژی تذهیب)\n"
+        if hasattr(user, "lifespan"):
+            try:
+                from bot.config import SOLO_LIFESPAN_COST
+                cost = SOLO_LIFESPAN_COST
+            except Exception:
+                cost = 5
+            user.lifespan = max(0, (user.lifespan or 100) - cost)
+            if user.lifespan <= 0:
+                user.is_dead = True
+        text = "🔥 خودارضایی (+انرژی کم، عمر کم شد)\n"
+        if hasattr(user, "lifespan"):
+            text += f"⏳ عمر باقی: {user.lifespan}%\n"
+        if user.is_dead:
+            text += "💀 عمر تمام شد. /afterdeath\n"
+
         
         # بیش از ۳ بار در ساعت
         if count_this_hour >= 3:

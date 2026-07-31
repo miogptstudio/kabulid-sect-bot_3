@@ -105,3 +105,15 @@ async def cmd_my_master(message: Message):
         
         master = await session.get(__import__("database.models", fromlist=["User"]).User, relation.master_id)
         await message.answer(f"🎓 استاد تو: <b>{master.full_name if master else 'نامشخص'}</b>")
+
+
+@router.message(Command("leavemaster", "لغو‌استادی", "ترک‌استاد"))
+async def cmd_leave_master(message: Message):
+    from services.master import leave_mastership
+    async with async_session() as session:
+        user = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
+        msg = await leave_mastership(session, user)
+    await message.answer(msg)

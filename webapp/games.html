@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>بازی دو نفره</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{--bg:#0f0f14;--card:#1a1a24;--acc:#6c5ce7;--txt:#f0f0f5}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui;background:var(--bg);color:var(--txt);padding:14px}
+h2{margin:0 0 10px;font-size:1.2rem}
+.tabs{display:flex;gap:6px;margin-bottom:12px}
+.tabs button{flex:1;padding:10px;border:0;border-radius:10px;background:var(--card);color:var(--txt)}
+.tabs button.on{background:var(--acc)}
+.card{background:var(--card);border-radius:14px;padding:14px;margin-bottom:12px}
+.board{display:grid;grid-template-columns:repeat(8,min(11vw,40px));gap:2px;justify-content:center}
+.cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;background:#2a2a36;font-size:clamp(14px,4vw,22px);cursor:pointer;border-radius:4px}
+.cell.l{background:#3d3d4f}
+.cell.sel{outline:2px solid var(--acc)}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.row button{flex:1;min-width:80px;padding:10px;border:0;border-radius:10px;background:var(--acc);color:#fff}
+.dice{font-size:2.2rem;letter-spacing:8px}
+.msg{color:#9a9aaa;font-size:.9rem;margin-top:8px}
+input{width:100%;padding:10px;border-radius:8px;border:1px solid #333;background:#111;color:#fff;margin:6px 0}
+</style>
+</head>
+<body>
+<h2>🎮 بازی دو نفره</h2>
+<div class="tabs">
+  <button class="on" id="tChess" onclick="tab('chess')">شطرنج</button>
+  <button id="tNard" onclick="tab('nard')">تخته‌نرد</button>
+</div>
+
+<div id="chess" class="card">
+  <p>اتاق: <span id="roomCode">—</span></p>
+  <input id="joinCode" placeholder="کد اتاق حریف را وارد کن"/>
+  <div class="row">
+    <button onclick="newRoom()">اتاق جدید</button>
+    <button onclick="joinRoom()">پیوستن</button>
+  </div>
+  <div class="board" id="chessBoard"></div>
+  <p class="msg" id="chessMsg">نوبت سفید — برای دو نفر: یک نفر اتاق بسازد، دیگری کد را بزند. وضعیت در همین دستگاه/لینک همگام است (localStorage).</p>
+</div>
+
+<div id="nard" class="card" style="display:none">
+  <p>تاس تخته‌نرد (نوبتی)</p>
+  <div class="dice" id="dice">🎲 🎲</div>
+  <div class="row">
+    <button onclick="roll(1)">تاس بازیکن ۱</button>
+    <button onclick="roll(2)">تاس بازیکن ۲</button>
+  </div>
+  <p class="msg" id="nardMsg">هر کس تاس خودش را بزند. امتیاز بالاتر در ۳ پرتاب برنده است.</p>
+  <p id="scores">P1: 0 | P2: 0</p>
+</div>
+
+<script>
+const tg = window.Telegram?.WebApp; tg?.ready(); tg?.expand();
+const key = (c)=>'kabulid_game_'+c;
+let room = localStorage.getItem('kabulid_myroom') || null;
+let selected = null;
+const startPieces = ()=>{
+  const p=Array(64).fill('');
+  const back=['♜','♞','♝','♛','♚','♝','♞','♜'];
+  for(let i=0;i<8;i++){p[i]=back[i];p[8+i]='♟';p[48+i]='♙';p[56+i]=['♖','♘','♗','♕','♔','♗','♘','♖'][i];}
+  return p;
+};
+
+function tab(n){
+  document.getElementById('chess').style.display=n==='chess'?'block':'none';
+  document.getElementById('nard').style.display=n==='nard'?'block':'none';
+  document.getElementById('tChess').className=n==='chess'?'on':'';
+  document.getElementById('tNard').className=n==='nard'?'on':'';
+}
+
+function save(state){ if(!room) return; localStorage.setItem(key(room), JSON.stringify(state)); }
+function load(){ if(!room) return null; try{return JSON.parse(localStorage.getItem(key(room)));}catch(e){return null} }
+
+function newRoom(){
+  room = Math.random().toString(36).slice(2,8).toUpperCase();
+  localStorage.setItem('kabulid_myroom', room);
+  document.getElementById('roomCode').textContent = room;
+  const st = {pieces:startPieces(), turn:'w', log:[]};
+  save(st); renderChess(st);
+  document.getElementById('chessMsg').textContent='کد را به حریف بده: '+room;
+}
+
+function joinRoom(){
+  const c = document.getElementById('joinCode').value.trim().toUpperCase();
+  if(!c) return;
+  room = c; localStorage.setItem('kabulid_myroom', room);
+  document.getElementById('roomCode').textContent = room;
+  let st = load() || {pieces:startPieces(), turn:'w', log:[]};
+  save(st); renderChess(st);
+  document.getElementById('chessMsg').textContent='وصل شدی به اتاق '+room;
+}
+
+function renderChess(st){
+  const board=document.getElementById('chessBoard'); board.innerHTML='';
+  st.pieces.forEach((pc,i)=>{
+    const d=document.createElement('div');
+    const light=((i%8)+(Math.floor(i/8)%2))%2===0;
+    d.className='cell'+(light?' l':'')+(selected===i?' sel':'');
+    d.textContent=pc;
+    d.onclick=()=>clickCell(i);
+    board.appendChild(d);
+  });
+}
+
+function clickCell(i){
+  let st = load(); if(!st) return;
+  if(selected===null){ if(!st.pieces[i]) return; selected=i; renderChess(st); return; }
+  if(selected===i){ selected=null; renderChess(st); return; }
+  // move
+  st.pieces[i]=st.pieces[selected]; st.pieces[selected]=''; selected=null;
+  st.turn = st.turn==='w'?'b':'w';
+  save(st); renderChess(st);
+  document.getElementById('chessMsg').textContent='نوبت: '+(st.turn==='w'?'سفید':'سیاه');
+}
+
+// poll sync every 1.5s for second player same browser profile / shared storage
+setInterval(()=>{
+  if(!room) return;
+  const st=load(); if(st) renderChess(st);
+},1500);
+
+let scores=[0,0], rolls=[0,0];
+function roll(p){
+  if(rolls[p-1]>=3){ document.getElementById('nardMsg').textContent='بازیکن '+p+' هر ۳ تاس را زده'; return; }
+  const a=1+Math.floor(Math.random()*6), b=1+Math.floor(Math.random()*6);
+  scores[p-1]+=a+b; rolls[p-1]++;
+  document.getElementById('dice').textContent=`🎲 ${a}  ${b}`;
+  document.getElementById('scores').textContent=`P1: ${scores[0]} (${rolls[0]}/3) | P2: ${scores[1]} (${rolls[1]}/3)`;
+  if(rolls[0]>=3 && rolls[1]>=3){
+    const w = scores[0]===scores[1]?'مساوی':(scores[0]>scores[1]?'بازیکن ۱':'بازیکن ۲');
+    document.getElementById('nardMsg').textContent='نتیجه: '+w;
+  }
+}
+
+if(room){ document.getElementById('roomCode').textContent=room; const st=load(); if(st) renderChess(st); }
+else renderChess({pieces:startPieces(),turn:'w'});
+</script>
+</body>
+</html>

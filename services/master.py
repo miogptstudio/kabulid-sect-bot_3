@@ -53,3 +53,19 @@ async def get_master(session: AsyncSession, disciple_id: int) -> MasterDisciple 
         )
     )
     return result.scalar_one_or_none()
+
+
+async def leave_mastership(session: AsyncSession, user: User) -> str:
+    """لغو رابطه استاد-شاگردی از طرف هر کدام"""
+    as_d = await get_master(session, user.id)
+    if as_d:
+        as_d.status = "ended"
+        await session.commit()
+        return "رابطه شاگردی لغو شد. دیگر شاگرد نیستی."
+    as_m = await get_disciples(session, user.id)
+    if as_m:
+        for r in as_m:
+            r.status = "ended"
+        await session.commit()
+        return f"از استادی انصراف دادی. {len(as_m)} شاگرد آزاد شدند."
+    return "رابطه فعال استاد-شاگردی نداری."

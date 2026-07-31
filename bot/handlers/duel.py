@@ -1,14 +1,19 @@
+import random
 from aiogram import Router, F
-from aiogram.types import Message
+from aiogram.types import Message, CallbackQuery
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 
 from database.engine import async_session
-from database.crud import get_or_create_user, get_user_by_telegram_id, create_duel, update_user_stats, finish_duel
+from database.crud import get_or_create_user, get_user_by_telegram_id, create_duel, update_user_stats
 from database.models import User
 from services.ranking import process_duel_result
 from services.xp import process_xp_for_duel
+from services.power import calc_power, win_chance
+from services.economy import get_or_create_wallet
+from services.sects import add_contribution
 
 router = Router()
 
@@ -17,136 +22,141 @@ class DuelStates(StatesGroup):
     waiting_accept = State()
 
 
-@router.message(Command("duel"))
+async def _resolve_duel(session, challenger: User, opponent: User) -> str:
+    p1 = await calc_power(session, challenger)
+    p2 = await calc_power(session, opponent)
+    chance = win_chance(p1["total"], p2["total"])
+    winner = challenger if random.random() < chance else opponent
+    loser = opponent if winner.id == challenger.id else challenger
+    await update_user_stats(session, winner, won=True)
+    await update_user_stats(session, loser, won=False)
+    rank_result = process_duel_result(winner, loser, is_guardian=False)
+    xp_messages = process_xp_for_duel(winner, loser, is_guardian=False)
+    await add_contribution(session, winner.id, 10)
+    try:
+        w = await get_or_create_wallet(session, winner.id)
+        w.coins += 15
+    except Exception:
+        pass
+    await session.commit()
+    text = (
+        f"🏁 <b>نتیجه دوئل</b>\n"
+        f"{challenger.full_name} ({p1['total']}) vs {opponent.full_name} ({p2['total']})\n"
+        f"برنده: <b>{winner.full_name}</b> 🏆\n"
+        f"بازنده: {loser.full_name}\n🪙 برنده +۱۵ سکه"
+    )
+    if rank_result.get("messages"):
+        text += "\n" + "\n".join(rank_result["messages"])
+    if xp_messages:
+        text += "\n" + "\n".join(xp_messages)
+    return text
+
+
+@router.message(Command("duel", "دوئل"))
 async def cmd_duel(message: Message, state: FSMContext):
     async with async_session() as session:
         challenger = await get_or_create_user(
-            session,
-            telegram_id=message.from_user.id,
-            full_name=message.from_user.full_name,
-            username=message.from_user.username
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
         )
-
-        # روش ۱: ریپلای
-        if message.reply_to_message:
-            opponent_user = message.reply_to_message.from_user
-            if opponent_user.id == message.from_user.id:
-                await message.answer("❌ نمی‌تونی با خودت دوئل کنی!")
+        opponent = None
+        if message.reply_to_message and message.reply_to_message.from_user:
+            ou = message.reply_to_message.from_user
+            if ou.id == message.from_user.id:
+                await message.answer("❌ با خودت نه!")
                 return
-            opponent = await get_or_create_user(
-                session,
-                telegram_id=opponent_user.id,
-                full_name=opponent_user.full_name,
-                username=opponent_user.username
-            )
-        
-        # روش ۲: تگ کردن
+            opponent = await get_or_create_user(session, ou.id, ou.full_name, ou.username)
         elif message.entities:
-            mentioned = None
             for entity in message.entities:
-                if entity.type == "mention":
-                    # @username
-                    username = message.text[entity.offset+1:entity.offset+entity.length]
-                    # فعلاً ساده پیاده‌سازی می‌کنیم (بعداً بهتر می‌شه)
-                    await message.answer("فعلاً لطفاً روی پیام طرف مقابل ریپلای کن و /duel بزن.\n(پشتیبانی کامل تگ به زودی اضافه می‌شه)")
-                    return
-                elif entity.type == "text_mention":
-                    opponent_user = entity.user
-                    opponent = await get_or_create_user(
-                        session,
-                        telegram_id=opponent_user.id,
-                        full_name=opponent_user.full_name,
-                        username=opponent_user.username
-                    )
+                if entity.type == "text_mention" and entity.user:
+                    ou = entity.user
+                    opponent = await get_or_create_user(session, ou.id, ou.full_name, ou.username)
                     break
-            else:
-                await message.answer("❌ لطفاً روی پیام طرف مقابل ریپلای کن یا تگش کن.")
+            if not opponent:
+                await message.answer("روی پیام حریف ریپلای کن و /duel بزن.")
                 return
         else:
-            await message.answer(
-                "⚔️ برای شروع دوئل:\n"
-                "۱. روی پیام طرف مقابل ریپلای کن و بزن /duel\n"
-                "۲. یا بنویس: /duel @username"
-            )
+            await message.answer("⚔️ روی پیام حریف ریپلای کن و /duel بزن.")
             return
 
         if opponent.is_banned or not opponent.is_active:
-            await message.answer("❌ این کاربر در دسترس نیست.")
+            await message.answer("کاربر در دسترس نیست.")
             return
 
-        # ایجاد دوئل
-        duel = await create_duel(session, challenger.id, opponent.id)
+        p1 = await calc_power(session, challenger)
+        p2 = await calc_power(session, opponent)
+        await create_duel(session, challenger.id, opponent.id)
 
-        await state.update_data(
-            duel_id=duel.id,
-            challenger_id=challenger.id,
-            opponent_id=opponent.id
-        )
+        builder = InlineKeyboardBuilder()
+        builder.button(text="قبول ✅", callback_data=f"duelacc:{challenger.id}:{opponent.id}")
+        builder.button(text="رد ❌", callback_data=f"duelrej:{challenger.id}:{opponent.id}")
+        builder.adjust(2)
 
-        text = (
-            f"⚔️ <b>درخواست دوئل!</b>\n\n"
-            f"از: {challenger.full_name} ({challenger.rank})\n"
-            f"به: {opponent.full_name} ({opponent.rank})\n\n"
-            f"{opponent.full_name} برای قبول کردن بنویس: <b>قبول</b>\n"
-            f"برای رد کردن بنویس: <b>رد</b>"
+        chance = win_chance(p1["total"], p2["total"]) * 100
+        await message.answer(
+            f"⚔️ <b>درخواست دوئل</b>\n\n"
+            f"از: {challenger.full_name} — قدرت {p1['total']}\n"
+            f"به: {opponent.full_name} — قدرت {p2['total']}\n"
+            f"شانس چالش‌گر: ~{chance:.0f}%\n\n"
+            f"فقط <b>{opponent.full_name}</b> دکمه بزند.",
+            reply_markup=builder.as_markup(),
         )
-        await message.answer(text)
+        await state.update_data(challenger_id=challenger.id, opponent_id=opponent.id)
         await state.set_state(DuelStates.waiting_accept)
 
 
-@router.message(DuelStates.waiting_accept, F.text.lower().in_(["قبول", "accept", "yes", "آره"]))
-async def accept_duel(message: Message, state: FSMContext):
-    data = await state.get_data()
-    if not data:
-        await message.answer("درخواستی پیدا نشد.")
-        await state.clear()
-        return
-
+@router.callback_query(F.data.startswith("duelacc:"))
+async def cb_duel_accept(callback: CallbackQuery, state: FSMContext):
+    parts = callback.data.split(":")
+    challenger_id, opponent_id = int(parts[1]), int(parts[2])
     async with async_session() as session:
-        opponent = await get_user_by_telegram_id(session, message.from_user.id)
-        if not opponent or opponent.id != data.get("opponent_id"):
-            await message.answer("❌ فقط طرف مقابل می‌تونه قبول کنه.")
+        me = await get_user_by_telegram_id(session, callback.from_user.id)
+        if not me or me.id != opponent_id:
+            await callback.answer("فقط طرف مقابل!", show_alert=True)
             return
+        challenger = await session.get(User, challenger_id)
+        opponent = me
+        text = await _resolve_duel(session, challenger, opponent)
+        await callback.message.edit_text(text)
+    await state.clear()
+    await callback.answer()
 
+
+@router.callback_query(F.data.startswith("duelrej:"))
+async def cb_duel_reject(callback: CallbackQuery, state: FSMContext):
+    parts = callback.data.split(":")
+    opponent_id = int(parts[2])
+    async with async_session() as session:
+        me = await get_user_by_telegram_id(session, callback.from_user.id)
+        if not me or me.id != opponent_id:
+            await callback.answer("فقط طرف مقابل!", show_alert=True)
+            return
+    await callback.message.edit_text("❌ دوئل رد شد.")
+    await state.clear()
+    await callback.answer()
+
+
+@router.message(DuelStates.waiting_accept, F.text.lower().in_(["قبول", "accept", "آره"]))
+async def accept_text(message: Message, state: FSMContext):
+    data = await state.get_data()
+    async with async_session() as session:
+        me = await get_user_by_telegram_id(session, message.from_user.id)
+        if not me or me.id != data.get("opponent_id"):
+            await message.answer("فقط طرف مقابل!")
+            return
         challenger = await session.get(User, data["challenger_id"])
-        
-        # فعلاً نتیجه تصادفی برای تست (بعداً سیستم واقعی اضافه می‌شه)
-        import random
-        winner = challenger if random.random() > 0.5 else opponent
-        loser = opponent if winner.id == challenger.id else challenger
-
-        await update_user_stats(session, winner, won=True)
-        await update_user_stats(session, loser, won=False)
-
-        rank_result = process_duel_result(winner, loser, is_guardian=False)
-        xp_messages = process_xp_for_duel(winner, loser, is_guardian=False)
-
-        # امتیاز مشارکت فرقه (فقط اگر عضو فرقه باشه)
-        from services.sects import add_contribution
-        contrib_msg = ""
-        new_points = await add_contribution(session, winner.id, 10)
-        if new_points > 0:
-            contrib_msg = f"\n🏛️ +۱۰ امتیاز مشارکت فرقه (مجموع: {new_points})"
-
-        await session.commit()
-
-        text = (
-            f"🏁 <b>نتیجه دوئل</b>\n\n"
-            f"برنده: <b>{winner.full_name}</b> 🏆\n"
-            f"بازنده: {loser.full_name}\n\n"
-        )
-        if rank_result["messages"]:
-            text += "\n".join(rank_result["messages"]) + "\n"
-        if xp_messages:
-            text += "\n".join(xp_messages)
-        if contrib_msg:
-            text += contrib_msg
-
+        text = await _resolve_duel(session, challenger, me)
         await message.answer(text)
-        await state.clear()
+    await state.clear()
 
 
-@router.message(DuelStates.waiting_accept, F.text.lower().in_(["رد", "reject", "no", "نه"]))
-async def reject_duel(message: Message, state: FSMContext):
+@router.message(DuelStates.waiting_accept, F.text.lower().in_(["رد", "reject", "نه"]))
+async def reject_text(message: Message, state: FSMContext):
+    data = await state.get_data()
+    async with async_session() as session:
+        me = await get_user_by_telegram_id(session, message.from_user.id)
+        if not me or me.id not in (data.get("opponent_id"), data.get("challenger_id")):
+            await message.answer("این دوئل مال تو نیست.")
+            return
     await message.answer("❌ دوئل رد شد.")
     await state.clear()

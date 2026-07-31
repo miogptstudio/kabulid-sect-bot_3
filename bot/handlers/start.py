@@ -20,9 +20,10 @@ async def cmd_start(message: Message):
             username=message.from_user.username
         )
 
-        if message.from_user.id in ADMIN_IDS and user.role != ROLE_LEADER:
-            user.role = ROLE_LEADER
-            await session.commit()
+        if message.from_user.id in ADMIN_IDS:
+            if user.role != ROLE_LEADER:
+                user.role = ROLE_LEADER
+                await session.commit()
 
     text = (
         f"سلام <b>{user.full_name}</b> 👋\n\n"
@@ -58,7 +59,7 @@ async def cmd_start(message: Message):
     await message.answer(text)
 
 
-@router.message(Command("help", "راهنما"))
+@router.message(Command("help_old_disabled"))
 async def cmd_help(message: Message):
     text = (
         "📖 <b>راهنمای کامل ربات</b>\n\n"
@@ -98,3 +99,27 @@ async def cmd_help(message: Message):
         ""
     )
     await message.answer(text)
+
+
+@router.message(Command("iamadmin", "مقام‌من"))
+async def cmd_iamadmin(message: Message):
+    """وضعیت ادمین بودن را نشان می‌دهد و در صورت بودن در ADMIN_IDS نقش رهبر می‌دهد"""
+    async with async_session() as session:
+        user = await get_or_create_user(
+            session,
+            telegram_id=message.from_user.id,
+            full_name=message.from_user.full_name,
+            username=message.from_user.username
+        )
+        in_list = message.from_user.id in ADMIN_IDS
+        if in_list and user.role != ROLE_LEADER:
+            user.role = ROLE_LEADER
+            await session.commit()
+            await session.refresh(user)
+
+    await message.answer(
+        f"شناسه تلگرام تو: <code>{message.from_user.id}</code>\n"
+        f"در لیست ADMIN_IDS: {'بله ✅' if in_list else 'خیر ❌'}\n"
+        f"نقش فعلی: <b>{user.role}</b>\n"
+        f"تعداد ادمین‌های تنظیم‌شده: {len(ADMIN_IDS)}"
+    )

@@ -242,3 +242,27 @@ class UserWallet(Base):
     spirit_stones: Mapped[int] = mapped_column(Integer, default=0)  # سنگ روحی
     
     # نرخ: ۱۰۰۰ سکه = ۱ سنگ روحی
+
+
+# ==================== بُعد گروه و روح انتقام‌جو ====================
+
+class GroupDimension(Base):
+    __tablename__ = "group_dimensions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    chat_id: Mapped[int] = mapped_column(BigInteger, unique=True)  # آیدی گروه تلگرام
+    name: Mapped[str] = mapped_column(String(64), default="بُعد ناشناس")
+    dimension_type: Mapped[str] = mapped_column(String(32), default="فانی")  # فانی/بهشتی/زیرین
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class VengefulSpirit(Base):
+    __tablename__ = "vengeful_spirits"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    target_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    power: Mapped[int] = mapped_column(Integer, default=30)
+    reason: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())

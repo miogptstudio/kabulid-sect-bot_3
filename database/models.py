@@ -32,6 +32,9 @@ class User(Base):
     yin: Mapped[int] = mapped_column(Integer, default=0)     # یین بدن (زن) 0-100
     is_virgin: Mapped[bool] = mapped_column(Boolean, default=True)
     is_dead: Mapped[bool] = mapped_column(Boolean, default=False)
+    city: Mapped[str] = mapped_column(String(32), default="tehran")
+    world: Mapped[str] = mapped_column(String(32), default="فانی")  # فانی / بهشتی / زیرین
+    lifespan: Mapped[int] = mapped_column(Integer, default=100)  # عمر ۰-۱۰۰
     is_spirit_raiser: Mapped[bool] = mapped_column(Boolean, default=False)  # پرورش‌دهنده روح بعد از مرگ
 
     # Rank system
@@ -66,7 +69,7 @@ class User(Base):
     # Relations
     medals: Mapped[list["Medal"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     achievements: Mapped[list["UserAchievement"]] = relationship(back_populates="user", cascade="all, delete-orphan")
-    accounts: Mapped[list["Account"]] = relationship(back_populates="owner", cascade="all, delete-orphan", foreign_keys="[Account.owner_id]")
+    accounts: Mapped[list["Account"]] = relationship(back_populates="owner", cascade="all, delete-orphan", foreign_keys="Account.owner_id")
     missions_progress: Mapped[list["UserMission"]] = relationship(back_populates="user", cascade="all, delete-orphan")
 
     @property
