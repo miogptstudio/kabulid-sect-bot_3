@@ -44,7 +44,7 @@ async def set_gender(callback: CallbackQuery):
     if len(parts) == 3:
         owner_id, gender = int(parts[1]), parts[2]
         if callback.from_user.id != owner_id:
-            await callback.answer("این دکمه مال تو نیست!", show_alert=True)
+            await callback.answer()
             return
     else:
         gender = parts[1]

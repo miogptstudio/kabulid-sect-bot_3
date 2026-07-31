@@ -77,3 +77,19 @@ python run.py
    - `GET /health`
 
 مینی‌اپ را حتماً از داخل تلگرام باز کنید تا شناسه کاربر در دسترس باشد.
+
+## حافظه پایدار (خیلی مهم روی Render)
+
+فایل SQLite با هر Deploy پاک می‌شود. برای نگه‌داشتن اطلاعات:
+
+### روش پیشنهادی: PostgreSQL رایگان Render
+1. در Render: New → PostgreSQL
+2. External Database URL را کپی کن
+3. در Web Service → Environment:
+   - `DATABASE_URL` = همان URL (ربات خودش به asyncpg تبدیل می‌کند)
+
+### روش جایگزین: Persistent Disk
+1. Disk به سرویس وصل کن روی مسیر `/var/data`
+2. Environment: `DATA_DIR=/var/data`
+
+بدون یکی از این دو، با هر آپدیت پیشرفت کاربران از بین می‌رود.

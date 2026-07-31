@@ -20,33 +20,39 @@ def _parse_admin_ids() -> list[int]:
     return ids
 
 ADMIN_IDS = _parse_admin_ids()
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./bot.db")
 
-# ========== سختی ×۱۰۰۰۰۰ ==========
-DIFFICULTY = 100_000
+# حافظه پایدار: روی Render مقدار DATABASE_URL را از PostgreSQL بگذار
+# یا مسیر دیسک پایدار: DATA_DIR=/var/data
+DATA_DIR = os.getenv("DATA_DIR", ".")
+_default_sqlite = f"sqlite+aiosqlite:///{os.path.join(DATA_DIR, 'bot.db')}"
+DATABASE_URL = os.getenv("DATABASE_URL", _default_sqlite)
 
-WINS_FOR_SAME_RANK_PROMOTE = 10 * DIFFICULTY  # ۱۰ × ۱۰۰۰۰۰ برد هم‌رتبه
-CONSECUTIVE_LOSSES_FOR_DEMOTE = 3  # سقوط همچنان با ۳ باخت متوالی
-GUARDIAN_WIN_PROMOTE = 1 * DIFFICULTY
+DIFFICULTY = 1  # سختی پایه (قابل تنظیم)
+
+WINS_FOR_SAME_RANK_PROMOTE = 10
+CONSECUTIVE_LOSSES_FOR_DEMOTE = 3
+GUARDIAN_WIN_PROMOTE = 1
 GUARDIAN_LOSS_DEMOTE = 2
 
-# XP خیلی سخت
-XP_PER_WIN = 1
-XP_PER_LOSS = 0
-XP_PER_GUARDIAN_WIN = 1
-XP_NEEDED_PER_LEVEL = 100 * DIFFICULTY  # ۱۰٬۰۰۰٬۰۰۰ XP برای هر سطح
+XP_PER_WIN = 15
+XP_PER_LOSS = 5
+XP_PER_GUARDIAN_WIN = 25
+XP_NEEDED_PER_LEVEL = 100
+MAX_LEVEL = 120
 
-# تذهیب
-ENERGY_PER_STAGE = 100 * DIFFICULTY      # ۱۰٬۰۰۰٬۰۰۰
-ROOT_UNLOCK_ENERGY = 200 * DIFFICULTY    # ۲۰٬۰۰۰٬۰۰۰
-GATHER_ENERGY_AMOUNT = 400                # هر تذهیب/جمع‌آوری +۴۰۰ انرژی
-GUARDIAN_TIMEOUT_SEC = 8                 # قبلاً ۲۰
-HUNT_RISK_NORMAL = 0.45                  # خطر شکار خیلی بالا
-HUNT_RISK_UNDERWORLD = 0.85
-SOLO_LIFESPAN_COST = 5                   # هر خودارضایی ۵٪ عمر
+# تذهیب: سطح ۱→۲ = ۲۰۰۰۰۰، هر سطح بعد +۲۵۰۰۰۰
+ENERGY_BASE = 200_000
+ENERGY_PER_LEVEL_ADD = 250_000
+ROOT_UNLOCK_ENERGY = 200_000
+GATHER_ENERGY_AMOUNT = 400
+
+GUARDIAN_TIMEOUT_SEC = 15
+GUARDIAN_COOLDOWN_SEC = 5 * 60  # هر ۵ دقیقه
+HUNT_RISK_NORMAL = 0.15
+HUNT_RISK_UNDERWORLD = 0.35
+SOLO_LIFESPAN_COST = 2
+DUEL_REJECT_LIMIT_PER_DAY = 5
+DUEL_MIN_WIN_CHANCE = 0.15
+DUEL_MAX_WIN_CHANCE = 0.85
 
 SEASON_DURATION_DAYS = 90
-
-# دوئل: بازیکن ضعیف‌تر شانس خیلی کم
-DUEL_MIN_WIN_CHANCE = 0.02
-DUEL_MAX_WIN_CHANCE = 0.60

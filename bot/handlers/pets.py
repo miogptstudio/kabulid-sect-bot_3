@@ -95,7 +95,7 @@ async def cb_tame(callback: CallbackQuery):
     if len(parts) >= 3:
         owner_id, pet_id = int(parts[1]), int(parts[2])
         if callback.from_user.id != owner_id:
-            await callback.answer("❌ این شکار مال تو نیست!", show_alert=True)
+            await callback.answer()
             return
     else:
         pet_id = int(parts[1])
@@ -119,7 +119,7 @@ async def cb_release(callback: CallbackQuery):
     if len(parts) >= 3:
         owner_id, pet_id = int(parts[1]), int(parts[2])
         if callback.from_user.id != owner_id:
-            await callback.answer("❌ این شکار مال تو نیست!", show_alert=True)
+            await callback.answer()
             return
     else:
         pet_id = int(parts[1])

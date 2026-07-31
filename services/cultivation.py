@@ -5,7 +5,14 @@ from database.models_v2 import Cultivation, CULTIVATION_REALMS
 from database.models_v3 import CultivationTechnique, UserTechnique
 from database.models import User
 
-from bot.config import ENERGY_PER_STAGE, ROOT_UNLOCK_ENERGY
+from bot.config import ROOT_UNLOCK_ENERGY, ENERGY_BASE, ENERGY_PER_LEVEL_ADD
+
+def energy_needed_for_stage(stage: int) -> int:
+    """سطح ۱→۲ نیاز ۲۰۰۰۰۰؛ هر سطح بعد +۲۵۰۰۰۰"""
+    s = max(1, stage or 1)
+    return ENERGY_BASE + (s - 1) * ENERGY_PER_LEVEL_ADD
+
+
 
 
 DEFAULT_TECHNIQUES = [
@@ -157,6 +164,7 @@ async def add_energy(session: AsyncSession, user_id: int, amount: int) -> dict:
             "realm": cult.realm,
             "stage": cult.stage,
             "energy": cult.energy,
+        "energy_needed": energy_needed_for_stage(cult.stage),
             "root": cult.spiritual_root,
             "messages": messages or [f"در حال بیدار کردن ریشه... ({cult.energy}/{ROOT_UNLOCK_ENERGY})"]
         }
@@ -169,6 +177,7 @@ async def add_energy(session: AsyncSession, user_id: int, amount: int) -> dict:
             "realm": cult.realm,
             "stage": cult.stage,
             "energy": cult.energy,
+        "energy_needed": energy_needed_for_stage(cult.stage),
             "root": cult.spiritual_root,
             "messages": ["❌ تکنیک تذهیب فعالی نداری! اول یک تکنیک یاد بگیر یا فعال کن."]
         }
@@ -179,8 +188,8 @@ async def add_energy(session: AsyncSession, user_id: int, amount: int) -> dict:
     messages = []
     leveled = False
     
-    while cult.energy >= ENERGY_PER_STAGE:
-        cult.energy -= ENERGY_PER_STAGE
+    while cult.energy >= energy_needed_for_stage(cult.stage):
+        cult.energy -= energy_needed_for_stage(cult.stage)
         cult.stage += 1
         leveled = True
         
@@ -193,7 +202,7 @@ async def add_energy(session: AsyncSession, user_id: int, amount: int) -> dict:
                     messages.append(f"🌟 قلمرو تذهیب به «{cult.realm}» ارتقا یافت!")
                 else:
                     cult.stage = 3
-                    cult.energy = ENERGY_PER_STAGE - 1
+                    cult.energy = energy_needed_for_stage(cult.stage) - 1
             except ValueError:
                 pass
         
@@ -205,6 +214,7 @@ async def add_energy(session: AsyncSession, user_id: int, amount: int) -> dict:
         "realm": cult.realm,
         "stage": cult.stage,
         "energy": cult.energy,
+        "energy_needed": energy_needed_for_stage(cult.stage),
         "root": cult.spiritual_root,
         "messages": messages
     }

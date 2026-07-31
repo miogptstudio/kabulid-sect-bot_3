@@ -72,7 +72,7 @@ async def show_building_items(callback: CallbackQuery):
         text += (
             f"• <b>{item.name}</b>\n"
             f"  {item.description or ''}\n"
-            f"  قیمت: <b>{item.price} XP</b>\n\n"
+            f"  قیمت: <b>{item.price} سکه</b>\n\n"
         )
         builder.button(
             text=f"خرید {item.name}",

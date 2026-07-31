@@ -209,7 +209,7 @@ async def cb_pardon(callback: CallbackQuery):
             callback.from_user.full_name, callback.from_user.username
         )
         if actor.id != leader_id:
-            await callback.answer("فقط رهبر!", show_alert=True)
+            await callback.answer()
             return
         target = await session.get(User, target_id)
         if target:
@@ -232,7 +232,7 @@ async def cb_nopardon(callback: CallbackQuery):
             callback.from_user.full_name, callback.from_user.username
         )
         if actor.id != leader_id:
-            await callback.answer("فقط رهبر!", show_alert=True)
+            await callback.answer()
             return
         target = await session.get(User, target_id)
         if target:
@@ -350,7 +350,7 @@ async def cb_sect_type(callback: CallbackQuery):
         return
     owner = int(parts[1])
     if callback.from_user.id != owner:
-        await callback.answer("مال تو نیست!", show_alert=True)
+        await callback.answer()
         return
     sect_type, name = parts[2], parts[3]
     async with async_session() as session:
@@ -366,3 +366,42 @@ async def cb_sect_type(callback: CallbackQuery):
         except ValueError as e:
             await callback.message.edit_text(str(e))
     await callback.answer()
+
+
+@router.message(Command("sectsettings", "تنظیمات‌فرقه"))
+async def cmd_sect_settings(message: Message):
+    parts = (message.text or "").split(maxsplit=2)
+    async with async_session() as session:
+        user = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
+        membership = await get_user_sect(session, user.id)
+        if not membership:
+            await message.answer("عضو فرقه نیستی.")
+            return
+        sect = await session.get(Sect, membership.sect_id)
+        if not sect or sect.leader_id != user.id:
+            await message.answer("فقط رهبر فرقه می‌تواند تنظیمات را عوض کند.")
+            return
+        if len(parts) < 3:
+            await message.answer(
+                f"⚙️ تنظیمات فرقه <b>{sect.name}</b>\n"
+                f"نوع: {sect.sect_type}\n"
+                f"اعضا: {sect.member_count}\n\n"
+                f"/sectsettings name نام‌جدید\n"
+                f"/sectsettings desc توضیح"
+            )
+            return
+        key, val = parts[1], parts[2]
+        if key == "name":
+            sect.name = val[:64]
+            await session.commit()
+            await message.answer(f"نام فرقه: {sect.name}")
+        elif key == "desc":
+            if hasattr(sect, "description"):
+                sect.description = val[:256]
+                await session.commit()
+            await message.answer("توضیح به‌روز شد.")
+        else:
+            await message.answer("کلید: name یا desc")

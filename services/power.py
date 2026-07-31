@@ -30,7 +30,7 @@ async def calc_power(session: AsyncSession, user: User) -> dict:
     rank_bonus = {"عضو دسته‌های پایین‌تر": 0, "عضو بیرونی": 5, "عضو داخلی": 12, "ارشد": 25, "ارجمند": 40}.get(user.rank, 0)
 
     cult = await get_or_create_cultivation(session, user.id)
-    realm_p = REALM_POWER.get(cult.realm, 10) + (cult.stage or 1) * 3
+    realm_p = REALM_POWER.get(cult.realm, 10) + (cult.stage or 1) * 8 + min(int(cult.energy or 0) // 10000, 50)
     root_p = ROOT_BONUS.get(cult.spiritual_root or "بدون ریشه", 0)
 
     # سلاح‌ها از اینونتوری

@@ -11,7 +11,8 @@ from aiogram.fsm.state import State, StatesGroup
 from database.engine import async_session
 from database.crud import get_or_create_user
 from services.xp import add_xp
-from bot.config import XP_PER_GUARDIAN_WIN, GUARDIAN_TIMEOUT_SEC
+from bot.config import XP_PER_GUARDIAN_WIN, GUARDIAN_TIMEOUT_SEC, GUARDIAN_COOLDOWN_SEC
+from datetime import datetime, timedelta
 from services.sects import add_contribution
 from services.economy import get_or_create_wallet
 
@@ -21,6 +22,7 @@ router = Router()
 _seen: dict[int, set[str]] = {}
 # جلسه فعال نگهبان: user_id -> {qid, correct, task}
 _active: dict[int, dict] = {}
+_last_guardian: dict[int, datetime] = {}
 # دوئل نگهبان دو نفره
 _gduel: dict[str, dict] = {}
 
@@ -93,6 +95,12 @@ async def cmd_guardian(message: Message):
     if uid in _active:
         await message.answer("اول سوال فعلی را جواب بده یا صبر کن تا تمام شود.")
         return
+    last = _last_guardian.get(uid)
+    if last and (datetime.utcnow() - last).total_seconds() < GUARDIAN_COOLDOWN_SEC:
+        left = int(GUARDIAN_COOLDOWN_SEC - (datetime.utcnow() - last).total_seconds())
+        await message.answer(f"⏳ نگهبان هر ۵ دقیقه یک‌بار. {left} ثانیه صبر کن.")
+        return
+    _last_guardian[uid] = datetime.utcnow()
 
     q = _pick_question(uid)
     qid = _qid(q)
@@ -125,7 +133,7 @@ async def process_guardian_answer(callback: CallbackQuery):
         return
     owner_id = int(parts[1])
     if callback.from_user.id != owner_id:
-        await callback.answer("❌ این سوال مال تو نیست!", show_alert=True)
+        await callback.answer()
         return
 
     selected = int(parts[3])
@@ -225,7 +233,7 @@ async def gduel_ans(callback: CallbackQuery):
         await callback.answer("این دوئل تمام شده.", show_alert=True)
         return
     if callback.from_user.id not in g["players"]:
-        await callback.answer("❌ تو طرف این دوئل نیستی!", show_alert=True)
+        await callback.answer()
         return
     if g["done"]:
         await callback.answer("تمام شده", show_alert=True)

@@ -16,6 +16,20 @@ from services.economy import get_or_create_wallet
 from services.sects import add_contribution
 
 router = Router()
+_reject_counts: dict[tuple, int] = {}  # (user_id, date) -> count
+
+def _reject_key(uid: int):
+    from datetime import date
+    return (uid, date.today().isoformat())
+
+def _can_reject(uid: int) -> bool:
+    from bot.config import DUEL_REJECT_LIMIT_PER_DAY
+    return _reject_counts.get(_reject_key(uid), 0) < DUEL_REJECT_LIMIT_PER_DAY
+
+def _inc_reject(uid: int):
+    k = _reject_key(uid)
+    _reject_counts[k] = _reject_counts.get(k, 0) + 1
+
 
 
 class DuelStates(StatesGroup):
@@ -112,7 +126,7 @@ async def cb_duel_accept(callback: CallbackQuery, state: FSMContext):
     async with async_session() as session:
         me = await get_user_by_telegram_id(session, callback.from_user.id)
         if not me or me.id != opponent_id:
-            await callback.answer("فقط طرف مقابل!", show_alert=True)
+            await callback.answer()
             return
         challenger = await session.get(User, challenger_id)
         opponent = me
@@ -129,8 +143,12 @@ async def cb_duel_reject(callback: CallbackQuery, state: FSMContext):
     async with async_session() as session:
         me = await get_user_by_telegram_id(session, callback.from_user.id)
         if not me or me.id != opponent_id:
-            await callback.answer("فقط طرف مقابل!", show_alert=True)
+            await callback.answer()
             return
+        if not _can_reject(callback.from_user.id):
+            await callback.answer("امروز ۵ بار رد کردی. فردا دوباره.", show_alert=True)
+            return
+        _inc_reject(callback.from_user.id)
     await callback.message.edit_text("❌ دوئل رد شد.")
     await state.clear()
     await callback.answer()

@@ -217,10 +217,12 @@ async def get_items_of_building(session: AsyncSession, building_id: int):
 
 
 async def buy_item(session: AsyncSession, user: User, item: ShopItem) -> str:
-    if user.xp < item.price:
-        return f"❌ XP کافی نداری (نیاز: {item.price})"
+    from services.economy import get_or_create_wallet
+    w = await get_or_create_wallet(session, user.id)
+    if w.coins < item.price:
+        return f"❌ سکه کافی نداری (نیاز: {item.price} | داری: {w.coins})"
     
-    user.xp -= item.price
+    w.coins -= item.price
     
     result = await session.execute(
         select(UserInventory).where(

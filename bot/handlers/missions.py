@@ -165,7 +165,7 @@ async def take_mission(callback: CallbackQuery):
     if len(parts) == 3:
         owner_id, mission_id = int(parts[1]), int(parts[2])
         if callback.from_user.id != owner_id:
-            await callback.answer("این پنل مال تو نیست!", show_alert=True)
+            await callback.answer()
             return
     else:
         mission_id = int(parts[1])

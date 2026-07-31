@@ -50,7 +50,7 @@ async def cmd_cultivation(message: Message):
         f"ریشه معنوی: <b>{cult.spiritual_root or 'بدون ریشه'}</b>\n"
         f"قلمرو: <b>{cult.realm}</b>\n"
         f"سطح: {cult.stage} / ۳\n"
-        f"انرژی: {cult.energy}\n"
+        f"انرژی: {cult.energy} / {result.get('energy_needed', '?') if False else ''}\n"
     )
     if tech:
         text += f"تکنیک فعال: <b>{tech.name}</b> ({tech.grade})\n"
@@ -207,6 +207,12 @@ async def do_gather(message: Message, amount: int = 400):
             message.from_user.full_name, message.from_user.username
         )
         result = await add_energy(session, user.id, amount)
+        try:
+            from services.missions_progress import bump_mission
+            for m in await bump_mission(session, user.id, "gather"):
+                pass
+        except Exception:
+            pass
     
     text = f"🌀 (+{amount} انرژی)\n"
     if result.get("messages"):
