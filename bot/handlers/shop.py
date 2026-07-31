@@ -165,6 +165,106 @@ async def cmd_inventory(message: Message):
         return
 
     text = "🎒 <b>کیف تو</b>\n\n"
-    for inv, item in rows:
-        text += f"• {item.name} ×{inv.quantity}\n"
+    for i, (inv, item) in enumerate(rows, 1):
+        text += f"{i}. {item.name} ×{inv.quantity}\n"
+    text += "\n/use شماره — استفاده\n/drop شماره — دور انداختن"
     await message.answer(text)
+
+
+@router.message(Command("use", "استفاده"))
+async def cmd_use_item(message: Message):
+    """استفاده از آیتم: /use شماره"""
+    parts = (message.text or "").split()
+    if len(parts) < 2:
+        await message.answer(
+            "فرمت: /use شماره\n"
+            "اول /inventory بزن؛ شماره ردیف آیتم را ببین.\n"
+            "مثال: /use 1"
+        )
+        return
+    try:
+        idx = int(parts[1]) - 1
+    except ValueError:
+        await message.answer("شماره نامعتبر")
+        return
+
+    async with async_session() as session:
+        user = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
+        from sqlalchemy import select
+        from database.models_v3 import UserInventory
+
+        result = await session.execute(
+            select(UserInventory, ShopItem)
+            .join(ShopItem, UserInventory.item_id == ShopItem.id)
+            .where(UserInventory.user_id == user.id)
+        )
+        rows = result.all()
+        if idx < 0 or idx >= len(rows):
+            await message.answer("آیتم پیدا نشد. /inventory")
+            return
+        inv, item = rows[idx]
+        effect = item.effect or {}
+        msg_parts = [f"✅ از «{item.name}» استفاده کردی."]
+
+        if isinstance(effect, dict):
+            if effect.get("xp"):
+                user.xp += int(effect["xp"])
+                msg_parts.append(f"+{effect['xp']} XP")
+            if effect.get("duel_power"):
+                msg_parts.append(f"قدرت دوئل (از آیتم): {effect['duel_power']}")
+            if effect.get("learn_tech"):
+                msg_parts.append(f"تکنیک مرتبط: {effect['learn_tech']} — /learntech")
+
+        inv.quantity -= 1
+        if inv.quantity <= 0:
+            await session.delete(inv)
+        await session.commit()
+
+    await message.answer("\n".join(msg_parts))
+
+
+@router.message(Command("drop", "دورریختن", "حذف‌آیتم"))
+async def cmd_drop_item(message: Message):
+    """دور انداختن آیتم: /drop شماره [تعداد]"""
+    parts = (message.text or "").split()
+    if len(parts) < 2:
+        await message.answer("فرمت: /drop شماره\nیا /drop شماره تعداد\nمثال: /drop 1")
+        return
+    try:
+        idx = int(parts[1]) - 1
+        qty = int(parts[2]) if len(parts) >= 3 else 1
+    except ValueError:
+        await message.answer("عدد نامعتبر")
+        return
+
+    async with async_session() as session:
+        user = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
+        from sqlalchemy import select
+        from database.models_v3 import UserInventory
+
+        result = await session.execute(
+            select(UserInventory, ShopItem)
+            .join(ShopItem, UserInventory.item_id == ShopItem.id)
+            .where(UserInventory.user_id == user.id)
+        )
+        rows = result.all()
+        if idx < 0 or idx >= len(rows):
+            await message.answer("آیتم پیدا نشد. /inventory")
+            return
+        inv, item = rows[idx]
+        if qty < 1 or qty > inv.quantity:
+            await message.answer(f"تعداد نامعتبر (داری: {inv.quantity})")
+            return
+        inv.quantity -= qty
+        name = item.name
+        if inv.quantity <= 0:
+            await session.delete(inv)
+        await session.commit()
+
+    await message.answer(f"🗑 «{name}» ×{qty} از کیف حذف شد.")

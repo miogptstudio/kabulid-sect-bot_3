@@ -91,10 +91,14 @@ SECTIONS = {
         "/master · /takedisciple · /leavemaster — استاد و شاگرد"
     ),
     "games": (
-        "🎮 مینی‌اپ و بازی",
-        "Menu Button در BotFather → آدرس /webapp/\n"
-        "بازی‌ها: /webapp/games.html\n"
-        "شطرنج، تخته‌نرد، سنگ‌کاغذ‌قیچی، کازینو"
+        "🎮 بازی‌ها (چت + وب‌اپ)",
+        "/games — منوی بازی\n"
+        "/rps — سنگ کاغذ قیچی (+سکه)\n"
+        "/dice — تاس تخته‌نرد\n"
+        "/casino مبلغ — کازینو\n"
+        "/chess — شطرنج نمایشی\n\n"
+        "وب‌اپ: Menu Button → /webapp/\n"
+        "بازی تعاملی: /webapp/games.html"
     ),
     "admin": (
         "🛠 مدیریت",

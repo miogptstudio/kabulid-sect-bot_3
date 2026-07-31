@@ -133,6 +133,61 @@ CITIES = [
     {"id": "almaty", "name": "آلماتی", "country": "قزاقستان", "province": "آلماتی", "stage": "استپ بزرگ", "bonus": "hunt", "desc": "شکار"},
     {"id": "seoul", "name": "سئول", "country": "کره جنوبی", "province": "سئول", "stage": "فناوری", "bonus": "craft", "desc": "ساخت"},
     {"id": "tokyo", "name": "توکیو", "country": "ژاپن", "province": "توکیو", "stage": "شرق دور", "bonus": "power", "desc": "قدرت"},
+
+    # ===== اروپا =====
+    {"id": "london", "name": "لندن", "country": "انگلستان", "province": "انگلستان", "stage": "مه و تاج", "bonus": "trade", "desc": "تجارت جهانی"},
+    {"id": "paris", "name": "پاریس", "country": "فرانسه", "province": "ایل‌دو‌فرانس", "stage": "هنر", "bonus": "cult", "desc": "تذهیب هنری"},
+    {"id": "berlin", "name": "برلین", "country": "آلمان", "province": "برلین", "stage": "صنعت", "bonus": "craft", "desc": "ساخت"},
+    {"id": "rome", "name": "رم", "country": "ایتالیا", "province": "لاتزیو", "stage": "امپراتوری", "bonus": "power", "desc": "قدرت باستانی"},
+    {"id": "madrid", "name": "مادرید", "country": "اسپانیا", "province": "مادرید", "stage": "آفتاب", "bonus": "coin", "desc": "سکه"},
+    {"id": "athens", "name": "آتن", "country": "یونان", "province": "آتیک", "stage": "اساطیر", "bonus": "cult", "desc": "تذهیب کهن"},
+    {"id": "vienna", "name": "وین", "country": "اتریش", "province": "وین", "stage": "موسیقی", "bonus": "cult", "desc": "تذهیب"},
+    {"id": "stockholm", "name": "استکهلم", "country": "سوئد", "province": "استکهلم", "stage": "شمال سرد", "bonus": "power", "desc": "قدرت"},
+    {"id": "warsaw", "name": "ورشو", "country": "لهستان", "province": "مازوویه", "stage": "اروپای شرقی", "bonus": "xp", "desc": "XP"},
+    {"id": "lisbon", "name": "لیسبون", "country": "پرتغال", "province": "لیسبون", "stage": "اقیانوس", "bonus": "trade", "desc": "بندر"},
+    # ===== آفریقا =====
+    {"id": "cairo2", "name": "اسکندریه", "country": "مصر", "province": "اسکندریه", "stage": "کتابخانه کهن", "bonus": "cult", "desc": "دانش"},
+    {"id": "lagos", "name": "لاگوس", "country": "نیجریه", "province": "لاگوس", "stage": "آفریقای غرب", "bonus": "coin", "desc": "ثروت"},
+    {"id": "nairobi", "name": "نایروبی", "country": "کنیا", "province": "نایروبی", "stage": "ساوانا", "bonus": "hunt", "desc": "شکار"},
+    {"id": "cape_town", "name": "کیپ‌تاون", "country": "آفریقای جنوبی", "province": "کیپ غربی", "stage": "دماغه", "bonus": "trade", "desc": "بندر"},
+    {"id": "casablanca", "name": "کازابلانکا", "country": "مراکش", "province": "کازابلانکا", "stage": "مغرب", "bonus": "trade", "desc": "تجارت"},
+    {"id": "addis", "name": "آدیس‌آبابا", "country": "اتیوپی", "province": "آدیس", "stage": "بلندای آفریقا", "bonus": "cult", "desc": "تذهیب"},
+    {"id": "accra", "name": "آکرا", "country": "غنا", "province": "آکرا", "stage": "طلای غرب", "bonus": "coin", "desc": "سکه"},
+    {"id": "tunis", "name": "تونس", "country": "تونس", "province": "تونس", "stage": "مدیترانه", "bonus": "trade", "desc": "بندر"},
+    # ===== آمریکای شمالی =====
+    {"id": "newyork", "name": "نیویورک", "country": "آمریکا", "province": "نیویورک", "stage": "ابرشهر", "bonus": "trade", "desc": "تجارت بزرگ"},
+    {"id": "losangeles", "name": "لس‌آنجلس", "country": "آمریکا", "province": "کالیفرنیا", "stage": "غرب", "bonus": "coin", "desc": "سکه"},
+    {"id": "chicago", "name": "شیکاگو", "country": "آمریکا", "province": "ایلی‌نوی", "stage": "بادها", "bonus": "power", "desc": "قدرت"},
+    {"id": "toronto", "name": "تورنتو", "country": "کانادا", "province": "انتاریو", "stage": "شمال", "bonus": "xp", "desc": "XP"},
+    {"id": "vancouver", "name": "ونکوور", "country": "کانادا", "province": "بریتیش کلمبیا", "stage": "اقیانوس آرام", "bonus": "trade", "desc": "بندر"},
+    {"id": "mexico_city", "name": "مکزیکوسیتی", "country": "مکزیک", "province": "مکزیکو", "stage": "آزتک", "bonus": "power", "desc": "قدرت باستانی"},
+    {"id": "havana", "name": "هاوانا", "country": "کوبا", "province": "هاوانا", "stage": "کارائیب", "bonus": "coin", "desc": "سکه"},
+    # ===== آمریکای جنوبی =====
+    {"id": "saopaulo", "name": "سائوپائولو", "country": "برزیل", "province": "سائوپائولو", "stage": "جنوب بزرگ", "bonus": "coin", "desc": "ثروت"},
+    {"id": "riodejaneiro", "name": "ریودوژانیرو", "country": "برزیل", "province": "ریو", "stage": "ساحل طلایی", "bonus": "cult", "desc": "تذهیب"},
+    {"id": "buenosaires", "name": "بوئنوس‌آیرس", "country": "آرژانتین", "province": "بوئنوس‌آیرس", "stage": "پامپا", "bonus": "trade", "desc": "تجارت"},
+    {"id": "lima", "name": "لیما", "country": "پرو", "province": "لیما", "stage": "اینکا", "bonus": "power", "desc": "قدرت کهن"},
+    {"id": "bogota", "name": "بوگوتا", "country": "کلمبیا", "province": "بوگوتا", "stage": "آند", "bonus": "cult", "desc": "تذهیب ارتفاع"},
+    {"id": "santiago", "name": "سانتیاگو", "country": "شیلی", "province": "سانتیاگو", "stage": "رشته‌کوه", "bonus": "power", "desc": "قدرت"},
+    # ===== اقیانوسیه =====
+    {"id": "sydney", "name": "سیدنی", "country": "استرالیا", "province": "نیوساوت‌ولز", "stage": "اپرا و بندر", "bonus": "trade", "desc": "بندر"},
+    {"id": "melbourne", "name": "ملبورن", "country": "استرالیا", "province": "ویکتوریا", "stage": "فرهنگ", "bonus": "cult", "desc": "تذهیب"},
+    {"id": "auckland", "name": "اوکلند", "country": "نیوزیلند", "province": "اوکلند", "stage": "جزایر", "bonus": "lifespan", "desc": "عمر"},
+    {"id": "wellington", "name": "ولینگتون", "country": "نیوزیلند", "province": "ولینگتون", "stage": "پایتخت باد", "bonus": "power", "desc": "قدرت"},
+    {"id": "suva", "name": "سووا", "country": "فیجی", "province": "سووا", "stage": "اقیانوس آرام", "bonus": "herb", "desc": "گیاه"},
+    # ===== آسیای شرق و جنوب‌شرق =====
+    {"id": "bangkok", "name": "بانکوک", "country": "تایلند", "province": "بانکوک", "stage": "معابد", "bonus": "cult", "desc": "تذهیب"},
+    {"id": "jakarta", "name": "جاکارتا", "country": "اندونزی", "province": "جاکارتا", "stage": " مجمع‌الجزایر", "bonus": "trade", "desc": "تجارت"},
+    {"id": "manila", "name": "مانیل", "country": "فیلیپین", "province": "مانیل", "stage": "جزایر", "bonus": "coin", "desc": "سکه"},
+    {"id": "hanoi", "name": "هانوی", "country": "ویتنام", "province": "هانوی", "stage": "شرق‌هندوچین", "bonus": "cult", "desc": "تذهیب"},
+    {"id": "singapore", "name": "سنگاپور", "country": "سنگاپور", "province": "سنگاپور", "stage": "بندر جهانی", "bonus": "trade", "desc": "تجارت بزرگ"},
+    {"id": "kualalumpur", "name": "کوالالامپور", "country": "مالزی", "province": "کوالالامپور", "stage": "برج‌ها", "bonus": "coin", "desc": "ثروت"},
+    # ===== آسیای مرکزی و قفقاز بیشتر =====
+    {"id": "ulaanbaatar", "name": "اولان‌باتور", "country": "مغولستان", "province": "اولان‌باتور", "stage": "استپ مغول", "bonus": "hunt", "desc": "شکار"},
+    {"id": "colombo", "name": "کلمبو", "country": "سری‌لانکا", "province": "کلمبو", "stage": "جزیره چای", "bonus": "herb", "desc": "گیاه"},
+    {"id": "kathmandu", "name": "کاتماندو", "country": "نپال", "province": "کاتماندو", "stage": "هیمالیا", "bonus": "cult", "desc": "تذهیب کوه"},
+    {"id": "dhaka", "name": "داکا", "country": "بنگلادش", "province": "داکا", "stage": "دلتا", "bonus": "coin", "desc": "سکه"},
+
 ]
 
 NAME_TO_ID = {}
