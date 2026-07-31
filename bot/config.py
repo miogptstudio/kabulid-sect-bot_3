@@ -39,7 +39,7 @@ XP_NEEDED_PER_LEVEL = 100 * DIFFICULTY  # ۱۰٬۰۰۰٬۰۰۰ XP برای هر 
 # تذهیب
 ENERGY_PER_STAGE = 100 * DIFFICULTY      # ۱۰٬۰۰۰٬۰۰۰
 ROOT_UNLOCK_ENERGY = 200 * DIFFICULTY    # ۲۰٬۰۰۰٬۰۰۰
-GATHER_ENERGY_AMOUNT = 1                 # هر جمع‌آوری فقط ۱ انرژی
+GATHER_ENERGY_AMOUNT = 400                # هر تذهیب/جمع‌آوری +۴۰۰ انرژی
 GUARDIAN_TIMEOUT_SEC = 8                 # قبلاً ۲۰
 HUNT_RISK_NORMAL = 0.45                  # خطر شکار خیلی بالا
 HUNT_RISK_UNDERWORLD = 0.85

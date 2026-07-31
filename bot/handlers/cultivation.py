@@ -159,7 +159,7 @@ async def cmd_give_tech(message: Message):
 
 @router.message(Command("meditate", "مدیتیت"))
 async def cmd_meditate(message: Message):
-    await do_gather(message, amount=1)
+    await do_gather(message, amount=400)
 
 
 @router.message(GatherQiFilter())
@@ -172,7 +172,7 @@ async def text_gather_qi(message: Message):
     await do_gather(message, amount=amt)
 
 
-async def do_gather(message: Message, amount: int = 1):
+async def do_gather(message: Message, amount: int = 400):
     user_id = message.from_user.id
     now = datetime.utcnow()
 
