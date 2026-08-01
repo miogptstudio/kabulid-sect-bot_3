@@ -248,7 +248,6 @@ async def start_health_server(port: int = 8080):
     app.router.add_get("/api/sects", api_sects)
     app.router.add_get("/api/daily", api_daily)
     app.router.add_get("/api/arena", api_arena_top)
-    app.router.add_route("*", "/api/game", api_game_room)
     app.router.add_get("/api/game", api_game_room)
     app.router.add_post("/api/game", api_game_room)
 
