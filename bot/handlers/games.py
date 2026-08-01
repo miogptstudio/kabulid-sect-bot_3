@@ -21,6 +21,7 @@ async def cmd_games_menu(message: Message):
     builder.button(text="🎲 تاس / تخته‌نرد", callback_data=f"game:dice:{message.from_user.id}")
     builder.button(text="🎰 کازینو", callback_data=f"game:casino:{message.from_user.id}")
     builder.button(text="♟️ شطرنج (نمایشی)", callback_data=f"game:chess:{message.from_user.id}")
+    builder.button(text="🃏 حکم", callback_data=f"game:hukum:{message.from_user.id}")
     builder.button(text="🌐 باز کردن وب‌اپ", callback_data=f"game:web:{message.from_user.id}")
     builder.adjust(1)
     await message.answer(
@@ -72,6 +73,10 @@ async def cb_game_menu(callback: CallbackQuery):
         await callback.message.edit_text(
             f"♟️ <b>شطرنج (نمایشی)</b>\n\n<code>{board}</code>\n\n"
             f"نسخه کامل‌تر در وب‌اپ: .../webapp/games.html"
+        )
+    elif kind == "hukum":
+        await callback.message.edit_text(
+            "🃏 <b>حکم</b>\n\nبرای شروع: /hukum\nبا حریف: ریپلای + /hukumduel"
         )
     elif kind == "web":
         await callback.message.edit_text(
@@ -193,3 +198,131 @@ async def cmd_casino(message: Message):
         coins = w.coins
 
     await message.answer(f"🎰 {msg}\nموجودی: {coins}")
+
+
+_guess: dict[int, int] = {}
+
+@router.message(Command("guess", "حدس‌عدد"))
+async def cmd_guess(message: Message):
+    parts = (message.text or "").split()
+    uid = message.from_user.id
+    if uid not in _guess:
+        _guess[uid] = random.randint(1, 50)
+        await message.answer("🔢 عددی بین ۱ تا ۵۰ انتخاب شد. /guess عدد")
+        return
+    if len(parts) < 2:
+        await message.answer("/guess عدد")
+        return
+    try:
+        n = int(parts[1])
+    except ValueError:
+        await message.answer("عدد بفرست")
+        return
+    secret = _guess[uid]
+    if n == secret:
+        del _guess[uid]
+        async with async_session() as session:
+            user = await get_or_create_user(
+                session, message.from_user.id,
+                message.from_user.full_name, message.from_user.username
+            )
+            w = await get_or_create_wallet(session, user.id)
+            w.coins += 15
+            await session.commit()
+        await message.answer("🎉 درست! +۱۵ سکه")
+    elif n < secret:
+        await message.answer("بالاتر ⬆️")
+    else:
+        await message.answer("پایین‌تر ⬇️")
+
+
+@router.message(Command("coinflip", "شیرخط"))
+async def cmd_coin_flip(message: Message):
+    parts = (message.text or "").split()
+    pick = parts[1] if len(parts) > 1 else None
+    if pick not in ("شیر", "خط"):
+        await message.answer("/coinflip شیر یا /coinflip خط")
+        return
+    result = random.choice(["شیر", "خط"])
+    if pick == result:
+        async with async_session() as session:
+            user = await get_or_create_user(
+                session, message.from_user.id,
+                message.from_user.full_name, message.from_user.username
+            )
+            w = await get_or_create_wallet(session, user.id)
+            w.coins += 8
+            await session.commit()
+        await message.answer(f"سکه: {result} — برد! +۸ سکه")
+    else:
+        await message.answer(f"سکه: {result} — باخت")
+
+
+SUITS = ["دل", "خشت", "خاج", "پیک"]
+RANKS_H = ["آس", "شاه", "بی‌بی", "سرباز", "۱۰", "۹", "۸", "۷"]
+
+def _draw_card():
+    return f"{random.choice(RANKS_H)} {random.choice(SUITS)}"
+
+@router.message(Command("hukum", "حکم"))
+async def cmd_hukum(message: Message):
+    trump = random.choice(SUITS)
+    hand = [_draw_card() for _ in range(3)]
+    table = _draw_card()
+    builder = InlineKeyboardBuilder()
+    builder.button(text="بازی کن 🃏", callback_data=f"hukumplay:{message.from_user.id}:{trump}")
+    builder.adjust(1)
+    await message.answer(
+        f"🃏 <b>حکم</b>\n\nحکم این دست: <b>{trump}</b>\nکارت روی میز: {table}\nکارت‌های تو:\n"
+        + "\n".join(f"• {c}" for c in hand),
+        reply_markup=builder.as_markup(),
+    )
+
+@router.callback_query(F.data.startswith("hukumplay:"))
+async def cb_hukum_play(callback: CallbackQuery):
+    parts = callback.data.split(":")
+    if callback.from_user.id != int(parts[1]):
+        await callback.answer()
+        return
+    trump = parts[2] if len(parts) > 2 else "دل"
+    if random.random() < 0.5:
+        async with async_session() as session:
+            user = await get_or_create_user(
+                session, callback.from_user.id,
+                callback.from_user.full_name, callback.from_user.username
+            )
+            w = await get_or_create_wallet(session, user.id)
+            w.coins += 12
+            await session.commit()
+        await callback.message.edit_text(f"🃏 حکم: {trump}\nبرد! +۱۲ سکه 🎉")
+    else:
+        await callback.message.edit_text(f"🃏 حکم: {trump}\nباخت این دست.")
+    await callback.answer()
+
+@router.message(Command("hukumduel", "حکم‌دوئل"))
+async def cmd_hukum_duel(message: Message):
+    if not message.reply_to_message:
+        await message.answer("روی حریف ریپلای کن: /hukumduel")
+        return
+    opp = message.reply_to_message.from_user
+    if opp.id == message.from_user.id:
+        await message.answer("با خودت نه.")
+        return
+    trump = random.choice(SUITS)
+    builder = InlineKeyboardBuilder()
+    builder.button(text="قبول حکم ✅", callback_data=f"hukumacc:{message.from_user.id}:{opp.id}:{trump}")
+    await message.answer(
+        f"🃏 چالش حکم از {message.from_user.full_name}\nحکم: <b>{trump}</b>\nفقط {opp.full_name} قبول کند.",
+        reply_markup=builder.as_markup(),
+    )
+
+@router.callback_query(F.data.startswith("hukumacc:"))
+async def cb_hukum_acc(callback: CallbackQuery):
+    parts = callback.data.split(":")
+    ch, opp, trump = int(parts[1]), int(parts[2]), parts[3]
+    if callback.from_user.id != opp:
+        await callback.answer()
+        return
+    winner = random.choice(["تو", "حریف"])
+    await callback.message.edit_text(f"🃏 حکم {trump}\nبرنده: {winner}")
+    await callback.answer()

@@ -1,51 +1,388 @@
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>Kabulid Sect — مینی‌اپ</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <link rel="stylesheet" href="style.css" />
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>دنیای فرقه</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+*{box-sizing:border-box}
+body{font-family:system-ui,Tahoma,sans-serif;background:#0d0d12;color:#eee;margin:0;padding:12px;padding-bottom:48px}
+h1{font-size:1.2rem;margin:0 0 8px}
+nav{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}
+nav>button{flex:1;min-width:68px;padding:8px 4px;border:0;border-radius:11px;background:#1e1e2a;color:#ddd;font-size:11px}
+nav>button.active{background:#6c5ce7;color:#fff}
+.card{background:#16161f;border-radius:14px;padding:12px;margin-bottom:10px}
+.muted{color:#888;font-size:12px}
+.row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #222;font-size:13px}
+.btn{padding:9px 12px;background:#6c5ce7;color:#fff;border:0;border-radius:10px;font-size:13px;margin:3px}
+.btn.ok{background:#00b894}.btn.red{background:#d63031}.btn.dark{background:#2d3436}
+.btn:disabled{opacity:.45}
+.err{color:#ff7675}.okmsg{color:#55efc4}
+.subnav{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px}
+.subnav button{padding:7px 9px;border:0;border-radius:8px;background:#2a2a38;color:#ccc;font-size:11px}
+.subnav button.on{background:#0984e3;color:#fff}
+.modebar{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0}
+.board{display:grid;grid-template-columns:repeat(8,minmax(26px,9.5vw));gap:2px;justify-content:center;max-width:320px;margin:8px auto}
+.cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;background:#3d3d4f;font-size:clamp(13px,3.8vw,22px);cursor:pointer;border-radius:3px;user-select:none}
+.cell.l{background:#5a5a6e}.cell.sel{outline:2px solid #ffeaa7}
+/* تخته نرد */
+.nard-board{background:linear-gradient(#2d1f0f,#1a1208);border:3px solid #8B4513;border-radius:8px;padding:8px;max-width:360px;margin:8px auto}
+.nard-row{display:flex;justify-content:space-between;gap:2px;margin:4px 0}
+.nard-point{flex:1;min-height:70px;background:#3d2914;border-radius:4px;position:relative;display:flex;flex-direction:column;align-items:center;padding:2px}
+.nard-point:nth-child(odd){background:#5c3d1e}
+.checker{width:18px;height:18px;border-radius:50%;margin:1px;font-size:10px;display:flex;align-items:center;justify-content:center}
+.checker.w{background:#f5f5f5;color:#111}.checker.b{background:#1a1a1a;color:#fff;border:1px solid #555}
+.pip{width:40px;height:40px;border-radius:8px;background:#2d3436;display:inline-flex;align-items:center;justify-content:center;margin:3px;font-size:16px}
+/* حکم میز */
+.hukum-table{background:radial-gradient(circle at center,#1b5e20 0%,#0d3b12 70%);border:8px solid #5d4037;border-radius:50%;width:min(92vw,340px);height:min(92vw,340px);margin:12px auto;position:relative;box-shadow:inset 0 0 40px #0008,0 4px 20px #0006}
+.hukum-center{position:absolute;inset:28%;background:#0a2e0e;border-radius:50%;border:2px dashed #4caf50;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:8px;font-size:12px}
+.seat{position:absolute;width:56px;text-align:center;font-size:11px}
+.seat .av{width:36px;height:36px;border-radius:50%;background:#333;margin:0 auto 2px;display:flex;align-items:center;justify-content:center;border:2px solid #888}
+.seat.filled .av{border-color:#00b894;background:#1e3a2f}
+.hand{display:flex;flex-wrap:wrap;justify-content:center;gap:4px;margin-top:10px}
+.cardc{background:#fff;color:#111;padding:8px 6px;border-radius:6px;font-size:11px;min-width:48px;text-align:center;border:1px solid #ccc}
+input.code{background:#222;border:1px solid #444;color:#fff;padding:8px;border-radius:8px;width:100px;text-align:center}
+</style>
 </head>
 <body>
-  <div id="app">
-    <header>
-      <h1>⚔️ فرقه کابولید</h1>
-      <p class="sub">مینی‌اپ ربات</p>
-    </header>
+<h1>⚔️ دنیای فرقه</h1>
+<nav>
+  <button class="active" data-tab="daily">ورود</button>
+  <button data-tab="profile">پروفایل</button>
+  <button data-tab="global">جهانی</button>
+  <button data-tab="sect">فرقه</button>
+  <button data-tab="arena">آرنا</button>
+  <button data-tab="games">بازی‌ها</button>
+</nav>
+<div id="content"></div>
+<script>
+const tg = window.Telegram?.WebApp; tg?.ready(); tg?.expand();
+const tgId = tg?.initDataUnsafe?.user?.id || null;
+const tgName = tg?.initDataUnsafe?.user?.first_name || 'بازیکن';
 
-    <nav class="tabs">
-      <button class="tab active" data-tab="profile">پروفایل</button>
-      <button class="tab" data-tab="ranking">لیدربورد</button>
-      <button class="tab" data-tab="missions">مأموریت</button>
-      <button class="tab" data-tab="sects">فرقه‌ها</button>
-    </nav>
+function show(tab) {
+  document.querySelectorAll('nav>button').forEach(b => b.classList.toggle('active', b.dataset.tab===tab));
+  const c = document.getElementById('content');
+  if (tab==='daily') {
+    c.innerHTML=`<div class="card"><h3>🎁 ورود روزانه</h3><p class="muted">هر روز: <b>+۵ سنگ بهشتی</b></p>
+      <button class="btn ok" id="btnDaily" onclick="claimDaily()">دریافت</button><p id="dailyMsg" class="muted"></p></div>`;
+  } else if (tab==='profile') {
+    c.innerHTML=`<div class="card"><h3>👤 پروفایل</h3><div id="prof">…</div></div>`; loadProfile();
+  } else if (tab==='global') {
+    c.innerHTML=`<div class="card"><h3>🌍 لیدربورد جهانی</h3><div id="glob">…</div></div>`; loadGlobal();
+  } else if (tab==='sect') {
+    c.innerHTML=`<div class="card"><h3>🏛️ فرقه‌ها</h3><div id="sects">…</div></div>`; loadSects();
+  } else if (tab==='arena') {
+    c.innerHTML=`<div class="card"><h3>🏟️ آرنا</h3><div id="arena">…</div><p class="muted">/arenaopen · /arenajoin · /arenastart</p></div>`; loadArena();
+  } else if (tab==='games') {
+    c.innerHTML=`<div class="card"><h3>🎮 بازی‌ها</h3>
+      <div class="subnav">
+        <button class="on" data-g="chess" onclick="pickGame('chess')">♟️ شطرنج</button>
+        <button data-g="nard" onclick="pickGame('nard')">🎲 تخته‌نرد</button>
+        <button data-g="rps" onclick="pickGame('rps')">✊ سنگ‌کاغذ</button>
+        <button data-g="casino" onclick="pickGame('casino')">🎰 کازینو</button>
+        <button data-g="hukum" onclick="pickGame('hukum')">🃏 حکم</button>
+      </div><div id="gameArea"></div></div>`;
+    pickGame('chess');
+  }
+}
+document.querySelectorAll('nav>button').forEach(b => b.onclick=()=>show(b.dataset.tab));
 
-    <main>
-      <section id="profile" class="panel active">
-        <div id="profile-content" class="card">در حال بارگذاری…</div>
-      </section>
-      <section id="ranking" class="panel">
-        <div id="ranking-content" class="card">در حال بارگذاری…</div>
-      </section>
-      <section id="missions" class="panel">
-        <div id="missions-content" class="card">
-          <p>مأموریت‌ها را از ربات با دستور <code>/missions</code> مدیریت کنید.</p>
-          <p class="hint">نسخه کامل مأموریت داخل مینی‌اپ به‌زودی.</p>
-        </div>
-      </section>
-      <section id="sects" class="panel">
-        <div id="sects-content" class="card">در حال بارگذاری…</div>
-      </section>
-    </main>
+async function claimDaily(){const el=document.getElementById('dailyMsg'),btn=document.getElementById('btnDaily');
+  if(!tgId){el.innerHTML='<span class="err">از تلگرام باز کن</span>';return;} btn.disabled=true;
+  try{const j=await(await fetch('/api/daily?tg_id='+tgId)).json();
+    el.innerHTML=j.ok?'<span class="okmsg">'+j.msg+'</span>':'<span class="err">'+(j.msg||j.error)+'</span>';}catch(e){el.innerHTML='<span class="err">خطا</span>';}
+  btn.disabled=false;}
+async function loadProfile(){const el=document.getElementById('prof');if(!tgId){el.textContent='از تلگرام باز کن';return;}
+  try{const u=await(await fetch('/api/profile?tg_id='+tgId)).json();if(u.error){el.innerHTML='<span class="err">'+u.error+'</span>';return;}
+    const c=u.cultivation||{},w=u.wallet||{};
+    el.innerHTML=[['نام',u.full_name],['رتبه',u.rank],['سطح',u.level],['تذهیب',(c.realm||'')+' '+(c.stage||'')],['فرقه',u.sect||'—'],['سکه',w.coins],['بهشتی',w.heavenly_stones]]
+      .map(([a,b])=>`<div class="row"><span>${a}</span><b>${b??'-'}</b></div>`).join('');}catch(e){el.textContent='خطا';}}
+async function loadGlobal(){try{const j=await(await fetch('/api/ranking')).json();
+  document.getElementById('glob').innerHTML=(j.top||[]).map((u,i)=>`<div class="row"><span>${i+1}. ${u.full_name}</span><b>${u.rank}</b></div>`).join('')||'خالی';}catch(e){}}
+async function loadSects(){try{const j=await(await fetch('/api/sects')).json();const list=(j.sects||[]).sort((a,b)=>(b.total_points||0)-(a.total_points||0));
+  document.getElementById('sects').innerHTML=list.map((s,i)=>`<div class="row"><span>${i+1}. ${s.name}</span><b>${s.total_points}</b></div>`).join('')||'خالی';}catch(e){}}
+async function loadArena(){try{const j=await(await fetch('/api/arena')).json();
+  document.getElementById('arena').innerHTML=(j.top||[]).map((u,i)=>`<div class="row"><span>${i+1}. ${u.full_name}</span><b>${u.tier} ${u.points}</b></div>`).join('')||'خالی';}catch(e){}}
 
-    <footer>
-      <a href="https://t.me/kabulid_manhua" target="_blank">کانال</a>
-      ·
-      <span>نسخه وب ۱.۰</span>
-    </footer>
-  </div>
-  <script src="app.js"></script>
+/* ========== اتاق‌ها ========== */
+async function createRoom(game){
+  if(!tgId){alert('از تلگرام باز کن');return null;}
+  const j=await(await fetch(`/api/game?action=create&game=${game}&tg_id=${tgId}&name=${encodeURIComponent(tgName)}`)).json();
+  return j;
+}
+async function joinRoom(code, game){
+  if(!tgId){alert('از تلگرام باز کن');return null;}
+  return await(await fetch(`/api/game?action=join&code=${code}&game=${game}&tg_id=${tgId}&name=${encodeURIComponent(tgName)}`)).json();
+}
+async function roomStatus(code){
+  return await(await fetch(`/api/game?action=status&code=${code}`)).json();
+}
+
+/* ========== انتخاب بازی ========== */
+function pickGame(name){
+  document.querySelectorAll('.subnav button').forEach(b=>b.classList.toggle('on',b.dataset.g===name));
+  const a=document.getElementById('gameArea');
+  if(name==='chess') renderChessHub(a);
+  else if(name==='nard') renderNardHub(a);
+  else if(name==='rps') renderRpsHub(a);
+  else if(name==='casino') renderCasino(a);
+  else if(name==='hukum') renderHukumHub(a);
+}
+
+/* ----- شطرنج ----- */
+const startPcs=()=>{const p=Array(64).fill('');const b=['♜','♞','♝','♛','♚','♝','♞','♜'];
+  for(let i=0;i<8;i++){p[i]=b[i];p[8+i]='♟';p[48+i]='♙';p[56+i]=['♖','♘','♗','♕','♔','♗','♘','♖'][i];}return p;};
+let pcs=startPcs(),sel=null,turn='w',chessMode='bot';
+
+function renderChessHub(a){
+  a.innerHTML=`<div class="modebar">
+    <button class="btn dark" onclick="chessStart('bot')">با ربات</button>
+    <button class="btn dark" onclick="chessStart('2p')">دونفره (یک دستگاه)</button>
+    <button class="btn dark" onclick="chessStart('online')">اتاق آنلاین (۲ نفر)</button>
+    <button class="btn dark" onclick="chessStart('multi')">اتاق چندنفره (تماشا)</button>
+  </div><div id="chessBox"></div>`;
+}
+function chessStart(mode){
+  chessMode=mode; pcs=startPcs(); sel=null; turn='w';
+  const box=document.getElementById('chessBox');
+  if(mode==='online'||mode==='multi'){
+    box.innerHTML=`<p class="muted">${mode==='multi'?'اتاق چندنفره (تا ۸ تماشاچی + ۲ بازیکن)':'اتاق ۲ نفره'}</p>
+      <button class="btn" onclick="chessCreateRoom()">ساخت اتاق</button>
+      <input class="code" id="chCode" placeholder="کد"/><button class="btn ok" onclick="chessJoinRoom()">ورود</button>
+      <p id="chRoom" class="muted"></p><div id="cb" class="board"></div><p id="cm"></p>`;
+  } else {
+    box.innerHTML=`<p class="muted">${mode==='bot'?'در برابر ربات':'نوبتی روی یک گوشی'}</p>
+      <div class="board" id="cb"></div><p id="cm">نوبت: سفید</p>
+      <button class="btn" onclick="pcs=startPcs();sel=null;turn='w';drawChess()">ریست</button>`;
+    drawChess();
+  }
+}
+async function chessCreateRoom(){
+  const j=await createRoom('chess'); if(j.error){alert(j.error);return;}
+  document.getElementById('chRoom').textContent='کد اتاق: '+j.code+' — برای دوست بفرست';
+  document.getElementById('chCode').value=j.code;
+  window._chessCode=j.code; drawChess();
+}
+async function chessJoinRoom(){
+  const code=document.getElementById('chCode').value.trim().toUpperCase();
+  const j=await joinRoom(code,'chess');
+  if(j.error){document.getElementById('chRoom').innerHTML='<span class="err">'+j.error+'</span>';return;}
+  window._chessCode=code;
+  document.getElementById('chRoom').textContent='وصل شدی. نفرات: '+(j.players||[]).map(p=>p.name).join(', ');
+  drawChess();
+}
+function drawChess(){
+  const b=document.getElementById('cb'); if(!b)return; b.innerHTML='';
+  pcs.forEach((pc,i)=>{const d=document.createElement('div');
+    d.className='cell'+(((i%8)+(i/8|0))%2===0?' l':'')+(sel===i?' sel':'');
+    d.textContent=pc; d.onclick=()=>clickChess(i); b.appendChild(d);});
+  const cm=document.getElementById('cm'); if(cm) cm.textContent='نوبت: '+(turn==='w'?'سفید':'سیاه');
+}
+function isW(pc){return '♙♖♘♗♕♔'.includes(pc)} function isB(pc){return '♟♜♞♝♛♚'.includes(pc)}
+function clickChess(i){
+  if(sel===null){if(!pcs[i])return; if(turn==='w'&&!isW(pcs[i]))return; if(turn==='b'&&!isB(pcs[i]))return; sel=i;drawChess();return;}
+  if(sel===i){sel=null;drawChess();return;}
+  if(turn==='w'&&isW(pcs[i])){sel=i;drawChess();return;} if(turn==='b'&&isB(pcs[i])){sel=i;drawChess();return;}
+  pcs[i]=pcs[sel]; pcs[sel]=''; sel=null; turn=turn==='w'?'b':'w'; drawChess();
+  if(chessMode==='bot'&&turn==='b') setTimeout(botChess, 400);
+}
+function botChess(){
+  const moves=[];
+  for(let i=0;i<64;i++) if(isB(pcs[i])) for(let j=0;j<64;j++) if(!isB(pcs[j])) moves.push([i,j]);
+  if(!moves.length)return;
+  const [a,b]=moves[Math.floor(Math.random()*moves.length)];
+  pcs[b]=pcs[a]; pcs[a]=''; turn='w'; drawChess();
+}
+
+/* ----- تخته نرد ----- */
+function renderNardHub(a){
+  a.innerHTML=`<div class="modebar">
+    <button class="btn dark" onclick="nardStart('bot')">با ربات</button>
+    <button class="btn dark" onclick="nardStart('2p')">دونفره</button>
+  </div><div id="nardBox"></div>`;
+}
+function nardStart(mode){
+  window._nard={mode,turn:0,dice:[0,0],pts:Array(24).fill(null).map(()=>({w:0,b:0})),off:{w:0,b:0},bar:{w:0,b:0}};
+  // چیدمان اولیه ساده
+  const p=window._nard.pts;
+  p[0].w=2; p[11].w=5; p[16].w=3; p[18].w=5;
+  p[23].b=2; p[12].b=5; p[7].b=3; p[5].b=5;
+  const box=document.getElementById('nardBox');
+  box.innerHTML=`<p class="muted">${mode==='bot'?'در برابر ربات':'دو نفره روی یک دستگاه'}</p>
+    <div class="nard-board" id="nb"></div>
+    <div><span class="pip" id="d1">?</span><span class="pip" id="d2">?</span></div>
+    <p id="ni">نوبت: سفید — تاس بزن</p>
+    <button class="btn" onclick="nardDice()">🎲 تاس</button>
+    <button class="btn dark" onclick="nardStart('${mode}')">ریست</button>`;
+  drawNard();
+}
+function drawNard(){
+  const nb=document.getElementById('nb'); if(!nb)return;
+  const pts=window._nard.pts;
+  const row=(from,to,rev)=>{
+    let h='<div class="nard-row">';
+    const idx=[]; for(let i=from;i!==to+(rev?-1:1);i+=(rev?-1:1)) idx.push(i);
+    idx.forEach(i=>{
+      const c=pts[i]; let chips='';
+      for(let k=0;k<c.w;k++) chips+='<div class="checker w">●</div>';
+      for(let k=0;k<c.b;k++) chips+='<div class="checker b">●</div>';
+      h+=`<div class="nard-point" data-i="${i}">${chips||'<span class="muted">'+(i+1)+'</span>'}</div>`;
+    });
+    return h+'</div>';
+  };
+  nb.innerHTML=row(12,23,false)+row(11,0,true);
+}
+function nardDice(){
+  const n=window._nard;
+  n.dice=[1+Math.floor(Math.random()*6),1+Math.floor(Math.random()*6)];
+  document.getElementById('d1').textContent=n.dice[0];
+  document.getElementById('d2').textContent=n.dice[1];
+  const sum=n.dice[0]+n.dice[1];
+  // حرکت ساده خودکار برای نمایش
+  const side=n.turn===0?'w':'b';
+  let moved=false;
+  for(let i=0;i<24;i++){
+    if(n.pts[i][side]>0){
+      const dest=side==='w'?Math.min(23,i+sum):Math.max(0,i-sum);
+      if(dest!==i){ n.pts[i][side]--; n.pts[dest][side]++; moved=true; break; }
+    }
+  }
+  n.turn=1-n.turn;
+  document.getElementById('ni').textContent='تاس: '+sum+' | نوبت: '+(n.turn===0?'سفید':'سیاه')+(n.mode==='bot'&&n.turn===1?' (ربات)':'');
+  drawNard();
+  if(n.mode==='bot'&&n.turn===1) setTimeout(()=>{nardDice();},600);
+}
+
+/* ----- سنگ کاغذ ----- */
+function renderRpsHub(a){
+  a.innerHTML=`<div class="modebar">
+    <button class="btn dark" onclick="rpsStart('bot')">با ربات</button>
+    <button class="btn dark" onclick="rpsStart('2p')">دونفره (یک دستگاه)</button>
+    <button class="btn dark" onclick="rpsStart('online')">دونفره آنلاین</button>
+  </div><div id="rpsBox"></div>`;
+}
+function rpsStart(mode){
+  const box=document.getElementById('rpsBox');
+  if(mode==='bot'){
+    box.innerHTML=`<button class="btn" onclick="rpsBot('سنگ')">✊</button>
+      <button class="btn" onclick="rpsBot('کاغذ')">✋</button>
+      <button class="btn" onclick="rpsBot('قیچی')">✌</button><p id="ro"></p>`;
+  } else if(mode==='2p'){
+    window._rps2={p1:null};
+    box.innerHTML=`<p class="muted">بازیکن ۱ انتخاب کند (مخفی می‌شود)</p>
+      <button class="btn" onclick="rps2p(1,'سنگ')">✊</button>
+      <button class="btn" onclick="rps2p(1,'کاغذ')">✋</button>
+      <button class="btn" onclick="rps2p(1,'قیچی')">✌</button>
+      <div id="rps2"></div>`;
+  } else {
+    box.innerHTML=`<button class="btn" onclick="rpsOnlineCreate()">ساخت اتاق</button>
+      <input class="code" id="rpsCode" placeholder="کد"/><button class="btn ok" onclick="rpsOnlineJoin()">ورود</button>
+      <p id="rpsRoom" class="muted"></p>
+      <div id="rpsOnlinePlay"></div>`;
+  }
+}
+function rpsBot(u){const o=['سنگ','کاغذ','قیچی'][Math.floor(Math.random()*3)];
+  let r='مساوی'; if((u==='سنگ'&&o==='قیچی')||(u==='کاغذ'&&o==='سنگ')||(u==='قیچی'&&o==='کاغذ'))r='برد'; else if(u!==o)r='باخت';
+  document.getElementById('ro').textContent=`تو:${u} ربات:${o} → ${r}`;}
+function rps2p(who,c){
+  if(who===1){window._rps2.p1=c; document.getElementById('rps2').innerHTML=`<p class="muted">بازیکن ۲ انتخاب کند</p>
+    <button class="btn" onclick="rps2p(2,'سنگ')">✊</button>
+    <button class="btn" onclick="rps2p(2,'کاغذ')">✋</button>
+    <button class="btn" onclick="rps2p(2,'قیچی')">✌</button>`; return;}
+  const a=window._rps2.p1,b=c; let r='مساوی';
+  if((a==='سنگ'&&b==='قیچی')||(a==='کاغذ'&&b==='سنگ')||(a==='قیچی'&&b==='کاغذ'))r='بازیکن ۱ برد';
+  else if(a!==b)r='بازیکن ۲ برد';
+  document.getElementById('rps2').innerHTML=`<p>P1:${a} | P2:${b} → <b>${r}</b></p>`;
+}
+async function rpsOnlineCreate(){const j=await createRoom('rps'); if(j.error)return;
+  document.getElementById('rpsRoom').textContent='کد: '+j.code; document.getElementById('rpsCode').value=j.code;
+  document.getElementById('rpsOnlinePlay').innerHTML=`<button class="btn" onclick="rpsPick('سنگ')">✊</button>
+    <button class="btn" onclick="rpsPick('کاغذ')">✋</button><button class="btn" onclick="rpsPick('قیچی')">✌</button><p id="rpsWait" class="muted">انتخاب کن؛ حریف هم باید وارد شود</p>`;}
+async function rpsOnlineJoin(){const code=document.getElementById('rpsCode').value.trim().toUpperCase();
+  const j=await joinRoom(code,'rps'); if(j.error){document.getElementById('rpsRoom').innerHTML='<span class="err">'+j.error+'</span>';return;}
+  document.getElementById('rpsRoom').textContent='وصل: '+(j.players||[]).map(p=>p.name).join(', ');
+  document.getElementById('rpsOnlinePlay').innerHTML=`<button class="btn" onclick="rpsPick('سنگ')">✊</button>
+    <button class="btn" onclick="rpsPick('کاغذ')">✋</button><button class="btn" onclick="rpsPick('قیچی')">✌</button><p id="rpsWait"></p>`;}
+function rpsPick(c){document.getElementById('rpsWait').textContent='انتخاب تو: '+c+' (منتظر نتیجه — در نسخه بعدی همگام کامل)';}
+
+/* ----- کازینو (دست‌نخورده) ----- */
+function renderCasino(a){
+  a.innerHTML=`<p class="muted">چرخش شانس</p><button class="btn" onclick="cas()">🎰 بچرخان</button><p id="co"></p>`;
+}
+function cas(){const x=Math.floor(Math.random()*100);
+  document.getElementById('co').textContent=x>95?'💎 جکپات!':x>70?'🪙 برد':x>40?'نزدیک':'💀 باخت';}
+
+/* ----- حکم ----- */
+const SUITS=['دل','خشت','خاج','پیک'], RANKS=['آس','شاه','بی‌بی','سرباز','۱۰','۹','۸','۷'];
+function renderHukumHub(a){
+  a.innerHTML=`<div class="modebar">
+    <button class="btn dark" onclick="hukumStart('bot')">با ربات</button>
+    <button class="btn dark" onclick="hukumStart('friends')">با دوستان (۲ تا ۸ نفر)</button>
+  </div><div id="hukumBox"></div>`;
+}
+function hukumStart(mode){
+  const box=document.getElementById('hukumBox');
+  if(mode==='bot'){
+    box.innerHTML=`<div class="hukum-table"><div class="hukum-center" id="hkc"><span>میز حکم</span></div></div>
+      <button class="btn" onclick="hukumBotDeal()">🃏 پخش کارت</button>
+      <div class="hand" id="hkhand"></div><p id="hkmsg" class="muted"></p>`;
+  } else {
+    box.innerHTML=`<p class="muted">اتاق ۲ تا ۸ نفره — کد را برای دوستان بفرست</p>
+      <button class="btn" onclick="hukumCreate()">ساخت میز</button>
+      <input class="code" id="hkCode" placeholder="کد"/>
+      <button class="btn ok" onclick="hukumJoin()">ورود به میز</button>
+      <p id="hkRoom" class="muted"></p>
+      <div class="hukum-table" id="hkTable"><div class="hukum-center">فرش سبز حکم</div></div>
+      <div id="hkSeats"></div>
+      <button class="btn" onclick="hukumRefresh()">🔄 بروزرسانی نفرات</button>`;
+  }
+}
+function hukumBotDeal(){
+  const trump=SUITS[Math.floor(Math.random()*4)];
+  const card=()=>RANKS[Math.floor(Math.random()*RANKS.length)]+' '+SUITS[Math.floor(Math.random()*4)];
+  const hand=[card(),card(),card(),card(),card()];
+  document.getElementById('hkc').innerHTML=`<b>حکم: ${trump}</b><br/>میز`;
+  document.getElementById('hkhand').innerHTML=hand.map(c=>`<div class="cardc">${c}</div>`).join('');
+  const win=Math.random()<0.55;
+  document.getElementById('hkmsg').innerHTML=win?'<span class="okmsg">این دست را بردی!</span>':'<span class="err">باختی</span>';
+}
+async function hukumCreate(){
+  const j=await createRoom('hukum'); if(j.error){alert(j.error);return;}
+  document.getElementById('hkCode').value=j.code;
+  document.getElementById('hkRoom').textContent='کد میز: '+j.code+' (حداکثر ۸ نفر)';
+  drawHukumSeats(j.players||[]);
+}
+async function hukumJoin(){
+  const code=document.getElementById('hkCode').value.trim().toUpperCase();
+  const j=await joinRoom(code,'hukum');
+  if(j.error){document.getElementById('hkRoom').innerHTML='<span class="err">'+j.error+'</span>';return;}
+  document.getElementById('hkRoom').textContent='روی میز هستی · '+(j.players||[]).length+'/'+(j.max||8);
+  drawHukumSeats(j.players||[]);
+}
+async function hukumRefresh(){
+  const code=document.getElementById('hkCode').value.trim().toUpperCase();
+  if(!code)return; const j=await roomStatus(code);
+  if(j.error)return; drawHukumSeats(j.players||[]);
+  document.getElementById('hkRoom').textContent='نفرات: '+(j.players||[]).length+'/'+(j.max||8);
+}
+function drawHukumSeats(players){
+  const table=document.getElementById('hkTable'); if(!table)return;
+  // صندلی‌ها دور میز
+  table.innerHTML='<div class="hukum-center">فرش سبز<br/>میز حکم</div>';
+  const n=Math.max(players.length,2);
+  players.forEach((p,i)=>{
+    const ang=(i/Math.max(players.length,1))*2*Math.PI-Math.PI/2;
+    const x=50+42*Math.cos(ang), y=50+42*Math.sin(ang);
+    const s=document.createElement('div');
+    s.className='seat filled';
+    s.style.left=`calc(${x}% - 28px)`; s.style.top=`calc(${y}% - 28px)`;
+    s.innerHTML=`<div class="av">👤</div>${p.name||'?'}`;
+    table.appendChild(s);
+  });
+}
+
+show('daily');
+</script>
 </body>
 </html>
-<!-- games note: open games.html -->

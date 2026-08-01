@@ -120,3 +120,60 @@ async def cmd_release_spirit(message: Message):
         )
         msg = await release_spirit(session, user)
     await message.answer(msg)
+
+
+# تسخیر بدن — فقط پرورش‌دهنده روح، یک‌بار
+_possessed_once: set[int] = set()  # telegram ids that already possessed
+
+
+@router.message(Command("possess", "تسخیر"))
+async def cmd_possess(message: Message):
+    if not message.reply_to_message:
+        await message.answer(
+            "👻 تسخیر بدن:\n"
+            "فقط پرورش‌دهنده روح · فقط یک‌بار در عمر\n"
+            "روی پیام هدف ریپلای کن و /possess بزن.\n"
+            "هدف باید زنده باشد."
+        )
+        return
+    async with async_session() as session:
+        spirit = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
+        if not getattr(spirit, "is_spirit_raiser", False):
+            await message.answer("فقط پرورش‌دهنده روح می‌تواند تسخیر کند.")
+            return
+        if message.from_user.id in _possessed_once:
+            await message.answer("قبلاً یک‌بار تسخیر کرده‌ای. دیگر ممکن نیست.")
+            return
+        tu = message.reply_to_message.from_user
+        if tu.id == message.from_user.id:
+            await message.answer("خودت را نه.")
+            return
+        target = await get_or_create_user(
+            session, tu.id, tu.full_name, tu.username
+        )
+        if target.is_dead:
+            await message.answer("هدف مرده است.")
+            return
+        # تسخیر: روح وارد بدن می‌شود — روح زنده می‌شود روی هویت هدف؟ ساده: انرژی و سطح از هدف می‌گیرد و هدف موقتاً ضعیف
+        from services.cultivation import get_or_create_cultivation
+        sc = await get_or_create_cultivation(session, spirit.id)
+        tc = await get_or_create_cultivation(session, target.id)
+        # روح انرژی هدف را می‌دزدد و زنده می‌شود
+        steal = max(100, tc.energy // 2)
+        sc.energy += steal
+        tc.energy = max(0, tc.energy - steal)
+        spirit.is_dead = False
+        spirit.is_spirit_raiser = True  # هنوز روح‌گونه
+        if not sc.spiritual_root or sc.spiritual_root == "بدون ریشه":
+            sc.spiritual_root = "ریشه روح"
+        _possessed_once.add(message.from_user.id)
+        await session.commit()
+    await message.answer(
+        f"👻 تسخیر موفق!\n"
+        f"بدن {target.full_name} را تسخیر کردی.\n"
+        f"+{steal} انرژی از او گرفتی.\n"
+        f"⚠️ این تنها تسخیر مجاز تو بود."
+    )

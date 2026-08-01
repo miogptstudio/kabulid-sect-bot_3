@@ -67,20 +67,23 @@ async def propose(session: AsyncSession, proposer: User, target: User) -> tuple[
     if g1 == "نامشخص" or g2 == "نامشخص":
         return None, "هر دو باید با /gender جنسیت مشخص کرده باشن.", []
 
-    if g1 != "مرد":
-        return None, "فعلاً فقط مرد می‌تونه درخواست ازدواج بده.", []
-    if g2 != "زن":
-        return None, "فقط می‌تونی از یک زن درخواست ازدواج کنی.", []
+    # مرد یا زن می‌توانند خواستگاری کنند؛ همیشه husband=مرد wife=زن در رکورد
+    if g1 == g2:
+        return None, "ازدواج فقط بین مرد و زن است.", []
+    if "مرد" not in (g1, g2) or "زن" not in (g1, g2):
+        return None, "جنسیت‌ها باید مرد و زن باشند.", []
 
-    existing_wife = await get_husband(session, target.id)
+    husband = proposer if g1 == "مرد" else target
+    wife = target if g1 == "مرد" else proposer
+
+    existing_wife = await get_husband(session, wife.id)
     if existing_wife:
-        return None, f"{target.full_name} قبلاً متاهل است.", []
+        return None, f"{wife.full_name} قبلاً متاهل است.", []
 
-    # درخواست/نامزدی باز قبلی
     pending = await session.execute(
         select(Marriage).where(
-            Marriage.husband_id == proposer.id,
-            Marriage.wife_id == target.id,
+            Marriage.husband_id == husband.id,
+            Marriage.wife_id == wife.id,
             Marriage.status.in_(["pending", "engaged"])
         )
     )
@@ -136,8 +139,8 @@ async def propose(session: AsyncSession, proposer: User, target: User) -> tuple[
 
     expires = datetime.utcnow() + timedelta(hours=ENGAGE_HOURS)
     m = Marriage(
-        husband_id=proposer.id,
-        wife_id=target.id,
+        husband_id=husband.id,
+        wife_id=wife.id,
         status="engaged",  # نامزدی با مهلت
         invited_guests=[],
         level_warning=level_warn,
@@ -151,8 +154,9 @@ async def propose(session: AsyncSession, proposer: User, target: User) -> tuple[
 
 
 async def accept_marriage(session: AsyncSession, marriage: Marriage, accepter_id: int) -> str:
-    if marriage.wife_id != accepter_id:
-        return "فقط طرف مقابل (زن) می‌تونه قبول کنه."
+    # قبول‌کننده باید یکی از دو طرف باشد که هنوز "درخواست‌دهنده" نیست در status engaged هر دو می‌توانند از نظر UI اما منطقاً طرف مقابل
+    if accepter_id not in (marriage.husband_id, marriage.wife_id):
+        return "دسترسی نداری."
 
     if marriage.status not in ("pending", "engaged"):
         return "این درخواست دیگه معتبر نیست."

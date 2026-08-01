@@ -145,26 +145,15 @@ async def cmd_buy_pet(message: Message):
 
 @router.message(Command("wallet", "کیف‌پول", "سکه"))
 async def cmd_wallet(message: Message):
+    from services.economy import get_or_create_wallet, wallet_text
     async with async_session() as session:
         user = await get_or_create_user(
             session, message.from_user.id,
             message.from_user.full_name, message.from_user.username
         )
         w = await get_or_create_wallet(session, user.id)
-    
-    await message.answer(
-        f"💰 <b>کیف پول</b>\n\n"
-        f"🪙 سکه: <b>{w.coins}</b>\n"
-        f"💎 سنگ روحی: <b>{w.spirit_stones}</b>\n\n"
-        f"<b>چطور سکه دربیارم؟</b>\n"
-        f"• /dailycoin — هر روز +۳۰ سکه\n"
-        f"• برد دوئل (به‌زودی پاداش بیشتر)\n"
-        f"• مأموریت‌ها\n\n"
-        f"نرخ: {COINS_PER_STONE} سکه = ۱ سنگ روحی\n"
-        f"/exchangestone — سکه → سنگ\n"
-        f"/exchangecoin — سنگ → سکه\n\n"
-        f"مغازه ساختمان‌ها (/buildings) فعلاً با <b>XP</b> خرید می‌کند."
-    )
+        text = wallet_text(w)
+    await message.answer(text)
 
 
 @router.message(Command("exchangestone"))
@@ -191,13 +180,27 @@ async def cmd_ex_coin(message: Message):
 
 @router.message(Command("dailycoin", "سکهروزانه"))
 async def cmd_daily_coin(message: Message):
-    """پاداش ساده روزانه سکه"""
+    """پاداش روزانه سکه — فقط یک‌بار در هر روز"""
+    from datetime import datetime, date
+    from services.economy import get_or_create_wallet
     async with async_session() as session:
         user = await get_or_create_user(
             session, message.from_user.id,
             message.from_user.full_name, message.from_user.username
         )
-        total = await add_coins(session, user.id, 30)
+        w = await get_or_create_wallet(session, user.id)
+        today = date.today()
+        last = w.last_daily_coin
+        if last is not None and last.date() == today:
+            await message.answer(
+                "امروز سکه روزانه را گرفتی.\n"
+                "فردا دوباره /dailycoin بزن."
+            )
+            return
+        w.coins += 30
+        w.last_daily_coin = datetime.utcnow()
+        await session.commit()
+        total = w.coins
     await message.answer(f"🪙 +۳۰ سکه روزانه!\nموجودی: {total}")
 
 
@@ -263,3 +266,21 @@ async def cmd_gift_pet(message: Message):
         pet.owner_id = target.id
         await session.commit()
     await message.answer(f"🎁 {pet.name} به {target.full_name} هدیه شد.")
+
+
+@router.message(Command("exchangeup", "ارتقای‌ارز"))
+async def cmd_exchange_up(message: Message):
+    parts = (message.text or "").split()
+    if len(parts) < 2:
+        await message.answer("فرمت: /exchangeup heavenly|celestial|god [تعداد]")
+        return
+    kind = parts[1]
+    amount = int(parts[2]) if len(parts) > 2 else 1
+    from services.economy import exchange_up
+    async with async_session() as session:
+        user = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
+        msg = await exchange_up(session, user.id, kind, amount)
+    await message.answer(msg)

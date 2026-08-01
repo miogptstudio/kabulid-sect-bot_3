@@ -6,11 +6,10 @@ from database.models_v3 import UserInventory, ShopItem
 from services.cultivation import get_or_create_cultivation
 
 REALM_POWER = {
-    "پایه": 10,
-    "متوسط": 25,
-    "بالا": 45,
-    "پیشرفته": 70,
-    "خدا": 100,
+    "بیداری": 5, "پایه": 10, "متوسط": 25, "بالا": 45, "پیشرفته": 70,
+    "هسته": 85, "روح": 95, "نیمه‌خدا": 110, "خدا": 130, "آسمان": 150,
+    "ای‌تری": 180, "جاودان": 210, "ابدی": 240, "خلقت": 280, "پوچی": 320,
+    "فراپوچی": 360, "مطلق": 400,
 }
 
 ROOT_BONUS = {
@@ -18,10 +17,19 @@ ROOT_BONUS = {
     "ریشه پنج‌عنصر": 5,
     "ریشه آتش": 8,
     "ریشه آب": 8,
-    "ریشه چوب": 8,
-    "ریشه فلز": 8,
-    "ریشه خاک": 8,
-    "ریشه روح": 12,
+    "ریشه چوب": 7,
+    "ریشه فلز": 9,
+    "ریشه خاک": 7,
+    "ریشه نور": 14,
+    "ریشه تاریکی": 14,
+    "ریشه روحی": 16,
+    "ریشه روح": 18,
+    "ریشه بهشتی": 22,
+    "ریشه آسمانی": 28,
+    "ریشه الهی": 40,
+    "ریشه پوچی": 35,
+    "ریشه ای‌تری": 30,
+    "ریشه دوگانه": 20,
 }
 
 
@@ -33,17 +41,26 @@ async def calc_power(session: AsyncSession, user: User) -> dict:
     realm_p = REALM_POWER.get(cult.realm, 10) + (cult.stage or 1) * 8 + min(int(cult.energy or 0) // 10000, 50)
     root_p = ROOT_BONUS.get(cult.spiritual_root or "بدون ریشه", 0)
 
-    # سلاح‌ها از اینونتوری
+    # فقط سلاح مجهز + زره در کیف
     weapon_p = 0
     result = await session.execute(
         select(UserInventory, ShopItem)
         .join(ShopItem, UserInventory.item_id == ShopItem.id)
         .where(UserInventory.user_id == user.id)
     )
+    eq_id = getattr(user, "equipped_weapon_id", None)
     for inv, item in result.all():
         effect = item.effect or {}
-        if isinstance(effect, dict) and effect.get("duel_power"):
-            weapon_p += int(effect["duel_power"]) * max(inv.quantity, 1)
+        if not isinstance(effect, dict):
+            continue
+        dp = int(effect.get("duel_power") or 0)
+        if item.item_type in ("armor",) or effect.get("armor"):
+            weapon_p += dp + int(effect.get("armor") or 0) // 2
+        elif eq_id and inv.item_id == eq_id:
+            weapon_p += dp
+        elif not eq_id and dp and item.item_type in ("weapon", "weapon_unique"):
+            # اگر چیزی مجهز نیست، قوی‌ترین سلاح را حساب کن
+            weapon_p = max(weapon_p, dp)
 
     total = base + rank_bonus + realm_p + root_p + weapon_p
     if getattr(user, "is_spirit_raiser", False):
@@ -62,7 +79,22 @@ async def calc_power(session: AsyncSession, user: User) -> dict:
 
 
 def win_chance(power_a: int, power_b: int) -> float:
-    """شانس برد A — در سختی بالا بازیکن ضعیف‌تر شانس بسیار کمی دارد"""
+    """تقریباً بر اساس قدرت: اختلاف زیاد = برد قطعی قوی‌تر"""
+    if power_a + power_b <= 0:
+        return 0.5
+    # نسبت قدرت
+    ratio = power_a / max(power_b, 1)
+    if ratio >= 2.0:
+        return 0.97
+    if ratio <= 0.5:
+        return 0.03
+    # بین ۰.۵ تا ۲: نرمال‌سازی
+    chance = power_a / (power_a + power_b)
+    # کمی واریانس خیلی کم
+    return max(0.05, min(0.95, chance))
+
+
+def win_chance_legacy_unused(power_a: int, power_b: int) -> float:
     try:
         from bot.config import DUEL_MIN_WIN_CHANCE, DUEL_MAX_WIN_CHANCE
         lo, hi = DUEL_MIN_WIN_CHANCE, DUEL_MAX_WIN_CHANCE

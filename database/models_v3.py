@@ -240,6 +240,10 @@ class UserWallet(Base):
     
     coins: Mapped[int] = mapped_column(Integer, default=0)           # سکه
     spirit_stones: Mapped[int] = mapped_column(Integer, default=0)  # سنگ روحی
+    last_daily_coin: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    heavenly_stones: Mapped[int] = mapped_column(Integer, default=0)  # سنگ بهشتی
+    celestial_stones: Mapped[int] = mapped_column(Integer, default=0)  # سنگ آسمانی
+    god_stones: Mapped[int] = mapped_column(Integer, default=0)  # سنگ خدا
     
     # نرخ: ۱۰۰۰ سکه = ۱ سنگ روحی
 
@@ -266,3 +270,14 @@ class VengefulSpirit(Base):
     reason: Mapped[str | None] = mapped_column(String(128), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class GardenPlot(Base):
+    __tablename__ = "garden_plots"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    plant_name: Mapped[str] = mapped_column(String(64), default="بذر معمولی")
+    stage: Mapped[int] = mapped_column(Integer, default=0)  # 0 بذر .. 3 رسیده
+    planted_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    ready_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

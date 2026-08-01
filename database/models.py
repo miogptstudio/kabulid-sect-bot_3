@@ -31,7 +31,13 @@ class User(Base):
     yang: Mapped[int] = mapped_column(Integer, default=100)  # یانگ بدن (مرد) 0-100
     yin: Mapped[int] = mapped_column(Integer, default=0)     # یین بدن (زن) 0-100
     is_virgin: Mapped[bool] = mapped_column(Boolean, default=True)
+    solo_count: Mapped[int] = mapped_column(Integer, default=0)  # تعداد خودارضایی
     is_dead: Mapped[bool] = mapped_column(Boolean, default=False)
+    blood: Mapped[int] = mapped_column(Integer, default=100)  # ۰ تا ۱۰۰
+    poisoned_until: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    equipped_weapon_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    has_cyrus_sword: Mapped[bool] = mapped_column(Boolean, default=False)
+    first_cities: Mapped[str | None] = mapped_column(Text, nullable=True)  # csv city ids visited
     city: Mapped[str] = mapped_column(String(32), default="tehran")
     world: Mapped[str] = mapped_column(String(32), default="فانی")  # فانی / بهشتی / زیرین
     lifespan: Mapped[int] = mapped_column(Integer, default=100)  # عمر ۰-۱۰۰

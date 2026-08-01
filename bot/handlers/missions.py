@@ -201,6 +201,21 @@ async def take_mission(callback: CallbackQuery):
             await callback.answer("اکانت پاک شد.", show_alert=True)
             return
 
+        # هر مأموریت فقط یک‌بار در روز
+        from datetime import date, datetime
+        today_start = datetime.combine(date.today(), datetime.min.time())
+        done_today = await session.execute(
+            select(UserMission).where(
+                UserMission.user_id == user.id,
+                UserMission.mission_id == mission_id,
+                UserMission.is_completed == True,
+                UserMission.completed_at >= today_start,
+            )
+        )
+        if done_today.scalar_one_or_none():
+            await callback.answer("این مأموریت را امروز تمام کردی. فردا.", show_alert=True)
+            return
+
         existing = await session.execute(
             select(UserMission).where(
                 UserMission.user_id == user.id,

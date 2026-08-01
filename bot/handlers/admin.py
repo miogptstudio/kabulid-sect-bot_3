@@ -239,3 +239,138 @@ async def cmd_demote(message: Message):
             await message.answer(f"✅ {user.full_name} به «{new_rank}» تنزل یافت.")
         else:
             await message.answer("کاربر در پایین‌ترین رتبه است.")
+
+
+@router.message(Command("setcult", "تنظیم‌تذهیب"))
+async def cmd_set_cult(message: Message):
+    """ادمین: /setcult قلمرو مرحله [انرژی] با ریپلای یا /setcult id قلمرو مرحله"""
+    if not is_config_admin(message.from_user.id):
+        await message.answer("فقط سازنده.")
+        return
+    from database.models_v2 import CULTIVATION_REALMS
+    from services.cultivation import get_or_create_cultivation
+    parts = (message.text or "").split()
+    async with async_session() as session:
+        target = None
+        if message.reply_to_message:
+            t = message.reply_to_message.from_user
+            target = await get_or_create_user(session, t.id, t.full_name, t.username)
+            args = parts[1:]
+        elif len(parts) >= 4:
+            try:
+                tg = int(parts[1])
+            except ValueError:
+                await message.answer("فرمت: ریپلای+/setcult قلمرو مرحله [انرژی]\nیا /setcult telegram_id قلمرو مرحله [انرژی]")
+                return
+            target = await get_user_by_telegram_id(session, tg)
+            if not target:
+                target = await get_or_create_user(session, tg, str(tg), None)
+            args = parts[2:]
+        else:
+            await message.answer(
+                "فرمت:\nریپلای + /setcult قلمرو مرحله [انرژی]\n"
+                "یا /setcult telegram_id قلمرو مرحله [انرژی]\n"
+                f"قلمروها: {', '.join(CULTIVATION_REALMS)}"
+            )
+            return
+        if len(args) < 2:
+            await message.answer("قلمرو و مرحله لازم است.")
+            return
+        realm, stage = args[0], int(args[1])
+        energy = int(args[2]) if len(args) > 2 else 0
+        if realm not in CULTIVATION_REALMS:
+            await message.answer("قلمرو نامعتبر.")
+            return
+        cult = await get_or_create_cultivation(session, target.id)
+        cult.realm = realm
+        cult.stage = max(1, min(10, stage))
+        cult.energy = max(0, energy)
+        await session.commit()
+    await message.answer(
+        f"✅ تذهیب {target.full_name}:\nقلمرو {realm} | مرحله {stage} | انرژی {energy}"
+    )
+
+
+@router.message(Command("givemoney", "بده‌پول"))
+async def cmd_give_money(message: Message):
+    if not is_config_admin(message.from_user.id):
+        await message.answer("فقط سازنده.")
+        return
+    from services.economy import get_or_create_wallet
+    parts = (message.text or "").split()
+    # /givemoney coins 100  یا ریپلای
+    async with async_session() as session:
+        if message.reply_to_message:
+            t = message.reply_to_message.from_user
+            target = await get_or_create_user(session, t.id, t.full_name, t.username)
+            args = parts[1:]
+        elif len(parts) >= 4:
+            target = await get_user_by_telegram_id(session, int(parts[1]))
+            if not target:
+                await message.answer("کاربر پیدا نشد.")
+                return
+            args = parts[2:]
+        else:
+            await message.answer(
+                "فرمت: ریپلای + /givemoney نوع مقدار\n"
+                "نوع: coins | spirit | heavenly | celestial | god\n"
+                "یا /givemoney telegram_id نوع مقدار"
+            )
+            return
+        if len(args) < 2:
+            await message.answer("نوع و مقدار لازم است.")
+            return
+        kind, amount = args[0], int(args[1])
+        w = await get_or_create_wallet(session, target.id)
+        if kind in ("coins", "سکه"):
+            w.coins += amount
+        elif kind in ("spirit", "روحی"):
+            w.spirit_stones += amount
+        elif kind in ("heavenly", "بهشتی"):
+            w.heavenly_stones = (w.heavenly_stones or 0) + amount
+        elif kind in ("celestial", "آسمانی"):
+            w.celestial_stones = (w.celestial_stones or 0) + amount
+        elif kind in ("god", "خدا"):
+            w.god_stones = (w.god_stones or 0) + amount
+        else:
+            await message.answer("نوع نامعتبر")
+            return
+        await session.commit()
+    await message.answer(f"✅ به {target.full_name}: +{amount} {kind}")
+
+
+@router.message(Command("takemoney", "بگیر‌پول"))
+async def cmd_take_money(message: Message):
+    if not is_config_admin(message.from_user.id):
+        await message.answer("فقط سازنده.")
+        return
+    from services.economy import get_or_create_wallet
+    parts = (message.text or "").split()
+    async with async_session() as session:
+        if message.reply_to_message:
+            t = message.reply_to_message.from_user
+            target = await get_or_create_user(session, t.id, t.full_name, t.username)
+            args = parts[1:]
+        elif len(parts) >= 4:
+            target = await get_user_by_telegram_id(session, int(parts[1]))
+            args = parts[2:]
+        else:
+            await message.answer("مثل /givemoney ولی کم می‌کند.")
+            return
+        if not target or len(args) < 2:
+            await message.answer("ناقص")
+            return
+        kind, amount = args[0], int(args[1])
+        w = await get_or_create_wallet(session, target.id)
+        if kind in ("coins", "سکه"):
+            w.coins = max(0, w.coins - amount)
+        elif kind in ("spirit", "روحی"):
+            w.spirit_stones = max(0, w.spirit_stones - amount)
+        elif kind in ("heavenly", "بهشتی"):
+            w.heavenly_stones = max(0, (w.heavenly_stones or 0) - amount)
+        elif kind in ("celestial", "آسمانی"):
+            w.celestial_stones = max(0, (w.celestial_stones or 0) - amount)
+        elif kind in ("god", "خدا"):
+            w.god_stones = max(0, (w.god_stones or 0) - amount)
+        await session.commit()
+    await message.answer(f"✅ از {target.full_name}: −{amount} {kind}")

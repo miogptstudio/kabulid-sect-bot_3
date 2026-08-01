@@ -2,109 +2,104 @@ from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder
+from bot.config import ADMIN_IDS
 
 router = Router()
 
 SECTIONS = {
+    "rules": (
+        "📜 قوانین",
+        "۱) احترام به بازیکنان — توهین ممنوع\n"
+        "۲) جنسیت با /gender فقط یک‌بار و دائمی است\n"
+        "۳) دوئل و کشتار بخشی از بازی است؛ خارج از بازی دعوا نکنید\n"
+        "۴) آسیب به خدمتکار = حذف اکانت\n"
+        "۵) حداکثر ۳ مأموریت در روز؛ چهارمی = حذف اکانت\n"
+        "۶) سوءاستفاده از باگ را گزارش دهید\n"
+        "۷) کنترل کل ربات فقط مال سازنده است\n"
+        "۸) شرط‌بندی دوئل با رضایت دو طرف است\n"
+        "۹) خودارضایی باکرگی را از بین نمی‌برد\n"
+        "۱۰) ادمین می‌تواند تذهیب/پول را تنظیم کند"
+    ),
     "start": (
         "🚀 شروع و پروفایل",
-        "/start — ثبت‌نام و خوش‌آمد\n"
-        "/profile — پروفایل کامل (رتبه، نقش، شهر، قدرت، عمر…)\n"
-        "/iamadmin — وضعیت ادمین بودن\n"
-        "/gender — انتخاب جنسیت (فقط یک‌بار، دائمی)\n"
-        "قبل از تذهیب حتماً جنسیت بزن."
+        "/start — ثبت‌نام\n"
+        "/profile — پروفایل (رتبه، عمر، کیف پول، تذهیب…)\n"
+        "/gender — جنسیت دائمی (قبل از تذهیب اجباری)\n"
+        "/iamadmin — چک ادمین بودن"
     ),
     "duel": (
-        "⚔️ دوئل و نگهبان و جنگ",
-        "/duel — ریپلای روی حریف؛ دکمه قبول/رد\n"
-        "  نتیجه بر اساس قدرت است؛ رد دوئل حداکثر ۵ بار در روز\n"
-        "/guardian — سوال نگهبان (هر ۵ دقیقه، چند ثانیه وقت)\n"
-        "/gduel — دوئل نگهبان دو نفره (ریپلای)\n"
-        "/kill — حمله مرگبار (ریپلای)؛ ممکن است بکشی یا کشته شوی\n"
-        "/power — قدرت رزمی\n"
-        "/ranking — لیدربورد"
+        "⚔️ دوئل و جنگ",
+        "/duel [مبلغ] — دوئل بر اساس قدرت و سلاح مجهز (خون کم می‌شود)\n/deathduel — دوئل تا مرگ\n/equip · /unequip — سلاح\n/kill — زخم+سم (۳ ساعت /heal)\n/blood — وضعیت خون\n/heal — قرص سلامتی\n"
+        "  رد دوئل حداکثر ۵ بار در روز\n"
+        "  ۲٪ شانس آسیب به قلمرو بازنده\n"
+        "/guardian — نگهبان (هر ۵ دقیقه)\n"
+        "/gduel — نگهبان دو نفره\n"
+        "/kill — حمله مرگبار\n"
+        "/power — قدرت\n"
+        "/ranking · /leaders — لیدربورد"
     ),
     "cult": (
-        "🧘 تذهیب و ریشه",
-        "/cultivation — وضعیت تذهیب و انرژی\n"
-        "بگو: «تذهیب کردن» یا «جمع آوری چی» → +۴۰۰ انرژی\n"
-        "نیاز سطح بعد: ۲۰۰۰۰۰ + هر سطح ۲۵۰۰۰۰\n"
-        "بدون ریشه باید انرژی جمع کنی تا ریشه شانسی بیدار شود\n"
-        "/techniques · /learntech — تکنیک‌ها\n"
-        "/solo — خودارضایی (+انرژی، −عمر)\n"
-        "/dual — تذهیب دوگانه (ریپلای، مرد+زن)\n"
-        "/afterdeath — بعد از مرگ (روح / انتقام / پوچی)\n"
-        "/releasespirit — ترک روح انتقام"
+        "🧘 تذهیب",
+        "/cultivation — وضعیت\n/afk · /afkclaim — تذهیب خودکار\n/body — نوع بدن\n"
+        "«تذهیب کردن» / «جمع آوری چی» → +۵۰۰۰ انرژی\n"
+        "هر سطح ۵۰۰۰۰ انرژی | هر قلمرو ۱۰ مرحله\n"
+        "قلمروها تا ای‌تری، جاودان، خلقت…\n"
+        "/techniques · /learntech\n"
+        "/solo — خودارضایی (+انرژی، −عمر، بدون از دست دادن باکرگی)\n"
+        "/dual — تذهیب دوگانه\n"
+        "/path — مسیر (شیطانی، ارتدوکس…)\n"
+        "/afterdeath · /releasespirit"
     ),
     "sect": (
-        "🏛️ فرقه و قلمرو",
-        "/sects — لیست فرقه‌ها\n"
-        "/newsect نام — ساخت فرقه + انتخاب نوع با دکمه\n"
-        "/joinsect نام — عضو شدن\n"
-        "/mysect — فرقه و مشارکت تو\n"
-        "/transferleader — واگذاری رهبری (ریپلای)\n"
-        "/challengeleader — چالش رهبری (هر ۱ ساعت)\n"
-        "  بازنده ممکن است بمیرد مگر رهبر ببخشد\n"
-        "/betray — خیانت و ترک\n"
-        "/territories · /conquer — قلمرو\n"
-        "/sectsettings — تنظیمات (فقط رهبر)"
+        "🏛️ فرقه",
+        "/sects · /newsect · /joinsect · /mysect\n"
+        "/challengeleader · /transferleader · /betray\n"
+        "/territories · /conquer · /sectsettings"
     ),
     "family": (
         "💍 خانواده",
-        "/gender — جنسیت دائمی\n"
-        "/marry — نامزدی (ریپلای؛ فقط مرد درخواست)\n"
-        "/divorce — طلاق (ریپلای)\n"
-        "/wives — خانواده\n"
-        "/invitewedding — دعوت مهمان\n"
-        "/mate — راهنمای جفت‌گیری"
+        "/marry — خواستگاری (مرد یا زن)\n"
+        "/divorce · /wives · /invitewedding\n"
+        "/dual — جفت‌گیری / شانس بچه\n"
+        "/servants — خدمتکار (آسیب=حذف اکانت)"
     ),
     "shop": (
-        "🛒 مغازه، ساخت، حیوان",
-        "/buildings — مغازه (خرید با سکه)\n"
-        "/inventory — کیف\n"
-        "/craft — ساخت معجون و طلسم\n"
-        "/pets — حیوانات من\n"
-        "/hunt — شکار (خطر زخم/مرگ)\n"
-        "/sellpet شماره — فروش\n"
-        "/giftpet شماره — هدیه (ریپلای)\n"
-        "/wallet — سکه و سنگ روحی\n"
-        "/dailycoin · /daily — سکه روزانه و استریک\n"
-        "/exchangestone · /exchangecoin — تبدیل"
+        "🛒 مغازه و منابع",
+        "/buildings — مغازه با سکه\n"
+        "/inventory · /use · /drop\n"
+        "/craft · /pets · /hunt\n"
+        "/wallet · /dailycoin · /daily\n"
+        "/pay — ارسال پول به دیگران\n"
+        "/market · /marketbuy — بازار آزاد\n"
+        "/exchangeup heavenly|celestial|god\n"
+        "/garden · /plant · /harvest"
     ),
     "world": (
-        "🏙️ جهان و سفر",
-        "/cities — کشورها و شهرها (هر شهر مرحله خاص دارد)\n"
-        "/mycity — جزئیات شهر فعلی\n"
-        "/travel نام‌شهر — سفر\n"
-        "مثال: /travel بندرعباس | /travel کابل | /travel دبی\n"
-        "/worlds · /goworld — دنیای فانی/بهشتی/زیرین\n"
-        "/dimension — بُعد این گروه\n"
-        "/setdimension — تنظیم بُعد (ادمین)"
+        "🏙️ جهان",
+        "/cities · /mycity · /travel\n"
+        "/worlds · /goworld · /worldlist\n"
+        "/creatures · /huntcreature\n"
+        "/attackdim — حمله به بُعد\n"
+        "/dimension · /setdimension"
     ),
     "mission": (
-        "🎯 مأموریت و پیشرفت",
-        "/missions — مأموریت روزانه (حداکثر ۳)\n"
-        "اگر بعد از ۳ تا چهارمی بگیری اکانت پاک می‌شود\n"
-        "/completemission — تکمیل مأموریت فعال\n"
-        "/daily — استریک ورود روزانه\n"
-        "/auction · /bid — مزایده\n"
-        "/master · /takedisciple · /leavemaster — استاد و شاگرد"
+        "🎯 مأموریت",
+        "/missions — روزانه (هر کدام یک‌بار در روز)\n"
+        "حداکثر ۳؛ چهارمی = حذف اکانت\n"
+        "/completemission\n"
+        "/auction · /bid\n"
+        "/master · /takedisciple · /leavemaster"
     ),
     "games": (
-        "🎮 بازی‌ها (چت + وب‌اپ)",
+        "🎮 بازی‌ها",
         "/games — منوی بازی\n"
-        "/rps — سنگ کاغذ قیچی (+سکه)\n"
-        "/dice — تاس تخته‌نرد\n"
-        "/casino مبلغ — کازینو\n"
-        "/chess — شطرنج نمایشی\n\n"
-        "وب‌اپ: Menu Button → /webapp/\n"
-        "بازی تعاملی: /webapp/games.html"
-    ),
-    "admin": (
-        "🛠 مدیریت",
-        "/admin — فقط سازنده ربات (ADMIN_IDS)\n"
-        "ارتقا/تنزل، نقش، مسدود و…\n"
-        "کنترل کل ربات فقط مال سازنده است."
+        "/rps — سنگ‌کاغذ‌قیچی با ربات\n"
+        "/rpsduel — سنگ‌کاغذ با دیگران\n"
+        "/dice · /chess · /casino مبلغ\n"
+        "/guess — حدس عدد\n"
+        "/coinflip شیر|خط\n"
+        "/hukum — بازی حکم (کارت)\n"
+        "وب‌اپ: Menu Button → /webapp/games.html"
     ),
 }
 
@@ -116,8 +111,9 @@ async def cmd_help_menu(message: Message):
         builder.button(text=title, callback_data=f"helpsec:{message.from_user.id}:{key}")
     builder.adjust(1)
     await message.answer(
-        "📖 <b>راهنمای کامل ربات</b>\n"
-        "یک بخش را انتخاب کن:",
+        "📖 <b>راهنمای ربات فرقه</b>\n"
+        "یک بخش را انتخاب کن:\n\n"
+        "📜 اول قوانین را بخوان.",
         reply_markup=builder.as_markup(),
     )
 
@@ -150,7 +146,39 @@ async def help_back(callback: CallbackQuery):
         builder.button(text=title, callback_data=f"helpsec:{owner}:{key}")
     builder.adjust(1)
     await callback.message.edit_text(
-        "📖 <b>راهنمای کامل ربات</b>\nیک بخش را انتخاب کن:",
+        "📖 <b>راهنمای ربات فرقه</b>\nیک بخش را انتخاب کن:",
         reply_markup=builder.as_markup(),
     )
     await callback.answer()
+
+
+@router.message(Command("helpforadmin", "راهنما‌ادمین"))
+async def cmd_help_admin(message: Message):
+    if message.from_user.id not in ADMIN_IDS:
+        await message.answer("⛔️ فقط سازنده ربات.")
+        return
+    text = (
+        "🛠 <b>یادآوری اختیارات ادمین</b>\n\n"
+        "<b>هویت</b>\n"
+        "/iamadmin — تأیید ادمین بودن\n"
+        "/admin — پنل خلاصه\n\n"
+        "<b>نقش‌ها</b>\n"
+        "/setrole &lt;telegram_id&gt; &lt;نقش&gt;\n"
+        "نقش: رهبر | معاون رهبر | ارجمند | ارشد | عضو\n\n"
+        "<b>تذهیب</b>\n"
+        "/setcult — ریپلای یا آیدی\n"
+        "مثال: ریپلای + /setcult ای‌تری 5 1000\n"
+        "یا /setcult 6227792513 پایه 3 0\n\n"
+        "<b>پول</b>\n"
+        "/givemoney — دادن (ریپلای یا آیدی)\n"
+        "مثال: /givemoney coins 500\n"
+        "نوع: coins | spirit | heavenly | celestial | god\n"
+        "/takemoney — گرفتن همین فرمت\n\n"
+        "<b>بُعد گروه</b>\n"
+        "/setdimension فانی|بهشتی|زیرین\n\n"
+        "<b>نکات</b>\n"
+        "• فقط ADMIN_IDS به این دستورات دسترسی دارد\n"
+        "• رهبری فرقه ≠ ادمین کل ربات\n"
+        "• DATABASE_URL را برای حفظ دیتا تنظیم کن\n"
+    )
+    await message.answer(text)

@@ -52,6 +52,27 @@ SAMPLE_QUESTIONS = [
     {"category": "معما", "difficulty": 2, "question_text": "چیزی که هر چه بیشتر از آن برداری بزرگ‌تر می‌شود؟", "options": ["چاله", "سایه", "باد", "ابر"], "correct_answer": 0},
     {"category": "برنامه", "difficulty": 2, "question_text": "زبان این ربات عمدتاً؟", "options": ["Java", "Python", "PHP", "C++"], "correct_answer": 1},
     {"category": "عمومی", "difficulty": 1, "question_text": "تعداد روزهای سال کبیسه؟", "options": ["۳۶۵", "۳۶۶", "۳۶۴", "۳۶۰"], "correct_answer": 1},
+    {"category": "منطق", "difficulty": 2, "question_text": "اگر A>B و B>C آنگاه؟", "options": ["A<C", "A=C", "A>C", "نامشخص"], "correct_answer": 2},
+    {"category": "ریاضی", "difficulty": 2, "question_text": "۱/۲ + ۱/۴؟", "options": ["۱/۶", "۳/۴", "۲/۶", "۱"], "correct_answer": 1},
+    {"category": "عمومی", "difficulty": 1, "question_text": "رنگ پرچم ایران از بالا؟", "options": ["قرمز سفید سبز", "سبز سفید قرمز", "آبی سفید قرمز", "سفید سبز قرمز"], "correct_answer": 1},
+    {"category": "تاریخ", "difficulty": 2, "question_text": "سلسله قبل از پهلوی؟", "options": ["صفوی", "قاجار", "افشار", "زند"], "correct_answer": 1},
+    {"category": "علوم", "difficulty": 2, "question_text": "مرکز منظومه شمسی؟", "options": ["زمین", "ماه", "خورشید", "مشتری"], "correct_answer": 2},
+    {"category": "ادبیات", "difficulty": 2, "question_text": "دیوان شرقی از؟", "options": ["گوته", "شکسپیر", "دانته", "هومر"], "correct_answer": 0},
+    {"category": "جغرافیا", "difficulty": 1, "question_text": "کشور همسایه شرق ایران؟", "options": ["ترکیه", "عراق", "افغانستان", "ارمنستان"], "correct_answer": 2},
+    {"category": "معما", "difficulty": 1, "question_text": "چه چیزی صبح چهار پا، ظهر دو پا، شب سه پا دارد؟", "options": ["سگ", "انسان", "میز", "اسب"], "correct_answer": 1},
+    {"category": "ریاضی", "difficulty": 3, "question_text": "۲ به توان ۵؟", "options": ["۱۰", "۲۵", "۳۲", "۶۴"], "correct_answer": 2},
+    {"category": "علوم", "difficulty": 2, "question_text": "H2O چیست؟", "options": ["اکسیژن", "آب", "هیدروژن", "نمک"], "correct_answer": 1},
+    {"category": "عمومی", "difficulty": 1, "question_text": "چند سیاره در منظومه شمسی؟", "options": ["۷", "۸", "۹", "۱۰"], "correct_answer": 1},
+    {"category": "منطق", "difficulty": 3, "question_text": "همه کتاب‌ها کاغذ دارند. این مجله کاغذ دارد. پس؟", "options": ["مجله کتاب است", "نتیجه قطعی نیست", "مجله کتاب نیست", "همه مجلات کتاب‌اند"], "correct_answer": 1},
+    {"category": "تاریخ", "difficulty": 1, "question_text": "جنگ جهانی دوم کی تمام شد تقریبی؟", "options": ["۱۹۱۸", "۱۹۳۹", "۱۹۴۵", "۱۹۵۰"], "correct_answer": 2},
+    {"category": "جغرافیا", "difficulty": 2, "question_text": "قاره استرالیا در کدام نیمکره است بیشتر؟", "options": ["شمالی", "جنوبی", "فقط شرقی", "فقط غربی"], "correct_answer": 1},
+    {"category": "ادبیات", "difficulty": 1, "question_text": "نویسنده بوف کور؟", "options": ["هدایت", "آل‌احمد", "دولت‌آبادی", "دانشور"], "correct_answer": 0},
+    {"category": "برنامه", "difficulty": 1, "question_text": "HTML برای چیست؟", "options": ["دیتابیس", "ساختار صفحه وب", "سیستم‌عامل", "کامپایلر"], "correct_answer": 1},
+    {"category": "معما", "difficulty": 2, "question_text": "چه کلیدی هیچ قفلی را باز نمی‌کند؟", "options": ["شاه‌کلید", "کلید پیانو", "کلید خانه", "کلید ماشین"], "correct_answer": 1},
+    {"category": "علوم", "difficulty": 3, "question_text": "سرعت نور تقریبی؟", "options": ["۳۰۰ کیلومتر", "۳۰۰ هزار کیلومتر بر ثانیه", "۳۰ هزار", "۳ میلیون"], "correct_answer": 1},
+    {"category": "عمومی", "difficulty": 2, "question_text": "المپیک هر چند سال؟", "options": ["۲", "۳", "۴", "۵"], "correct_answer": 2},
+    {"category": "ریاضی", "difficulty": 1, "question_text": "۹ × ۹؟", "options": ["۷۲", "۸۱", "۹۹", "۹۰"], "correct_answer": 1},
+
 ]
 
 

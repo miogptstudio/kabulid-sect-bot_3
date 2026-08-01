@@ -38,7 +38,7 @@ async def cmd_buildings(message: Message):
         builder.button(text=b.name, callback_data=f"building:{uid}:{b.id}")
     builder.adjust(1)
 
-    text += "\nروی ساختمان کلیک کن. خرید با <b>XP</b> است.\nسکه را با /wallet ببین."
+    text += "\nروی ساختمان کلیک کن. خرید با <b>سکه</b> است.\nسکه را با /wallet ببین."
     await message.answer(text, reply_markup=builder.as_markup())
 
 
@@ -218,6 +218,13 @@ async def cmd_use_item(message: Message):
             if effect.get("learn_tech"):
                 msg_parts.append(f"تکنیک مرتبط: {effect['learn_tech']} — /learntech")
 
+        # منابع از مواد
+        if getattr(item, "item_type", "") in ("material", "herb_normal", "herb_spiritual", "pill"):
+            from services.economy import get_or_create_wallet as _gw
+            _w = await _gw(session, user.id)
+            _gain = 15
+            _w.coins += _gain
+            msg_parts.append(f"منابع: +{_gain} سکه")
         inv.quantity -= 1
         if inv.quantity <= 0:
             await session.delete(inv)

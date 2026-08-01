@@ -56,7 +56,7 @@ class SectMember(Base):
 
 # ==================== سیستم تذهیب ====================
 
-CULTIVATION_REALMS = ["پایه", "متوسط", "بالا", "پیشرفته", "نیمه‌خدا", "خدا", "آسمان"]
+CULTIVATION_REALMS = ["بیداری", "پایه", "متوسط", "بالا", "پیشرفته", "هسته", "روح", "نیمه‌خدا", "خدا", "آسمان", "ای‌تری", "جاودان", "ابدی", "خلقت", "پوچی", "فراپوچی", "مطلق"]
 
 
 class Cultivation(Base):
@@ -65,12 +65,14 @@ class Cultivation(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), unique=True)
     
-    realm: Mapped[str] = mapped_column(String(32), default="پایه")
-    stage: Mapped[int] = mapped_column(Integer, default=1)  # ۱ تا ۳
+    realm: Mapped[str] = mapped_column(String(32), default="بیداری")
+    stage: Mapped[int] = mapped_column(Integer, default=1)  # ۱ تا ۱۰
     energy: Mapped[int] = mapped_column(Integer, default=0)
     
     talent: Mapped[str | None] = mapped_column(String(64), nullable=True)
     spiritual_root: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    body_type: Mapped[str] = mapped_column(String(64), default="بدن معمولی")
+    afk_until: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     
     updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
 

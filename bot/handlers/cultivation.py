@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command, Filter
@@ -159,7 +159,7 @@ async def cmd_give_tech(message: Message):
 
 @router.message(Command("meditate", "مدیتیت"))
 async def cmd_meditate(message: Message):
-    await do_gather(message, amount=400)
+    await do_gather(message, amount=5000)
 
 
 @router.message(GatherQiFilter())
@@ -172,7 +172,7 @@ async def text_gather_qi(message: Message):
     await do_gather(message, amount=amt)
 
 
-async def do_gather(message: Message, amount: int = 400):
+async def do_gather(message: Message, amount: int = 5000):
     user_id = message.from_user.id
     now = datetime.utcnow()
 
@@ -279,6 +279,7 @@ async def cmd_solo(message: Message):
             user.lifespan = max(0, (user.lifespan or 100) - cost)
             if user.lifespan <= 0:
                 user.is_dead = True
+        user.solo_count = (getattr(user, 'solo_count', 0) or 0) + 1
         text = "🔥 خودارضایی (+انرژی کم، عمر کم شد)\n"
         if hasattr(user, "lifespan"):
             text += f"⏳ عمر باقی: {user.lifespan}%\n"
@@ -302,8 +303,7 @@ async def cmd_solo(message: Message):
                     text += "💀 یین بدنت به ۱۰۰٪ رسید... مردی.\nبا /afterdeath سرنوشتت را انتخاب کن."
         
         # از دست دادن باکرگی در اولین بار
-        if user.is_virgin:
-            user.is_virgin = False
+        # خودارضایی باکرگی را از بین نمی‌برد
             text += "🌸 وضعیت باکرگی: از دست رفت.\n"
         
         await session.commit()
@@ -344,3 +344,121 @@ async def cmd_body_status(message: Message):
         text += f"یین بدن: {user.yin}%\n"
     
     await message.answer(text)
+
+
+from datetime import datetime, timedelta, timedelta
+from bot.config import GATHER_ENERGY_AMOUNT
+
+@router.message(Command("afk", "تذهیب‌خودکار", "AFK"))
+async def cmd_afk(message: Message):
+    """تذهیب خودکار نیم‌ساعته — از بیداری ریشه تا پایه"""
+    async with async_session() as session:
+        user = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
+        if user.gender not in ("مرد", "زن"):
+            await message.answer("اول /gender")
+            return
+        cult = await get_or_create_cultivation(session, user.id)
+        now = datetime.utcnow()
+        if cult.afk_until and cult.afk_until > now:
+            left = int((cult.afk_until - now).total_seconds() // 60)
+            await message.answer(f"هنوز AFK هستی. حدود {left} دقیقه مانده. /afkclaim")
+            return
+        cult.afk_until = now + timedelta(minutes=30)
+        await session.commit()
+    await message.answer(
+        "🧘 حالت AFK روشن شد (۳۰ دقیقه).\n"
+        "بعد از نیم ساعت /afkclaim بزن تا پاداش تذهیب را بگیری.\n"
+        "هدف: پیشرفت از بیداری ریشه تا قلمرو پایه."
+    )
+
+
+@router.message(Command("afkclaim", "دریافت‌افک"))
+async def cmd_afk_claim(message: Message):
+    async with async_session() as session:
+        user = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
+        cult = await get_or_create_cultivation(session, user.id)
+        now = datetime.utcnow()
+        if not cult.afk_until:
+            await message.answer("AFK فعال نیست. /afk")
+            return
+        if cult.afk_until > now:
+            left = int((cult.afk_until - now).total_seconds())
+            await message.answer(f"هنوز وقت تمام نشده ({left} ثانیه).")
+            return
+        # پاداش بزرگ برای رسیدن نزدیک پایه
+        from services.cultivation import add_energy, energy_needed_for_stage, BODY_BONUS
+        # انرژی کافی برای چند سطح
+        gain = 80_000
+        cult.afk_until = None
+        result = await add_energy(session, user.id, gain)
+        # اگر هنوز بیداری است و ریشه ندارد، کمک به باز شدن ریشه
+        cult = await get_or_create_cultivation(session, user.id)
+        msgs = result.get("messages") or []
+        # تلاش برای رساندن به پایه
+        if cult.realm in ("بیداری", "پایه") or cult.spiritual_root in (None, "بدون ریشه"):
+            extra = await add_energy(session, user.id, 100_000)
+            msgs.extend(extra.get("messages") or [])
+            cult = await get_or_create_cultivation(session, user.id)
+            if cult.realm == "بیداری" and cult.spiritual_root and cult.spiritual_root != "بدون ریشه":
+                cult.realm = "پایه"
+                cult.stage = 1
+                await session.commit()
+                msgs.append("🌟 به قلمرو «پایه» رسیدی!")
+        await session.commit()
+        text = "⏳ AFK تمام شد!\n" + "\n".join(msgs) if msgs else "⏳ AFK تمام شد و انرژی اضافه شد."
+        await message.answer(text)
+
+
+@router.message(Command("body", "بدن", "نوع‌بدن"))
+async def cmd_body(message: Message):
+    from services.cultivation import BODY_TYPES, BODY_BONUS, get_or_create_cultivation
+    parts = (message.text or "").split(maxsplit=1)
+    async with async_session() as session:
+        user = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
+        cult = await get_or_create_cultivation(session, user.id)
+        if len(parts) < 2:
+            cur = getattr(cult, "body_type", None) or "بدن معمولی"
+            lines = [f"بدن فعلی: <b>{cur}</b>\n", "انواع:"]
+            for b in BODY_TYPES:
+                lines.append(f"• {b} (×{BODY_BONUS.get(b, 1)})")
+            lines.append("\n/body نام‌بدن — انتخاب (یک‌بار رایگان بدن معمولی؛ بقیه با سنگ)")
+            await message.answer("\n".join(lines))
+            return
+        name = parts[1].strip()
+        if name not in BODY_TYPES:
+            await message.answer("نام بدن نامعتبر.")
+            return
+        if name != "بدن معمولی":
+            from services.economy import get_or_create_wallet
+            w = await get_or_create_wallet(session, user.id)
+            cost = {"بدن چوب زمینی": 50, "بدن بهشتی": 5, "بدن اژدهای اعظم": 20,
+                    "بدن خدایان": 50, "بدن خدای غبطه‌انگیز": 1, "بدن نورانی": 10,
+                    "بدن تاریک": 10, "بدن روحی": 15}.get(name, 10)
+            # خدای غبطه با سنگ خدا، بقیه بهشتی یا روحی
+            if name == "بدن خدای غبطه‌انگیز":
+                if (w.god_stones or 0) < 1:
+                    await message.answer("نیاز ۱ سنگ خدا")
+                    return
+                w.god_stones -= 1
+            elif name in ("بدن بهشتی", "بدن خدایان"):
+                if (w.heavenly_stones or 0) < cost:
+                    await message.answer(f"نیاز {cost} سنگ بهشتی")
+                    return
+                w.heavenly_stones -= cost
+            else:
+                if (w.spirit_stones or 0) < cost:
+                    await message.answer(f"نیاز {cost} سنگ روحی")
+                    return
+                w.spirit_stones -= cost
+        cult.body_type = name
+        await session.commit()
+        await message.answer(f"✅ بدن «{name}» فعال شد. (ضریب تذهیب ×{BODY_BONUS.get(name, 1)})")
