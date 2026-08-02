@@ -86,6 +86,7 @@ async def main():
 
     await on_startup()
     logger.info("Bot starting (no channel lock)...")
+    logger.info("Routers registered: start, profile, duel, cultivation, shop, dual, ...")
     # قطع webhook و نمونه قبلی تا Conflict نماند
     await bot.delete_webhook(drop_pending_updates=True)
     logger.info("Webhook cleared; starting polling...")

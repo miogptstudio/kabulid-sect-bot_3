@@ -142,45 +142,115 @@ async def cmd_ping(message: Message):
     await message.answer("pong ✅ ربات آنلاین است.")
 
 
+@router.message(F.text.in_({"تذهیب کردن", "جمع آوری چی", "جمع‌آوری چی", "مدیتیت"}))
+async def btn_gather(message: Message):
+    """جمع انرژی از دکمه کیبورد"""
+    try:
+        from bot.handlers.cultivation import do_gather
+        await do_gather(message, amount=5000)
+    except Exception as e:
+        await message.answer(
+            "خطا در تذهیب: " + type(e).__name__ + ": " + str(e)
+            + chr(10) + "اول /gender را بزن. بعد /gather"
+        )
+
+
 @router.message(F.text == "پروفایل")
 async def btn_profile(message: Message):
-    from bot.handlers.profile import cmd_profile
-    await cmd_profile(message)
+    try:
+        from bot.handlers.profile import cmd_profile
+        await cmd_profile(message)
+    except Exception as e:
+        await message.answer(f"خطا پروفایل: {e}")
+
 
 @router.message(F.text == "راهنما")
 async def btn_help(message: Message):
-    from bot.handlers.help_menu import cmd_help_menu
-    await cmd_help_menu(message)
+    try:
+        from bot.handlers.help_menu import cmd_help_menu
+        await cmd_help_menu(message)
+    except Exception as e:
+        await message.answer(f"خطا راهنما: {e}")
+
 
 @router.message(F.text.in_({"فروشگاه", "مغازه"}))
 async def btn_shop(message: Message):
-    from bot.handlers.shop import cmd_buildings
-    await cmd_buildings(message)
+    try:
+        from bot.handlers.shop import cmd_buildings
+        await cmd_buildings(message)
+    except Exception as e:
+        await message.answer(f"خطا فروشگاه: {e}")
+
 
 @router.message(F.text == "دوئل")
 async def btn_duel_help(message: Message):
-    await message.answer("برای دوئل روی پیام حریف ریپلای کن و بزن:\n/duel\nیا /duel مبلغ")
+    await message.answer(
+        "⚔️ دوئل:" + chr(10)
+        + "روی پیام حریف ریپلای کن و بزن /duel" + chr(10)
+        + "یا /duel مبلغ برای شرط" + chr(10)
+        + "/deathduel — دوئل تا مرگ"
+    )
+
 
 @router.message(F.text == "تکنیک‌ها")
 async def btn_tech(message: Message):
-    from bot.handlers.cultivation import cmd_techniques
-    await cmd_techniques(message)
+    try:
+        from bot.handlers.cultivation import cmd_techniques
+        await cmd_techniques(message)
+    except Exception as e:
+        await message.answer(f"خطا تکنیک: {e}")
+
 
 @router.message(F.text == "فرقه")
 async def btn_sect(message: Message):
-    from bot.handlers.sects import cmd_sects
-    await cmd_sects(message)
+    try:
+        from bot.handlers.sects import cmd_sects
+        await cmd_sects(message)
+    except Exception as e:
+        await message.answer(f"خطا فرقه: {e}")
+
 
 @router.message(F.text == "آرنا")
 async def btn_arena(message: Message):
-    from bot.handlers.arena import cmd_arena
-    await cmd_arena(message)
+    try:
+        from bot.handlers.arena import cmd_arena
+        await cmd_arena(message)
+    except Exception as e:
+        await message.answer(f"خطا آرنا: {e}")
 
-@router.message(Command("gather", "qi", "جمع‌آوری", "جمع"))
+
+@router.message(Command("gather", "qi", "جمع‌آوری", "جمع", "meditate"))
 async def cmd_gather(message: Message):
-    from bot.handlers.cultivation import do_gather
-    await do_gather(message, amount=5000)
+    try:
+        from bot.handlers.cultivation import do_gather
+        await do_gather(message, amount=5000)
+    except Exception as e:
+        await message.answer(f"خطا: {type(e).__name__}: {e}")
+
 
 @router.message(Command("menu", "منو"))
 async def cmd_menu(message: Message):
     await message.answer("منوی اصلی:", reply_markup=main_keyboard())
+
+
+@router.message(Command("gender", "جنسیت"))
+async def cmd_gender_alias(message: Message):
+    from aiogram.utils.keyboard import InlineKeyboardBuilder
+    from database.engine import async_session
+    from database.crud import get_or_create_user
+    async with async_session() as session:
+        user = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
+        if user.gender in ("مرد", "زن"):
+            await message.answer(f"جنسیت تو «<b>{user.gender}</b>» است و قابل تغییر نیست.")
+            return
+    builder = InlineKeyboardBuilder()
+    builder.button(text="مرد 👨", callback_data=f"setgender:{message.from_user.id}:مرد")
+    builder.button(text="زن 👩", callback_data=f"setgender:{message.from_user.id}:زن")
+    builder.adjust(1)
+    await message.answer(
+        "⚧ انتخاب جنسیت (فقط یک‌بار). بعد از انتخاب قابل تغییر نیست.",
+        reply_markup=builder.as_markup(),
+    )

@@ -83,3 +83,28 @@ async def migrate_schema():
         for col, td in wallet_cols:
             await add_col("user_wallets", col, td)
             await add_col("wallets", col, td)
+
+        # cultivations کامل
+        for col, td in [
+            ("energy", "INTEGER DEFAULT 0"),
+            ("stage", "INTEGER DEFAULT 1"),
+            ("realm", "VARCHAR(32) DEFAULT 'بیداری'"),
+            ("updated_at", "TIMESTAMP"),
+        ]:
+            await add_col("cultivations", col, td)
+
+        # techniques
+        for col, td in [
+            ("is_starter", "BOOLEAN DEFAULT FALSE"),
+            ("energy_bonus", "INTEGER DEFAULT 0"),
+            ("required_root", "VARCHAR(64)"),
+            ("grade", "VARCHAR(32)"),
+            ("description", "TEXT"),
+        ]:
+            await add_col("cultivation_techniques", col, td)
+
+        for col, td in [
+            ("is_active", "BOOLEAN DEFAULT FALSE"),
+            ("learned_at", "TIMESTAMP"),
+        ]:
+            await add_col("user_techniques", col, td)

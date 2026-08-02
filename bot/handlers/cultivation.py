@@ -147,7 +147,12 @@ async def cmd_learn_starter(message: Message):
         )
         tech = result.scalar_one_or_none()
         if not tech:
-            await message.answer("تکنیک پایه‌ای پیدا نشد.")
+            result = await session.execute(
+                select(CultivationTechnique).where(CultivationTechnique.name == "تنفس پایه")
+            )
+            tech = result.scalar_one_or_none()
+        if not tech:
+            await message.answer("تکنیک پایه‌ای پیدا نشد. یک‌بار /cultivation بزن و دوباره /learntech")
             return
         msg = await learn_technique(session, user.id, tech)
     await message.answer(msg)
