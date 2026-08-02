@@ -2,6 +2,7 @@ import asyncio
 import logging
 import os
 from aiogram import Bot, Dispatcher
+from aiogram.types import ErrorEvent
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
@@ -41,8 +42,6 @@ async def main():
     )
     dp = Dispatcher(storage=MemoryStorage())
 
-    # بدون چک اجباری کانال
-
     dp.include_router(start.router)
     dp.include_router(profile.router)
     dp.include_router(duel.router)
@@ -70,26 +69,17 @@ async def main():
     dp.include_router(creatures.router)
     dp.include_router(combat_extra.router)
     dp.include_router(admin.router)
-    dp.include_router(fallback.router)  # آخر — دستور ناشناخته
+    dp.include_router(fallback.router)
 
     @dp.errors()
-    async def _global_error(event, exception):
-        logger.exception("Handler error: %s", exception)
-        try:
-            update = event.update
-            msg = update.message or (update.callback_query.message if update.callback_query else None)
-            if msg:
-                await msg.answer(f"⚠️ خطا: {type(exception).__name__}")
-        except Exception:
-            pass
+    async def _on_error(event: ErrorEvent):
+        logger.exception("Update error: %s", event.exception)
         return True
 
     await on_startup()
-    logger.info("Bot starting (no channel lock)...")
-    logger.info("Routers registered: start, profile, duel, cultivation, shop, dual, ...")
-    # قطع webhook و نمونه قبلی تا Conflict نماند
+    logger.info("Bot starting...")
     await bot.delete_webhook(drop_pending_updates=True)
-    logger.info("Webhook cleared; starting polling...")
+    logger.info("Webhook cleared; polling...")
     await dp.start_polling(bot)
 
 

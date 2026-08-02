@@ -1,14 +1,19 @@
 import os
+import logging
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+from sqlalchemy import text
 from bot.config import DATABASE_URL, DATA_DIR
 
+logger = logging.getLogger(__name__)
+
+
 def _normalize_url(url: str) -> str:
-    # Render / Heroku style postgres
     if url.startswith("postgres://"):
         url = url.replace("postgres://", "postgresql+asyncpg://", 1)
     elif url.startswith("postgresql://") and "+asyncpg" not in url:
         url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
     return url
+
 
 os.makedirs(DATA_DIR, exist_ok=True)
 _url = _normalize_url(DATABASE_URL)
@@ -21,90 +26,95 @@ async def get_session() -> AsyncSession:
         yield session
 
 
+# ستون‌هایی که ممکن است در دیتابیس قدیمی نباشند
+USER_COLUMNS = [
+    ("solo_count", "INTEGER DEFAULT 0"),
+    ("blood", "INTEGER DEFAULT 100"),
+    ("poisoned_until", "TIMESTAMP NULL"),
+    ("equipped_weapon_id", "INTEGER NULL"),
+    ("has_cyrus_sword", "BOOLEAN DEFAULT FALSE"),
+    ("first_cities", "TEXT NULL"),
+    ("city", "VARCHAR(64) DEFAULT 'tehran'"),
+    ("world", "VARCHAR(64) DEFAULT 'فانی'"),
+    ("lifespan", "INTEGER DEFAULT 100"),
+    ("is_spirit_raiser", "BOOLEAN DEFAULT FALSE"),
+    ("gender", "VARCHAR(16) DEFAULT 'نامشخص'"),
+    ("yang", "INTEGER DEFAULT 100"),
+    ("yin", "INTEGER DEFAULT 0"),
+    ("is_virgin", "BOOLEAN DEFAULT TRUE"),
+    ("is_dead", "BOOLEAN DEFAULT FALSE"),
+    ("restricted_until", "TIMESTAMP NULL"),
+    ("restriction_reason", "TEXT NULL"),
+]
+
+CULT_COLUMNS = [
+    ("body_type", "VARCHAR(64) DEFAULT 'بدن معمولی'"),
+    ("afk_until", "TIMESTAMP NULL"),
+    ("spiritual_root", "VARCHAR(64) NULL"),
+    ("talent", "VARCHAR(64) NULL"),
+    ("energy", "INTEGER DEFAULT 0"),
+    ("stage", "INTEGER DEFAULT 1"),
+    ("realm", "VARCHAR(32) DEFAULT 'بیداری'"),
+]
+
+WALLET_COLUMNS = [
+    ("heavenly_stones", "INTEGER DEFAULT 0"),
+    ("celestial_stones", "INTEGER DEFAULT 0"),
+    ("god_stones", "INTEGER DEFAULT 0"),
+    ("last_daily_coin", "TIMESTAMP NULL"),
+    ("spirit_stones", "INTEGER DEFAULT 0"),
+    ("coins", "INTEGER DEFAULT 0"),
+]
+
+TECH_COLUMNS = [
+    ("is_starter", "BOOLEAN DEFAULT FALSE"),
+    ("energy_bonus", "INTEGER DEFAULT 0"),
+    ("required_root", "VARCHAR(64) NULL"),
+    ("grade", "VARCHAR(32) NULL"),
+    ("description", "TEXT NULL"),
+]
+
+
 async def migrate_schema():
-    """اضافه کردن ستون‌های جدید به جداول موجود (create_all ستون جدید نمی‌سازد)"""
-    from sqlalchemy import text
-
-    # users
-    user_cols = [
-        ("solo_count", "INTEGER DEFAULT 0"),
-        ("blood", "INTEGER DEFAULT 100"),
-        ("poisoned_until", "TIMESTAMP"),
-        ("equipped_weapon_id", "INTEGER"),
-        ("has_cyrus_sword", "BOOLEAN DEFAULT FALSE"),
-        ("first_cities", "TEXT"),
-        ("city", "VARCHAR(32) DEFAULT 'tehran'"),
-        ("world", "VARCHAR(32) DEFAULT 'فانی'"),
-        ("lifespan", "INTEGER DEFAULT 100"),
-        ("is_spirit_raiser", "BOOLEAN DEFAULT FALSE"),
-        ("gender", "VARCHAR(16) DEFAULT 'نامشخص'"),
-        ("yang", "INTEGER DEFAULT 100"),
-        ("yin", "INTEGER DEFAULT 0"),
-        ("is_virgin", "BOOLEAN DEFAULT TRUE"),
-        ("is_dead", "BOOLEAN DEFAULT FALSE"),
-    ]
-    # cultivations
-    cult_cols = [
-        ("body_type", "VARCHAR(64) DEFAULT 'بدن معمولی'"),
-        ("afk_until", "TIMESTAMP"),
-        ("spiritual_root", "VARCHAR(64)"),
-        ("talent", "VARCHAR(64)"),
-    ]
-    # wallets if separate
-    wallet_cols = [
-        ("heavenly_stones", "INTEGER DEFAULT 0"),
-        ("celestial_stones", "INTEGER DEFAULT 0"),
-        ("god_stones", "INTEGER DEFAULT 0"),
-        ("last_daily_coin", "TIMESTAMP"),
-    ]
-
+    """اجباری: اضافه کردن ستون‌های گمشده به PostgreSQL / SQLite"""
+    added = 0
     async with engine.begin() as conn:
-        dialect = conn.dialect.name  # postgresql or sqlite
+        dialect = conn.dialect.name
+        logger.info("Running migrate_schema on dialect=%s", dialect)
 
         async def add_col(table: str, col: str, typedef: str):
-            if dialect == "postgresql":
-                sql = f'ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {col} {typedef}'
-            else:
-                # SQLite: check pragma
-                r = await conn.execute(text(f"PRAGMA table_info({table})"))
-                existing = {row[1] for row in r.fetchall()}
-                if col in existing:
-                    return
-                sql = f"ALTER TABLE {table} ADD COLUMN {col} {typedef}"
+            nonlocal added
             try:
-                await conn.execute(text(sql))
-            except Exception:
-                pass  # جدول ممکن است هنوز نباشد
+                if dialect == "postgresql":
+                    sql = f'ALTER TABLE "{table}" ADD COLUMN IF NOT EXISTS "{col}" {typedef}'
+                    await conn.execute(text(sql))
+                    added += 1
+                    logger.info("OK column %s.%s", table, col)
+                else:
+                    r = await conn.execute(text(f"PRAGMA table_info({table})"))
+                    existing = {row[1] for row in r.fetchall()}
+                    if col in existing:
+                        return
+                    await conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {typedef}"))
+                    added += 1
+                    logger.info("OK sqlite column %s.%s", table, col)
+            except Exception as e:
+                logger.warning("skip %s.%s: %s", table, col, e)
 
-        for col, td in user_cols:
+        for col, td in USER_COLUMNS:
             await add_col("users", col, td)
-        for col, td in cult_cols:
+        for col, td in CULT_COLUMNS:
             await add_col("cultivations", col, td)
-        for col, td in wallet_cols:
+        for col, td in WALLET_COLUMNS:
             await add_col("user_wallets", col, td)
-            await add_col("wallets", col, td)
-
-        # cultivations کامل
-        for col, td in [
-            ("energy", "INTEGER DEFAULT 0"),
-            ("stage", "INTEGER DEFAULT 1"),
-            ("realm", "VARCHAR(32) DEFAULT 'بیداری'"),
-            ("updated_at", "TIMESTAMP"),
-        ]:
-            await add_col("cultivations", col, td)
-
-        # techniques
-        for col, td in [
-            ("is_starter", "BOOLEAN DEFAULT FALSE"),
-            ("energy_bonus", "INTEGER DEFAULT 0"),
-            ("required_root", "VARCHAR(64)"),
-            ("grade", "VARCHAR(32)"),
-            ("description", "TEXT"),
-        ]:
+        for col, td in TECH_COLUMNS:
             await add_col("cultivation_techniques", col, td)
 
+        # user_techniques
         for col, td in [
             ("is_active", "BOOLEAN DEFAULT FALSE"),
-            ("learned_at", "TIMESTAMP"),
+            ("learned_at", "TIMESTAMP NULL"),
         ]:
             await add_col("user_techniques", col, td)
+
+    logger.info("migrate_schema finished, attempted adds=%s", added)
