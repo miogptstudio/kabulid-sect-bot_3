@@ -72,6 +72,18 @@ async def main():
     dp.include_router(admin.router)
     dp.include_router(fallback.router)  # آخر — دستور ناشناخته
 
+    @dp.errors()
+    async def _global_error(event, exception):
+        logger.exception("Handler error: %s", exception)
+        try:
+            update = event.update
+            msg = update.message or (update.callback_query.message if update.callback_query else None)
+            if msg:
+                await msg.answer(f"⚠️ خطا: {type(exception).__name__}")
+        except Exception:
+            pass
+        return True
+
     await on_startup()
     logger.info("Bot starting (no channel lock)...")
     # قطع webhook و نمونه قبلی تا Conflict نماند

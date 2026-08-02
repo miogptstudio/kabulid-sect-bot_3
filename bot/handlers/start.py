@@ -1,5 +1,5 @@
-from aiogram import Router
-from aiogram.types import Message
+from aiogram import Router, F
+from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
 from aiogram.filters import CommandStart, Command
 
 from database.engine import async_session
@@ -8,6 +8,19 @@ from database.models import ROLE_LEADER
 from bot.config import ADMIN_IDS
 
 router = Router()
+
+def main_keyboard():
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text="تذهیب کردن"), KeyboardButton(text="پروفایل")],
+            [KeyboardButton(text="فروشگاه"), KeyboardButton(text="دوئل")],
+            [KeyboardButton(text="تکنیک‌ها"), KeyboardButton(text="فرقه")],
+            [KeyboardButton(text="آرنا"), KeyboardButton(text="راهنما")],
+            [KeyboardButton(text="جمع آوری چی"), KeyboardButton(text="/gender")],
+        ],
+        resize_keyboard=True,
+    )
+
 
 
 @router.message(CommandStart())
@@ -56,7 +69,7 @@ async def cmd_start(message: Message):
         f"/guardian — نگهبان\n"
         f"/help — راهنمای کامل"
     )
-    await message.answer(text)
+    await message.answer(text, reply_markup=main_keyboard())
 
 
 @router.message(Command("help_old_disabled"))
@@ -127,3 +140,47 @@ async def cmd_iamadmin(message: Message):
 @router.message(Command("ping", "تست"))
 async def cmd_ping(message: Message):
     await message.answer("pong ✅ ربات آنلاین است.")
+
+
+@router.message(F.text == "پروفایل")
+async def btn_profile(message: Message):
+    from bot.handlers.profile import cmd_profile
+    await cmd_profile(message)
+
+@router.message(F.text == "راهنما")
+async def btn_help(message: Message):
+    from bot.handlers.help_menu import cmd_help_menu
+    await cmd_help_menu(message)
+
+@router.message(F.text.in_({"فروشگاه", "مغازه"}))
+async def btn_shop(message: Message):
+    from bot.handlers.shop import cmd_buildings
+    await cmd_buildings(message)
+
+@router.message(F.text == "دوئل")
+async def btn_duel_help(message: Message):
+    await message.answer("برای دوئل روی پیام حریف ریپلای کن و بزن:\n/duel\nیا /duel مبلغ")
+
+@router.message(F.text == "تکنیک‌ها")
+async def btn_tech(message: Message):
+    from bot.handlers.cultivation import cmd_techniques
+    await cmd_techniques(message)
+
+@router.message(F.text == "فرقه")
+async def btn_sect(message: Message):
+    from bot.handlers.sects import cmd_sects
+    await cmd_sects(message)
+
+@router.message(F.text == "آرنا")
+async def btn_arena(message: Message):
+    from bot.handlers.arena import cmd_arena
+    await cmd_arena(message)
+
+@router.message(Command("gather", "qi", "جمع‌آوری", "جمع"))
+async def cmd_gather(message: Message):
+    from bot.handlers.cultivation import do_gather
+    await do_gather(message, amount=5000)
+
+@router.message(Command("menu", "منو"))
+async def cmd_menu(message: Message):
+    await message.answer("منوی اصلی:", reply_markup=main_keyboard())

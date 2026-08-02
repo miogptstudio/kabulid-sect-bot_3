@@ -34,37 +34,40 @@ class GatherQiFilter(Filter):
         return text in GATHER_PHRASES or text.lower() in [p.lower() for p in GATHER_PHRASES]
 
 
-@router.message(Command("cultivation", "تذهیب", "cult"))
+@router.message(Command("cultivation", "تذهیب", "cult", "tazhib"))
 async def cmd_cultivation(message: Message):
-    async with async_session() as session:
-        await ensure_default_techniques(session)
-        user = await get_or_create_user(
-            session, message.from_user.id,
-            message.from_user.full_name, message.from_user.username
+    try:
+        from services.cultivation import energy_needed_for_stage
+        async with async_session() as session:
+            await ensure_default_techniques(session)
+            user = await get_or_create_user(
+                session, message.from_user.id,
+                message.from_user.full_name, message.from_user.username
+            )
+            cult = await get_or_create_cultivation(session, user.id)
+            tech = await get_active_technique(session, user.id)
+            need = energy_needed_for_stage(cult.stage or 1, cult.realm, cult.spiritual_root)
+        text = (
+            f"🧘 <b>وضعیت تذهیب</b>\n\n"
+            f"ریشه: <b>{cult.spiritual_root or 'بدون ریشه'}</b>\n"
+            f"قلمرو: <b>{cult.realm}</b> | مرحله: {cult.stage}/{10}\n"
+            f"انرژی: {cult.energy} / {need}\n"
+            f"جنسیت: {user.gender}\n"
         )
-        cult = await get_or_create_cultivation(session, user.id)
-        tech = await get_active_technique(session, user.id)
-    
-    text = (
-        f"🧘 <b>وضعیت تذهیب</b>\n\n"
-        f"ریشه معنوی: <b>{cult.spiritual_root or 'بدون ریشه'}</b>\n"
-        f"قلمرو: <b>{cult.realm}</b>\n"
-        f"سطح: {cult.stage} / ۳\n"
-        f"انرژی: {cult.energy} / {result.get('energy_needed', '?') if False else ''}\n"
-    )
-    if tech:
-        text += f"تکنیک فعال: <b>{tech.name}</b> ({tech.grade})\n"
-    else:
-        text += "تکنیک فعال: ❌ نداره\n"
-    
-    text += (
-        "\nدستورات:\n"
-        "«جمع آوری چی» یا «تذهیب کردن» — جمع انرژی\n"
-        "/techniques — تکنیک‌های من\n"
-        "/learntech — یادگیری تکنیک پایه\n"
-        "/givetech — انتقال تکنیک (ریپلای)"
-    )
-    await message.answer(text)
+        if tech:
+            text += f"تکنیک فعال: <b>{tech.name}</b> ({tech.grade})\n"
+        else:
+            text += "تکنیک فعال: ❌ — /learntech\n"
+        text += (
+            "\n⚡ جمع انرژی:\n"
+            "• دکمه «تذهیب کردن» یا «جمع آوری چی»\n"
+            "• /gather یا /meditate\n"
+            "• اول /gender اگر جنسیت نزدی\n"
+            "/techniques /learntech /afk /body"
+        )
+        await message.answer(text)
+    except Exception as e:
+        await message.answer(f"خطا در تذهیب: {type(e).__name__}: {e}")
 
 
 @router.message(Command("techniques", "تکنیک‌ها", "تکنیک"))
