@@ -130,29 +130,98 @@ function pickGame(name){
   else if(name==='hukum') renderHukumHub(a);
 }
 
-/* ----- شطرنج ----- */
-const startPcs=()=>{const p=Array(64).fill('');const b=['♜','♞','♝','♛','♚','♝','♞','♜'];
-  for(let i=0;i<8;i++){p[i]=b[i];p[8+i]='♟';p[48+i]='♙';p[56+i]=['♖','♘','♗','♕','♔','♗','♘','♖'][i];}return p;};
-let pcs=startPcs(),sel=null,turn='w',chessMode='bot';
+/* ----- شطرنج واقعی ----- */
+const WSET='♙♖♘♗♕♔', BSET='♟♜♞♝♛♚';
+const startPcs=()=>{const p=Array(64).fill('');
+  const back=['♜','♞','♝','♛','♚','♝','♞','♜'];
+  for(let i=0;i<8;i++){p[i]=back[i];p[8+i]='♟';p[48+i]='♙';p[56+i]=['♖','♘','♗','♕','♔','♗','♘','♖'][i];}
+  return p;};
+let pcs=startPcs(),sel=null,turn='w',chessMode='bot',chessMoved={};
+
+function isW(pc){return WSET.includes(pc)}
+function isB(pc){return BSET.includes(pc)}
+function rc(i){return [i>>3,i&7]}
+function idx(r,c){return r*8+c}
+function enemy(pc,tr){return tr==='w'?isB(pc):isW(pc)}
+function friend(pc,tr){return tr==='w'?isW(pc):isB(pc)}
+
+function rayMoves(from,dirs,board,tr){
+  const out=[]; const [r0,c0]=rc(from);
+  for(const [dr,dc] of dirs){
+    let r=r0+dr,c=c0+dc;
+    while(r>=0&&r<8&&c>=0&&c<8){
+      const j=idx(r,c), t=board[j];
+      if(!t) out.push(j);
+      else { if(enemy(t,tr)) out.push(j); break; }
+      r+=dr; c+=dc;
+    }
+  }
+  return out;
+}
+
+function legalMoves(from, board, tr){
+  const pc=board[from]; if(!pc) return [];
+  if(tr==='w'&&!isW(pc)) return [];
+  if(tr==='b'&&!isB(pc)) return [];
+  const [r,c]=rc(from); const moves=[];
+  const add=(j)=>{if(j<0||j>63)return; const t=board[j]; if(!t||enemy(t,tr)) moves.push(j);};
+
+  // pawn
+  if(pc==='♙'||pc==='♟'){
+    const dir=pc==='♙'?-1:1;
+    const startRow=pc==='♙'?6:1;
+    const one=idx(r+dir,c);
+    if(r+dir>=0&&r+dir<8&&!board[one]) { moves.push(one);
+      if(r===startRow){ const two=idx(r+2*dir,c); if(!board[two]) moves.push(two); }
+    }
+    for(const dc of [-1,1]){
+      const nr=r+dir,nc=c+dc;
+      if(nr>=0&&nr<8&&nc>=0&&nc<8){ const j=idx(nr,nc); if(board[j]&&enemy(board[j],tr)) moves.push(j); }
+    }
+    return moves;
+  }
+  // knight
+  if(pc==='♘'||pc==='♞'){
+    for(const [dr,dc] of [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]]){
+      const nr=r+dr,nc=c+dc;
+      if(nr>=0&&nr<8&&nc>=0&&nc<8) add(idx(nr,nc));
+    }
+    return moves;
+  }
+  // king
+  if(pc==='♔'||pc==='♚'){
+    for(let dr=-1;dr<=1;dr++) for(let dc=-1;dc<=1;dc++){
+      if(!dr&&!dc) continue;
+      const nr=r+dr,nc=c+dc;
+      if(nr>=0&&nr<8&&nc>=0&&nc<8) add(idx(nr,nc));
+    }
+    return moves;
+  }
+  // rook
+  if(pc==='♖'||pc==='♜') return rayMoves(from,[[1,0],[-1,0],[0,1],[0,-1]],board,tr);
+  // bishop
+  if(pc==='♗'||pc==='♝') return rayMoves(from,[[1,1],[1,-1],[-1,1],[-1,-1]],board,tr);
+  // queen
+  if(pc==='♕'||pc==='♛') return rayMoves(from,[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]],board,tr);
+  return moves;
+}
 
 function renderChessHub(a){
   a.innerHTML=`<div class="modebar">
     <button class="btn dark" onclick="chessStart('bot')">با ربات</button>
-    <button class="btn dark" onclick="chessStart('2p')">دونفره (یک دستگاه)</button>
-    <button class="btn dark" onclick="chessStart('online')">اتاق آنلاین (۲ نفر)</button>
-    <button class="btn dark" onclick="chessStart('multi')">اتاق چندنفره (تماشا)</button>
+    <button class="btn dark" onclick="chessStart('2p')">دونفره</button>
+    <button class="btn dark" onclick="chessStart('online')">آنلاین</button>
   </div><div id="chessBox"></div>`;
 }
 function chessStart(mode){
-  chessMode=mode; pcs=startPcs(); sel=null; turn='w';
+  chessMode=mode; pcs=startPcs(); sel=null; turn='w'; chessMoved={};
   const box=document.getElementById('chessBox');
-  if(mode==='online'||mode==='multi'){
-    box.innerHTML=`<p class="muted">${mode==='multi'?'اتاق چندنفره (تا ۸ تماشاچی + ۲ بازیکن)':'اتاق ۲ نفره'}</p>
-      <button class="btn" onclick="chessCreateRoom()">ساخت اتاق</button>
+  if(mode==='online'){
+    box.innerHTML=`<button class="btn" onclick="chessCreateRoom()">ساخت اتاق</button>
       <input class="code" id="chCode" placeholder="کد"/><button class="btn ok" onclick="chessJoinRoom()">ورود</button>
       <p id="chRoom" class="muted"></p><div id="cb" class="board"></div><p id="cm"></p>`;
   } else {
-    box.innerHTML=`<p class="muted">${mode==='bot'?'در برابر ربات':'نوبتی روی یک گوشی'}</p>
+    box.innerHTML=`<p class="muted">حرکت قانونی شطرنج — انتخاب مهره سپس خانه مقصد</p>
       <div class="board" id="cb"></div><p id="cm">نوبت: سفید</p>
       <button class="btn" onclick="pcs=startPcs();sel=null;turn='w';drawChess()">ریست</button>`;
     drawChess();
@@ -160,42 +229,88 @@ function chessStart(mode){
 }
 async function chessCreateRoom(){
   const j=await createRoom('chess'); if(j.error){alert(j.error);return;}
-  document.getElementById('chRoom').textContent='کد اتاق: '+j.code+' — برای دوست بفرست';
-  document.getElementById('chCode').value=j.code;
-  window._chessCode=j.code; drawChess();
+  document.getElementById('chRoom').textContent='کد: '+j.code;
+  document.getElementById('chCode').value=j.code; drawChess();
 }
 async function chessJoinRoom(){
   const code=document.getElementById('chCode').value.trim().toUpperCase();
   const j=await joinRoom(code,'chess');
   if(j.error){document.getElementById('chRoom').innerHTML='<span class="err">'+j.error+'</span>';return;}
-  window._chessCode=code;
-  document.getElementById('chRoom').textContent='وصل شدی. نفرات: '+(j.players||[]).map(p=>p.name).join(', ');
+  document.getElementById('chRoom').textContent='وصل: '+(j.players||[]).map(p=>p.name).join(', ');
   drawChess();
 }
 function drawChess(){
   const b=document.getElementById('cb'); if(!b)return; b.innerHTML='';
-  pcs.forEach((pc,i)=>{const d=document.createElement('div');
-    d.className='cell'+(((i%8)+(i/8|0))%2===0?' l':'')+(sel===i?' sel':'');
-    d.textContent=pc; d.onclick=()=>clickChess(i); b.appendChild(d);});
-  const cm=document.getElementById('cm'); if(cm) cm.textContent='نوبت: '+(turn==='w'?'سفید':'سیاه');
+  const legal = sel!==null ? legalMoves(sel,pcs,turn) : [];
+  pcs.forEach((pc,i)=>{
+    const d=document.createElement('div');
+    d.className='cell'+((((i%8)+(i/8|0))%2===0)?' l':'')+(sel===i?' sel':'');
+    if(legal.includes(i)) d.style.boxShadow='inset 0 0 0 3px #00b894';
+    d.textContent=pc; d.onclick=()=>clickChess(i); b.appendChild(d);
+  });
+  const cm=document.getElementById('cm');
+  if(cm) cm.textContent='نوبت: '+(turn==='w'?'سفید':'سیاه')+(sel!==null?' | حرکت قانونی سبز':'');
 }
-function isW(pc){return '♙♖♘♗♕♔'.includes(pc)} function isB(pc){return '♟♜♞♝♛♚'.includes(pc)}
 function clickChess(i){
-  if(sel===null){if(!pcs[i])return; if(turn==='w'&&!isW(pcs[i]))return; if(turn==='b'&&!isB(pcs[i]))return; sel=i;drawChess();return;}
-  if(sel===i){sel=null;drawChess();return;}
-  if(turn==='w'&&isW(pcs[i])){sel=i;drawChess();return;} if(turn==='b'&&isB(pcs[i])){sel=i;drawChess();return;}
-  pcs[i]=pcs[sel]; pcs[sel]=''; sel=null; turn=turn==='w'?'b':'w'; drawChess();
-  if(chessMode==='bot'&&turn==='b') setTimeout(botChess, 400);
+  if(sel===null){
+    if(!pcs[i]) return;
+    if(turn==='w'&&!isW(pcs[i])) return;
+    if(turn==='b'&&!isB(pcs[i])) return;
+    sel=i; drawChess(); return;
+  }
+  if(sel===i){ sel=null; drawChess(); return; }
+  const legal=legalMoves(sel,pcs,turn);
+  if(!legal.includes(i)){
+    if((turn==='w'&&isW(pcs[i]))||(turn==='b'&&isB(pcs[i]))){ sel=i; drawChess(); return; }
+    const cm=document.getElementById('cm');
+    if(cm) cm.textContent='حرکت غیرمجاز!';
+    return;
+  }
+  let piece=pcs[sel];
+  const [tr]=rc(i);
+  const needPromo=(piece==='♙'&&tr===0)||(piece==='♟'&&tr===7);
+  if(needPromo){
+    window._promo={from:sel,to:i,side:turn};
+    const box=document.getElementById('chessBox');
+    const bar=document.createElement('div');
+    bar.id='promoBar';
+    bar.innerHTML='<p>سرباز به چه چیزی تبدیل شود؟</p>'+
+      (turn==='w'
+        ? '<button class="btn" onclick="doPromo('♕')">وزیر</button><button class="btn" onclick="doPromo('♖')">رخ</button><button class="btn" onclick="doPromo('♗')">فیل</button><button class="btn" onclick="doPromo('♘')">اسب</button>'
+        : '<button class="btn" onclick="doPromo('♛')">وزیر</button><button class="btn" onclick="doPromo('♜')">رخ</button><button class="btn" onclick="doPromo('♝')">فیل</button><button class="btn" onclick="doPromo('♞')">اسب</button>');
+    const old=document.getElementById('promoBar'); if(old) old.remove();
+    box.appendChild(bar);
+    return;
+  }
+  pcs[i]=piece; pcs[sel]=''; sel=null;
+  turn=turn==='w'?'b':'w';
+  drawChess();
+  if(chessMode==='bot'&&turn==='b') setTimeout(botChessLegal, 350);
 }
-function botChess(){
-  const moves=[];
-  for(let i=0;i<64;i++) if(isB(pcs[i])) for(let j=0;j<64;j++) if(!isB(pcs[j])) moves.push([i,j]);
-  if(!moves.length)return;
-  const [a,b]=moves[Math.floor(Math.random()*moves.length)];
-  pcs[b]=pcs[a]; pcs[a]=''; turn='w'; drawChess();
+function doPromo(piece){
+  const p=window._promo; if(!p) return;
+  pcs[p.to]=piece; pcs[p.from]=''; sel=null; window._promo=null;
+  const bar=document.getElementById('promoBar'); if(bar) bar.remove();
+  turn=turn==='w'?'b':'w';
+  drawChess();
+  if(chessMode==='bot'&&turn==='b') setTimeout(botChessLegal, 350);
+}
+function botChessLegal(){
+  const all=[];
+  for(let i=0;i<64;i++) if(isB(pcs[i])){
+    for(const j of legalMoves(i,pcs,'b')) all.push([i,j]);
+  }
+  if(!all.length){ const cm=document.getElementById('cm'); if(cm) cm.textContent='سفید برنده (پات/مات تقریبی)'; return; }
+  // prefer capture
+  all.sort((a,b)=> (pcs[b[1]]?1:0)-(pcs[a[1]]?1:0));
+  const [f,to]=all[Math.floor(Math.random()*Math.min(3,all.length))];
+  let piece=pcs[f];
+  const [tr]=rc(to);
+  if(piece==='♟'&&tr===7) piece='♛';
+  pcs[to]=piece; pcs[f]=''; turn='w'; drawChess();
 }
 
-/* ----- تخته نرد ----- */
+/* ----- تخته‌نرد ایرانی ----- */
 function renderNardHub(a){
   a.innerHTML=`<div class="modebar">
     <button class="btn dark" onclick="nardStart('bot')">با ربات</button>
@@ -203,55 +318,127 @@ function renderNardHub(a){
   </div><div id="nardBox"></div>`;
 }
 function nardStart(mode){
-  window._nard={mode,turn:0,dice:[0,0],pts:Array(24).fill(null).map(()=>({w:0,b:0})),off:{w:0,b:0},bar:{w:0,b:0}};
-  // چیدمان اولیه ساده
-  const p=window._nard.pts;
-  p[0].w=2; p[11].w=5; p[16].w=3; p[18].w=5;
-  p[23].b=2; p[12].b=5; p[7].b=3; p[5].b=5;
+  // pts[0..23] count of white/black; white moves 0→23, black 23→0
+  const pts=Array.from({length:24},()=>({w:0,b:0}));
+  pts[0].w=2; pts[11].w=5; pts[16].w=3; pts[18].w=5;
+  pts[23].b=2; pts[12].b=5; pts[7].b=3; pts[5].b=5;
+  window._nard={mode,turn:'w',dice:[],movesLeft:[],pts,bar:{w:0,b:0},off:{w:0,b:0},sel:null};
   const box=document.getElementById('nardBox');
-  box.innerHTML=`<p class="muted">${mode==='bot'?'در برابر ربات':'دو نفره روی یک دستگاه'}</p>
+  box.innerHTML=`<p class="muted">تخته‌نرد: تاس بزن، مهره را انتخاب کن، خانه مقصد را بزن. زدن مهرهٔ تک به بار می‌رود.</p>
     <div class="nard-board" id="nb"></div>
     <div><span class="pip" id="d1">?</span><span class="pip" id="d2">?</span></div>
-    <p id="ni">نوبت: سفید — تاس بزن</p>
-    <button class="btn" onclick="nardDice()">🎲 تاس</button>
+    <p id="ni">نوبت سفید — تاس بزن</p>
+    <button class="btn" id="nbDice" onclick="nardRollDice()">🎲 تاس</button>
     <button class="btn dark" onclick="nardStart('${mode}')">ریست</button>`;
   drawNard();
 }
 function drawNard(){
+  const n=window._nard; if(!n)return;
   const nb=document.getElementById('nb'); if(!nb)return;
-  const pts=window._nard.pts;
   const row=(from,to,rev)=>{
     let h='<div class="nard-row">';
-    const idx=[]; for(let i=from;i!==to+(rev?-1:1);i+=(rev?-1:1)) idx.push(i);
-    idx.forEach(i=>{
-      const c=pts[i]; let chips='';
-      for(let k=0;k<c.w;k++) chips+='<div class="checker w">●</div>';
-      for(let k=0;k<c.b;k++) chips+='<div class="checker b">●</div>';
-      h+=`<div class="nard-point" data-i="${i}">${chips||'<span class="muted">'+(i+1)+'</span>'}</div>`;
-    });
+    const step=rev?-1:1;
+    for(let i=from; rev?i>=to:i<=to; i+=step){
+      const c=n.pts[i]; let chips='';
+      for(let k=0;k<Math.min(c.w,5);k++) chips+='<div class="checker w">●</div>';
+      if(c.w>5) chips+='<div class="checker w">'+c.w+'</div>';
+      for(let k=0;k<Math.min(c.b,5);k++) chips+='<div class="checker b">●</div>';
+      if(c.b>5) chips+='<div class="checker b">'+c.b+'</div>';
+      const sel=n.sel===i?'outline:2px solid #ffeaa7;':'';
+      h+=`<div class="nard-point" style="${sel}" onclick="nardClick(${i})">${chips||'<span class="muted">'+(i+1)+'</span>'}</div>`;
+    }
     return h+'</div>';
   };
-  nb.innerHTML=row(12,23,false)+row(11,0,true);
+  nb.innerHTML=row(12,23,false)+`<p class="muted" style="text-align:center">بار: سفید ${n.bar.w} | سیاه ${n.bar.b} — خارج: ${n.off.w}/${n.off.b}</p>`+row(11,0,true);
 }
-function nardDice(){
+function nardRollDice(){
   const n=window._nard;
-  n.dice=[1+Math.floor(Math.random()*6),1+Math.floor(Math.random()*6)];
-  document.getElementById('d1').textContent=n.dice[0];
-  document.getElementById('d2').textContent=n.dice[1];
-  const sum=n.dice[0]+n.dice[1];
-  // حرکت ساده خودکار برای نمایش
-  const side=n.turn===0?'w':'b';
-  let moved=false;
-  for(let i=0;i<24;i++){
-    if(n.pts[i][side]>0){
-      const dest=side==='w'?Math.min(23,i+sum):Math.max(0,i-sum);
-      if(dest!==i){ n.pts[i][side]--; n.pts[dest][side]++; moved=true; break; }
+  if(n.movesLeft.length){ document.getElementById('ni').textContent='اول حرکت‌هایت را تمام کن'; return; }
+  const a=1+Math.floor(Math.random()*6), b=1+Math.floor(Math.random()*6);
+  n.dice=[a,b];
+  document.getElementById('d1').textContent=a;
+  document.getElementById('d2').textContent=b;
+  n.movesLeft = a===b ? [a,a,a,a] : [a,b];
+  n.sel=null;
+  document.getElementById('ni').textContent='نوبت '+(n.turn==='w'?'سفید':'سیاه')+' | تاس: '+n.movesLeft.join(',')+' — مهره را انتخاب کن';
+  drawNard();
+  if(n.mode==='bot'&&n.turn==='b') setTimeout(nardBotMove, 400);
+}
+function nardCanLand(side, dest){
+  const n=window._nard; if(dest<0||dest>23) return false;
+  const cell=n.pts[dest];
+  if(side==='w') return cell.b<=1;
+  return cell.w<=1;
+}
+function nardClick(i){
+  const n=window._nard;
+  if(!n.movesLeft.length){ document.getElementById('ni').textContent='اول تاس بزن'; return; }
+  const side=n.turn;
+  if(n.sel===null){
+    // pick
+    if(side==='w' && n.bar.w>0){
+      // must enter from bar
+      n.sel=-1; document.getElementById('ni').textContent='ورود از بار — خانه مقصد';
+      return;
+    }
+    if(side==='b' && n.bar.b>0){ n.sel=-2; return; }
+    if(side==='w'&&n.pts[i].w>0){ n.sel=i; drawNard(); return; }
+    if(side==='b'&&n.pts[i].b>0){ n.sel=i; drawNard(); return; }
+    return;
+  }
+  // destination
+  const from=n.sel;
+  for(let mi=0; mi<n.movesLeft.length; mi++){
+    const d=n.movesLeft[mi];
+    let dest;
+    if(from===-1){ dest=d-1; } // white bar enters 0..5 as 1-6
+    else if(from===-2){ dest=24-d; }
+    else { dest = side==='w' ? from+d : from-d; }
+    if(dest===i && nardCanLand(side, dest)){
+      // hit
+      if(side==='w'&&n.pts[dest].b===1){ n.pts[dest].b=0; n.bar.b++; }
+      if(side==='b'&&n.pts[dest].w===1){ n.pts[dest].w=0; n.bar.w++; }
+      if(from===-1) n.bar.w--;
+      else if(from===-2) n.bar.b--;
+      else { if(side==='w') n.pts[from].w--; else n.pts[from].b--; }
+      if(side==='w') n.pts[dest].w++; else n.pts[dest].b++;
+      n.movesLeft.splice(mi,1);
+      n.sel=null;
+      if(!n.movesLeft.length){
+        n.turn = side==='w'?'b':'w';
+        document.getElementById('ni').textContent='نوبت '+(n.turn==='w'?'سفید':'سیاه')+' — تاس بزن';
+      } else {
+        document.getElementById('ni').textContent='باقی تاس: '+n.movesLeft.join(',');
+      }
+      drawNard();
+      if(n.mode==='bot'&&n.turn==='b'&&!n.movesLeft.length) setTimeout(()=>{nardRollDice();},500);
+      return;
     }
   }
-  n.turn=1-n.turn;
-  document.getElementById('ni').textContent='تاس: '+sum+' | نوبت: '+(n.turn===0?'سفید':'سیاه')+(n.mode==='bot'&&n.turn===1?' (ربات)':'');
+  // reselect
+  if(side==='w'&&n.pts[i].w>0){ n.sel=i; drawNard(); return; }
+  if(side==='b'&&n.pts[i].b>0){ n.sel=i; drawNard(); return; }
+  n.sel=null; drawNard();
+}
+function nardBotMove(){
+  const n=window._nard;
+  if(!n.movesLeft.length){ nardRollDice(); return; }
+  // try any legal
+  for(const d of n.movesLeft.slice()){
+    for(let i=23;i>=0;i--){
+      if(n.pts[i].b<=0) continue;
+      const dest=i-d;
+      if(dest>=0 && nardCanLand('b',dest)){
+        n.sel=i; nardClick(dest);
+        if(n.movesLeft.length) setTimeout(nardBotMove,300);
+        return;
+      }
+    }
+  }
+  // no move
+  n.movesLeft=[]; n.turn='w';
+  document.getElementById('ni').textContent='سیاه حرکت نداشت — نوبت سفید';
   drawNard();
-  if(n.mode==='bot'&&n.turn===1) setTimeout(()=>{nardDice();},600);
 }
 
 /* ----- سنگ کاغذ ----- */

@@ -123,3 +123,16 @@ async def cmd_iamadmin(message: Message):
         f"نقش فعلی: <b>{user.role}</b>\n"
         f"تعداد ادمین‌های تنظیم‌شده: {len(ADMIN_IDS)}"
     )
+
+@router.message(Command("ping", "تست"))
+async def cmd_ping(message: Message):
+    await message.answer("pong ✅ ربات آنلاین است.")
+
+
+@router.message()
+async def fallback_message(message: Message):
+    text = (message.text or "").strip()
+    if text.startswith("/"):
+        await message.answer(
+            "دستور ناشناخته." + chr(10) + "/start — شروع" + chr(10) + "/help — راهنما" + chr(10) + "/ping — تست"
+        )

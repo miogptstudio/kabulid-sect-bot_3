@@ -110,8 +110,29 @@ async def activate_tech(callback: CallbackQuery):
     await callback.answer(msg, show_alert=True)
 
 
+@router.message(Command("learnforbidden", "پرورش‌ممنوعه", "ممنوعه"))
+async def cmd_learn_forbidden(message: Message):
+    """یادگیری تکنیک پرورش ممنوعه — غیرقابل برگشت"""
+    async with async_session() as session:
+        await ensure_default_techniques(session)
+        user = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
+        result = await session.execute(
+            select(CultivationTechnique).where(CultivationTechnique.name == "پرورش ممنوعه")
+        )
+        tech = result.scalar_one_or_none()
+        if not tech:
+            await message.answer("تکنیک پیدا نشد. بعداً تلاش کن.")
+            return
+        msg = await learn_technique(session, user.id, tech)
+        await message.answer(msg)
+
+
 @router.message(Command("learntech"))
 async def cmd_learn_starter(message: Message):
+
     async with async_session() as session:
         await ensure_default_techniques(session)
         user = await get_or_create_user(

@@ -7,7 +7,7 @@ from aiogram.enums import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
 
 from bot.config import BOT_TOKEN
-from database.engine import engine
+from database.engine import engine, migrate_schema
 from database.models import Base
 import database.models_v2  # noqa: F401
 import database.models_v3  # noqa: F401
@@ -24,7 +24,8 @@ logger = logging.getLogger(__name__)
 async def on_startup():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    logger.info("Database tables created (v1 + v2 + v3).")
+    await migrate_schema()
+    logger.info("Database tables created + migrated (v1 + v2 + v3).")
 
 
 async def main():
@@ -72,6 +73,9 @@ async def main():
 
     await on_startup()
     logger.info("Bot starting (no channel lock)...")
+    # قطع webhook و نمونه قبلی تا Conflict نماند
+    await bot.delete_webhook(drop_pending_updates=True)
+    logger.info("Webhook cleared; starting polling...")
     await dp.start_polling(bot)
 
 

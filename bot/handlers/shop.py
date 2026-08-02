@@ -217,9 +217,42 @@ async def cmd_use_item(message: Message):
                 msg_parts.append(f"قدرت دوئل (از آیتم): {effect['duel_power']}")
             if effect.get("learn_tech"):
                 msg_parts.append(f"تکنیک مرتبط: {effect['learn_tech']} — /learntech")
+            # چای تذهیب + انرژی با کول‌داون ۱۰ دقیقه
+            if item.item_type == "tea" or effect.get("cooldown_min") or "چای" in item.name:
+                from datetime import datetime, timedelta
+                global _tea_cd
+                try:
+                    _tea_cd
+                except NameError:
+                    _tea_cd = {}
+                uid = message.from_user.id
+                wait = int(effect.get("cooldown_min") or 10)
+                last = _tea_cd.get(uid)
+                now = datetime.utcnow()
+                if last and now < last:
+                    left = int((last - now).total_seconds() // 60) + 1
+                    await message.answer(f"⏳ چای هنوز اثر دارد. {left} دقیقه صبر کن.")
+                    return
+                from services.cultivation import add_energy
+                gain = int(effect.get("energy") or 8000)
+                res = await add_energy(session, user.id, gain)
+                _tea_cd[uid] = now + timedelta(minutes=wait)
+                msg_parts.append(f"🍵 +{gain} انرژی تذهیب")
+                if res.get("messages"):
+                    msg_parts.extend(res["messages"])
+            elif effect.get("energy") and item.item_type in ("pill", "tea"):
+                from services.cultivation import add_energy
+                gain = int(effect["energy"])
+                res = await add_energy(session, user.id, gain)
+                msg_parts.append(f"+{gain} انرژی")
+                if res.get("messages"):
+                    msg_parts.extend(res["messages"])
+            if effect.get("heal"):
+                from services.combat_blood import heal_poison
+                msg_parts.append(await heal_poison(session, user))
 
         # منابع از مواد
-        if getattr(item, "item_type", "") in ("material", "herb_normal", "herb_spiritual", "pill"):
+        if getattr(item, "item_type", "") in ("material", "herb_normal", "herb_spiritual"):
             from services.economy import get_or_create_wallet as _gw
             _w = await _gw(session, user.id)
             _gain = 15
@@ -275,3 +308,123 @@ async def cmd_drop_item(message: Message):
         await session.commit()
 
     await message.answer(f"🗑 «{name}» ×{qty} از کیف حذف شد.")
+
+
+@router.message(Command("gift", "هدیه", "بده"))
+async def cmd_gift_item(message: Message):
+    """هدیه آیتم: ریپلای + /gift شماره"""
+    if not message.reply_to_message:
+        await message.answer("روی پیام گیرنده ریپلای کن و /gift شماره بزن." + chr(10) + "شماره از /inventory")
+        return
+    parts = (message.text or "").split()
+    if len(parts) < 2:
+        await message.answer("/gift شماره")
+        return
+    try:
+        idx = int(parts[1]) - 1
+    except ValueError:
+        await message.answer("شماره نامعتبر")
+        return
+    async with async_session() as session:
+        giver = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
+        tu = message.reply_to_message.from_user
+        recv = await get_or_create_user(session, tu.id, tu.full_name, tu.username)
+        if giver.id == recv.id:
+            await message.answer("به خودت نه.")
+            return
+        from sqlalchemy import select
+        from database.models_v3 import UserInventory
+        result = await session.execute(
+            select(UserInventory, ShopItem)
+            .join(ShopItem, UserInventory.item_id == ShopItem.id)
+            .where(UserInventory.user_id == giver.id)
+        )
+        rows = result.all()
+        if idx < 0 or idx >= len(rows):
+            await message.answer("آیتم پیدا نشد.")
+            return
+        inv, item = rows[idx]
+        if item.item_type == "weapon_unique" or (isinstance(item.effect, dict) and item.effect.get("unique")):
+            await message.answer("آیتم یکتا قابل هدیه نیست.")
+            return
+        # transfer 1
+        inv.quantity -= 1
+        if inv.quantity <= 0:
+            await session.delete(inv)
+        # add to recv
+        r2 = await session.execute(
+            select(UserInventory).where(
+                UserInventory.user_id == recv.id,
+                UserInventory.item_id == item.id
+            )
+        )
+        rinv = r2.scalar_one_or_none()
+        if rinv:
+            rinv.quantity += 1
+        else:
+            session.add(UserInventory(user_id=recv.id, item_id=item.id, quantity=1))
+        await session.commit()
+    await message.answer(f"🎁 «{item.name}» به {recv.full_name} هدیه شد.")
+
+
+@router.message(Command("adshop", "فروشگاه‌ادمین"))
+async def cmd_admin_shop(message: Message):
+    from bot.config import ADMIN_IDS
+    if message.from_user.id not in ADMIN_IDS:
+        await message.answer("فقط ادمین.")
+        return
+    async with async_session() as session:
+        from services.shop import ensure_default_buildings_and_items, get_buildings, get_items_of_building
+        await ensure_default_buildings_and_items(session)
+        buildings = await get_buildings(session)
+        text = "🛠 <b>فروشگاه ادمین (رایگان)</b>" + chr(10) + "/adget نام‌آیتم" + chr(10) + chr(10)
+        for b in buildings:
+            items = await get_items_of_building(session, b.id)
+            text += f"<b>{b.name}</b>" + chr(10)
+            for it in items[:12]:
+                text += f"• {it.name}" + chr(10)
+            text += chr(10)
+        await message.answer(text[:4000])
+
+
+@router.message(Command("adget", "ادمین‌بگیر"))
+async def cmd_admin_get(message: Message):
+    from bot.config import ADMIN_IDS
+    if message.from_user.id not in ADMIN_IDS:
+        await message.answer("فقط ادمین.")
+        return
+    parts = (message.text or "").split(maxsplit=1)
+    if len(parts) < 2:
+        await message.answer("/adget نام دقیق آیتم")
+        return
+    name = parts[1].strip()
+    async with async_session() as session:
+        user = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
+        from sqlalchemy import select
+        from database.models_v3 import UserInventory
+        r = await session.execute(select(ShopItem).where(ShopItem.name == name))
+        item = r.scalar_one_or_none()
+        if not item:
+            await message.answer("آیتم پیدا نشد. /adshop")
+            return
+        r2 = await session.execute(
+            select(UserInventory).where(
+                UserInventory.user_id == user.id,
+                UserInventory.item_id == item.id
+            )
+        )
+        inv = r2.scalar_one_or_none()
+        if inv:
+            inv.quantity += 1
+        else:
+            session.add(UserInventory(user_id=user.id, item_id=item.id, quantity=1))
+        if item.item_type == "weapon_unique" or (isinstance(item.effect, dict) and item.effect.get("unique") == "cyrus"):
+            user.has_cyrus_sword = True
+        await session.commit()
+    await message.answer(f"✅ رایگان: «{name}» به کیف اضافه شد.")

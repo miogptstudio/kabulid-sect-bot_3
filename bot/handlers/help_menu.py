@@ -1,3 +1,4 @@
+
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command
@@ -8,98 +9,96 @@ router = Router()
 
 SECTIONS = {
     "rules": (
-        "📜 قوانین",
-        "۱) احترام به بازیکنان — توهین ممنوع\n"
+        "📜 قوانین بازی",
+        "۱) احترام به بازیکنان — توهین و اسپم ممنوع\n"
         "۲) جنسیت با /gender فقط یک‌بار و دائمی است\n"
-        "۳) دوئل و کشتار بخشی از بازی است؛ خارج از بازی دعوا نکنید\n"
+        "۳) دوئل و جنگ بخشی از بازی است؛ خارج از بازی دعوا نکنید\n"
         "۴) آسیب به خدمتکار = حذف اکانت\n"
-        "۵) حداکثر ۳ مأموریت در روز؛ چهارمی = حذف اکانت\n"
+        "۵) حداکثر ۳ مأموریت روزانه؛ چهارمی = حذف اکانت\n"
         "۶) سوءاستفاده از باگ را گزارش دهید\n"
-        "۷) کنترل کل ربات فقط مال سازنده است\n"
-        "۸) شرط‌بندی دوئل با رضایت دو طرف است\n"
+        "۷) کنترل کل ربات فقط مال سازنده (ADMIN) است\n"
+        "۸) شرط دوئل با رضایت دو طرف است\n"
         "۹) خودارضایی باکرگی را از بین نمی‌برد\n"
-        "۱۰) ادمین می‌تواند تذهیب/پول را تنظیم کند"
+        "۱۰) پرورش ممنوعه غیرقابل برگشت است\n"
+        "۱۱) شمشیر کوروش یکتاست و ضربه آن اکانت را پاک می‌کند\n"
+        "۱۲) سم بعد از /kill سه ساعت وقت /heal دارد"
     ),
     "start": (
-        "🚀 شروع و پروفایل",
+        "🚀 شروع",
         "/start — ثبت‌نام\n"
-        "/profile — پروفایل (رتبه، عمر، کیف پول، تذهیب…)\n"
-        "/gender — جنسیت دائمی (قبل از تذهیب اجباری)\n"
-        "/iamadmin — چک ادمین بودن"
-    ),
-    "duel": (
-        "⚔️ دوئل و جنگ",
-        "/duel [مبلغ] — دوئل بر اساس قدرت و سلاح مجهز (خون کم می‌شود)\n/deathduel — دوئل تا مرگ\n/equip · /unequip — سلاح\n/kill — زخم+سم (۳ ساعت /heal)\n/blood — وضعیت خون\n/heal — قرص سلامتی\n"
-        "  رد دوئل حداکثر ۵ بار در روز\n"
-        "  ۲٪ شانس آسیب به قلمرو بازنده\n"
-        "/guardian — نگهبان (هر ۵ دقیقه)\n"
-        "/gduel — نگهبان دو نفره\n"
-        "/kill — حمله مرگبار\n"
-        "/power — قدرت\n"
-        "/ranking · /leaders — لیدربورد"
+        "/profile — پروفایل کامل\n"
+        "/gender — انتخاب جنسیت (اجباری قبل از تذهیب)\n"
+        "/help — همین منو\n"
+        "/ping — تست آنلاین بودن ربات\n\n"
+        "اول /gender بزن، بعد تذهیب را شروع کن."
     ),
     "cult": (
         "🧘 تذهیب",
-        "/cultivation — وضعیت\n/afk · /afkclaim — تذهیب خودکار\n/body — نوع بدن\n"
-        "«تذهیب کردن» / «جمع آوری چی» → +۵۰۰۰ انرژی\n"
-        "هر سطح ۵۰۰۰۰ انرژی | هر قلمرو ۱۰ مرحله\n"
-        "قلمروها تا ای‌تری، جاودان، خلقت…\n"
-        "/techniques · /learntech\n"
-        "/solo — خودارضایی (+انرژی، −عمر، بدون از دست دادن باکرگی)\n"
-        "/dual — تذهیب دوگانه\n"
-        "/path — مسیر (شیطانی، ارتدوکس…)\n"
-        "/afterdeath · /releasespirit"
+        "با نوشتن «تذهیب کردن» یا «جمع آوری چی» انرژی می‌گیری.\n"
+        "/cultivation — وضعیت قلمرو، مرحله، ریشه، بدن\n"
+        "/learntech — تکنیک پایه\n"
+        "/learnforbidden — ⚠️ پرورش ممنوعه (قفل ابدی، بار اول +سطح، هر بار +۱ چی)\n"
+        "/techniques — لیست و فعال‌سازی\n"
+        "/afk و /afkclaim — تذهیب خودکار ۳۰ دقیقه\n"
+        "/body — نوع بدن (ضریب تذهیب)\n"
+        "/solo — تمرین انفرادی\n"
+        "/dual — تذهیب دوگانه (زن و مرد)\n\n"
+        "قلمروها از بیداری تا مطلق؛ هرچه بالاتر سخت‌تر.\n"
+        "چای تذهیب از مغازه: +۸۰۰۰ انرژی هر ۱۰ دقیقه (۵۰۰ سکه)."
+    ),
+    "duel": (
+        "⚔️ جنگ و دوئل",
+        "/duel — دوئل قدرتی (سلاح مجهز + تکنیک)؛ خون کم می‌شود\n"
+        "/deathduel — تا مرگ\n"
+        "/kill — زخم + سم (۳ ساعت /heal)\n"
+        "/equip و /unequip — سلاح\n"
+        "/blood — خون و سم\n"
+        "/heal — قرص سلامتی\n"
+        "/guardian — سوال نگهبان\n"
+        "/arena · /arenafight · /arenatop\n"
+        "/lootarena — آرنای غنیمت\n"
+        "/power — قدرت رزمی"
     ),
     "sect": (
-        "🏛️ فرقه",
+        "🏛️ فرقه و جهان",
         "/sects · /newsect · /joinsect · /mysect\n"
-        "/challengeleader · /transferleader · /betray\n"
-        "/territories · /conquer · /sectsettings"
+        "/challengeleader · /transferleader\n"
+        "/cities · /travel · /explorecity (سلاح مخفی)\n"
+        "/worlds · /creatures · /huntcreature\n"
+        "/path — مسیر تذهیب"
+    ),
+    "shop": (
+        "🛒 مغازه و کیف",
+        "/buildings — خرید از ساختمان‌ها\n"
+        "/inventory — کیف\n"
+        "/use شماره — استفاده (چای، قرص، …)\n"
+        "/gift شماره — هدیه به کسی (ریپلای)\n"
+        "/drop شماره — دور انداختن\n"
+        "/wallet · /dailycoin · /pay\n"
+        "/market · /marketbuy — بازار آزاد\n"
+        "/garden · /plant · /harvest"
     ),
     "family": (
         "💍 خانواده",
         "/marry — خواستگاری (مرد یا زن)\n"
-        "/divorce · /wives · /invitewedding\n"
-        "/dual — جفت‌گیری / شانس بچه\n"
-        "/servants — خدمتکار (آسیب=حذف اکانت)"
-    ),
-    "shop": (
-        "🛒 مغازه و منابع",
-        "/buildings — مغازه با سکه\n"
-        "/inventory · /use · /drop\n"
-        "/craft · /pets · /hunt\n"
-        "/wallet · /dailycoin · /daily\n"
-        "/pay — ارسال پول به دیگران\n"
-        "/market · /marketbuy — بازار آزاد\n"
-        "/exchangeup heavenly|celestial|god\n"
-        "/garden · /plant · /harvest"
-    ),
-    "world": (
-        "🏙️ جهان",
-        "/cities · /mycity · /travel\n"
-        "/worlds · /goworld · /worldlist\n"
-        "/creatures · /huntcreature\n"
-        "/attackdim — حمله به بُعد\n"
-        "/dimension · /setdimension"
-    ),
-    "mission": (
-        "🎯 مأموریت",
-        "/missions — روزانه (هر کدام یک‌بار در روز)\n"
-        "حداکثر ۳؛ چهارمی = حذف اکانت\n"
-        "/completemission\n"
-        "/auction · /bid\n"
-        "/master · /takedisciple · /leavemaster"
+        "/divorce · /wives\n"
+        "/master · /takedisciple · /askmaster · /leavemaster\n"
+        "/servants — خدمتکار"
     ),
     "games": (
         "🎮 بازی‌ها",
-        "/games — منوی بازی\n"
-        "/rps — سنگ‌کاغذ‌قیچی با ربات\n"
-        "/rpsduel — سنگ‌کاغذ با دیگران\n"
-        "/dice · /chess · /casino مبلغ\n"
-        "/guess — حدس عدد\n"
-        "/coinflip شیر|خط\n"
-        "/hukum — بازی حکم (کارت)\n"
-        "وب‌اپ: Menu Button → /webapp/games.html"
+        "/games — منوی ربات\n"
+        "وب‌اپ: شطرنج واقعی، تخته‌نرد ایرانی، حکم، سنگ‌کاغذ، کازینو\n"
+        "/hukum · /rpsduel · /guess · /coinflip\n"
+        "سرباز در شطرنج می‌تواند به وزیر/رخ/فیل/اسب تبدیل شود."
+    ),
+    "extra": (
+        "✨ بخش ویژه",
+        "/codex — دانشنامه کوتاه جهان فرقه\n"
+        "/daily — مأموریت/پاداش روزانه\n"
+        "/leaders · /solotop · /ranking\n"
+        "/possess — تسخیر (فقط روح، یک‌بار)\n"
+        "وب‌اپ ورود روزانه: +۵ سنگ بهشتی"
     ),
 }
 
@@ -111,9 +110,9 @@ async def cmd_help_menu(message: Message):
         builder.button(text=title, callback_data=f"helpsec:{message.from_user.id}:{key}")
     builder.adjust(1)
     await message.answer(
-        "📖 <b>راهنمای ربات فرقه</b>\n"
-        "یک بخش را انتخاب کن:\n\n"
-        "📜 اول قوانین را بخوان.",
+        "📖 <b>راهنمای دنیای فرقه</b>\n"
+        "یک بخش را انتخاب کن.\n"
+        "پیشنهاد: اول <b>قوانین</b> و <b>شروع</b> را بخوان.",
         reply_markup=builder.as_markup(),
     )
 
@@ -146,7 +145,7 @@ async def help_back(callback: CallbackQuery):
         builder.button(text=title, callback_data=f"helpsec:{owner}:{key}")
     builder.adjust(1)
     await callback.message.edit_text(
-        "📖 <b>راهنمای ربات فرقه</b>\nیک بخش را انتخاب کن:",
+        "📖 <b>راهنمای دنیای فرقه</b>\nیک بخش را انتخاب کن:",
         reply_markup=builder.as_markup(),
     )
     await callback.answer()
@@ -157,28 +156,25 @@ async def cmd_help_admin(message: Message):
     if message.from_user.id not in ADMIN_IDS:
         await message.answer("⛔️ فقط سازنده ربات.")
         return
-    text = (
-        "🛠 <b>یادآوری اختیارات ادمین</b>\n\n"
-        "<b>هویت</b>\n"
-        "/iamadmin — تأیید ادمین بودن\n"
-        "/admin — پنل خلاصه\n\n"
-        "<b>نقش‌ها</b>\n"
-        "/setrole &lt;telegram_id&gt; &lt;نقش&gt;\n"
-        "نقش: رهبر | معاون رهبر | ارجمند | ارشد | عضو\n\n"
-        "<b>تذهیب</b>\n"
-        "/setcult — ریپلای یا آیدی\n"
-        "مثال: ریپلای + /setcult ای‌تری 5 1000\n"
-        "یا /setcult 6227792513 پایه 3 0\n\n"
-        "<b>پول</b>\n"
-        "/givemoney — دادن (ریپلای یا آیدی)\n"
-        "مثال: /givemoney coins 500\n"
-        "نوع: coins | spirit | heavenly | celestial | god\n"
-        "/takemoney — گرفتن همین فرمت\n\n"
-        "<b>بُعد گروه</b>\n"
-        "/setdimension فانی|بهشتی|زیرین\n\n"
-        "<b>نکات</b>\n"
-        "• فقط ADMIN_IDS به این دستورات دسترسی دارد\n"
-        "• رهبری فرقه ≠ ادمین کل ربات\n"
-        "• DATABASE_URL را برای حفظ دیتا تنظیم کن\n"
+    await message.answer(
+        "🛠 <b>ادمین</b>\n"
+        "/iamadmin · /admin\n"
+        "/setrole · /setcult · /givemoney · /takemoney\n"
+        "/adshop · /adget نام‌آیتم — فروشگاه رایگان\n"
+        "/setdimension\n"
     )
-    await message.answer(text)
+
+
+@router.message(Command("codex", "دانشنامه"))
+async def cmd_codex(message: Message):
+    await message.answer(
+        "📚 <b>دانشنامه کوتاه</b>\n\n"
+        "• <b>تذهیب</b>: جمع انرژی و بالا رفتن قلمرو\n"
+        "• <b>ریشه</b>: نوع استعداد؛ کمیاب‌ها قوی‌تر و گاهی سخت‌تر\n"
+        "• <b>فرقه</b>: گروه بازیکنان با رهبری و قلمرو\n"
+        "• <b>آرنا</b>: رقابت رتبه‌ای با هزینه ورود\n"
+        "• <b>سم</b>: بعد از حمله؛ ۳ ساعت وقت درمان\n"
+        "• <b>پرورش ممنوعه</b>: قدرت سریع با قفل دائمی\n"
+        "• <b>شمشیر کوروش</b>: یکتا؛ ضربه = پاک شدن اکانت\n\n"
+        "برای جزئیات: /help"
+    )

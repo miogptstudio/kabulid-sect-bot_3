@@ -228,6 +228,7 @@ DEFAULT_ITEMS = [
     {"building_type": "داروخانه", "name": "پادزهر", "item_type": "pill", "description": "خنثی کردن سم", "price": 200, "effect": {"heal": 1}},
     {"building_type": "آهنگری", "name": "کلت پنهان", "item_type": "weapon", "description": "سلاح گرم", "price": 3000, "effect": {"duel_power": 25}},
     {"building_type": "آهنگری", "name": "کلاشنیکف کهنه", "item_type": "weapon", "description": "سلاح گرم سنگین", "price": 5000, "effect": {"duel_power": 40}},
+    {"building_type": "داروخانه", "name": "چای تذهیب", "item_type": "tea", "description": "+۸۰۰۰ انرژی تذهیب — هر ۱۰ دقیقه یک‌بار", "price": 500, "effect": {"energy": 8000, "cooldown_min": 10}},
 ]
 
 

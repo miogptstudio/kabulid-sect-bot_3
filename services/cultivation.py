@@ -59,31 +59,38 @@ def energy_needed_for_stage(stage: int, realm: str | None = None, root: str | No
 
 
 
-DEFAULT_TECHNIQUES = [
-    {"name": "تنفس اژدها", "description": "تنفس قوی برای قلمرو بالا", "grade": "بالا", "energy_bonus": 45000, "required_root": None},
-    {"name": "جریان آسمانی", "description": "تکنیک قلمرو پیشرفته", "grade": "پیشرفته", "energy_bonus": 1000, "required_root": None},
-    {"name": "سکوت مرگ", "description": "تکنیک دنیای زیرین", "grade": "بالا", "energy_bonus": 45000, "required_root": "ریشه روح"},
+FORBIDDEN_TECH_NAME = "پرورش ممنوعه"
 
+DEFAULT_TECHNIQUES = [
+    {"name": "تنفس پایه", "description": "تکنیک ساده تذهیب برای مبتدیان", "grade": "پایه", "energy_bonus": 100, "required_root": None},
+    {"name": "جریان پنج‌عنصر", "description": "تکنیک متوسط بر پایه پنج عنصر", "grade": "متوسط", "energy_bonus": 300, "required_root": "ریشه پنج‌عنصر"},
+    {"name": "شعله‌ی درونی", "description": "تکنیک آتشین", "grade": "متوسط", "energy_bonus": 350, "required_root": "ریشه آتش"},
+    {"name": "موج آب", "description": "تکنیک ریشه آب", "grade": "متوسط", "energy_bonus": 350, "required_root": "ریشه آب"},
+    {"name": "ریشه درخت", "description": "تکنیک ریشه چوب", "grade": "متوسط", "energy_bonus": 340, "required_root": "ریشه چوب"},
+    {"name": "تیغه فلز", "description": "تکنیک ریشه فلز", "grade": "متوسط", "energy_bonus": 360, "required_root": "ریشه فلز"},
+    {"name": "ستون خاک", "description": "تکنیک ریشه خاک", "grade": "متوسط", "energy_bonus": 340, "required_root": "ریشه خاک"},
+    {"name": "نفس نورانی", "description": "تکنیک نور", "grade": "بالا", "energy_bonus": 600, "required_root": "ریشه نور"},
+    {"name": "سایه ابدی", "description": "تکنیک تاریکی", "grade": "بالا", "energy_bonus": 600, "required_root": "ریشه تاریکی"},
+    {"name": "همهمه روح", "description": "تکنیک روحی", "grade": "بالا", "energy_bonus": 700, "required_root": "ریشه روحی"},
+    {"name": "تنفس اژدها", "description": "تنفس قوی", "grade": "بالا", "energy_bonus": 800, "required_root": None},
+    {"name": "جریان آسمانی", "description": "تکنیک آسمانی", "grade": "پیشرفته", "energy_bonus": 1200, "required_root": None},
+    {"name": "سکوت مرگ", "description": "تکنیک دنیای زیرین", "grade": "بالا", "energy_bonus": 900, "required_root": "ریشه روح"},
+    {"name": "دعای بهشتی", "description": "تکنیک بهشتی", "grade": "پیشرفته", "energy_bonus": 1500, "required_root": "ریشه بهشتی"},
+    {"name": "رعد آسمانی", "description": "تکنیک آسمانی", "grade": "پیشرفته", "energy_bonus": 2000, "required_root": "ریشه آسمانی"},
+    {"name": "اراده الهی", "description": "تکنیک الهی", "grade": "پیشرفته", "energy_bonus": 3000, "required_root": "ریشه الهی"},
+    {"name": "بلع پوچی", "description": "تکنیک پوچی", "grade": "پیشرفته", "energy_bonus": 2500, "required_root": "ریشه پوچی"},
+    {"name": "جریان ای‌تری", "description": "تکنیک ای‌تری", "grade": "پیشرفته", "energy_bonus": 2200, "required_root": "ریشه ای‌تری"},
+    {"name": "طوفان روح", "description": "باد و روح", "grade": "بالا", "energy_bonus": 750, "required_root": None},
+    {"name": "زره سنگی", "description": "دفاع تذهیب", "grade": "متوسط", "energy_bonus": 280, "required_root": None},
+    {"name": "چشم حقیقت", "description": "درک انرژی", "grade": "بالا", "energy_bonus": 500, "required_root": None},
+    {"name": "پنجه ببر", "description": "حمله", "grade": "بالا", "energy_bonus": 550, "required_root": None},
+    {"name": "مهر خون", "description": "مسیر شیطانی", "grade": "بالا", "energy_bonus": 650, "required_root": None},
     {
-        "name": "تنفس پایه",
-        "description": "تکنیک ساده تذهیب برای مبتدیان",
-        "grade": "پایه",
-        "energy_bonus": 0,
-        "is_starter": True
-    },
-    {
-        "name": "جریان پنج‌عنصر",
-        "description": "تکنیک متوسط بر پایه پنج عنصر",
-        "grade": "متوسط",
-        "energy_bonus": 0,
-        "required_root": "ریشه پنج‌عنصر"
-    },
-    {
-        "name": "شعله‌ی درونی",
-        "description": "تکنیک آتشین برای ریشه آتش",
-        "grade": "متوسط",
-        "energy_bonus": 0,
-        "required_root": "ریشه آتش"
+        "name": "پرورش ممنوعه",
+        "description": "⚠️ ممنوع: بار اول +۱ سطح. بعد قفل ابدی — فقط این تکنیک. هر بار استفاده +۱ چی",
+        "grade": "ممنوعه",
+        "energy_bonus": 1,
+        "required_root": None,
     },
 ]
 
@@ -130,6 +137,16 @@ async def get_active_technique(session: AsyncSession, user_id: int) -> Cultivati
     return None
 
 
+async def has_forbidden_lock(session: AsyncSession, user_id: int) -> bool:
+    """اگر پرورش ممنوعه یاد گرفته شده باشد قفل است"""
+    result = await session.execute(
+        select(UserTechnique, CultivationTechnique)
+        .join(CultivationTechnique, UserTechnique.technique_id == CultivationTechnique.id)
+        .where(UserTechnique.user_id == user_id, CultivationTechnique.name == FORBIDDEN_TECH_NAME)
+    )
+    return result.first() is not None
+
+
 async def learn_technique(session: AsyncSession, user_id: int, technique: CultivationTechnique, from_user_id: int | None = None) -> str:
     # چک تکراری
     existing = await session.execute(
@@ -140,9 +157,13 @@ async def learn_technique(session: AsyncSession, user_id: int, technique: Cultiv
     )
     if existing.scalar_one_or_none():
         return "این تکنیک رو قبلاً بلدی."
-    
+
     cult = await get_or_create_cultivation(session, user_id)
-    
+
+    # قفل پرورش ممنوعه
+    if await has_forbidden_lock(session, user_id) and technique.name != FORBIDDEN_TECH_NAME:
+        return "⚠️ پرورش ممنوعه را یاد گرفته‌ای؛ دیگر نمی‌توانی تکنیک دیگری یاد بگیری یا فعال کنی."
+
     # چک ریشه مورد نیاز
     if technique.required_root and cult.spiritual_root != technique.required_root:
         if cult.spiritual_root == "بدون ریشه":
@@ -161,13 +182,38 @@ async def learn_technique(session: AsyncSession, user_id: int, technique: Cultiv
     any_active = await get_active_technique(session, user_id)
     if not any_active:
         ut.is_active = True
-    
+
+    # پرورش ممنوعه: قفل + فعال اجباری
+    if technique.name == FORBIDDEN_TECH_NAME:
+        result_all = await session.execute(
+            select(UserTechnique).where(UserTechnique.user_id == user_id)
+        )
+        for other in result_all.scalars().all():
+            other.is_active = (other.technique_id == technique.id)
+        ut.is_active = True
+        # علامت اولین استفاده هنوز نشده
+        if cult.talent != "forbidden_used":
+            cult.talent = "forbidden_ready"
+        await session.commit()
+        return (
+            f"☠️ تکنیک «{FORBIDDEN_TECH_NAME}» یاد گرفته شد و قفل شد.\n"
+            f"دیگر نمی‌توانی آن را برداری یا تکنیک دیگری فعال کنی.\n"
+            f"اولین تذهیب با آن: +۱ سطح | هر بار استفاده: +۱ چی"
+        )
+
     await session.commit()
     return f"✅ تکنیک «{technique.name}» یاد گرفته شد."
 
 
 async def set_active_technique(session: AsyncSession, user_id: int, technique_id: int) -> str:
-    # غیرفعال کردن بقیه
+    if await has_forbidden_lock(session, user_id):
+        # فقط اجازه فعال بودن همان ممنوعه
+        result = await session.execute(
+            select(CultivationTechnique).where(CultivationTechnique.id == technique_id)
+        )
+        tech = result.scalar_one_or_none()
+        if not tech or tech.name != FORBIDDEN_TECH_NAME:
+            return "⚠️ پرورش ممنوعه قفل است؛ نمی‌توانی تکنیک دیگری فعال کنی."
     result = await session.execute(
         select(UserTechnique).where(UserTechnique.user_id == user_id)
     )
@@ -221,7 +267,31 @@ async def add_energy(session: AsyncSession, user_id: int, amount: int) -> dict:
         }
 
     tech = await get_active_technique(session, user_id)
+    # پرورش ممنوعه: هر بار +۱ چی؛ بار اول +۱ سطح
+    if tech and tech.name == FORBIDDEN_TECH_NAME:
+        amount = amount + 1  # یک چی
+        messages.append("☠️ پرورش ممنوعه: +۱ چی")
+        if cult.talent == "forbidden_ready":
+            cult.stage = (cult.stage or 1) + 1
+            if cult.stage > MAX_STAGE:
+                cult.stage = 1
+                try:
+                    idx = CULTIVATION_REALMS.index(cult.realm)
+                    if idx < len(CULTIVATION_REALMS) - 1:
+                        cult.realm = CULTIVATION_REALMS[idx + 1]
+                except ValueError:
+                    pass
+            cult.talent = "forbidden_used"
+            try:
+                from database.models import User
+                u = await session.get(User, user_id)
+                if u:
+                    u.level = (u.level or 1) + 1
+            except Exception:
+                pass
+            messages.append("☠️ اولین استفاده پرورش ممنوعه: +۱ سطح تذهیب و +۱ سطح بازی!")
     if not tech:
+
         await session.commit()
         return {
             "energy": cult.energy,
