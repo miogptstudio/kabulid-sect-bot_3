@@ -170,12 +170,12 @@ SECTIONS = {
         "فقط برای ADMIN_IDS (سازنده ربات):\n\n"
         "/admin — پنل مدیریت\n"
         "/helpforadmin — همین لیست\n"
-        "/setrole <آیدی> <نقش>\n"
+        "/setrole [آیدی] [نقش]\n"
         "  نقش‌ها: رهبر | معاون رهبر | ارجمند | ارشد | عضو\n"
-        "/restrict <آیدی> <دقیقه> [دلیل] — محدود کردن موقت\n"
-        "/unrestrict <آیدی>\n"
-        "/promote <آیدی> | /demote <آیدی> — رتبه دوئل\n"
-        "/ban <آیدی> | /unban <آیدی>\n"
+        "/restrict [آیدی] [دقیقه] [دلیل] — محدود کردن موقت\n"
+        "/unrestrict [آیدی]\n"
+        "/promote [آیدی] | /demote [آیدی] — رتبه دوئل\n"
+        "/ban [آیدی] | /unban [آیدی]\n"
         "/setcult یا /تنظیم‌تذهیب — ریپلای یا آیدی + قلمرو مرحله [انرژی]\n"
         "/givemoney یا /بده‌پول — دادن ارز\n"
         "/takemoney یا /بگیر‌پول — گرفتن ارز\n"
@@ -235,7 +235,20 @@ async def help_section(callback: CallbackQuery):
         return
 
     title, body = SECTIONS.get(key, ("؟", "نامشخص"))
-    full = f"<b>{title}</b>" + chr(10) + chr(10) + body
+    # جلوگیری از TelegramBadRequest به‌خاطر < > داخل متن
+    safe_body = (
+        body.replace("&", "&amp;")
+        .replace("<آیدی>", "[آیدی]")
+        .replace("<دقیقه>", "[دقیقه]")
+        .replace("<نقش>", "[نقش]")
+    )
+    # فقط اگر تگ HTML مجاز نباشد، بقیه < > را هم امن کن؛ <b> در title جداست
+    import re as _re
+    safe_body = _re.sub(r"<(?!/?b>)", "&lt;", safe_body)
+    safe_body = safe_body.replace(">", "&gt;")  # might break nothing important in body
+    # restore bold if any
+    safe_body = safe_body.replace("&lt;b&gt;", "<b>").replace("&lt;/b&gt;", "</b>")
+    full = f"<b>{title}</b>" + chr(10) + chr(10) + safe_body
     if len(full) > 3900:
         full = full[:3900] + chr(10) + chr(10) + "… ادامه: /helpforadmin"
 
@@ -243,9 +256,11 @@ async def help_section(callback: CallbackQuery):
         await callback.message.edit_text(full, reply_markup=builder.as_markup())
     except Exception:
         try:
-            await callback.message.answer(full, reply_markup=builder.as_markup())
+            # بدون HTML
+            plain = f"{title}" + chr(10) + chr(10) + body
+            await callback.message.answer(plain[:4000], reply_markup=builder.as_markup())
         except Exception as e:
-            await callback.answer(str(type(e).__name__), show_alert=True)
+            await callback.answer(str(type(e).__name__)[:50], show_alert=True)
             return
     await callback.answer()
 
@@ -279,7 +294,8 @@ async def cmd_help_admin(message: Message):
         await message.answer("⛔️ فقط سازنده ربات.")
         return
     title, body = SECTIONS["admin"]
-    await message.answer(f"<b>{title}</b>\n\n{body}")
+    body = body.replace("<", "[").replace(">", "]")
+    await message.answer(f"<b>{title}</b>" + chr(10) + chr(10) + body)
 
 
 @router.message(Command("codex", "دانشنامه"))

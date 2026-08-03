@@ -356,6 +356,10 @@ async def get_items_of_building(session: AsyncSession, building_id: int):
 
 
 async def buy_item(session: AsyncSession, user: User, item: ShopItem) -> str:
+    if getattr(item, 'is_active', True) is False:
+        return "❌ این آیتم غیرفعال است."
+    if item.price is None:
+        item.price = 0
     if item.item_type == "weapon_unique" or (isinstance(item.effect, dict) and item.effect.get("unique")):
         from sqlalchemy import select as sel
         owned = await session.execute(
@@ -364,7 +368,7 @@ async def buy_item(session: AsyncSession, user: User, item: ShopItem) -> str:
             )
         )
         if owned.first():
-            return "❌ این آیتم یکتاست و قبلاً کسی آن را دارد."
+            return "❌ این آیتم یکتاست و قبلاً کسی آن را خریده."
 
     from services.economy import get_or_create_wallet, pay_any_currency
     w = await get_or_create_wallet(session, user.id)

@@ -197,20 +197,32 @@ async def process_buy(callback: CallbackQuery):
         await callback.answer("خطا", show_alert=True)
         return
 
-    async with async_session() as session:
-        user = await get_or_create_user(
-            session,
-            callback.from_user.id,
-            callback.from_user.full_name,
-            callback.from_user.username,
-        )
-        item = await session.get(ShopItem, item_id)
-        if not item:
-            await callback.answer("آیتم پیدا نشد.", show_alert=True)
-            return
-        msg = await buy_item(session, user, item)
+    try:
+        async with async_session() as session:
+            user = await get_or_create_user(
+                session,
+                callback.from_user.id,
+                callback.from_user.full_name,
+                callback.from_user.username,
+            )
+            item = await session.get(ShopItem, item_id)
+            if not item:
+                await callback.answer("آیتم پیدا نشد.", show_alert=True)
+                return
+            msg = await buy_item(session, user, item)
+    except Exception as e:
+        msg = f"❌ خطا در خرید: {type(e).__name__}: {e}"
 
-    await callback.answer(msg, show_alert=True)
+    # تلگرام برای alert حداکثر حدود ۲۰۰ کاراکتر
+    short = msg if len(msg) <= 180 else (msg[:177] + "…")
+    try:
+        await callback.answer(short, show_alert=True)
+    except Exception:
+        await callback.answer("نتیجه خرید ارسال شد")
+    try:
+        await callback.message.answer(msg)
+    except Exception:
+        pass
 
 
 @router.message(Command("inventory", "کیف", "اینونتوری"))
