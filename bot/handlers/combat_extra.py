@@ -73,17 +73,38 @@ async def cmd_equip(message: Message):
         await message.answer(f"✅ «{item.name}» مجهز شد. در دوئل استفاده می‌شود.")
 
 
-@router.message(Command("unequip", "خلع‌سلاح"))
+@router.message(Command("unequip", "خلع‌سلاح", "برداشتن‌سلاح"))
 async def cmd_unequip(message: Message):
     async with async_session() as session:
         user = await get_or_create_user(
             session, message.from_user.id,
             message.from_user.full_name, message.from_user.username
         )
+        if not user.equipped_weapon_id:
+            await message.answer("سلاحی مجهز نیست. /equip برای دیدن لیست.")
+            return
+        from sqlalchemy import select
+        from database.models_v3 import ShopItem
+        item = await session.get(ShopItem, user.equipped_weapon_id)
+        name = item.name if item else "سلاح"
         user.equipped_weapon_id = None
-        # کوروش را فقط اگر هنوز در کیف است نگه می‌داریم
+        # اگر کوروش بود، فلگ را فقط وقتی هنوز در کیف است نگه دار
+        if item and ("کوروش" in (item.name or "") or (isinstance(item.effect, dict) and item.effect.get("unique") == "cyrus")):
+            # چک کیف
+            from database.models_v3 import UserInventory
+            inv = await session.execute(
+                select(UserInventory).where(
+                    UserInventory.user_id == user.id,
+                    UserInventory.item_id == item.id
+                )
+            )
+            if not inv.scalar_one_or_none():
+                user.has_cyrus_sword = False
         await session.commit()
-        await message.answer("سلاح از دست برداشته شد و در کیف است. /equip برای تجهیز دوباره.")
+        await message.answer(
+            f"✅ «{name}» برداشته شد و در /inventory است."
+            + chr(10) + "/equip شماره — تجهیز دوباره"
+        )
 
 
 @router.message(Command("heal", "درمان", "قرص‌سلامتی"))

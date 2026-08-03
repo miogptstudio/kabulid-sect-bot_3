@@ -60,7 +60,7 @@ const tg = window.Telegram?.WebApp; tg?.ready(); tg?.expand();
 const tgId = tg?.initDataUnsafe?.user?.id || null;
 const tgName = tg?.initDataUnsafe?.user?.first_name || 'بازیکن';
 
-function show(tab) {
+window.show = function show(tab) {
   document.querySelectorAll('nav>button').forEach(b => b.classList.toggle('active', b.dataset.tab===tab));
   const c = document.getElementById('content');
   if (tab==='daily') {
@@ -75,7 +75,7 @@ function show(tab) {
   } else if (tab==='arena') {
     c.innerHTML=`<div class="card"><h3>🏟️ آرنا</h3><div id="arena">…</div><p class="muted">/arenaopen · /arenajoin · /arenastart</p></div>`; loadArena();
   } else if (tab==='games') {
-    c.innerHTML=`<div class="card"><h3>🎮 بازی‌ها</h3>
+    c.innerHTML=`<div class="card"><h3>🎮 بازی‌ها</h3><p class="muted">محدودیت: هر ۵ دقیقه یک‌بار</p>
       <div class="subnav">
         <button class="on" data-g="chess" onclick="pickGame('chess')">♟️ شطرنج</button>
         <button data-g="nard" onclick="pickGame('nard')">🎲 تخته‌نرد</button>
@@ -86,7 +86,11 @@ function show(tab) {
     pickGame('chess');
   }
 }
-document.querySelectorAll('nav>button').forEach(b => b.onclick=()=>show(b.dataset.tab));
+document.querySelector('nav').addEventListener('click', function(e){
+  const b = e.target.closest('button[data-tab]');
+  if(b) show(b.dataset.tab);
+});
+
 
 async function claimDaily(){const el=document.getElementById('dailyMsg'),btn=document.getElementById('btnDaily');
   if(!tgId){el.innerHTML='<span class="err">از تلگرام باز کن</span>';return;} btn.disabled=true;
@@ -274,10 +278,17 @@ function clickChess(i){
     const box=document.getElementById('chessBox');
     const bar=document.createElement('div');
     bar.id='promoBar';
-    bar.innerHTML='<p>سرباز به چه چیزی تبدیل شود؟</p>'+
-      (turn==='w'
-        ? '<button class="btn" onclick="doPromo('♕')">وزیر</button><button class="btn" onclick="doPromo('♖')">رخ</button><button class="btn" onclick="doPromo('♗')">فیل</button><button class="btn" onclick="doPromo('♘')">اسب</button>'
-        : '<button class="btn" onclick="doPromo('♛')">وزیر</button><button class="btn" onclick="doPromo('♜')">رخ</button><button class="btn" onclick="doPromo('♝')">فیل</button><button class="btn" onclick="doPromo('♞')">اسب</button>');
+    const opts = turn==='w'
+      ? [['♕','وزیر'],['♖','رخ'],['♗','فیل'],['♘','اسب']]
+      : [['♛','وزیر'],['♜','رخ'],['♝','فیل'],['♞','اسب']];
+    bar.innerHTML = '<p>سرباز به چه چیزی تبدیل شود؟</p>';
+    opts.forEach(([pc,label])=>{
+      const b=document.createElement('button');
+      b.className='btn';
+      b.textContent=label+' '+pc;
+      b.onclick=()=>doPromo(pc);
+      bar.appendChild(b);
+    });
     const old=document.getElementById('promoBar'); if(old) old.remove();
     box.appendChild(bar);
     return;
@@ -569,7 +580,7 @@ function drawHukumSeats(players){
   });
 }
 
-show('daily');
+try{ show('daily'); }catch(e){ document.getElementById('content').innerHTML='<div class="card err">خطا: '+e.message+'</div>'; console.error(e); }
 </script>
 </body>
 </html>

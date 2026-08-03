@@ -43,6 +43,11 @@ USER_COLUMNS = [
     ("yin", "INTEGER DEFAULT 0"),
     ("is_virgin", "BOOLEAN DEFAULT TRUE"),
     ("is_dead", "BOOLEAN DEFAULT FALSE"),
+    ("race", "VARCHAR(32) DEFAULT 'انسان'"),
+    ("garden_slots", "INTEGER DEFAULT 10"),
+    ("last_plant_at", "TIMESTAMP NULL"),
+    ("pet_slots", "INTEGER DEFAULT 10"),
+    ("last_hunt_at", "TIMESTAMP NULL"),
     ("restricted_until", "TIMESTAMP NULL"),
     ("restriction_reason", "TEXT NULL"),
 ]

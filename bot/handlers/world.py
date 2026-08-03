@@ -6,7 +6,9 @@ from database.engine import async_session
 from database.crud import get_or_create_user
 from services.power import calc_power
 from services.cities import (
-    CITIES, ensure_user_city, get_city, list_cities_text, NAME_TO_ID, city_detail_text
+    CITIES, ALL_CITIES, HEAVEN_CITIES, UNDER_CITIES,
+    ensure_user_city, get_city, list_cities_text, NAME_TO_ID, city_detail_text,
+    cities_for_world, CITY_HIDDEN_WEAPONS,
 )
 from bot.config import ADMIN_IDS
 
@@ -41,9 +43,12 @@ async def cmd_cities(message: Message):
             session, message.from_user.id,
             message.from_user.full_name, message.from_user.username
         )
-        await ensure_user_city(session, user)
-        cid = user.city or "tehran"
-    await message.answer(list_cities_text(cid))
+        cid = await ensure_user_city(session, user)
+        world = getattr(user, "world", None) or "فانی"
+    text = list_cities_text(cid, world=world)
+    text += f"\n\nدنیای فعلی: <b>{world}</b>\n/goworld برای تغییر دنیا\n/explorecity برای کاوش شهر فعلی"
+    await message.answer(text[:4000])
+
 
 
 @router.message(Command("mycity", "شهر‌من"))
@@ -62,18 +67,39 @@ async def cmd_mycity(message: Message):
 async def cmd_travel(message: Message):
     parts = (message.text or "").split(maxsplit=1)
     if len(parts) < 2:
-        await message.answer("فرمت: /travel نام‌شهر\nمثال: /travel بندرعباس\nلیست: /cities")
+        await message.answer(
+            "فرمت: /travel نام‌شهر\n"
+            "مثال: /travel بندرعباس\n"
+            "لیست: /cities\n"
+            "شهرهای بهشتی و زیرین بعد از /goworld"
+        )
         return
     name = parts[1].strip()
-    city_id = NAME_TO_ID.get(name) or NAME_TO_ID.get(name.lower())
+    city_id = NAME_TO_ID.get(name)
+    if not city_id:
+        # partial match
+        for n, i in NAME_TO_ID.items():
+            if name in n or n in name:
+                city_id = i
+                break
     if not city_id:
         await message.answer("شهر پیدا نشد. /cities")
         return
+    city = get_city(city_id)
     async with async_session() as session:
         user = await get_or_create_user(
             session, message.from_user.id,
             message.from_user.full_name, message.from_user.username
         )
+        world = getattr(user, "world", None) or "فانی"
+        cworld = city.get("world") or "فانی"
+        if cworld != world and city.get("world"):
+            await message.answer(
+                f"این شهر مال دنیای <b>{cworld}</b> است.\n"
+                f"دنیای تو: <b>{world}</b>\n"
+                f"اول /goworld {cworld}"
+            )
+            return
         user.city = city_id
         await session.commit()
         try:
@@ -81,11 +107,12 @@ async def cmd_travel(message: Message):
             await bump_mission(session, user.id, "travel")
         except Exception:
             pass
-    c = get_city(city_id)
     await message.answer(
-        f"🗺️ به <b>{c['name']}</b> ({c['country']}) سفر کردی.\n"
-        f"مرحله خاص: <b>{c['stage']}</b>\n{c['desc']}"
+        f"✈️ رسیدی به <b>{city['name']}</b>\n"
+        + city_detail_text(city)
+        + "\n\n/explorecity را بزن شاید چیزی پیدا کنی."
     )
+
 
 
 @router.message(Command("worlds", "دنیاها", "دنیا"))
@@ -116,8 +143,18 @@ async def cmd_go_world(message: Message):
             message.from_user.full_name, message.from_user.username
         )
         user.world = world
+        # شهر پیش‌فرض هر دنیا
+        if world == "بهشتی":
+            user.city = "heaven_1"
+        elif world == "زیرین":
+            user.city = "under_1"
+        elif not user.city or str(user.city).startswith(("heaven_", "under_")):
+            user.city = "tehran"
         await session.commit()
-    await message.answer(f"🌌 وارد دنیای <b>{world}</b> شدی.")
+    await message.answer(
+        f"🌌 وارد دنیای <b>{world}</b> شدی.\n"
+        f"/cities — شهرها | /explorecity — کاوش | /travel نام‌شهر"
+    )
 
 
 @router.message(Command("mate", "جفت‌گیری", "جفتگیری"))
@@ -159,3 +196,112 @@ async def cmd_set_dimension(message: Message):
     async with async_session() as session:
         g = await set_group_dimension(session, message.chat.id, parts[1].strip())
     await message.answer(f"✅ بُعد گروه: <b>{g.dimension_type}</b>")
+
+
+@router.message(Command("explorecity", "کاوش‌شهر", "کاوش"))
+async def cmd_explore_city(message: Message):
+    """کاوش شهر فعلی — سلاح مخفی فقط بار اول"""
+    import json
+    import random
+    from sqlalchemy import select
+    from database.models_v3 import ShopItem, UserInventory, Building
+    from services.economy import get_or_create_wallet
+
+    async with async_session() as session:
+        user = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
+        cid = await ensure_user_city(session, user)
+        city = get_city(cid)
+        world = getattr(user, "world", None) or "فانی"
+
+        visited = []
+        raw = getattr(user, "first_cities", None)
+        if raw:
+            try:
+                visited = json.loads(raw) if isinstance(raw, str) else list(raw)
+            except Exception:
+                visited = []
+
+        already = cid in visited
+        lines = [
+            f"🔍 <b>کاوش: {city['name']}</b>",
+            f"دنیا: {world}",
+            city_detail_text(city),
+            "",
+        ]
+
+        if not already:
+            visited.append(cid)
+            user.first_cities = json.dumps(visited, ensure_ascii=False)
+            w = await get_or_create_wallet(session, user.id)
+            coins = random.randint(10, 40)
+            w.coins = (w.coins or 0) + coins
+            reward_parts = [f"+{coins} سکه"]
+
+            gun = CITY_HIDDEN_WEAPONS.get(cid)
+            if gun:
+                gname, gpower = gun
+                r = await session.execute(select(ShopItem).where(ShopItem.name == gname))
+                item = r.scalar_one_or_none()
+                if not item:
+                    br = await session.execute(
+                        select(Building).where(Building.building_type == "آهنگری")
+                    )
+                    b = br.scalar_one_or_none()
+                    if not b:
+                        b = Building(name="آهنگری", building_type="آهنگری", description="اسلحه")
+                        session.add(b)
+                        await session.flush()
+                    item = ShopItem(
+                        name=gname,
+                        item_type="weapon",
+                        description=f"سلاح مخفی شهر {city['name']}",
+                        price=0,
+                        effect={"duel_power": gpower, "hidden_gun": True},
+                        is_active=True,
+                        building_id=b.id,
+                    )
+                    session.add(item)
+                    await session.flush()
+                inv_r = await session.execute(
+                    select(UserInventory).where(
+                        UserInventory.user_id == user.id,
+                        UserInventory.item_id == item.id,
+                    )
+                )
+                inv = inv_r.scalar_one_or_none()
+                if inv:
+                    inv.quantity = (inv.quantity or 1) + 1
+                else:
+                    session.add(UserInventory(user_id=user.id, item_id=item.id, quantity=1))
+                reward_parts.append(f"🔫 سلاح مخفی: <b>{gname}</b> (قدرت {gpower})")
+
+            if random.random() < 0.25:
+                w.coins = (w.coins or 0) + 15
+                reward_parts.append("+۱۵ سکه اضافی (شانسی)")
+
+            await session.commit()
+            try:
+                from services.missions_progress import bump_mission
+                await bump_mission(session, user.id, "explore")
+            except Exception:
+                pass
+
+            lines.append("🎁 <b>اولین بازدید این شهر!</b>")
+            lines.extend(reward_parts)
+        else:
+            if random.random() < 0.3:
+                w = await get_or_create_wallet(session, user.id)
+                c = random.randint(1, 8)
+                w.coins = (w.coins or 0) + c
+                await session.commit()
+                lines.append(f"بازدید تکراری. +{c} سکه ناچیز.")
+            else:
+                lines.append("قبلاً اینجا را کاویده‌ای. چیز تازه‌ای نیست.")
+
+        lines.append("")
+        lines.append("/travel نام‌شهر — رفتن به شهر دیگر")
+        lines.append("/cities — لیست شهرهای دنیای فعلی")
+        await message.answer(chr(10).join(lines))

@@ -38,7 +38,7 @@ async def cmd_buildings(message: Message):
         builder.button(text=b.name, callback_data=f"building:{uid}:{b.id}")
     builder.adjust(1)
 
-    text += "\nروی ساختمان کلیک کن. خرید با <b>سکه</b> است.\nسکه را با /wallet ببین."
+    text += "\nروی ساختمان کلیک کن. خرید با <b>همه ارزها</b> ممکن است (سکه، روحی، بهشتی، آسمانی، خدا).\nاگر سکه کم باشد از ارز بالاتر کسر می‌شود.\n/wallet"
     await message.answer(text, reply_markup=builder.as_markup())
 
 
@@ -72,7 +72,7 @@ async def show_building_items(callback: CallbackQuery):
         text += (
             f"• <b>{item.name}</b>\n"
             f"  {item.description or ''}\n"
-            f"  قیمت: <b>{item.price} سکه</b>\n\n"
+            f"  قیمت: <b>{item.price} سکه</b> (یا معادل ارز بالاتر)\n\n"
         )
         builder.button(
             text=f"خرید {item.name}",

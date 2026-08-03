@@ -69,7 +69,7 @@ async def cmd_start(message: Message):
         f"/guardian — نگهبان\n"
         f"/help — راهنمای کامل"
     )
-    await message.answer(text, reply_markup=main_keyboard())
+    await message.answer(text, reply_markup=ReplyKeyboardRemove())
 
 
 @router.message(Command("help_old_disabled"))
@@ -230,7 +230,7 @@ async def cmd_gather(message: Message):
 
 @router.message(Command("menu", "منو"))
 async def cmd_menu(message: Message):
-    await message.answer("منوی اصلی:", reply_markup=main_keyboard())
+    await message.answer("منو حذف شد. از /help استفاده کن.", reply_markup=ReplyKeyboardRemove())
 
 
 @router.message(Command("gender", "جنسیت"))
@@ -254,3 +254,8 @@ async def cmd_gender_alias(message: Message):
         "⚧ انتخاب جنسیت (فقط یک‌بار). بعد از انتخاب قابل تغییر نیست.",
         reply_markup=builder.as_markup(),
     )
+
+
+@router.message(Command("removekb", "حذف‌کیبورد", "nokb"))
+async def cmd_remove_kb(message: Message):
+    await message.answer("کیبورد حذف شد. از /help برای دستورات استفاده کن.", reply_markup=ReplyKeyboardRemove())

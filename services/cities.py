@@ -190,11 +190,147 @@ CITIES = [
 
 ]
 
+
+# دنیای بهشتی — ۵۰ شهر
+HEAVEN_CITIES = [
+    {"id": "heaven_1", "name": "قصر نور", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-1", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
+    {"id": "heaven_2", "name": "باغ جاویدان", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-2", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
+    {"id": "heaven_3", "name": "قله فرشتگان", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-3", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
+    {"id": "heaven_4", "name": "دریاچه بلور", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-4", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
+    {"id": "heaven_5", "name": "شهر طلای سپید", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-5", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
+    {"id": "heaven_6", "name": "دروازه رحمت", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-6", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
+    {"id": "heaven_7", "name": "کاخ ستارگان", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-7", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
+    {"id": "heaven_8", "name": "جزیره ابر", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-8", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
+    {"id": "heaven_9", "name": "معبد آفتاب", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-9", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
+    {"id": "heaven_10", "name": "رودخانه شهد", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-10", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
+    {"id": "heaven_11", "name": "کوه زمرد", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-11", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
+    {"id": "heaven_12", "name": "دشت نیلوفر", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-12", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
+    {"id": "heaven_13", "name": "برج عروج", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-13", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
+    {"id": "heaven_14", "name": "چشمه حیات", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-14", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
+    {"id": "heaven_15", "name": "بازار نورانی", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-15", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
+    {"id": "heaven_16", "name": "قلعه سپیده", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-16", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
+    {"id": "heaven_17", "name": "جنگل کریستال", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-17", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
+    {"id": "heaven_18", "name": "دره زمزم", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-18", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
+    {"id": "heaven_19", "name": "شهر همهمه", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-19", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
+    {"id": "heaven_20", "name": "صومعه سپید", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-20", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
+    {"id": "heaven_21", "name": "آسمان‌آباد", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-21", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
+    {"id": "heaven_22", "name": "فردوس کوچک", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-22", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
+    {"id": "heaven_23", "name": "گلدسته اعلی", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-23", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
+    {"id": "heaven_24", "name": "کوی فرشته", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-24", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
+    {"id": "heaven_25", "name": "بندر مهتاب", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-25", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
+    {"id": "heaven_26", "name": "تپه یاقوت", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-26", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
+    {"id": "heaven_27", "name": "وادی سلام", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-27", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
+    {"id": "heaven_28", "name": "کاخ عدن", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-28", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
+    {"id": "heaven_29", "name": "شهر نغمه", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-29", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
+    {"id": "heaven_30", "name": "پالیز بهشت", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-30", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
+    {"id": "heaven_31", "name": "مناره نور", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-31", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
+    {"id": "heaven_32", "name": "دریاچه آینه", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-32", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
+    {"id": "heaven_33", "name": "قله همای", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-33", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
+    {"id": "heaven_34", "name": "دژ نورانی", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-34", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
+    {"id": "heaven_35", "name": "باغ سیب طلا", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-35", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
+    {"id": "heaven_36", "name": "چشمه زمزم بهشتی", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-36", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
+    {"id": "heaven_37", "name": "سرای فرزانگان", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-37", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
+    {"id": "heaven_38", "name": "برج بلورین", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-38", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
+    {"id": "heaven_39", "name": "جزیره ققنوس", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-39", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
+    {"id": "heaven_40", "name": "شهر سروش", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-40", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
+    {"id": "heaven_41", "name": "کوی رضوان", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-41", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
+    {"id": "heaven_42", "name": "دشت ابریشم", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-42", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
+    {"id": "heaven_43", "name": "معبد آرامش", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-43", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
+    {"id": "heaven_44", "name": "قلعه سپهر", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-44", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
+    {"id": "heaven_45", "name": "رودخانه نور", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-45", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
+    {"id": "heaven_46", "name": "کاخ هشت‌بهشت", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-46", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
+    {"id": "heaven_47", "name": "شهر صفا", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-47", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
+    {"id": "heaven_48", "name": "تپه نقره", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-48", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
+    {"id": "heaven_49", "name": "بندر فردوس", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-49", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
+    {"id": "heaven_50", "name": "آرامگاه قدیسان", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-50", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
+]
+
+# دنیای زیرین — ۵۰ شهر
+UNDER_CITIES = [
+    {"id": "under_1", "name": "گورستان خاکستر", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-1", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
+    {"id": "under_2", "name": "دره شیاطین", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-2", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
+    {"id": "under_3", "name": "قلعه استخوان", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-3", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
+    {"id": "under_4", "name": "رودخانه خون", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-4", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
+    {"id": "under_5", "name": "شهر سایه", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-5", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
+    {"id": "under_6", "name": "مغاک اژدها", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-6", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
+    {"id": "under_7", "name": "بازار ارواح", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-7", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
+    {"id": "under_8", "name": "دژ نفرین", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-8", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
+    {"id": "under_9", "name": "چاه پوچی", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-9", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
+    {"id": "under_10", "name": "جنگل مرده", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-10", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
+    {"id": "under_11", "name": "کوه گدازه", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-11", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
+    {"id": "under_12", "name": "زندان ابدی", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-12", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
+    {"id": "under_13", "name": "معبد اهریمن", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-13", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
+    {"id": "under_14", "name": "باتلاق زهر", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-14", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
+    {"id": "under_15", "name": "شهر نفرین‌شده", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-15", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
+    {"id": "under_16", "name": "قصر تاریکی", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-16", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
+    {"id": "under_17", "name": "غار خون‌آشام", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-17", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
+    {"id": "under_18", "name": "دشت اسکلت", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-18", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
+    {"id": "under_19", "name": "برج عذاب", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-19", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
+    {"id": "under_20", "name": "بندر دوزخ", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-20", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
+    {"id": "under_21", "name": "وادی ناله", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-21", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
+    {"id": "under_22", "name": "کوره جهنم", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-22", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
+    {"id": "under_23", "name": "جزیره مار", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-23", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
+    {"id": "under_24", "name": "تپه جمجمه", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-24", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
+    {"id": "under_25", "name": "سرای شیاطین", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-25", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
+    {"id": "under_26", "name": "دریاچه اسید", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-26", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
+    {"id": "under_27", "name": "قلعه سایه", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-27", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
+    {"id": "under_28", "name": "معبد خون", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-28", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
+    {"id": "under_29", "name": "گودال فراموشی", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-29", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
+    {"id": "under_30", "name": "شهر بی‌نام", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-30", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
+    {"id": "under_31", "name": "دروازه دوزخ", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-31", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
+    {"id": "under_32", "name": "کاخ اهریمن", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-32", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
+    {"id": "under_33", "name": "رودخانه آتش", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-33", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
+    {"id": "under_34", "name": "دژ زامبی", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-34", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
+    {"id": "under_35", "name": "جنگل خار", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-35", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
+    {"id": "under_36", "name": "مغاک ابدی", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-36", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
+    {"id": "under_37", "name": "بازار نفرین", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-37", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
+    {"id": "under_38", "name": "چشمه زهر", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-38", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
+    {"id": "under_39", "name": "قله شیطان", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-39", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
+    {"id": "under_40", "name": "آرامگاه ملعون", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-40", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
+    {"id": "under_41", "name": "شهر خاکستر", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-41", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
+    {"id": "under_42", "name": "بندر نفرین", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-42", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
+    {"id": "under_43", "name": "تپه مردگان", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-43", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
+    {"id": "under_44", "name": "صومعه تاریک", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-44", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
+    {"id": "under_45", "name": "کوی شیاطین", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-45", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
+    {"id": "under_46", "name": "دشت نفرین", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-46", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
+    {"id": "under_47", "name": "برج خون", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-47", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
+    {"id": "under_48", "name": "غار پوچی", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-48", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
+    {"id": "under_49", "name": "جزیره نفرین", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-49", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
+    {"id": "under_50", "name": "سرای عذاب", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-50", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
+]
+
+ALL_CITIES = CITIES + HEAVEN_CITIES + UNDER_CITIES
+
+# سلاح مخفی اولین بازدید (id شهر → نام، قدرت)
+CITY_HIDDEN_WEAPONS = {
+    "tehran": ("کلت پنهان", 25),
+    "mashhad": ("تفنگ شکاری", 30),
+    "isfahan": ("تپانچه قدیمی", 22),
+    "shiraz": ("اسلحه قاچاق", 28),
+    "tabriz": ("تفنگ کوهستان", 27),
+    "bandarabbas": ("تفنگ ساحلی", 26),
+    "ahvaz": ("تپانچه نفتی", 24),
+    "kerman": ("تفنگ کویر", 23),
+    "rasht": ("تفنگ جنگلی", 21),
+    "newyork": ("برتا", 35),
+    "moscow": ("کلاشنیکف کهنه", 40),
+    "heaven_1": ("نیزه نور", 45),
+    "heaven_5": ("کمان فرشته", 42),
+    "heaven_10": ("شمشیر سپید", 50),
+    "heaven_20": ("تیر بلورین", 48),
+    "heaven_30": ("سپر نورانی", 40),
+    "under_1": ("خنجر استخوان", 38),
+    "under_5": ("تیر زهرآگین", 40),
+    "under_10": ("شمشیر خون", 52),
+    "under_20": ("تبر شیطان", 55),
+    "under_30": ("داس مرگ", 60),
+}
+
+# بازسازی نقشه نام
 NAME_TO_ID = {}
-for c in CITIES:
+for c in ALL_CITIES:
     NAME_TO_ID[c["name"]] = c["id"]
     NAME_TO_ID[c["id"]] = c["id"]
-
 
 async def ensure_user_city(session: AsyncSession, user: User) -> str:
     if not getattr(user, "city", None):
@@ -204,15 +340,25 @@ async def ensure_user_city(session: AsyncSession, user: User) -> str:
 
 
 def get_city(city_id: str) -> dict:
-    for c in CITIES:
+    for c in ALL_CITIES:
         if c["id"] == city_id:
             return c
-    return CITIES[0]
+    return ALL_CITIES[0]
 
 
-def list_cities_text(current_id: str, limit_per_country: int = 6) -> str:
+def cities_for_world(world: str) -> list:
+    w = world or "فانی"
+    if w == "بهشتی":
+        return HEAVEN_CITIES
+    if w == "زیرین":
+        return UNDER_CITIES
+    return CITIES
+
+
+def list_cities_text(current_id: str, limit_per_country: int = 6, world: str = "فانی") -> str:
+    pool = cities_for_world(world)
     by_country = {}
-    for c in CITIES:
+    for c in pool:
         by_country.setdefault(c["country"], []).append(c)
     lines = ["🏙️ <b>کشورها و شهرها</b>\n(هر شهر مرحله خاص دارد)\n"]
     for country, cities in by_country.items():
@@ -222,7 +368,7 @@ def list_cities_text(current_id: str, limit_per_country: int = 6) -> str:
             lines.append(f"• {c['name']}{mark} — مرحله: {c['stage']}")
         if len(cities) > limit_per_country:
             lines.append(f"  … و {len(cities) - limit_per_country} شهر دیگر")
-    lines.append("\nسفر: /travel نام‌شهر\nجزئیات شهر فعلی: /mycity")
+    lines.append("\nسفر: /travel نام‌شهر | کاوش: /explorecity | شهر من: /mycity")
     return "\n".join(lines)
 
 

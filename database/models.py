@@ -42,6 +42,11 @@ class User(Base):
     world: Mapped[str] = mapped_column(String(32), default="فانی")  # فانی / بهشتی / زیرین
     lifespan: Mapped[int] = mapped_column(Integer, default=100)  # عمر ۰-۱۰۰
     is_spirit_raiser: Mapped[bool] = mapped_column(Boolean, default=False)  # پرورش‌دهنده روح بعد از مرگ
+    race: Mapped[str] = mapped_column(String(32), default="انسان")  # نژاد
+    garden_slots: Mapped[int] = mapped_column(Integer, default=10)  # ظرفیت زمین
+    last_plant_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    pet_slots: Mapped[int] = mapped_column(Integer, default=10)  # ظرفیت کاخ رام‌شدگان
+    last_hunt_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     # Rank system
     rank: Mapped[str] = mapped_column(String(32), default="عضو دسته‌های پایین‌تر")

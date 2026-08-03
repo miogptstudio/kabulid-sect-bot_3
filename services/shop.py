@@ -229,12 +229,89 @@ DEFAULT_ITEMS = [
     {"building_type": "آهنگری", "name": "کلت پنهان", "item_type": "weapon", "description": "سلاح گرم", "price": 3000, "effect": {"duel_power": 25}},
     {"building_type": "آهنگری", "name": "کلاشنیکف کهنه", "item_type": "weapon", "description": "سلاح گرم سنگین", "price": 5000, "effect": {"duel_power": 40}},
     {"building_type": "داروخانه", "name": "چای تذهیب", "item_type": "tea", "description": "+۸۰۰۰ انرژی تذهیب — هر ۱۰ دقیقه یک‌بار", "price": 500, "effect": {"energy": 8000, "cooldown_min": 10}},
+    {"building_type": "داروخانه", "name": "قرص نژاد اژدها", "item_type": "pill", "description": "+۱۲۰۰۰ انرژی", "price": 500, "effect": {"energy": 12000}},
+    {"building_type": "داروخانه", "name": "قرص نور فرشته", "item_type": "pill", "description": "+۹۰۰۰ انرژی نور", "price": 400, "effect": {"energy": 9000}},
+    {"building_type": "داروخانه", "name": "معجون خون", "item_type": "pill", "description": "ترمیم خون +۴۰", "price": 200, "effect": {"heal": 1}},
+    {"building_type": "طلسم‌خانه", "name": "طلسم سپر", "item_type": "talisman", "description": "کاهش آسیب", "price": 350, "effect": {"armor": 20}},
+    {"building_type": "طلسم‌خانه", "name": "طلسم آتش", "item_type": "talisman", "description": "قدرت دوئل", "price": 400, "effect": {"duel_power": 15}},
+    {"building_type": "طلسم‌خانه", "name": "طلسم سایه", "item_type": "talisman", "description": "فرار از مرگ یک‌بار", "price": 2000, "effect": {"duel_power": 5}},
+    {"building_type": "آهنگری", "name": "شمشیر نوری", "item_type": "weapon", "description": "سلاح نور", "price": 4500, "effect": {"duel_power": 55}},
+    {"building_type": "آهنگری", "name": "خنجر اهریمن", "item_type": "weapon", "description": "سلاح شیطانی", "price": 4800, "effect": {"duel_power": 60}},
+    {"building_type": "آهنگری", "name": "کمان پری", "item_type": "weapon", "description": "سلاح دور", "price": 3200, "effect": {"duel_power": 40}},
+    {"building_type": "آهنگری", "name": "گرز غول", "item_type": "weapon", "description": "ضربه سنگین", "price": 5000, "effect": {"duel_power": 70}},
+    {"building_type": "کیمیاگری", "name": "گرد اژدها", "item_type": "material", "description": "ماده ساخت پیشرفته", "price": 800, "effect": {}},
+    {"building_type": "کیمیاگری", "name": "اشک فرشته", "item_type": "material", "description": "ماده نادر", "price": 1200, "effect": {}},
+    {"building_type": "کیمیاگری", "name": "پودر سایه", "item_type": "material", "description": "ماده تاریکی", "price": 900, "effect": {}},
+    {"building_type": "باغ گیاهان", "name": "گل ماه", "item_type": "herb_spiritual", "description": "گیاه معنوی", "price": 250, "effect": {}},
+    {"building_type": "باغ گیاهان", "name": "ریشه خون", "item_type": "herb_spiritual", "description": "گیاه خون‌آشام", "price": 300, "effect": {}},
+    {"building_type": "سالن تکنیک", "name": "کتاب نَفَس اژدهای سرخ", "item_type": "tech_book", "description": "یادگیری تکنیک", "price": 800, "effect": {"learn_tech": "نَفَس اژدهای سرخ"}},
+    {"building_type": "سالن تکنیک", "name": "کتاب سرود فرشتگان", "item_type": "tech_book", "description": "یادگیری", "price": 800, "effect": {"learn_tech": "سرود فرشتگان"}},
+    {"building_type": "چای‌خانه", "name": "چای سبز ساده", "item_type": "tea", "description": "انرژی پایه | +2000 انرژی | CD 5د", "price": 50, "effect": {"energy": 2000, "cooldown_min": 5}},
+    {"building_type": "چای‌خانه", "name": "چای سیاه کوهستان", "item_type": "tea", "description": "انرژی متوسط | +3500 انرژی | CD 5د", "price": 80, "effect": {"energy": 3500, "cooldown_min": 5}},
+    {"building_type": "چای‌خانه", "name": "چای سفید مه", "item_type": "tea", "description": "آرامش + انرژی | +4000 انرژی | CD 5د", "price": 100, "effect": {"energy": 4000, "cooldown_min": 5}},
+    {"building_type": "چای‌خانه", "name": "چای اولانگ", "item_type": "tea", "description": "تمرکز | +3800 انرژی | CD 5د", "price": 90, "effect": {"energy": 3800, "cooldown_min": 5}},
+    {"building_type": "چای‌خانه", "name": "چای تذهیب کلاسیک", "item_type": "tea", "description": "تذهیب قوی — کول‌داون ۱۰د | +8000 انرژی | CD 10د", "price": 80, "effect": {"energy": 8000, "cooldown_min": 10}},
+    {"building_type": "چای‌خانه", "name": "چای ریشه آتش", "item_type": "tea", "description": "بونوس ریشه آتش | +5000 انرژی | CD 5د", "price": 120, "effect": {"energy": 5000, "cooldown_min": 5}},
+    {"building_type": "چای‌خانه", "name": "چای ریشه آب", "item_type": "tea", "description": "بونوس ریشه آب | +5000 انرژی | CD 5د", "price": 120, "effect": {"energy": 5000, "cooldown_min": 5}},
+    {"building_type": "چای‌خانه", "name": "چای ریشه چوب", "item_type": "tea", "description": "بونوس ریشه چوب | +5000 انرژی | CD 5د", "price": 120, "effect": {"energy": 5000, "cooldown_min": 5}},
+    {"building_type": "چای‌خانه", "name": "چای ریشه فلز", "item_type": "tea", "description": "بونوس ریشه فلز | +5000 انرژی | CD 5د", "price": 120, "effect": {"energy": 5000, "cooldown_min": 5}},
+    {"building_type": "چای‌خانه", "name": "چای ریشه خاک", "item_type": "tea", "description": "بونوس ریشه خاک | +5000 انرژی | CD 5د", "price": 120, "effect": {"energy": 5000, "cooldown_min": 5}},
+    {"building_type": "چای‌خانه", "name": "چای نورانی", "item_type": "tea", "description": "ریشه نور | +7000 انرژی | CD 5د", "price": 200, "effect": {"energy": 7000, "cooldown_min": 5}},
+    {"building_type": "چای‌خانه", "name": "چای تاریکی", "item_type": "tea", "description": "ریشه تاریکی | +7000 انرژی | CD 5د", "price": 200, "effect": {"energy": 7000, "cooldown_min": 5}},
+    {"building_type": "چای‌خانه", "name": "چای روح", "item_type": "tea", "description": "ریشه روحی | +9000 انرژی | CD 10د", "price": 250, "effect": {"energy": 9000, "cooldown_min": 10}},
+    {"building_type": "چای‌خانه", "name": "چای بهشتی", "item_type": "tea", "description": "سنگ بهشتی حس | +12000 انرژی | CD 10د", "price": 400, "effect": {"energy": 12000, "cooldown_min": 10}},
+    {"building_type": "چای‌خانه", "name": "چای آسمانی", "item_type": "tea", "description": "انرژی آسمان | +15000 انرژی | CD 10د", "price": 600, "effect": {"energy": 15000, "cooldown_min": 10}},
+    {"building_type": "چای‌خانه", "name": "چای الهی", "item_type": "tea", "description": "انرژی الهی | +25000 انرژی | CD 10د", "price": 1000, "effect": {"energy": 25000, "cooldown_min": 10}},
+    {"building_type": "چای‌خانه", "name": "چای پوچی", "item_type": "tea", "description": "خطرناک اما قوی | +20000 انرژی | CD 10د", "price": 800, "effect": {"energy": 20000, "cooldown_min": 10}},
+    {"building_type": "چای‌خانه", "name": "چای ای‌تری", "item_type": "tea", "description": "قلمرو ای‌تری | +18000 انرژی | CD 10د", "price": 700, "effect": {"energy": 18000, "cooldown_min": 10}},
+    {"building_type": "چای‌خانه", "name": "چای اژدها", "item_type": "tea", "description": "نژاد اژدهازاده | +14000 انرژی | CD 10د", "price": 500, "effect": {"energy": 14000, "cooldown_min": 10}},
+    {"building_type": "چای‌خانه", "name": "چای فرشته", "item_type": "tea", "description": "نژاد فرشته | +13000 انرژی | CD 10د", "price": 450, "effect": {"energy": 13000, "cooldown_min": 10}},
+    {"building_type": "چای‌خانه", "name": "چای اهریمن", "item_type": "tea", "description": "نژاد اهریمن | +13500 انرژی | CD 10د", "price": 480, "effect": {"energy": 13500, "cooldown_min": 10}},
+    {"building_type": "چای‌خانه", "name": "چای جن", "item_type": "tea", "description": "نژاد جن | +10000 انرژی | CD 10د", "price": 350, "effect": {"energy": 10000, "cooldown_min": 10}},
+    {"building_type": "چای‌خانه", "name": "چای خون", "item_type": "tea", "description": "خون‌آشام | +9000 انرژی | CD 10د", "price": 300, "effect": {"energy": 9000, "cooldown_min": 10}},
+    {"building_type": "چای‌خانه", "name": "چای پری", "item_type": "tea", "description": "پری | +9500 انرژی | CD 10د", "price": 320, "effect": {"energy": 9500, "cooldown_min": 10}},
+    {"building_type": "چای‌خانه", "name": "چای غول", "item_type": "tea", "description": "غول | +8500 انرژی | CD 10د", "price": 280, "effect": {"energy": 8500, "cooldown_min": 10}},
+    {"building_type": "چای‌خانه", "name": "چای سایه", "item_type": "tea", "description": "سایه‌رو | +11000 انرژی | CD 10د", "price": 360, "effect": {"energy": 11000, "cooldown_min": 10}},
+    {"building_type": "چای‌خانه", "name": "چای روح‌پیمان", "item_type": "tea", "description": "روح‌پیمان | +11500 انرژی | CD 10د", "price": 380, "effect": {"energy": 11500, "cooldown_min": 10}},
+    {"building_type": "چای‌خانه", "name": "چای یانگ", "item_type": "tea", "description": "افزایش یانگ | +6000 انرژی | CD 5د", "price": 150, "effect": {"energy": 6000, "cooldown_min": 5}},
+    {"building_type": "چای‌خانه", "name": "چای یین", "item_type": "tea", "description": "افزایش یین | +6000 انرژی | CD 5د", "price": 150, "effect": {"energy": 6000, "cooldown_min": 5}},
+    {"building_type": "چای‌خانه", "name": "چای عمر", "item_type": "tea", "description": "عمر +۵ | +5000 انرژی | CD 5د", "price": 500, "effect": {"energy": 5000, "cooldown_min": 5}},
+    {"building_type": "چای‌خانه", "name": "چای خون‌سازی", "item_type": "tea", "description": "خون +۳۰ | +3000 انرژی | CD 5د", "price": 180, "effect": {"energy": 3000, "cooldown_min": 5}},
+    {"building_type": "چای‌خانه", "name": "چای پادزهر گیاهی", "item_type": "tea", "description": "سم‌زدایی | +1000 انرژی | CD 5د", "price": 100, "effect": {"energy": 1000, "cooldown_min": 5}},
+    {"building_type": "چای‌خانه", "name": "چای مدیتیشن", "item_type": "tea", "description": "مدیتیت | +4500 انرژی | CD 5د", "price": 70, "effect": {"energy": 4500, "cooldown_min": 5}},
+    {"building_type": "چای‌خانه", "name": "چای شب", "item_type": "tea", "description": "آرامش شبانه | +2500 انرژی | CD 5د", "price": 60, "effect": {"energy": 2500, "cooldown_min": 5}},
+    {"building_type": "چای‌خانه", "name": "چای سحر", "item_type": "tea", "description": "صبحگاه | +2500 انرژی | CD 5د", "price": 60, "effect": {"energy": 2500, "cooldown_min": 5}},
+    {"building_type": "چای‌خانه", "name": "چای چهارفصل", "item_type": "tea", "description": "فصل‌ها | +8000 انرژی | CD 10د", "price": 200, "effect": {"energy": 8000, "cooldown_min": 10}},
+    {"building_type": "چای‌خانه", "name": "چای پنج‌عنصر", "item_type": "tea", "description": "پنج عنصر | +10000 انرژی | CD 10د", "price": 250, "effect": {"energy": 10000, "cooldown_min": 10}},
+    {"building_type": "چای‌خانه", "name": "چای هفت‌ستاره", "item_type": "tea", "description": "ستارگان | +12000 انرژی | CD 10د", "price": 350, "effect": {"energy": 12000, "cooldown_min": 10}},
+    {"building_type": "چای‌خانه", "name": "چای نه اژدها", "item_type": "tea", "description": "افسانه | +16000 انرژی | CD 10د", "price": 550, "effect": {"energy": 16000, "cooldown_min": 10}},
+    {"building_type": "چای‌خانه", "name": "چای جاودانگی", "item_type": "tea", "description": "بسیار نادر | +50000 انرژی | CD 10د", "price": 2000, "effect": {"energy": 50000, "cooldown_min": 10}},
+    {"building_type": "چای‌خانه", "name": "چای رعد", "item_type": "tea", "description": "رعد آسمانی | +7500 انرژی | CD 5د", "price": 220, "effect": {"energy": 7500, "cooldown_min": 5}},
+    {"building_type": "چای‌خانه", "name": "چای یخ", "item_type": "tea", "description": "سردی مطلق | +7500 انرژی | CD 5د", "price": 220, "effect": {"energy": 7500, "cooldown_min": 5}},
+    {"building_type": "چای‌خانه", "name": "چای خاکستر", "item_type": "tea", "description": "خاکستر آتش | +7000 انرژی | CD 5د", "price": 200, "effect": {"energy": 7000, "cooldown_min": 5}},
+    {"building_type": "چای‌خانه", "name": "چای مه جنگل", "item_type": "tea", "description": "طبیعت | +4000 انرژی | CD 5د", "price": 90, "effect": {"energy": 4000, "cooldown_min": 5}},
+    {"building_type": "چای‌خانه", "name": "چای صحرا", "item_type": "tea", "description": "گرما | +3800 انرژی | CD 5د", "price": 85, "effect": {"energy": 3800, "cooldown_min": 5}},
+    {"building_type": "چای‌خانه", "name": "چای کوهستان برفی", "item_type": "tea", "description": "برف | +4200 انرژی | CD 5د", "price": 95, "effect": {"energy": 4200, "cooldown_min": 5}},
+    {"building_type": "چای‌خانه", "name": "چای دریا", "item_type": "tea", "description": "موج | +3900 انرژی | CD 5د", "price": 88, "effect": {"energy": 3900, "cooldown_min": 5}},
+    {"building_type": "چای‌خانه", "name": "چای شهر تهران", "item_type": "tea", "description": "شهری | +3000 انرژی | CD 5د", "price": 70, "effect": {"energy": 3000, "cooldown_min": 5}},
+    {"building_type": "چای‌خانه", "name": "چای اصفهان", "item_type": "tea", "description": "سنتی | +3200 انرژی | CD 5د", "price": 75, "effect": {"energy": 3200, "cooldown_min": 5}},
+    {"building_type": "چای‌خانه", "name": "چای شیراز", "item_type": "tea", "description": "عطر گل | +3200 انرژی | CD 5د", "price": 75, "effect": {"energy": 3200, "cooldown_min": 5}},
+    {"building_type": "چای‌خانه", "name": "چای تبریز", "item_type": "tea", "description": "قوی | +3100 انرژی | CD 5د", "price": 70, "effect": {"energy": 3100, "cooldown_min": 5}},
+    {"building_type": "چای‌خانه", "name": "چای مشهد", "item_type": "tea", "description": "زائری | +3100 انرژی | CD 5د", "price": 70, "effect": {"energy": 3100, "cooldown_min": 5}},
+    {"building_type": "چای‌خانه", "name": "چای بندرعباس", "item_type": "tea", "description": "گرمسیری | +3500 انرژی | CD 5د", "price": 80, "effect": {"energy": 3500, "cooldown_min": 5}},
+    {"building_type": "چای‌خانه", "name": "چای گیلان", "item_type": "tea", "description": "باران | +2800 انرژی | CD 5د", "price": 65, "effect": {"energy": 2800, "cooldown_min": 5}},
+    {"building_type": "چای‌خانه", "name": "چای کردستان", "item_type": "tea", "description": "کوه | +3000 انرژی | CD 5د", "price": 70, "effect": {"energy": 3000, "cooldown_min": 5}},
+    {"building_type": "چای‌خانه", "name": "چای ممنوعه", "item_type": "tea", "description": "⚠️ مثل پرورش ممنوعه — خطر | +1 انرژی | CD 60د", "price": 50, "effect": {"energy": 1, "cooldown_min": 60}},
+    {"building_type": "چای‌خانه", "name": "چای طلایی", "item_type": "tea", "description": "لوکس | +30000 انرژی | CD 10د", "price": 1500, "effect": {"energy": 30000, "cooldown_min": 10}},
+    {"building_type": "چای‌خانه", "name": "چای نقره‌ای", "item_type": "tea", "description": "لوکس | +18000 انرژی | CD 10د", "price": 800, "effect": {"energy": 18000, "cooldown_min": 10}},
+    {"building_type": "چای‌خانه", "name": "چای برنزی", "item_type": "tea", "description": "عادی لوکس | +6000 انرژی | CD 5د", "price": 200, "effect": {"energy": 6000, "cooldown_min": 5}},
+    {"building_type": "چای‌خانه", "name": "چای الماس", "item_type": "tea", "description": "نهایت | +60000 انرژی | CD 10د", "price": 3000, "effect": {"energy": 60000, "cooldown_min": 10}},
+    {"building_type": "چای‌خانه", "name": "چای خدایان", "item_type": "tea", "description": "افسانه‌ای | +100000 انرژی | CD 10د", "price": 5000, "effect": {"energy": 100000, "cooldown_min": 10}},
 ]
-
 
 async def ensure_default_buildings_and_items(session: AsyncSession):
     """ساختمان‌ها و آیتم‌های پیش‌فرض را در صورت نبودن اضافه می‌کند"""
-    types = ["داروخانه", "کیمیاگری", "طلسم‌خانه", "باغ گیاهان", "آهنگری", "سالن تکنیک"]
+    types = ["داروخانه", "کیمیاگری", "طلسم‌خانه", "باغ گیاهان", "آهنگری", "سالن تکنیک", "چای‌خانه"]
     result = await session.execute(select(Building))
     existing = {b.building_type: b for b in result.scalars().all()}
     buildings = dict(existing)
@@ -289,12 +366,11 @@ async def buy_item(session: AsyncSession, user: User, item: ShopItem) -> str:
         if owned.first():
             return "❌ این آیتم یکتاست و قبلاً کسی آن را دارد."
 
-    from services.economy import get_or_create_wallet
+    from services.economy import get_or_create_wallet, pay_any_currency
     w = await get_or_create_wallet(session, user.id)
-    if w.coins < item.price:
-        return f"❌ سکه کافی نداری (نیاز: {item.price} | داری: {w.coins})"
-
-    w.coins -= item.price
+    ok, pay_msg = pay_any_currency(w, int(item.price or 0))
+    if not ok:
+        return pay_msg
     effect = item.effect or {}
     extra = ""
 
@@ -315,7 +391,7 @@ async def buy_item(session: AsyncSession, user: User, item: ShopItem) -> str:
             else:
                 extra = f"تکنیک «{tech_name}» در دیتابیس نبود."
         await session.commit()
-        return f"✅ «{item.name}» خریداری شد.\n{extra}\nسکه باقی: {w.coins}"
+        return f"✅ «{item.name}» خریداری شد.\n{extra}\n{pay_msg}"
 
     result = await session.execute(
         select(UserInventory).where(
@@ -331,4 +407,4 @@ async def buy_item(session: AsyncSession, user: User, item: ShopItem) -> str:
         session.add(inv)
 
     await session.commit()
-    return f"✅ «{item.name}» خریداری شد. سکه باقی: {w.coins}"
+    return f"✅ «{item.name}» خریداری شد. {pay_msg}"

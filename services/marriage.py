@@ -69,12 +69,9 @@ async def propose(session: AsyncSession, proposer: User, target: User) -> tuple[
 
     # مرد یا زن می‌توانند خواستگاری کنند؛ همیشه husband=مرد wife=زن در رکورد
     if g1 == g2:
-        return None, "ازدواج فقط بین مرد و زن است.", []
-    if "مرد" not in (g1, g2) or "زن" not in (g1, g2):
-        return None, "جنسیت‌ها باید مرد و زن باشند.", []
-
-    husband = proposer if g1 == "مرد" else target
-    wife = target if g1 == "مرد" else proposer
+        pass  # same-sex allowed
+    husband = proposer
+    wife = target
 
     existing_wife = await get_husband(session, wife.id)
     if existing_wife:

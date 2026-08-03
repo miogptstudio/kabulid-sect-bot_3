@@ -1,6 +1,6 @@
-from sqlalchemy import select, delete
+from sqlalchemy import select, delete, or_
 from sqlalchemy.ext.asyncio import AsyncSession
-from database.models import User, Medal, UserAchievement, Duel
+from database.models import User, Medal, UserAchievement, Duel, UserMission, Mission
 from database.models_v2 import SectMember, Cultivation, MasterDisciple, ArenaProfile, GameAccount
 from database.models_v3 import (
     UserInventory, UserTechnique, CraftingSkill, UserWallet, Pet,
@@ -18,7 +18,6 @@ async def become_spirit_raiser(session: AsyncSession, user: User) -> str:
     user.is_spirit_raiser = True
     user.yang = 50
     user.yin = 0
-    # شروع دوباره تذهیب روحی
     try:
         cult = await session.execute(
             select(Cultivation).where(Cultivation.user_id == user.id)
@@ -40,21 +39,14 @@ async def become_spirit_raiser(session: AsyncSession, user: User) -> str:
     )
 
 
-async def erase_existence(session: AsyncSession, user: User) -> str:
-    """پاک کردن کامل اکانت — وجود به پوچی برمی‌گردد"""
-    if not user.is_dead:
-        return "فقط بعد از مرگ می‌توانی وجودت را محو کنی."
-
-    uid = user.id
-    tg_id = user.telegram_id
-
-    # حذف وابستگی‌ها (به ترتیب برای جلوگیری از خطای FK)
-    tables_user_id = [
+async def _delete_related(session: AsyncSession, uid: int, tg_id: int):
+    """حذف همه وابستگی‌های کاربر"""
+    models_uid = [
         Medal, UserAchievement, UserInventory, UserTechnique,
         CraftingSkill, UserWallet, Pet, BetrayalLog, SectMember,
-        Cultivation, ArenaProfile,
+        Cultivation, ArenaProfile, UserMission,
     ]
-    for model in tables_user_id:
+    for model in models_uid:
         try:
             await session.execute(delete(model).where(model.user_id == uid))
         except Exception:
@@ -63,7 +55,7 @@ async def erase_existence(session: AsyncSession, user: User) -> str:
     try:
         await session.execute(
             delete(MasterDisciple).where(
-                (MasterDisciple.master_id == uid) | (MasterDisciple.disciple_id == uid)
+                or_(MasterDisciple.master_id == uid, MasterDisciple.disciple_id == uid)
             )
         )
     except Exception:
@@ -72,7 +64,7 @@ async def erase_existence(session: AsyncSession, user: User) -> str:
     try:
         await session.execute(
             delete(Marriage).where(
-                (Marriage.husband_id == uid) | (Marriage.wife_id == uid)
+                or_(Marriage.husband_id == uid, Marriage.wife_id == uid)
             )
         )
     except Exception:
@@ -81,7 +73,7 @@ async def erase_existence(session: AsyncSession, user: User) -> str:
     try:
         await session.execute(
             delete(DualCultivation).where(
-                (DualCultivation.user1_id == uid) | (DualCultivation.user2_id == uid)
+                or_(DualCultivation.user1_id == uid, DualCultivation.user2_id == uid)
             )
         )
     except Exception:
@@ -90,7 +82,11 @@ async def erase_existence(session: AsyncSession, user: User) -> str:
     try:
         await session.execute(
             delete(Duel).where(
-                (Duel.challenger_id == uid) | (Duel.opponent_id == uid) | (Duel.winner_id == uid)
+                or_(
+                    Duel.challenger_id == uid,
+                    Duel.opponent_id == uid,
+                    Duel.winner_id == uid,
+                )
             )
         )
     except Exception:
@@ -103,9 +99,77 @@ async def erase_existence(session: AsyncSession, user: User) -> str:
     except Exception:
         pass
 
-    await session.delete(user)
+
+async def erase_existence(session: AsyncSession, user: User) -> str:
+    """
+    پاک‌سازی کامل و شروع از صفر.
+    حذف ردیف User گاهی به خاطر FK شکست می‌خورد؛
+    پس همیشه داده‌ها را پاک و فیلدها را ریست می‌کنیم.
+    """
+    if not user.is_dead:
+        return "فقط بعد از مرگ می‌توانی وجودت را محو کنی."
+
+    uid = user.id
+    tg_id = user.telegram_id
+    name = user.full_name
+    username = user.username
+
+    await _delete_related(session, uid, tg_id)
+
+    # ریست کامل فیلدهای کاربر = اکانت نو
+    user.is_dead = False
+    user.is_spirit_raiser = False
+    user.rank = "عضو دسته‌های پایین‌تر"
+    user.level = 1
+    user.xp = 0
+    user.wins = 0
+    user.losses = 0
+    user.total_duels = 0
+    user.win_streak = 0
+    user.loss_streak = 0
+    user.same_rank_wins = 0
+    user.gender = "نامشخص"
+    user.yang = 100
+    user.yin = 0
+    user.is_virgin = True
+    user.solo_count = 0
+    user.blood = 100
+    user.poisoned_until = None
+    user.equipped_weapon_id = None
+    user.has_cyrus_sword = False
+    user.first_cities = None
+    user.city = "tehran"
+    user.world = "فانی"
+    user.lifespan = 100
+    user.is_banned = False
+    user.is_active = True
+    user.restricted_until = None
+    user.restriction_reason = None
+    if hasattr(user, "race"):
+        user.race = "انسان"
+    # role را برای ادمین نگه نمی‌داریم مگر ADMIN — ساده: عضو
+    from bot.config import ADMIN_IDS
+    from database.models import ROLE_LEADER, ROLE_MEMBER
+    if tg_id in ADMIN_IDS:
+        user.role = ROLE_LEADER
+    else:
+        user.role = ROLE_MEMBER
+
     await session.commit()
+
+    # تلاش برای hard-delete و ساخت دوباره (اختیاری)
+    try:
+        await session.delete(user)
+        await session.commit()
+    except Exception:
+        # ریست کافی است
+        try:
+            await session.rollback()
+        except Exception:
+            pass
+
     return (
-        "🌑 وجودت به <b>پوچی</b> بازگشت.\n"
-        "این اکانت برای همیشه پاک شد. اگر دوباره /start بزنی، از صفر شروع می‌کنی."
+        "🌑 وجودت به <b>پوچی</b> بازگشت و اکانت از صفر شد.\n"
+        f"شناسه تلگرام همان است ({tg_id}).\n"
+        "دوباره /start بزن، /gender و /race را انتخاب کن و از اول شروع کن."
     )

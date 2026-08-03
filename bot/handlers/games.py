@@ -4,11 +4,29 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
+from datetime import datetime, timedelta
+
 from database.engine import async_session
 from database.crud import get_or_create_user
 from services.economy import get_or_create_wallet
 
 router = Router()
+
+GAME_COOLDOWN = timedelta(minutes=5)
+_last_game: dict[int, datetime] = {}
+
+def check_game_cooldown(user_id: int, mark: bool = True):
+    """اگر هنوز کول‌داون دارد، متن پیام برمی‌گردد؛ وگرنه None و در صورت mark زمان ثبت می‌شود"""
+    now = datetime.utcnow()
+    last = _last_game.get(user_id)
+    if last and now - last < GAME_COOLDOWN:
+        left = int((GAME_COOLDOWN - (now - last)).total_seconds())
+        m, s = left // 60, left % 60
+        return f"⏳ محدودیت بازی: {m} دقیقه و {s} ثانیه دیگر صبر کن."
+    if mark:
+        _last_game[user_id] = now
+    return None
+
 
 # سنگ کاغذ قیچی در انتظار
 _rps_pending: dict[int, dict] = {}
@@ -16,6 +34,10 @@ _rps_pending: dict[int, dict] = {}
 
 @router.message(Command("games", "بازی", "بازی‌ها"))
 async def cmd_games_menu(message: Message):
+    cd = check_game_cooldown(message.from_user.id, mark=False)
+    if cd:
+        await message.answer(cd)
+        return
     builder = InlineKeyboardBuilder()
     builder.button(text="✊ سنگ‌کاغذ‌قیچی", callback_data=f"game:rps:{message.from_user.id}")
     builder.button(text="🎲 تاس / تخته‌نرد", callback_data=f"game:dice:{message.from_user.id}")
@@ -45,6 +67,10 @@ async def cb_game_menu(callback: CallbackQuery):
     kind, owner = parts[1], int(parts[2])
     if callback.from_user.id != owner:
         await callback.answer()
+        return
+    cd = check_game_cooldown(callback.from_user.id)
+    if cd:
+        await callback.answer(cd, show_alert=True)
         return
 
     if kind == "rps":
@@ -103,6 +129,11 @@ def _chess_board_text() -> str:
 
 @router.message(Command("rps", "سنگ‌کاغذ‌قیچی"))
 async def cmd_rps(message: Message):
+
+    cd = check_game_cooldown(message.from_user.id)
+    if cd:
+        await message.answer(cd)
+        return
     builder = InlineKeyboardBuilder()
     uid = message.from_user.id
     for name, emoji in [("سنگ", "✊"), ("کاغذ", "✋"), ("قیچی", "✌")]:
@@ -144,12 +175,22 @@ async def cb_rps(callback: CallbackQuery):
 
 @router.message(Command("dice", "تاس", "تخته‌نرد"))
 async def cmd_dice(message: Message):
+
+    cd = check_game_cooldown(message.from_user.id)
+    if cd:
+        await message.answer(cd)
+        return
     d1, d2 = random.randint(1, 6), random.randint(1, 6)
     await message.answer(f"🎲 تاس: <b>{d1}</b> — <b>{d2}</b>\nجمع: {d1 + d2}")
 
 
 @router.message(Command("chess", "شطرنج"))
 async def cmd_chess(message: Message):
+
+    cd = check_game_cooldown(message.from_user.id)
+    if cd:
+        await message.answer(cd)
+        return
     await message.answer(
         f"♟️ <b>شطرنج نمایشی</b>\n\n<code>{_chess_board_text()}</code>\n\n"
         f"برای صفحه تعاملی: وب‌اپ → games.html"
@@ -158,6 +199,11 @@ async def cmd_chess(message: Message):
 
 @router.message(Command("casino", "کازینو"))
 async def cmd_casino(message: Message):
+
+    cd = check_game_cooldown(message.from_user.id)
+    if cd:
+        await message.answer(cd)
+        return
     parts = (message.text or "").split()
     bet = 10
     if len(parts) >= 2:
@@ -204,6 +250,11 @@ _guess: dict[int, int] = {}
 
 @router.message(Command("guess", "حدس‌عدد"))
 async def cmd_guess(message: Message):
+
+    cd = check_game_cooldown(message.from_user.id)
+    if cd:
+        await message.answer(cd)
+        return
     parts = (message.text or "").split()
     uid = message.from_user.id
     if uid not in _guess:
@@ -266,6 +317,11 @@ def _draw_card():
 
 @router.message(Command("hukum", "حکم"))
 async def cmd_hukum(message: Message):
+
+    cd = check_game_cooldown(message.from_user.id)
+    if cd:
+        await message.answer(cd)
+        return
     trump = random.choice(SUITS)
     hand = [_draw_card() for _ in range(3)]
     table = _draw_card()

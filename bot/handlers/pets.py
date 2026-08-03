@@ -1,47 +1,164 @@
+import random
+from datetime import datetime, timedelta
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-from sqlalchemy import select
 
 from database.engine import async_session
 from database.crud import get_or_create_user
 from database.models_v3 import Pet
-from services.pets import spawn_wild, get_user_pets, tame_pet, buy_domestic
-from services.economy import get_or_create_wallet, add_coins, exchange_to_stones, exchange_to_coins, COINS_PER_STONE
+from services.pets import (
+    spawn_wild, get_user_pets, tame_pet, buy_domestic, feed_pet, train_pet,
+    pet_capacity, DEFAULT_PET_SLOTS, MAX_PET_SLOTS, PALACE_UPGRADE_SLOTS,
+    PALACE_UPGRADE_COST, HUNT_COOLDOWN_HOURS,
+)
+from services.economy import (
+    get_or_create_wallet, exchange_to_stones, exchange_to_coins,
+    exchange_up, wallet_text, pay_any_currency
+)
 
 router = Router()
 
 
-@router.message(Command("pets", "حیوانات", "پت"))
+@router.message(Command("pets", "حیوانات", "پت", "حیوان"))
 async def cmd_pets(message: Message):
     async with async_session() as session:
         user = await get_or_create_user(
             session, message.from_user.id,
             message.from_user.full_name, message.from_user.username
         )
+        if not getattr(user, "pet_slots", None):
+            user.pet_slots = DEFAULT_PET_SLOTS
+            await session.commit()
         pets = await get_user_pets(session, user.id)
-    
-    text = "🐾 <b>حیوانات تو</b>\n\n"
+        slots = pet_capacity(user)
+        last_hunt = getattr(user, "last_hunt_at", None)
+
+    text = (
+        "🐾 <b>حیوانات تو</b>\n"
+        f"🏰 کاخ رام‌شدگان: <b>{len(pets)}</b> / <b>{slots}</b> (سقف {MAX_PET_SLOTS})\n"
+    )
+    if last_hunt:
+        nxt = last_hunt + timedelta(hours=HUNT_COOLDOWN_HOURS)
+        now = datetime.utcnow()
+        if now < nxt:
+            left = int((nxt - now).total_seconds())
+            m = left // 60
+            text += f"⏰ شکار بعدی تا {m} دقیقه دیگر\n"
+        else:
+            text += "✅ می‌توانی شکار کنی\n"
+    else:
+        text += "✅ می‌توانی شکار کنی\n"
+    text += "\n"
+
     if not pets:
         text += "حیوانی نداری.\n"
     else:
-        for p in pets:
-            kind = "خونگی" if not p.is_wild else "وحشی"
-            text += f"• {p.name} ({p.species}) — {kind}\n  AT:{p.attack} DEF:{p.defense} وفاداری:{p.loyalty}\n"
-    
+        for i, p in enumerate(pets, 1):
+            kind = "وحشی" if p.is_wild else "خونگی"
+            text += (
+                f"<b>{i}.</b> {p.name} ({p.species}) — {kind}\n"
+                f"   AT:{p.attack} | DEF:{p.defense} | وفاداری:{p.loyalty}\n"
+            )
+
     text += (
-        "\nدستورات:\n"
-        "/hunt — شکار حیوان وحشی\n"
-        "/buypet — خرید حیوان خونگی (۱۰۰ سکه)\n"
-        "/wallet — کیف پول"
+        "\n<b>دستورات:</b>\n"
+        "/hunt — شکار (هر ۱ ساعت یک‌بار)\n"
+        "/buypet — خرید خونگی (۱۰۰ سکه یا معادل)\n"
+        "/petpalace — وضعیت و ارتقای کاخ رام‌شدگان\n"
+        "/upgradepetpalace — ارتقای ظرفیت (+5)\n"
+        "/petinfo شماره | /feedpet | /trainpet | /renamepet\n"
+        "/sellpet | /giftpet | /releasepet"
     )
     await message.answer(text)
 
 
+@router.message(Command("petpalace", "کاخ‌رام", "کاخ‌رام‌شدگان"))
+async def cmd_pet_palace(message: Message):
+    async with async_session() as session:
+        user = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
+        if not getattr(user, "pet_slots", None):
+            user.pet_slots = DEFAULT_PET_SLOTS
+            await session.commit()
+        pets = await get_user_pets(session, user.id)
+        slots = pet_capacity(user)
+    await message.answer(
+        "🏰 <b>کاخ رام‌شدگان</b>\n\n"
+        f"ظرفیت فعلی: <b>{slots}</b>\n"
+        f"اشغال‌شده: <b>{len(pets)}</b>\n"
+        f"سقف نهایی: <b>{MAX_PET_SLOTS}</b>\n\n"
+        f"هر ارتقا: +{PALACE_UPGRADE_SLOTS} ظرفیت\n"
+        f"هزینه هر ارتقا: {PALACE_UPGRADE_COST} سکه (یا معادل ارز بالاتر)\n\n"
+        "/upgradepetpalace — ارتقا\n"
+        "شکار: هر ساعت فقط یک‌بار (/hunt)"
+    )
+
+
+@router.message(Command("upgradepetpalace", "ارتقای‌کاخ", "ارتقاءکاخ"))
+async def cmd_upgrade_palace(message: Message):
+    async with async_session() as session:
+        user = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
+        slots = pet_capacity(user)
+        if slots >= MAX_PET_SLOTS:
+            await message.answer(f"کاخ در حداکثر ظرفیت است ({MAX_PET_SLOTS}).")
+            return
+        w = await get_or_create_wallet(session, user.id)
+        ok, pay_msg = pay_any_currency(w, PALACE_UPGRADE_COST)
+        if not ok:
+            await message.answer(pay_msg)
+            return
+        user.pet_slots = min(MAX_PET_SLOTS, slots + PALACE_UPGRADE_SLOTS)
+        await session.commit()
+        new_s = user.pet_slots
+    await message.answer(
+        f"✅ کاخ رام‌شدگان ارتقا یافت!\n"
+        f"ظرفیت: <b>{new_s}</b> / {MAX_PET_SLOTS}\n"
+        f"{pay_msg}"
+    )
+
+
+@router.message(Command("petinfo", "اطلاعات‌پت"))
+async def cmd_petinfo(message: Message):
+    parts = (message.text or "").split()
+    if len(parts) < 2:
+        await message.answer("فرمت: /petinfo شماره")
+        return
+    try:
+        idx = int(parts[1]) - 1
+    except ValueError:
+        await message.answer("شماره نامعتبر")
+        return
+    async with async_session() as session:
+        user = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
+        pets = await get_user_pets(session, user.id)
+        if idx < 0 or idx >= len(pets):
+            await message.answer("حیوان پیدا نشد. /pets")
+            return
+        p = pets[idx]
+    await message.answer(
+        f"🐾 <b>{p.name}</b>\n"
+        f"گونه: {p.species}\n"
+        f"نوع: {'وحشی' if p.is_wild else 'خونگی'}\n"
+        f"حمله: {p.attack}\n"
+        f"دفاع: {p.defense}\n"
+        f"وفاداری: {p.loyalty}/100\n"
+        f"{p.description or ''}"
+    )
+
+
 @router.message(Command("hunt", "شکار"))
 async def cmd_hunt(message: Message):
-    import random
+    now = datetime.utcnow()
     async with async_session() as session:
         user = await get_or_create_user(
             session, message.from_user.id,
@@ -50,19 +167,33 @@ async def cmd_hunt(message: Message):
         if user.is_dead:
             await message.answer("مرده‌ای. /afterdeath")
             return
-        # خطر شکار
+
+        last = getattr(user, "last_hunt_at", None)
+        if last and now < last + timedelta(hours=HUNT_COOLDOWN_HOURS):
+            left = int((last + timedelta(hours=HUNT_COOLDOWN_HOURS) - now).total_seconds())
+            m, s = left // 60, left % 60
+            await message.answer(
+                f"⏳ هر ساعت فقط یک شکار.\nمانده: {m} دقیقه و {s} ثانیه"
+            )
+            return
+
         roll = random.random()
         world = getattr(user, "world", "فانی") or "فانی"
+        risk = 0.45 if world != "زیرین" else 0.85
         try:
             from bot.config import HUNT_RISK_NORMAL, HUNT_RISK_UNDERWORLD
             risk = HUNT_RISK_NORMAL if world != "زیرین" else HUNT_RISK_UNDERWORLD
         except Exception:
-            risk = 0.45 if world != "زیرین" else 0.85
-        if roll < risk * 0.3:
+            pass
+
+        # ثبت کول‌داون حتی اگر زخمی شد (شکار انجام شده)
+        user.last_hunt_at = now
+
+        if roll < risk * 0.25:
             user.is_dead = True
             user.world = "زیرین"
             await session.commit()
-            await message.answer("💀 در شکار کشته شدی و به دنیای زیرین افتادی. /afterdeath")
+            await message.answer("💀 در شکار کشته شدی. /afterdeath")
             return
         if roll < risk:
             dmg = random.randint(5, 15)
@@ -70,35 +201,44 @@ async def cmd_hunt(message: Message):
                 user.lifespan = max(0, (user.lifespan or 100) - dmg)
                 if user.lifespan <= 0:
                     user.is_dead = True
+            if hasattr(user, "blood"):
+                user.blood = max(1, (user.blood or 100) - dmg)
             await session.commit()
-            await message.answer(f"🩸 زخمی شدی! -{dmg} عمر. شکار فرار کرد.")
+            await message.answer(f"🩸 زخمی شدی! -{dmg}. شکار فرار کرد.")
             return
+
+        await session.commit()
         pet = await spawn_wild(session)
-        
         builder = InlineKeyboardBuilder()
-        builder.button(text="رام کردن 🐺", callback_data=f"tame:{message.from_user.id}:{pet.id}")
-        builder.button(text="رها کردن", callback_data=f"release:{message.from_user.id}:{pet.id}")
+        builder.button(
+            text="رام کردن 🐺",
+            callback_data=f"tame:{message.from_user.id}:{pet.id}",
+        )
+        builder.button(
+            text="رها کردن",
+            callback_data=f"release:{message.from_user.id}:{pet.id}",
+        )
         builder.adjust(2)
-        
         await message.answer(
             f"🌲 حیوان وحشی پیدا شد!\n\n"
             f"<b>{pet.species}</b>\n"
             f"حمله: {pet.attack} | دفاع: {pet.defense}\n\n"
-            f"می‌خوای رامش کنی؟",
-            reply_markup=builder.as_markup()
+            f"می‌خوای رامش کنی؟\n"
+            f"(کاخ رام‌شدگان ظرفیت دارد؟ /petpalace)",
+            reply_markup=builder.as_markup(),
         )
 
 
 @router.callback_query(F.data.startswith("tame:"))
 async def cb_tame(callback: CallbackQuery):
     parts = callback.data.split(":")
-    if len(parts) >= 3:
-        owner_id, pet_id = int(parts[1]), int(parts[2])
-        if callback.from_user.id != owner_id:
-            await callback.answer()
-            return
-    else:
-        pet_id = int(parts[1])
+    if len(parts) < 3:
+        await callback.answer()
+        return
+    owner_id, pet_id = int(parts[1]), int(parts[2])
+    if callback.from_user.id != owner_id:
+        await callback.answer()
+        return
     async with async_session() as session:
         user = await get_or_create_user(
             session, callback.from_user.id,
@@ -109,30 +249,36 @@ async def cb_tame(callback: CallbackQuery):
             await callback.answer("دیگر اینجا نیست.", show_alert=True)
             return
         msg = await tame_pet(session, user, pet)
-    await callback.message.edit_text(msg)
+    try:
+        await callback.message.edit_text(msg)
+    except Exception:
+        await callback.message.answer(msg)
     await callback.answer()
 
 
 @router.callback_query(F.data.startswith("release:"))
 async def cb_release(callback: CallbackQuery):
     parts = callback.data.split(":")
-    if len(parts) >= 3:
-        owner_id, pet_id = int(parts[1]), int(parts[2])
-        if callback.from_user.id != owner_id:
-            await callback.answer()
-            return
-    else:
-        pet_id = int(parts[1])
+    if len(parts) < 3:
+        await callback.answer()
+        return
+    owner_id, pet_id = int(parts[1]), int(parts[2])
+    if callback.from_user.id != owner_id:
+        await callback.answer()
+        return
     async with async_session() as session:
         pet = await session.get(Pet, pet_id)
-        if pet and pet.is_wild:
+        if pet and pet.is_wild and pet.owner_id is None:
             await session.delete(pet)
             await session.commit()
-    await callback.message.edit_text("حیوان رها شد.")
+    try:
+        await callback.message.edit_text("حیوان رها شد.")
+    except Exception:
+        pass
     await callback.answer()
 
 
-@router.message(Command("buypet", "خریدپت"))
+@router.message(Command("buypet", "خریدپت", "خریدحیوان"))
 async def cmd_buy_pet(message: Message):
     async with async_session() as session:
         user = await get_or_create_user(
@@ -143,9 +289,180 @@ async def cmd_buy_pet(message: Message):
     await message.answer(msg)
 
 
+@router.message(Command("feedpet", "غذای‌پت", "غذاپت"))
+async def cmd_feed_pet(message: Message):
+    parts = (message.text or "").split()
+    if len(parts) < 2:
+        await message.answer("فرمت: /feedpet شماره")
+        return
+    try:
+        idx = int(parts[1]) - 1
+    except ValueError:
+        await message.answer("شماره نامعتبر")
+        return
+    async with async_session() as session:
+        user = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
+        pets = await get_user_pets(session, user.id)
+        if idx < 0 or idx >= len(pets):
+            await message.answer("حیوان پیدا نشد. /pets")
+            return
+        msg = await feed_pet(session, pets[idx], cost=20)
+    await message.answer(msg)
+
+
+@router.message(Command("trainpet", "آموزش‌پت", "آموزشپت"))
+async def cmd_train_pet(message: Message):
+    parts = (message.text or "").split()
+    if len(parts) < 2:
+        await message.answer("فرمت: /trainpet شماره")
+        return
+    try:
+        idx = int(parts[1]) - 1
+    except ValueError:
+        await message.answer("شماره نامعتبر")
+        return
+    async with async_session() as session:
+        user = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
+        pets = await get_user_pets(session, user.id)
+        if idx < 0 or idx >= len(pets):
+            await message.answer("حیوان پیدا نشد. /pets")
+            return
+        msg = await train_pet(session, pets[idx], cost=50)
+    await message.answer(msg)
+
+
+@router.message(Command("renamepet", "نام‌پت"))
+async def cmd_rename_pet(message: Message):
+    parts = (message.text or "").split(maxsplit=2)
+    if len(parts) < 3:
+        await message.answer("فرمت: /renamepet شماره نام‌جدید")
+        return
+    try:
+        idx = int(parts[1]) - 1
+    except ValueError:
+        await message.answer("شماره نامعتبر")
+        return
+    new_name = parts[2].strip()[:32]
+    if not new_name:
+        await message.answer("نام خالی است.")
+        return
+    async with async_session() as session:
+        user = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
+        pets = await get_user_pets(session, user.id)
+        if idx < 0 or idx >= len(pets):
+            await message.answer("حیوان پیدا نشد.")
+            return
+        pets[idx].name = new_name
+        await session.commit()
+    await message.answer(f"✅ نام تغییر کرد: <b>{new_name}</b>")
+
+
+@router.message(Command("sellpet", "فروش‌حیوان", "فروشپت"))
+async def cmd_sell_pet(message: Message):
+    parts = (message.text or "").split()
+    if len(parts) < 2:
+        await message.answer("فرمت: /sellpet شماره")
+        return
+    try:
+        idx = int(parts[1]) - 1
+    except ValueError:
+        await message.answer("شماره نامعتبر")
+        return
+    async with async_session() as session:
+        user = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
+        pets = await get_user_pets(session, user.id)
+        if idx < 0 or idx >= len(pets):
+            await message.answer("حیوان پیدا نشد.")
+            return
+        pet = pets[idx]
+        price = 50 + (pet.attack or 0) * 5 + (pet.defense or 0) * 3
+        w = await get_or_create_wallet(session, user.id)
+        w.coins = (w.coins or 0) + price
+        name = pet.name
+        await session.delete(pet)
+        await session.commit()
+    await message.answer(f"💰 «{name}» فروخته شد! +{price} سکه")
+
+
+@router.message(Command("giftpet", "هدیه‌حیوان", "هدیهپت"))
+async def cmd_gift_pet(message: Message):
+    if not message.reply_to_message:
+        await message.answer("روی پیام گیرنده ریپلای کن:\n/giftpet شماره")
+        return
+    parts = (message.text or "").split()
+    if len(parts) < 2:
+        await message.answer("فرمت: /giftpet شماره")
+        return
+    try:
+        idx = int(parts[1]) - 1
+    except ValueError:
+        await message.answer("شماره نامعتبر")
+        return
+    async with async_session() as session:
+        user = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
+        t = message.reply_to_message.from_user
+        target = await get_or_create_user(session, t.id, t.full_name, t.username)
+        pets = await get_user_pets(session, user.id)
+        if idx < 0 or idx >= len(pets):
+            await message.answer("حیوان پیدا نشد.")
+            return
+        # capacity of target
+        from services.pets import can_own_more
+        ok, msg = await can_own_more(session, target)
+        if not ok:
+            await message.answer("کاخ گیرنده پر است.\n" + msg)
+            return
+        pet = pets[idx]
+        pet.owner_id = target.id
+        name = pet.name
+        await session.commit()
+    await message.answer(f"🎁 «{name}» به {target.full_name} هدیه شد.")
+
+
+@router.message(Command("releasepet", "آزاد‌پت", "رهاپت"))
+async def cmd_release_pet(message: Message):
+    parts = (message.text or "").split()
+    if len(parts) < 2:
+        await message.answer("فرمت: /releasepet شماره")
+        return
+    try:
+        idx = int(parts[1]) - 1
+    except ValueError:
+        await message.answer("شماره نامعتبر")
+        return
+    async with async_session() as session:
+        user = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
+        pets = await get_user_pets(session, user.id)
+        if idx < 0 or idx >= len(pets):
+            await message.answer("حیوان پیدا نشد.")
+            return
+        pet = pets[idx]
+        name = pet.name
+        await session.delete(pet)
+        await session.commit()
+    await message.answer(f"🕊️ «{name}» آزاد شد.")
+
+
 @router.message(Command("wallet", "کیف‌پول", "سکه"))
 async def cmd_wallet(message: Message):
-    from services.economy import get_or_create_wallet, wallet_text
     async with async_session() as session:
         user = await get_or_create_user(
             session, message.from_user.id,
@@ -180,9 +497,7 @@ async def cmd_ex_coin(message: Message):
 
 @router.message(Command("dailycoin", "سکهروزانه"))
 async def cmd_daily_coin(message: Message):
-    """پاداش روزانه سکه — فقط یک‌بار در هر روز"""
-    from datetime import datetime, date
-    from services.economy import get_or_create_wallet
+    from datetime import date
     async with async_session() as session:
         user = await get_or_create_user(
             session, message.from_user.id,
@@ -191,92 +506,31 @@ async def cmd_daily_coin(message: Message):
         w = await get_or_create_wallet(session, user.id)
         today = date.today()
         last = w.last_daily_coin
-        if last is not None and last.date() == today:
-            await message.answer(
-                "امروز سکه روزانه را گرفتی.\n"
-                "فردا دوباره /dailycoin بزن."
-            )
-            return
-        w.coins += 30
+        if last is not None:
+            try:
+                if last.date() == today:
+                    await message.answer("امروز سکه روزانه را گرفتی.")
+                    return
+            except Exception:
+                pass
+        w.coins = (w.coins or 0) + 30
         w.last_daily_coin = datetime.utcnow()
         await session.commit()
         total = w.coins
     await message.answer(f"🪙 +۳۰ سکه روزانه!\nموجودی: {total}")
 
 
-@router.message(Command("sellpet", "فروش‌حیوان"))
-async def cmd_sell_pet(message: Message):
-    parts = (message.text or "").split()
-    if len(parts) < 2:
-        await message.answer("فرمت: /sellpet شماره\nلیست را با /pets ببین (شماره از ۱)")
-        return
-    try:
-        idx = int(parts[1]) - 1
-    except ValueError:
-        await message.answer("شماره نامعتبر")
-        return
-    async with async_session() as session:
-        user = await get_or_create_user(
-            session, message.from_user.id,
-            message.from_user.full_name, message.from_user.username
-        )
-        pets = await get_user_pets(session, user.id)
-        if idx < 0 or idx >= len(pets):
-            await message.answer("حیوان پیدا نشد.")
-            return
-        pet = pets[idx]
-        price = 50 + pet.attack * 5 + pet.defense * 3
-        from services.economy import get_or_create_wallet
-        w = await get_or_create_wallet(session, user.id)
-        w.coins += price
-        await session.delete(pet)
-        await session.commit()
-    await message.answer(f"فروخته شد! +{price} سکه")
-
-
-@router.message(Command("giftpet", "هدیه‌حیوان"))
-async def cmd_gift_pet(message: Message):
-    if not message.reply_to_message:
-        await message.answer("روی پیام گیرنده ریپلای کن:\n/giftpet شماره")
-        return
-    parts = (message.text or "").split()
-    if len(parts) < 2:
-        await message.answer("فرمت: /giftpet شماره")
-        return
-    try:
-        idx = int(parts[1]) - 1
-    except ValueError:
-        await message.answer("شماره نامعتبر")
-        return
-    async with async_session() as session:
-        user = await get_or_create_user(
-            session, message.from_user.id,
-            message.from_user.full_name, message.from_user.username
-        )
-        target = await get_or_create_user(
-            session, message.reply_to_message.from_user.id,
-            message.reply_to_message.from_user.full_name,
-            message.reply_to_message.from_user.username
-        )
-        pets = await get_user_pets(session, user.id)
-        if idx < 0 or idx >= len(pets):
-            await message.answer("حیوان پیدا نشد.")
-            return
-        pet = pets[idx]
-        pet.owner_id = target.id
-        await session.commit()
-    await message.answer(f"🎁 {pet.name} به {target.full_name} هدیه شد.")
-
-
 @router.message(Command("exchangeup", "ارتقای‌ارز"))
 async def cmd_exchange_up(message: Message):
     parts = (message.text or "").split()
     if len(parts) < 2:
-        await message.answer("فرمت: /exchangeup heavenly|celestial|god [تعداد]")
+        await message.answer("فرمت: /exchangeup heavenly | celestial | god [تعداد]")
         return
     kind = parts[1]
-    amount = int(parts[2]) if len(parts) > 2 else 1
-    from services.economy import exchange_up
+    try:
+        amount = int(parts[2]) if len(parts) > 2 else 1
+    except ValueError:
+        amount = 1
     async with async_session() as session:
         user = await get_or_create_user(
             session, message.from_user.id,

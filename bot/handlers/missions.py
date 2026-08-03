@@ -12,6 +12,22 @@ from services.death import erase_existence
 
 router = Router()
 
+
+EXTRA_MISSIONS = [
+    {"title": "مأموریت شهری: گشت بازار", "description": "در شهر فعلی /explorecity بزن.", "mission_type": "city", "target_type": "explore", "target_value": 1, "reward_xp": 2, "reward_medal": None},
+    {"title": "مأموریت شهری: سفر", "description": "با /travel به شهر دیگر برو.", "mission_type": "city", "target_type": "travel", "target_value": 1, "reward_xp": 2, "reward_medal": None},
+    {"title": "مأموریت جهانی: جنگ فرقه", "description": "در حمله/دفاع فرقه‌ای شرکت کن یا /sectwar.", "mission_type": "global", "target_type": "sectwar", "target_value": 1, "reward_xp": 5, "reward_medal": "فاتح جهانی"},
+    {"title": "مأموریت جهانی: لیدربورد", "description": "در /ranking بین ۱۰ نفر اول باش یا ۲ دوئل ببر.", "mission_type": "global", "target_type": "wins", "target_value": 2, "reward_xp": 4, "reward_medal": None},
+    {"title": "مأموریت فرعی: تکنیک", "description": "/learntech بزن یا تکنیک فعال کن.", "mission_type": "side", "target_type": "tech", "target_value": 1, "reward_xp": 1, "reward_medal": None},
+    {"title": "مأموریت فرعی: ساخت", "description": "۱ بار /craft یا استفاده از مواد.", "mission_type": "side", "target_type": "craft", "target_value": 1, "reward_xp": 1, "reward_medal": None},
+    {"title": "مأموریت چندنفره: دوئل گروهی", "description": "در /lootarena یا آرنای باز شرکت کن.", "mission_type": "multi", "target_type": "arena", "target_value": 1, "reward_xp": 3, "reward_medal": None},
+    {"title": "مأموریت چندنفره: دوئل دو نفره", "description": "با یک نفر /duel کن.", "mission_type": "multi", "target_type": "duels", "target_value": 1, "reward_xp": 2, "reward_medal": None},
+    {"title": "مأموریت فرقه‌ای: عضوگیری", "description": "عضو فرقه شو یا دعوت کن /sects.", "mission_type": "sect", "target_type": "sect", "target_value": 1, "reward_xp": 2, "reward_medal": None},
+    {"title": "مأموریت فرقه‌ای: مشارکت", "description": "امتیاز مشارکت فرقه بگیر (دوئل/تذهیب).", "mission_type": "sect", "target_type": "contrib", "target_value": 1, "reward_xp": 2, "reward_medal": None},
+    {"title": "حمله به فرقه دشمن", "description": "هدف جهانی: در جنگ قلمرو فرقه شرکت کن.", "mission_type": "global", "target_type": "sectwar", "target_value": 1, "reward_xp": 6, "reward_medal": "تهاجم"},
+]
+
+
 DAILY_MISSIONS = [
     {
         "title": "دوئل روزانه",
@@ -71,9 +87,9 @@ DAILY_MISSIONS = [
 
 
 async def ensure_daily_missions(session):
-    for m in DAILY_MISSIONS:
+    for m in DAILY_MISSIONS + EXTRA_MISSIONS:
         result = await session.execute(
-            select(Mission).where(Mission.title == m["title"], Mission.mission_type == "daily")
+            select(Mission).where(Mission.title == m["title"], Mission.mission_type == m["mission_type"])
         )
         if not result.scalar_one_or_none():
             session.add(Mission(
@@ -132,7 +148,7 @@ async def cmd_missions(message: Message):
         )
         await ensure_daily_missions(session)
         result = await session.execute(
-            select(Mission).where(Mission.is_active == True, Mission.mission_type == "daily")
+            select(Mission).where(Mission.is_active == True)
         )
         missions = result.scalars().all()
         done = await count_completed_today(session, user.id)

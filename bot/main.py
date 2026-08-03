@@ -14,7 +14,7 @@ import database.models_v2  # noqa: F401
 import database.models_v3  # noqa: F401
 from bot.handlers import (
     start, profile, duel, guardian, ranking, admin, missions,
-    sects, cultivation, master, arena, accounts, shop, crafting, dual, marriage, pets, death, world, help_menu, combat, engagement, games, garden, social, creatures, combat_extra, fallback
+    sects, cultivation, master, arena, accounts, shop, crafting, dual, marriage, pets, death, world, help_menu, combat, engagement, games, garden, social, creatures, combat_extra, race, codex_items, fallback
 )
 from bot.health import start_health_server
 
@@ -68,6 +68,8 @@ async def main():
     dp.include_router(social.router)
     dp.include_router(creatures.router)
     dp.include_router(combat_extra.router)
+    dp.include_router(race.router)
+    dp.include_router(codex_items.router)
     dp.include_router(admin.router)
     dp.include_router(fallback.router)
 

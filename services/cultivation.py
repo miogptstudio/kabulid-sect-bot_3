@@ -9,6 +9,25 @@ from bot.config import ROOT_UNLOCK_ENERGY, ENERGY_BASE, ENERGY_PER_LEVEL_ADD
 
 MAX_STAGE = 10
 
+# نژاد → نوع تذهیب / ضریب
+RACES = [
+    "انسان", "جن", "اهریمن", "فرشته", "اژدهازاده", "خون‌آشام", "روح‌پیمان", "غول", "پری", "سایه‌رو"
+]
+RACE_CULT = {
+    "انسان": {"bonus": 1.0, "style": "تذهیب متعادل", "desc": "همه‌فن‌حریف"},
+    "جن": {"bonus": 1.25, "style": "تذهیب آتشین", "desc": "چی آتش سریع‌تر"},
+    "اهریمن": {"bonus": 1.35, "style": "تذهیب شیطانی", "desc": "قدرت بالا، ریسک بالا"},
+    "فرشته": {"bonus": 1.3, "style": "تذهیب نورانی", "desc": "ریشه نور/بهشتی بهتر"},
+    "اژدهازاده": {"bonus": 1.4, "style": "تذهیب اژدها", "desc": "بدن و انرژی قوی"},
+    "خون‌آشام": {"bonus": 1.2, "style": "تذهیب خون", "desc": "از دوئل انرژی می‌گیرد"},
+    "روح‌پیمان": {"bonus": 1.35, "style": "تذهیب روحی", "desc": "قلمرو روح و زیرین"},
+    "غول": {"bonus": 1.15, "style": "تذهیب جسمانی", "desc": "خون و زره بهتر"},
+    "پری": {"bonus": 1.25, "style": "تذهیب طبیعت", "desc": "گیاه و کیمیاگری"},
+    "سایه‌رو": {"bonus": 1.3, "style": "تذهیب تاریکی", "desc": "ریشه تاریکی و جاسوسی"},
+}
+
+
+
 # هرچه ریشه کمیاب‌تر، بازدهی تذهیب بالاتر؛ چندعنصری سخت‌تر (ضریب انرژی لازم)
 ROOT_CULT_MULT = {
     "بدون ریشه": 0.5,
@@ -85,6 +104,14 @@ DEFAULT_TECHNIQUES = [
     {"name": "چشم حقیقت", "description": "درک انرژی", "grade": "بالا", "energy_bonus": 500, "required_root": None},
     {"name": "پنجه ببر", "description": "حمله", "grade": "بالا", "energy_bonus": 550, "required_root": None},
     {"name": "مهر خون", "description": "مسیر شیطانی", "grade": "بالا", "energy_bonus": 650, "required_root": None},
+    {"name": "نَفَس اژدهای سرخ", "description": "تکنیک اژدهازاده", "grade": "بالا", "energy_bonus": 900, "required_root": None},
+    {"name": "سرود فرشتگان", "description": "تکنیک فرشته", "grade": "بالا", "energy_bonus": 850, "required_root": "ریشه نور"},
+    {"name": "طلسم اهریمن", "description": "تکنیک اهریمن", "grade": "بالا", "energy_bonus": 950, "required_root": None},
+    {"name": "رقص پری", "description": "تکنیک پری", "grade": "متوسط", "energy_bonus": 400, "required_root": None},
+    {"name": "سایه سایه‌رو", "description": "تکنیک تاریکی پیشرفته", "grade": "پیشرفته", "energy_bonus": 1600, "required_root": "ریشه تاریکی"},
+    {"name": "خون ابدی", "description": "تکنیک خون‌آشام", "grade": "بالا", "energy_bonus": 700, "required_root": None},
+    {"name": "ستون غول", "description": "قدرت جسمانی", "grade": "متوسط", "energy_bonus": 380, "required_root": None},
+    {"name": "پیمان روح", "description": "تکنیک روح‌پیمان", "grade": "پیشرفته", "energy_bonus": 1400, "required_root": "ریشه روحی"},
     {
         "name": "پرورش ممنوعه",
         "description": "⚠️ ممنوع: بار اول +۱ سطح. بعد قفل ابدی — فقط این تکنیک. هر بار استفاده +۱ چی",
@@ -230,7 +257,16 @@ async def add_energy(session: AsyncSession, user_id: int, amount: int) -> dict:
     root = cult.spiritual_root or "بدون ریشه"
     rmult = ROOT_CULT_MULT.get(root, 1.0)
     bmult = BODY_BONUS.get(getattr(cult, "body_type", None) or "بدن معمولی", 1.0)
-    amount = max(1, int(amount * rmult * bmult))
+    # race bonus
+    race_mult = 1.0
+    try:
+        from database.models import User as _U
+        _u = await session.get(_U, user_id)
+        if _u and getattr(_u, "race", None):
+            race_mult = float(RACE_CULT.get(_u.race, {}).get("bonus", 1.0))
+    except Exception:
+        pass
+    amount = max(1, int(amount * rmult * bmult * race_mult))
 
     if root == "بدون ریشه":
         cult.energy += amount
