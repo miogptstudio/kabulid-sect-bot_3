@@ -36,7 +36,7 @@ async def cmd_admin(message: Message):
     text = (
         "🛠 <b>پنل مدیریت</b>\n\n"
         "<b>دستورات نقش‌ها:</b>\n"
-        "/setrole &lt;telegram_id&gt; &lt;نقش&gt;\n"
+        "/setrole آیدی نقش\n"
         "نقش‌ها: رهبر | معاون رهبر | ارجمند | ارشد | عضو\n\n"
         "<b>محدود کردن:</b>\n"
         "/restrict &lt;telegram_id&gt; &lt;دقیقه&gt; [دلیل]\n"
@@ -46,7 +46,7 @@ async def cmd_admin(message: Message):
         "/demote &lt;telegram_id&gt;\n\n"
         "<b>دیگر:</b>\n"
         "/ban &lt;telegram_id&gt;\n"
-        "/unban &lt;telegram_id&gt;"
+        "/unban آیدی"
     )
     await message.answer(text)
 
@@ -65,7 +65,7 @@ async def cmd_setrole(message: Message):
 
         parts = message.text.split(maxsplit=2)
         if len(parts) < 3:
-            await message.answer("فرمت: /setrole <telegram_id> <نقش>")
+            await message.answer("فرمت: /setrole آیدی نقش")
             return
 
         try:
@@ -374,3 +374,60 @@ async def cmd_take_money(message: Message):
             w.god_stones = max(0, (w.god_stones or 0) - amount)
         await session.commit()
     await message.answer(f"✅ از {target.full_name}: −{amount} {kind}")
+
+
+
+@router.message(Command("ban"))
+async def cmd_ban(message: Message):
+    if not is_config_admin(message.from_user.id):
+        await message.answer("فقط سازنده.")
+        return
+    parts = (message.text or "").split()
+    async with async_session() as session:
+        if message.reply_to_message:
+            t = message.reply_to_message.from_user
+            target = await get_or_create_user(session, t.id, t.full_name, t.username)
+        elif len(parts) >= 2:
+            try:
+                target = await get_user_by_telegram_id(session, int(parts[1]))
+            except ValueError:
+                await message.answer("آیدی عدد باشد.")
+                return
+        else:
+            await message.answer("فرمت: /ban آیدی  یا ریپلای + /ban")
+            return
+        if not target:
+            await message.answer("کاربر پیدا نشد.")
+            return
+        target.is_banned = True
+        target.is_active = False
+        await session.commit()
+    await message.answer(f"🚫 بن شد: {target.full_name}")
+
+
+@router.message(Command("unban"))
+async def cmd_unban(message: Message):
+    if not is_config_admin(message.from_user.id):
+        await message.answer("فقط سازنده.")
+        return
+    parts = (message.text or "").split()
+    async with async_session() as session:
+        if message.reply_to_message:
+            t = message.reply_to_message.from_user
+            target = await get_or_create_user(session, t.id, t.full_name, t.username)
+        elif len(parts) >= 2:
+            try:
+                target = await get_user_by_telegram_id(session, int(parts[1]))
+            except ValueError:
+                await message.answer("آیدی عدد باشد.")
+                return
+        else:
+            await message.answer("فرمت: /unban آیدی  یا ریپلای + /unban")
+            return
+        if not target:
+            await message.answer("کاربر پیدا نشد.")
+            return
+        target.is_banned = False
+        target.is_active = True
+        await session.commit()
+    await message.answer(f"✅ آنبن شد: {target.full_name}")
