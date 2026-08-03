@@ -42,6 +42,48 @@ async def cmd_buildings(message: Message):
     await message.answer(text, reply_markup=builder.as_markup())
 
 
+
+
+
+@router.message(Command("teahouse", "چایخانه", "چای‌خانه"))
+async def cmd_teahouse(message: Message):
+    """ورود مستقیم به چای‌خانه با صفحه‌بندی"""
+    from sqlalchemy import select as sel
+    uid = message.from_user.id
+    async with async_session() as session:
+        await ensure_default_buildings_and_items(session)
+        result = await session.execute(sel(Building).where(Building.building_type == "چای‌خانه"))
+        b = result.scalar_one_or_none()
+        if not b:
+            b = Building(name="چای‌خانه", building_type="چای‌خانه", description="انواع چای")
+            session.add(b)
+            await session.commit()
+            await session.refresh(b)
+            await ensure_default_buildings_and_items(session)
+        items = list(await get_items_of_building(session, b.id))
+        bid = b.id
+
+    if not items:
+        await message.answer("چای‌خانه خالی است. /buildings را یک‌بار بزن و دوباره /teahouse")
+        return
+
+    PER = 8
+    total_pages = max(1, (len(items) + PER - 1) // PER)
+    chunk = items[:PER]
+    builder = InlineKeyboardBuilder()
+    text = f"🍵 <b>چای‌خانه</b>" + chr(10) + f"صفحه 1/{total_pages} — {len(items)} نوع چای" + chr(10) + chr(10)
+    for item in chunk:
+        desc = (item.description or "")[:50]
+        text += f"• <b>{item.name}</b>" + chr(10) + f"  {desc}" + chr(10) + f"  قیمت: <b>{item.price}</b> سکه" + chr(10) + chr(10)
+        btn = item.name if len(item.name) <= 28 else item.name[:26] + "…"
+        builder.button(text=f"خرید {btn}", callback_data=f"buy:{uid}:{item.id}")
+    builder.adjust(1)
+    if total_pages > 1:
+        builder.button(text="بعدی ➡️", callback_data=f"bpage:{uid}:{bid}:1")
+    builder.button(text="همه ساختمان‌ها", callback_data=f"shopback:{uid}")
+    builder.adjust(1)
+    await message.answer(text, reply_markup=builder.as_markup())
+
 @router.callback_query(F.data.startswith("building:"))
 async def show_building_items(callback: CallbackQuery):
     owner_id, rest = parse_owner_data(callback.data, "building:")
@@ -50,15 +92,34 @@ async def show_building_items(callback: CallbackQuery):
         return
     if not await ensure_owner(callback, owner_id, "مغازه"):
         return
-
     try:
         building_id = int(rest)
     except ValueError:
         await callback.answer("خطا", show_alert=True)
         return
+    await _render_building(callback, owner_id, building_id, 0)
 
+
+@router.callback_query(F.data.startswith("bpage:"))
+async def building_page(callback: CallbackQuery):
+    parts = callback.data.split(":")
+    if len(parts) < 4:
+        await callback.answer()
+        return
+    try:
+        owner_id, building_id, page = int(parts[1]), int(parts[2]), int(parts[3])
+    except ValueError:
+        await callback.answer()
+        return
+    if not await ensure_owner(callback, owner_id, "مغازه"):
+        return
+    await _render_building(callback, owner_id, building_id, page)
+
+
+async def _render_building(callback: CallbackQuery, owner_id: int, building_id: int, page: int = 0):
+    PER = 8
     async with async_session() as session:
-        items = await get_items_of_building(session, building_id)
+        items = list(await get_items_of_building(session, building_id))
         building = await session.get(Building, building_id)
 
     if not items:
@@ -66,22 +127,33 @@ async def show_building_items(callback: CallbackQuery):
         return
 
     bname = building.name if building else "ساختمان"
-    builder = InlineKeyboardBuilder()
-    text = f"🛒 <b>{bname}</b>\n\n"
-    for item in items:
-        text += (
-            f"• <b>{item.name}</b>\n"
-            f"  {item.description or ''}\n"
-            f"  قیمت: <b>{item.price} سکه</b> (یا معادل ارز بالاتر)\n\n"
-        )
-        builder.button(
-            text=f"خرید {item.name}",
-            callback_data=f"buy:{owner_id}:{item.id}",
-        )
-    builder.button(text="⬅️ برگشت به لیست ساختمان‌ها", callback_data=f"shopback:{owner_id}")
-    builder.adjust(1)
+    total_pages = max(1, (len(items) + PER - 1) // PER)
+    page = max(0, min(page, total_pages - 1))
+    chunk = items[page * PER:(page + 1) * PER]
 
-    await callback.message.edit_text(text, reply_markup=builder.as_markup())
+    builder = InlineKeyboardBuilder()
+    text = f"🛒 <b>{bname}</b>\nصفحه {page + 1}/{total_pages} — {len(items)} آیتم\n\n"
+    for item in chunk:
+        desc = (item.description or "")[:50]
+        text += f"• <b>{item.name}</b>\n  {desc}\n  قیمت: <b>{item.price}</b> سکه\n\n"
+        btn = item.name if len(item.name) <= 28 else item.name[:26] + "…"
+        builder.button(text=f"خرید {btn}", callback_data=f"buy:{owner_id}:{item.id}")
+    builder.adjust(1)
+    if page > 0:
+        builder.button(text="⬅️ قبلی", callback_data=f"bpage:{owner_id}:{building_id}:{page - 1}")
+    if page < total_pages - 1:
+        builder.button(text="بعدی ➡️", callback_data=f"bpage:{owner_id}:{building_id}:{page + 1}")
+    builder.button(text="⬅️ برگشت ساختمان‌ها", callback_data=f"shopback:{owner_id}")
+    builder.adjust(2)
+
+    try:
+        await callback.message.edit_text(text, reply_markup=builder.as_markup())
+    except Exception:
+        try:
+            await callback.message.answer(text, reply_markup=builder.as_markup())
+        except Exception as e:
+            await callback.answer(str(e)[:100], show_alert=True)
+            return
     await callback.answer()
 
 

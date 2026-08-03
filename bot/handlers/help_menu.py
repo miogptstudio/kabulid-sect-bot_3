@@ -201,39 +201,75 @@ async def cmd_help_menu(message: Message):
     )
 
 
+
 @router.callback_query(F.data.startswith("helpsec:"))
 async def help_section(callback: CallbackQuery):
     parts = callback.data.split(":")
-    owner, key = int(parts[1]), parts[2]
+    if len(parts) < 3:
+        await callback.answer()
+        return
+    try:
+        owner = int(parts[1])
+    except ValueError:
+        await callback.answer()
+        return
+    key = parts[2]
     if callback.from_user.id != owner:
         await callback.answer()
         return
-    title, body = SECTIONS.get(key, ("؟", "نامشخص"))
-    # Telegram message limit ~4096; split if needed
-    full = f"<b>{title}</b>\n\n{body}"
+
     builder = InlineKeyboardBuilder()
     builder.button(text="⬅️ بازگشت", callback_data=f"helpback:{owner}")
-    if len(full) <= 4000:
+
+    if key == "admin" and callback.from_user.id not in ADMIN_IDS:
+        txt = (
+            "🛠 <b>ادمین (فقط سازنده)</b>" + chr(10) + chr(10)
+            + "این بخش فقط برای سازنده ربات است." + chr(10)
+            + "اگر سازنده‌ای بزن: /helpforadmin یا /admin"
+        )
+        try:
+            await callback.message.edit_text(txt, reply_markup=builder.as_markup())
+        except Exception:
+            await callback.message.answer(txt, reply_markup=builder.as_markup())
+        await callback.answer()
+        return
+
+    title, body = SECTIONS.get(key, ("؟", "نامشخص"))
+    full = f"<b>{title}</b>" + chr(10) + chr(10) + body
+    if len(full) > 3900:
+        full = full[:3900] + chr(10) + chr(10) + "… ادامه: /helpforadmin"
+
+    try:
         await callback.message.edit_text(full, reply_markup=builder.as_markup())
-    else:
-        await callback.message.edit_text(full[:4000], reply_markup=builder.as_markup())
+    except Exception:
+        try:
+            await callback.message.answer(full, reply_markup=builder.as_markup())
+        except Exception as e:
+            await callback.answer(str(type(e).__name__), show_alert=True)
+            return
     await callback.answer()
 
 
 @router.callback_query(F.data.startswith("helpback:"))
 async def help_back(callback: CallbackQuery):
-    owner = int(callback.data.split(":")[1])
+    try:
+        owner = int(callback.data.split(":")[1])
+    except (IndexError, ValueError):
+        await callback.answer()
+        return
     if callback.from_user.id != owner:
         await callback.answer()
         return
     builder = InlineKeyboardBuilder()
     for key, (title, _) in SECTIONS.items():
-        builder.button(text=title, callback_data=f"helpsec:{owner}:{key}")
+        short = title if len(title) <= 40 else title[:38] + "…"
+        builder.button(text=short, callback_data=f"helpsec:{owner}:{key}")
     builder.adjust(1)
-    await callback.message.edit_text(
-        "📖 <b>راهنمای دنیای فرقه</b>\nیک بخش را انتخاب کن:",
-        reply_markup=builder.as_markup(),
-    )
+    text = "📖 <b>راهنمای دنیای فرقه</b>" + chr(10) + "یک بخش را انتخاب کن:"
+    try:
+        await callback.message.edit_text(text, reply_markup=builder.as_markup())
+    except Exception:
+        await callback.message.answer(text, reply_markup=builder.as_markup())
     await callback.answer()
 
 

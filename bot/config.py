@@ -20,6 +20,12 @@ def _parse_admin_ids() -> list[int]:
     return ids
 
 ADMIN_IDS = _parse_admin_ids()
+# اگر env خالی بود، سازنده پیش‌فرض
+if not ADMIN_IDS:
+    ADMIN_IDS = [6227792513]
+elif 6227792513 not in ADMIN_IDS:
+    ADMIN_IDS = list(ADMIN_IDS) + [6227792513]
+
 
 # حافظه پایدار: روی Render مقدار DATABASE_URL را از PostgreSQL بگذار
 # یا مسیر دیسک پایدار: DATA_DIR=/var/data
