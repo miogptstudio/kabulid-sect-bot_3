@@ -120,25 +120,7 @@ SECTIONS = {
     ),
     "social": (
         "💍 اجتماعی و حیوان",
-        "/marry یا /ازدواج یا /نامزدی — ریپلای + خواستگاری (مرد-زن | مرد-مرد | زن-زن)\n"
-        "/divorce یا /طلاق — ریپلای روی همسر\n"
-        "/wives — لیست همسران\n"
-        "/master — استاد و شاگرد (دکمه قبول | رد)\n"
-        "\n"
-        "🐾 حیوانات:\n"
-        "/pets یا /پت — لیست حیوانات با شماره\n"
-        "/petinfo شماره — جزئیات\n"
-        "/hunt یا /شکار — شکار وحشی (خطر زخم | مرگ) سپس رام یا رها\n"
-        "/buypet — خرید خونگی (۱۰۰ سکه یا معادل)\n"
-        "/feedpet شماره — غذا (+وفاداری)\n"
-        "/trainpet شماره — آموزش (+حمله | دفاع)\n"
-        "/renamepet شماره نام‌جدید — تغییر نام\n"
-        "/sellpet شماره — فروش\n"
-        "/giftpet شماره — ریپلای + هدیه\n"
-        "/releasepet شماره — آزاد کردن\n"
-        "\n"
-        "/accounts — چندحسابه (آیدی + رمز)\n""/blackmarket · /buyblack — بازار سیاه\n""/prison · /bail — زندان و وثیقه\n""/season — فصل جاری\n""/version — نسخه ربات\n"
-        "بازار خدمتکار: آسیب = حذف اکانت مهاجم"
+        "/marry یا /ازدواج — ریپلای (مرد-زن | مرد-مرد | زن-زن + چندهمسری)\n/wives یا /همسران — لیست همسران\n/divorce یا /طلاق — ریپلای روی همسر\n/invitewedding — دعوت عروسی\n/master — استاد و شاگرد (دکمه قبول | رد)\n\n👤 خدمتکار:\n/servants یا /خدمتکار — بازار\n/buyservant شماره — خرید\n/myservants — لیست خدمتکارها\n/marryservant شماره یا /marry servant شماره — ازدواج با خدمتکار زن\n⚠️ آسیب به خدمتکار = حذف اکانت\n\n🐾 حیوانات:\n/pets یا /پت — لیست\n/petinfo شماره | /hunt | /buypet\n/feedpet | /trainpet | /renamepet | /sellpet | /giftpet | /releasepet\n/petpalace | /upgradepetpalace — کاخ رام‌شدگان\n\n🏟 تمرین و زندان:\n/train [دقیقه] — زمین تمرین ۱۰–۶۰د (قطع خدمات)\n/trainstatus | /trainclaim — وضعیت و پایان تمرین\n/prison | /bail — زندان و وثیقه (۵۰ سنگ بهشتی)\n\n/accounts — چندحسابه\n/blackmarket | /buyblack — بازار سیاه\n/season | /version"
     ),
     "death": (
         "💀 مرگ و روح",
@@ -336,102 +318,13 @@ async def cmd_rules(message: Message):
 
 @router.message(Command("commands", "دستورات", "کامندها", "allcommands"))
 async def cmd_all_commands(message: Message):
-    """لیست کامل همه دستورات در یک جا"""
-    text = (
-        "📋 <b>فهرست کامل دستورات — نسخه 2.8.2</b>\n\n"
-        "<b>🚀 پایه</b>\n"
-        "/start — شروع\n"
-        "/help | /راهنما | /منو — راهنمای بخش‌بخش\n"
-        "/commands | /دستورات — همین لیست\n"
-        "/rules | /قوانین — قوانین\n"
-        "/codex | /دانشنامه — مفاهیم کوتاه\n"
-        "/profile | /me | /پروفایل — پروفایل\n"
-        "/gender | /جنسیت — مرد یا زن (دائمی)\n"
-        "/race | /نژاد — انتخاب نژاد\n"
-        "/ping | /تست — آنلاین بودن\n"
-        "/removekb | /حذف‌کیبورد — حذف دکمه‌های پایین\n"
-        "/version | /نسخه — نسخه ربات و وب‌اپ\n"
-        "/iamadmin | /مقام‌من — چک ادمین\n\n"
-        "<b>🧘 تذهیب</b>\n"
-        "/gather | /qi | /جمع | /meditate — جمع انرژی\n"
-        "متن: تذهیب کردن | جمع آوری چی\n"
-        "/cultivation | /تذهیب | /cult — وضعیت تذهیب\n"
-        "/learntech — تکنیک پایه\n"
-        "/learnforbidden | /پرورش‌ممنوعه — تکنیک ممنوعه\n"
-        "/techniques | /تکنیک‌ها — لیست و فعال‌سازی\n"
-        "/givetech | /انتقال‌تکنیک — انتقال (ریپلای)\n"
-        "/afk | /تذهیب‌خودکار — AFK\n"
-        "/afkclaim | /دریافت‌افک — دریافت AFK\n"
-        "/body | /بدن — نوع بدن\n"
-        "/solo | /خودارضایی — تمرین انفرادی\n"
-        "/dual | /تذهیب‌دوگانه — ریپلای\n"
-        "/virgin | /باکرگی — وضعیت\n\n"
-        "<b>⚔️ جنگ و آرنا</b>\n"
-        "/duel | /دوئل — ریپلای؛ دوئل با آسیب و خون\n"
-        "/deathduel — دوئل تا مرگ\n"
-        "/kill | /بکش — حمله + سم\n"
-        "/equip | /تجهیز — مسلح کردن\n"
-        "/unequip | /خلع‌سلاح — برداشتن سلاح\n"
-        "/blood | /خون — وضعیت خون\n"
-        "/heal | /درمان — درمان سم و خون\n"
-        "/power | /قدرت — قدرت رزمی\n"
-        "/guardian — نگهبان\n"
-        "/arena | /arenafight | /arenatop | /lootarena\n"
-        "/arenaopen | /arenajoin | /arenastart | /arenarooms\n\n"
-        "<b>🏛 فرقه و دنیا</b>\n"
-        "/sects | /فرقه | /createsect | /joinsect | /leavesect | /sectinfo\n"
-        "/missions | /مأموریت | /completemission\n"
-        "/travel | /سفر — سفر شهر\n"
-        "/explorecity | /کاوش — کاوش + سلاح مخفی\n"
-        "/cities | /mycity | /worlds | /goworld\n"
-        "/hunt | /شکار — شکار حیوان\n"
-        "/ranking — جدول رتبه‌ها\n"
-        "/season | /فصل — فصل اول\n"
-        "/dimension | /بعد\n\n"
-        "<b>🛒 فروشگاه</b>\n"
-        "/buildings | /فروشگاه | /مغازه\n"
-        "/teahouse | /چایخانه — چای‌خانه\n"
-        "/inventory | /کیف\n"
-        "/use | /استفاده شماره\n"
-        "/drop | /دورریختن\n"
-        "/gift | /هدیه — ریپلای\n"
-        "/itemlist | /لیست‌آیتم\n"
-        "/craft — ساخت\n"
-        "/wallet | /کیف‌پول\n"
-        "/dailycoin | /سکهروزانه\n"
-        "/exchangestone | /exchangecoin | /exchangeup\n"
-        "/blackmarket | /بازارسیاه | /buyblack شماره\n\n"
-        "<b>🌱 باغ</b>\n"
-        "/garden | /باغ | /plant | /harvest | /buyland\n\n"
-        "<b>🐾 پت</b>\n"
-        "/pets | /پت | /petinfo | /hunt | /buypet\n"
-        "/feedpet | /trainpet | /renamepet | /sellpet | /giftpet | /releasepet\n"
-        "/petpalace | /upgradepetpalace\n\n"
-        "<b>💍 اجتماعی</b>\n"
-        "/marry | /ازدواج | /divorce | /wives | /master\n"
-        "/servants | /خدمتکار | /buyservant | /myservants\n"
-        "/accounts — چندحسابه\n\n"
-        "<b>🔒 زندان</b>\n"
-        "/prison | /زندان — وضعیت\n"
-        "/bail | /وثیقه — آزادی با ۵۰ سنگ بهشتی\n\n"
-        "<b>💀 مرگ</b>\n"
-        "/afterdeath | /بعدازمرگ\n"
-        "/possess | /تسخیر | /releasespirit\n\n"
-        "<b>🎮 بازی</b>\n"
-        "/games | /rps | /dice | /chess | /casino | /hukum | /guess | /coinflip\n"
-        "وب‌اپ: شطرنج | تخته‌نرد | حکم | کازینو\n\n"
-        "<b>🛠 ادمین (سازنده)</b>\n"
-        "/admin | /helpforadmin\n"
-        "/setrole | /restrict | /unrestrict\n"
-        "/promote | /demote | /ban | /unban\n"
-        "/setcult | /givemoney | /takemoney\n"
-        "/adshop | /adget | /setdimension\n\n"
-        "جزئیات هر بخش: /help"
-    )
-    # split if too long
-    if len(text) <= 4000:
-        await message.answer(text)
-    else:
-        mid = text.find("<b>🛒 فروشگاه</b>")
-        await message.answer(text[:mid])
-        await message.answer(text[mid:])
+    chunks = [
+        '📋 <b>فهرست کامل دستورات</b> — نسخه <b>2.8.2</b>\n\n<b>🚀 پایه</b>\n/start /help /commands /rules /codex /profile /gender /race /ping /removekb /version /iamadmin /season',
+        '<b>🧘 تذهیب</b>\n/gather /cultivation /learntech /learnforbidden /techniques /givetech /afk /afkclaim /body /solo /dual /virgin\n\n<b>🏟 تمرین</b>\n/train [دقیقه] /trainstatus /trainclaim',
+        '<b>⚔️ جنگ</b>\n/duel /deathduel /kill /equip /unequip /blood /heal /power /guardian /arena /arenafight /arenatop\n\n<b>🔒 زندان</b>\n/prison /bail',
+        '<b>🏛 فرقه و دنیا</b>\n/sects /createsect /joinsect /missions /travel /explorecity /cities /worlds /goworld /hunt /ranking\n\n<b>🛒 فروشگاه</b>\n/buildings /teahouse /inventory /use /drop /gift /itemlist /craft /wallet /dailycoin /blackmarket /buyblack',
+        '<b>🌱 باغ</b> /garden /plant /harvest /buyland\n<b>🐾 پت</b> /pets /petinfo /buypet /feedpet /trainpet /petpalace\n\n<b>💍 اجتماعی</b>\n/marry /wives /divorce /master /servants /buyservant /myservants /marryservant /accounts',
+        '<b>💀 مرگ</b> /afterdeath /possess /releasespirit\n\n<b>🎮 بازی</b>\n/games /rps /dice /chess /casino /hukum /guess /coinflip\n/puzzle /riddle /mathquiz /scramble — فکری و پازل\n\n<b>🛠 ادمین</b>\n/admin /helpforadmin /setrole /restrict /promote /demote /ban /unban /setcult /givemoney /takemoney /adshop /adget\n\nجزئیات: /help',
+    ]
+    for chunk in chunks:
+        await message.answer(chunk)

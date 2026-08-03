@@ -3,80 +3,8 @@
 <head>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>v2.8.2 دنیای فرقه 2.8.2</title>
-<script src="https://telegram.org/js/telegram-web-app.js">
-/* حکم تعاملی ساده */
-let hukumHand=[], hukumTable=[], hukumScore={me:0,bot:0};
-function renderHukumHub(a){
-  hukumHand=['آس دل','شاه خشت','بی‌بی پیک','سرباز گشنیز','۱۰ دل','۹ خشت','۸ پیک'];
-  hukumTable=[]; hukumScore={me:0,bot:0};
-  a.innerHTML=`<p class="muted">حکم ساده — کارت انتخاب کن</p>
-    <div id="hkTable" class="card">میز: خالی</div>
-    <div id="hkHand"></div>
-    <p id="hkScore">امتیاز تو 0 | ربات 0</p>`;
-  drawHukumHand();
-}
-function drawHukumHand(){
-  const h=document.getElementById('hkHand'); if(!h) return;
-  h.innerHTML=hukumHand.map((c,i)=>`<button class="btn" onclick="hukumPlay(${i})">${c}</button>`).join(' ');
-}
-function hukumPlay(i){
-  if(i<0||i>=hukumHand.length) return;
-  const my=hukumHand.splice(i,1)[0];
-  const botCards=['آس پیک','شاه دل','۷ خشت','۶ گشنیز','۵ دل'];
-  const bot=botCards[Math.floor(Math.random()*botCards.length)];
-  hukumTable=[my,bot];
-  // ساده: آس می‌برد
-  const myV=my.includes('آس')?14:my.includes('شاه')?13:my.includes('بی‌بی')?12:10;
-  const botV=bot.includes('آس')?14:bot.includes('شاه')?13:10;
-  if(myV>=botV) hukumScore.me++; else hukumScore.bot++;
-  document.getElementById('hkTable').textContent='میز: تو «'+my+'» | ربات «'+bot+'»';
-  document.getElementById('hkScore').textContent='امتیاز تو '+hukumScore.me+' | ربات '+hukumScore.bot;
-  drawHukumHand();
-  if(!hukumHand.length){
-    const w=hukumScore.me>hukumScore.bot?'تو بردی':hukumScore.me<hukumScore.bot?'ربات برد':'مساوی';
-    document.getElementById('hkTable').textContent+=' — پایان: '+w;
-  }
-}
-/* نرد آنلاین ساده */
-function renderNardHub(a){
-  a.innerHTML=`<div class="modebar">
-    <button class="btn dark" onclick="nardStart('bot')">با ربات</button>
-    <button class="btn dark" onclick="nardStart('online')">آنلاین</button>
-  </div><div id="nardBox"></div>`;
-}
-function nardStart(mode){
-  const box=document.getElementById('nardBox');
-  if(mode==='online'){
-    box.innerHTML=`<button class="btn" onclick="nardCreate()">ساخت اتاق</button>
-      <input class="code" id="nardCode" placeholder="کد"/><button class="btn ok" onclick="nardJoin()">ورود</button>
-      <p id="nardMsg" class="muted"></p><button class="btn" onclick="nardRollOnline()">تاس</button>`;
-    return;
-  }
-  box.innerHTML=`<p>تخته‌نرد ساده با ربات</p>
-    <button class="btn" onclick="nardRollBot()">تاس بینداز</button>
-    <p id="nardOut"></p>`;
-}
-async function nardCreate(){
-  const j=await createRoom('nard'); if(j.error){alert(j.error);return;}
-  document.getElementById('nardMsg').textContent='کد اتاق: '+(j.code||j.room||JSON.stringify(j));
-}
-async function nardJoin(){
-  const code=document.getElementById('nardCode').value.trim();
-  const j=await joinRoom(code,'nard');
-  document.getElementById('nardMsg').textContent=j.error||('وصل شدی: '+code);
-}
-function nardRollBot(){
-  const a=1+Math.floor(Math.random()*6), b=1+Math.floor(Math.random()*6);
-  const c=1+Math.floor(Math.random()*6), d=1+Math.floor(Math.random()*6);
-  document.getElementById('nardOut').textContent=`تو: ${a}-${b} | ربات: ${c}-${d} | ${a+b>=c+d?'تو جلو':'ربات جلو'}`;
-}
-function nardRollOnline(){
-  const a=1+Math.floor(Math.random()*6), b=1+Math.floor(Math.random()*6);
-  document.getElementById('nardMsg').textContent=`تاس تو: ${a}-${b} (حریف باید در اتاق ببیند)`;
-}
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-
-</script>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui,Tahoma,sans-serif;background:#0d0d12;color:#eee;margin:0;padding:12px;padding-bottom:48px}
@@ -641,7 +569,7 @@ function cas(){const x=Math.floor(Math.random()*100);
 
 /* ----- حکم ----- */
 const SUITS=['دل','خشت','خاج','پیک'], RANKS=['آس','شاه','بی‌بی','سرباز','۱۰','۹','۸','۷'];
-function renderHukumHub_OLD_DISABLED
+function renderHukumHub_UNUSED
 (a){
   a.innerHTML=`<div class="modebar">
     <button class="btn dark" onclick="hukumStart('bot')">با ربات</button>
@@ -707,6 +635,138 @@ function drawHukumSeats(players){
     s.innerHTML=`<div class="av">👤</div>${p.name||'?'}`;
     table.appendChild(s);
   });
+}
+
+
+function renderHukumHub(a){
+  if(!a) return;
+  a.innerHTML = `<div class="modebar">
+    <button class="btn dark" onclick="hukumStart('bot')">با ربات</button>
+    <button class="btn dark" onclick="hukumStart('friends')">با دوستان</button>
+  </div><div id="hukumBox"></div>`;
+  hukumStart('bot');
+}
+function renderNardHub(a){
+  if(!a) return;
+  a.innerHTML = `<div class="modebar">
+    <button class="btn dark" onclick="nardStart('bot')">با ربات</button>
+    <button class="btn dark" onclick="nardStart('online')">آنلاین</button>
+  </div><div id="nardBox"></div>`;
+  nardStart('bot');
+}
+function nardStart(mode){
+  const box=document.getElementById('nardBox');
+  if(!box) return;
+  if(mode==='online'){
+    box.innerHTML=`<p class="muted">تخته‌نرد آنلاین — کد اتاق بساز یا وارد شو</p>
+      <button class="btn" onclick="nardCreate()">ساخت اتاق</button>
+      <input class="code" id="nardCode" placeholder="کد اتاق" style="width:100px"/>
+      <button class="btn ok" onclick="nardJoin()">ورود</button>
+      <p id="nardMsg" class="muted"></p>
+      <button class="btn" onclick="nardRollOnline()">🎲 تاس من</button>
+      <button class="btn" onclick="nardRefresh()">🔄 وضعیت اتاق</button>`;
+    return;
+  }
+  box.innerHTML=`<p>تخته‌نرد با ربات</p>
+    <div class="nard-board" id="nardBoard"></div>
+    <button class="btn" onclick="nardRollBot()">🎲 تاس</button>
+    <p id="nardOut" class="muted"></p>`;
+  nardDrawBoard();
+}
+function nardDrawBoard(){
+  const b=document.getElementById('nardBoard'); if(!b) return;
+  let h='';
+  for(let row=0;row<2;row++){
+    h+='<div class="nard-row">';
+    for(let i=0;i<12;i++) h+='<div class="nard-point"></div>';
+    h+='</div>';
+  }
+  b.innerHTML=h;
+}
+async function nardCreate(){
+  try{
+    const j=await createRoom('nard');
+    if(j.error){alert(j.error);return;}
+    const el=document.getElementById('nardMsg');
+    if(el) el.textContent='کد اتاق: '+(j.code||'?')+' — برای دوست بفرست';
+    const inp=document.getElementById('nardCode');
+    if(inp && j.code) inp.value=j.code;
+  }catch(e){alert('خطا: '+e.message)}
+}
+async function nardJoin(){
+  const code=(document.getElementById('nardCode').value||'').trim();
+  if(!code){alert('کد را وارد کن');return;}
+  try{
+    const j=await joinRoom(code,'nard');
+    document.getElementById('nardMsg').textContent=j.error||('وصل شدی · نفرات: '+(j.players||[]).length);
+  }catch(e){alert(e.message)}
+}
+async function nardRefresh(){
+  const code=(document.getElementById('nardCode').value||'').trim();
+  if(!code)return;
+  const j=await roomStatus(code);
+  document.getElementById('nardMsg').textContent=j.error||('نفرات: '+(j.players||[]).length+' | بازی: nard');
+}
+function nardRollBot(){
+  const a=1+Math.floor(Math.random()*6), b=1+Math.floor(Math.random()*6);
+  const c=1+Math.floor(Math.random()*6), d=1+Math.floor(Math.random()*6);
+  document.getElementById('nardOut').textContent='تو: '+a+'-'+b+' | ربات: '+c+'-'+d+' | '+(a+b>=c+d?'تو جلو':'ربات جلو');
+}
+function nardRollOnline(){
+  const a=1+Math.floor(Math.random()*6), b=1+Math.floor(Math.random()*6);
+  document.getElementById('nardMsg').textContent='تاس تو: '+a+'-'+b+' (حریف در اتاق تاس خودش را می‌زند)';
+}
+function hukumStart(mode){
+  const box=document.getElementById('hukumBox');
+  if(!box) return;
+  if(mode==='bot'){
+    const suits=['دل','خشت','پیک','گشنیز'];
+    const ranks=['آس','شاه','بی‌بی','سرباز','۱۰','۹','۸','۷'];
+    window._hkTrump=suits[Math.floor(Math.random()*4)];
+    window._hkHand=ranks.slice(0,5).map(r=>r+' '+suits[Math.floor(Math.random()*4)]);
+    window._hkScore={me:0,bot:0};
+    box.innerHTML=`<div class="hukum-table"><div class="hukum-center" id="hkc"><b>حکم: ${window._hkTrump}</b></div></div>
+      <div class="hand" id="hkhand"></div>
+      <p id="hkmsg" class="muted">یک کارت انتخاب کن</p>
+      <p id="hkScore">امتیاز: تو 0 | ربات 0</p>`;
+    drawHukumHandInteractive();
+  } else {
+    box.innerHTML=`<p class="muted">میز حکم ۲ تا ۸ نفر</p>
+      <button class="btn" onclick="hukumCreate()">ساخت میز</button>
+      <input class="code" id="hkCode" placeholder="کد"/>
+      <button class="btn ok" onclick="hukumJoin()">ورود</button>
+      <p id="hkRoom" class="muted"></p>
+      <div class="hukum-table" id="hkTable"><div class="hukum-center">فرش سبز</div></div>
+      <button class="btn" onclick="hukumRefresh()">🔄 بروزرسانی</button>`;
+  }
+}
+function drawHukumHandInteractive(){
+  const h=document.getElementById('hkhand'); if(!h) return;
+  h.innerHTML=(window._hkHand||[]).map((c,i)=>`<button class="btn" onclick="hukumPlayCard(${i})">${c}</button>`).join(' ');
+}
+function hukumPlayCard(i){
+  if(!window._hkHand || i<0 || i>=window._hkHand.length) return;
+  const my=window._hkHand.splice(i,1)[0];
+  const suits=['دل','خشت','پیک','گشنیز'];
+  const ranks=['آس','شاه','بی‌بی','سرباز','۱۰'];
+  const bot=ranks[Math.floor(Math.random()*ranks.length)]+' '+suits[Math.floor(Math.random()*4)];
+  const val=c=>{
+    if(c.includes('آس'))return 14; if(c.includes('شاه'))return 13;
+    if(c.includes('بی‌بی'))return 12; if(c.includes('سرباز'))return 11; return 10;
+  };
+  let myV=val(my), botV=val(bot);
+  if(my.includes(window._hkTrump)) myV+=10;
+  if(bot.includes(window._hkTrump)) botV+=10;
+  if(myV>=botV) window._hkScore.me++; else window._hkScore.bot++;
+  document.getElementById('hkc').innerHTML=`<b>حکم: ${window._hkTrump}</b><br/>تو: ${my}<br/>ربات: ${bot}`;
+  document.getElementById('hkScore').textContent='امتیاز: تو '+window._hkScore.me+' | ربات '+window._hkScore.bot;
+  drawHukumHandInteractive();
+  if(!window._hkHand.length){
+    const w=window._hkScore.me>window._hkScore.bot?'تو بردی 🎉':window._hkScore.me<window._hkScore.bot?'ربات برد':'مساوی';
+    document.getElementById('hkmsg').textContent='پایان دست — '+w;
+  } else {
+    document.getElementById('hkmsg').textContent='کارت بعدی را بزن';
+  }
 }
 
 try{ show('daily'); }catch(e){ document.getElementById('content').innerHTML='<div class="card err">خطا: '+e.message+'</div>'; console.error(e); }

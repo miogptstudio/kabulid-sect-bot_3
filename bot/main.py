@@ -17,6 +17,7 @@ from bot.handlers import (
     sects, cultivation, master, arena, accounts, shop, crafting, dual, marriage, pets, death, world, help_menu, combat, engagement, games, garden, social, creatures, combat_extra, race, codex_items, prison_market, fallback
 )
 from bot.health import start_health_server
+from bot.middlewares.service_lock import ServiceLockMiddleware
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -41,6 +42,8 @@ async def main():
         default=DefaultBotProperties(parse_mode=ParseMode.HTML)
     )
     dp = Dispatcher(storage=MemoryStorage())
+    dp.message.middleware(ServiceLockMiddleware())
+    dp.callback_query.middleware(ServiceLockMiddleware())
 
     dp.include_router(start.router)
     dp.include_router(profile.router)

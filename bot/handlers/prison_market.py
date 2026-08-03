@@ -101,3 +101,46 @@ async def cmd_buy_black(message: Message):
 @router.message(Command("season", "فصل"))
 async def cmd_season(message: Message):
     await message.answer(season_text())
+
+
+@router.message(Command("train", "تمرین", "زمین‌تمرین", "training"))
+async def cmd_train(message: Message):
+    parts = (message.text or "").split()
+    minutes = 60
+    if len(parts) >= 2:
+        try:
+            minutes = int(parts[1])
+        except ValueError:
+            minutes = 60
+    async with async_session() as session:
+        user = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
+        from services.training import start_training
+        msg = await start_training(session, user, minutes)
+    await message.answer(msg)
+
+
+@router.message(Command("trainstatus", "وضعیت‌تمرین"))
+async def cmd_train_status(message: Message):
+    async with async_session() as session:
+        user = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
+        from services.training import train_status
+        msg = await train_status(session, user)
+    await message.answer(msg)
+
+
+@router.message(Command("trainclaim", "پایان‌تمرین", "دریافت‌تمرین"))
+async def cmd_train_claim(message: Message):
+    async with async_session() as session:
+        user = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
+        from services.training import claim_training
+        msg = await claim_training(session, user)
+    await message.answer(msg)

@@ -208,9 +208,73 @@ async def cmd_my_servants(message: Message):
     for i in ids:
         s = next((x for x in SERVANTS if x["id"] == i), None)
         if s:
-            text += f"• {s['name']} ({s['gender']})\n"
+            tag = " 💍" if i in married else ""
+            text += f"• {s['name']} ({s['gender']}){tag}" + chr(10)
     await message.answer(text)
 
+
+
+_user_married_servants: dict = {}  # telegram_id -> list of servant ids married
+
+
+@router.message(Command("marryservant", "ازدواج‌خدمتکار"))
+async def cmd_marry_servant(message: Message):
+    """ازدواج با خدمتکار زن: /marryservant شماره  یا  /marry servant شماره"""
+    parts = (message.text or "").split()
+    # پشتیبانی: /marryservant 1  |  /marry servant 1
+    sid = None
+    if len(parts) >= 2 and parts[0].replace("/", "").startswith("marry") and parts[1].lower() in ("servant", "خدمتکار"):
+        if len(parts) >= 3:
+            try:
+                sid = int(parts[2])
+            except ValueError:
+                sid = None
+    elif len(parts) >= 2:
+        try:
+            sid = int(parts[1])
+        except ValueError:
+            sid = None
+    if sid is None:
+        await message.answer(
+            "ازدواج با خدمتکار زن:" + chr(10)
+            + "/marryservant شماره" + chr(10)
+            + "یا: /marry servant شماره" + chr(10)
+            + "اول /myservants ببین کدام را داری."
+        )
+        return
+    s = next((x for x in SERVANTS if x["id"] == sid), None)
+    if not s:
+        await message.answer("خدمتکار پیدا نشد. /servants")
+        return
+    if s.get("gender") != "زن":
+        await message.answer("فقط با خدمتکار زن می‌شود ازدواج کرد.")
+        return
+    owned = _user_servants.get(message.from_user.id, [])
+    if sid not in owned:
+        await message.answer("اول باید این خدمتکار را بخری. /buyservant " + str(sid))
+        return
+    married = _user_married_servants.setdefault(message.from_user.id, [])
+    if sid in married:
+        await message.answer(f"قبلاً با {s['name']} ازدواج کرده‌ای.")
+        return
+    married.append(sid)
+    await message.answer(
+        f"💍 با خدمتکار «{s['name']}» ازدواج کردی." + chr(10)
+        + "آسیب به او = حذف اکانت تو." + chr(10)
+        + "/myservants — لیست"
+    )
+
+
+
+
+
+
+@router.message(F.text.regexp(r"(?i)^/marry\s+servant\s+\d+"))
+async def cmd_marry_servant_text(message: Message):
+    parts = (message.text or "").split()
+    if len(parts) >= 3:
+        message.text = f"/marryservant {parts[2]}"
+        await cmd_marry_servant(message)
 
 @router.message(Command("harmservant", "آسیب‌خدمتکار"))
 async def cmd_harm_servant(message: Message):

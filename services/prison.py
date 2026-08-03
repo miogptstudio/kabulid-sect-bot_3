@@ -59,6 +59,21 @@ async def try_bail(session: AsyncSession, user: User) -> str:
 
 
 async def check_prison_block(session: AsyncSession, user: User):
+    """بلاک زندان یا زمین تمرین — برای قطع خدمات ربات"""
+    # تمرین
+    try:
+        from services.training import is_training, training_block_message
+        if is_training(user):
+            return await training_block_message(session, user)
+        if getattr(user, "restriction_reason", None) == "تمرین":
+            # تمام شده؛ بگذار claim کند ولی سرویس هنوز بسته تا claim
+            return (
+                "🏟 تمرین تمام شده." + chr(10)
+                + "اول /trainclaim بزن تا آزاد شوی."
+            )
+    except Exception:
+        pass
+
     if is_in_prison(user):
         left = user.restricted_until - datetime.utcnow()
         h = int(left.total_seconds() // 3600)
