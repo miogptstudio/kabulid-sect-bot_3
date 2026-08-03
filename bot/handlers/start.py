@@ -3,6 +3,7 @@ from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton, ReplyKey
 from aiogram.filters import CommandStart, Command
 
 from database.engine import async_session
+from bot.config import BOT_VERSION
 from database.crud import get_or_create_user
 from database.models import ROLE_LEADER
 from bot.config import ADMIN_IDS
@@ -259,3 +260,17 @@ async def cmd_gender_alias(message: Message):
 @router.message(Command("removekb", "حذف‌کیبورد", "nokb"))
 async def cmd_remove_kb(message: Message):
     await message.answer("کیبورد حذف شد. از /help برای دستورات استفاده کن.", reply_markup=ReplyKeyboardRemove())
+
+
+@router.message(Command("version", "نسخه"))
+async def cmd_version(message: Message):
+    try:
+        from bot.config import BOT_VERSION, WEBAPP_VERSION
+        v, w = BOT_VERSION, WEBAPP_VERSION
+    except Exception:
+        v = w = "2.8.2"
+    await message.answer(
+        f"🤖 ربات: <b>{v}</b>" + chr(10)
+        + f"🌐 وب‌اپ: <b>{w}</b>" + chr(10)
+        + "🗓️ /season"
+    )

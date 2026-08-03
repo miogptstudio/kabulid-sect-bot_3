@@ -1,3 +1,5 @@
+BOT_VERSION = "2.8.2"
+WEBAPP_VERSION = "2.8.2"
 import os
 from dotenv import load_dotenv
 

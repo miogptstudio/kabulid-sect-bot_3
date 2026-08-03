@@ -122,17 +122,23 @@ async def cmd_wives(message: Message):
         )
         wives = await get_wives(session, user.id)
         hus = await get_husband(session, user.id)
-        text = "👨‍👩‍👧‍👦 <b>خانواده</b>\n\n"
+        text = "💍 <b>خانواده / همسران</b>" + chr(10) + chr(10)
         if wives:
-            text += "همسران:\n"
+            text += f"همسران تو ({len(wives)} نفر) — چندهمسری فعال:" + chr(10)
             for w in wives:
-                wu = await session.get(__import__("database.models", fromlist=["User"]).User, w.wife_id)
-                text += f"• {wu.full_name if wu else w.wife_id}\n"
+                wu = await session.get(
+                    __import__("database.models", fromlist=["User"]).User, w.wife_id
+                )
+                g = getattr(wu, "gender", "") if wu else ""
+                text += f"• {wu.full_name if wu else w.wife_id} ({g})" + chr(10)
         if hus:
-            hu = await session.get(__import__("database.models", fromlist=["User"]).User, hus.husband_id)
-            text += f"شوهر: {hu.full_name if hu else hus.husband_id}\n"
+            hu = await session.get(
+                __import__("database.models", fromlist=["User"]).User, hus.husband_id
+            )
+            g = getattr(hu, "gender", "") if hu else ""
+            text += f"همسر اصلی تو: {hu.full_name if hu else hus.husband_id} ({g})" + chr(10)
         if not wives and not hus:
-            text += "مجرد هستی."
+            text += "همسری نداری." + chr(10) + "ریپلای + /marry برای خواستگاری (دختر با دختر هم مجاز است)."
         await message.answer(text)
 
 

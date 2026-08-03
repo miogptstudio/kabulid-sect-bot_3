@@ -251,6 +251,13 @@ async def set_active_technique(session: AsyncSession, user_id: int, technique_id
 
 
 
+
+def energy_status_line(cult) -> str:
+    need = energy_needed_for_stage(cult.stage, cult.realm, cult.spiritual_root)
+    cur = int(cult.energy or 0)
+    left = max(0, need - cur)
+    return f"انرژی: {cur}/{need} | باقی تا سطح بعد: {left} | {cult.realm} مرحله {cult.stage}"
+
 async def add_energy(session: AsyncSession, user_id: int, amount: int) -> dict:
     cult = await get_or_create_cultivation(session, user_id)
     messages = []
@@ -327,19 +334,12 @@ async def add_energy(session: AsyncSession, user_id: int, amount: int) -> dict:
                 pass
             messages.append("☠️ اولین استفاده پرورش ممنوعه: +۱ سطح تذهیب و +۱ سطح بازی!")
     if not tech:
-
-        await session.commit()
-        return {
-            "energy": cult.energy,
-            "stage": cult.stage,
-            "realm": cult.realm,
-            "root": cult.spiritual_root,
-            "messages": ["تکنیک فعال نداری. /learntech یا سالن تکنیک"],
-        }
-
-    bonus = getattr(tech, "energy_bonus", 0) or 0
-    amount = amount + int(bonus)
-    cult.energy += amount
+        messages.append("ℹ️ تکنیک فعال نداری — فقط انرژی پایه ذخیره می‌شود. /learntech")
+        bonus = 0
+    else:
+        bonus = getattr(tech, "energy_bonus", 0) or 0
+        amount = amount + int(bonus)
+    cult.energy = int(cult.energy or 0) + int(amount)
     messages.append(f"+{amount} انرژی (ریشه ×{rmult:.2f} | بدن ×{bmult:.2f})")
 
     leveled = False

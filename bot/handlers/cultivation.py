@@ -220,6 +220,14 @@ async def do_gather(message: Message, amount: int = 5000):
         if user.is_dead:
             await message.answer("💀 مرده‌ای. /afterdeath")
             return
+        try:
+            from services.prison import check_prison_block
+            block = await check_prison_block(session, user)
+            if block:
+                await message.answer(block)
+                return
+        except Exception:
+            pass
 
     last = _last_gather.get(user_id)
     if last and (now - last).total_seconds() < COOLDOWN_SECONDS:
@@ -243,12 +251,15 @@ async def do_gather(message: Message, amount: int = 5000):
         except Exception:
             pass
     
-    text = f"🌀 (+{amount} انرژی)\n"
+    text = f"🌀 جمع‌آوری (+{amount} پایه)\n"
     if result.get("messages"):
         text += "\n".join(result["messages"])
     else:
-        text += f"انرژی: {result['energy']} | {result.get('root', '')} | {result['realm']} سطح {result['stage']}"
-    
+        text += f"انرژی: {result.get('energy')} | {result.get('root', '')} | {result.get('realm')} سطح {result.get('stage')}"
+    if result.get("need"):
+        cur = result.get("energy", 0)
+        need = result["need"]
+        text += f"\n📊 تا سطح بعد: {max(0, need - cur)} انرژی لازم (الان {cur}/{need})"
     await message.answer(text)
 
 

@@ -34,6 +34,11 @@ async def cmd_kill(message: Message):
         if attacker.is_dead:
             await message.answer("تو مرده‌ای.")
             return
+        from services.prison import check_prison_block, record_kill, put_in_prison, KILL_LIMIT_PER_DAY
+        block = await check_prison_block(session, attacker)
+        if block:
+            await message.answer(block)
+            return
         if victim.is_dead:
             await message.answer("طرف مرده است.")
             return
@@ -61,8 +66,14 @@ async def cmd_kill(message: Message):
         res = await apply_damage(session, attacker, victim, dmg)
         poison_msg = await apply_poison(session, victim)
         text = (
-            f"⚔️ حمله {attacker.full_name} به {victim.full_name}\n"
-            f"قدرت {p1['total']} vs {p2['total']}\n"
-            + "\n".join(res["messages"]) + "\n" + poison_msg
+            f"⚔️ حمله {attacker.full_name} به {victim.full_name}" + chr(10)
+            + f"قدرت {p1['total']} vs {p2['total']}" + chr(10)
+            + f"آسیب: {res.get('damage')} | خون حریف: {res.get('blood')}/{res.get('max_blood', 100)}" + chr(10)
+            + chr(10).join(res["messages"]) + chr(10) + poison_msg
         )
+        if res.get("killed"):
+            n = record_kill(attacker.id)
+            text += chr(10) + f"📊 قتل‌های امروز تو: {n}/{KILL_LIMIT_PER_DAY}"
+            if n > KILL_LIMIT_PER_DAY:
+                text += chr(10) + await put_in_prison(session, attacker)
         await message.answer(text)

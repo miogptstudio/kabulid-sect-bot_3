@@ -155,18 +155,24 @@ async def erase_existence(session: AsyncSession, user: User) -> str:
     else:
         user.role = ROLE_MEMBER
 
-    await session.commit()
-
-    # تلاش برای hard-delete و ساخت دوباره (اختیاری)
+    # ریست تذهیب
     try:
-        await session.delete(user)
-        await session.commit()
+        from database.models_v2 import Cultivation
+        from sqlalchemy import select
+        r = await session.execute(select(Cultivation).where(Cultivation.user_id == uid))
+        cult = r.scalar_one_or_none()
+        if cult:
+            cult.energy = 0
+            cult.stage = 1
+            cult.realm = "بیداری"
+            cult.spiritual_root = "بدون ریشه"
+            cult.talent = None
+            if hasattr(cult, "body_type"):
+                cult.body_type = "بدن معمولی"
     except Exception:
-        # ریست کافی است
-        try:
-            await session.rollback()
-        except Exception:
-            pass
+        pass
+
+    await session.commit()
 
     return (
         "🌑 وجودت به <b>پوچی</b> بازگشت و اکانت از صفر شد.\n"

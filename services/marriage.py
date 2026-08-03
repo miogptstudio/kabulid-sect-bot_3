@@ -67,15 +67,26 @@ async def propose(session: AsyncSession, proposer: User, target: User) -> tuple[
     if g1 == "نامشخص" or g2 == "نامشخص":
         return None, "هر دو باید با /gender جنسیت مشخص کرده باشن.", []
 
-    # مرد یا زن می‌توانند خواستگاری کنند؛ همیشه husband=مرد wife=زن در رکورد
-    if g1 == g2:
-        pass  # same-sex allowed
+    # چندهمسری برای همه فعال است:
+    # - مرد → چند زن
+    # - زن → چند زن (دختر به دختر)
+    # - زن → مرد / مرد → مرد هم مجاز
+    # نقش رکورد: proposer = husband_id (صاحب حرم)، target = wife_id (همسر)
     husband = proposer
     wife = target
 
-    existing_wife = await get_husband(session, wife.id)
-    if existing_wife:
-        return None, f"{wife.full_name} قبلاً متاهل است.", []
+    if g1 == "زن" and g2 == "زن":
+        warnings.append("💕 ازدواج دختر با دختر — چندهمسری برای طرف خواستگار فعال است.")
+
+    # طرف مقابل (همسر) نباید قبلاً به‌عنوان همسرِ شخص دیگری ثبت شده باشد
+    existing_as_wife = await get_husband(session, wife.id)
+    if existing_as_wife:
+        return None, f"{wife.full_name} قبلاً همسر شخص دیگری است.", []
+
+    # اگر طرف مقابل خودش حرم دارد (چند همسر)، باز هم می‌تواند همسر شود؟ خیر — یک نقش همسر کافی است
+    existing_as_primary = await get_wives(session, wife.id)
+    if existing_as_primary:
+        return None, f"{wife.full_name} خودش چند همسر دارد و نمی‌تواند به‌عنوان همسر جدید قبول شود.", []
 
     pending = await session.execute(
         select(Marriage).where(
@@ -164,14 +175,28 @@ async def accept_marriage(session: AsyncSession, marriage: Marriage, accepter_id
         await session.commit()
         return "⏰ مهلت نامزدی تمام شده. درخواست منقضی شد."
 
-    existing = await get_husband(session, accepter_id)
-    if existing:
-        return "تو قبلاً متاهل هستی."
+    # اگر قبول‌کننده نقش همسر (wife) است و قبلاً همسر کس دیگری است
+    if accepter_id == marriage.wife_id:
+        existing = await get_husband(session, accepter_id)
+        if existing and existing.id != marriage.id:
+            return "تو قبلاً همسر شخص دیگری هستی."
 
     marriage.status = "married"
     marriage.married_at = datetime.utcnow()
     await session.commit()
-    return "💍 عروسی انجام شد! حالا زن و شوهر هستید. (با رضایت دو طرف)"
+
+    # برچسب مناسب بر اساس جنسیت
+    try:
+        from database.models import User as _U
+        h = await session.get(_U, marriage.husband_id)
+        w = await session.get(_U, marriage.wife_id)
+        if h and w and h.gender == "زن" and w.gender == "زن":
+            return "💍 عروسی دختر با دختر انجام شد! چندهمسری برای طرف اول فعال است."
+        if h and w and h.gender == "مرد" and w.gender == "مرد":
+            return "💍 عروسی مرد با مرد انجام شد!"
+    except Exception:
+        pass
+    return "💍 عروسی انجام شد! (با رضایت دو طرف)"
 
 
 async def reject_marriage(session: AsyncSession, marriage: Marriage, rejecter_id: int) -> str:

@@ -57,7 +57,7 @@ async def _resolve_duel(session, challenger: User, opponent: User, stake: int = 
             dmg = 8 + (pb["total"] - pa["total"]) // 25
         # اگر کوروش مجهز است در دوئل عادی هم خطرناک است اما wipe فقط deathduel
         res = await apply_damage(session, atk, dfn, dmg, is_cyrus_strike=False)
-        logs.append(f"راند {rnd}: {atk.full_name} − خون {dfn.full_name} → {res.get('blood', '?')}%")
+        logs.append(f"راند {rnd}: {atk.full_name} → {dfn.full_name} | آسیب {res.get('damage','?')} | خون حریف {res.get('blood','?')}/{res.get('max_blood',100)}")
         if res.get("killed"):
             winner, loser = atk, dfn
             break
@@ -99,7 +99,7 @@ async def _resolve_duel(session, challenger: User, opponent: User, stake: int = 
     if (loser.blood or 0) > 0 and not loser.is_dead:
         loser.blood = min(100, loser.blood + 10)
     await session.commit()
-    text = "🏁 <b>نتیجه دوئل (قدرت + سلاح)</b>\n" + "\n".join(logs[-6:])
+    text = "🏁 <b>نتیجه دوئل (قدرت + سلاح)</b>\n" + "\n".join(logs[-6:]) + f"\n\n🩸 خون‌ها: {a.full_name} {a.blood} | {b.full_name} {b.blood}"
     text += f"\n\n🏆 برنده: <b>{winner.full_name}</b>\nبازنده: {loser.full_name}"
     if extra:
         text += "\n" + "\n".join(extra)

@@ -324,6 +324,7 @@ async def cmd_use_item(message: Message):
                 msg_parts.append(f"🍵 +{gain} انرژی تذهیب")
                 if res.get("messages"):
                     msg_parts.extend(res["messages"])
+                msg_parts.append(f"📊 انرژی فعلی: {res.get('energy', '?')}")
             elif effect.get("energy") and item.item_type in ("pill", "tea"):
                 from services.cultivation import add_energy
                 gain = int(effect["energy"])
