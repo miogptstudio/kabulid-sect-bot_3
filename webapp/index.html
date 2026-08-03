@@ -31,7 +31,7 @@ nav>button.active{background:#6c5ce7;color:#fff}
 .nard-row{display:flex;justify-content:space-between;gap:2px;margin:4px 0}
 .nard-point{flex:1;min-height:70px;background:#3d2914;border-radius:4px;position:relative;display:flex;flex-direction:column;align-items:center;padding:2px}
 .nard-point:nth-child(odd){background:#5c3d1e}
-.checker{width:18px;height:18px;border-radius:50%;margin:1px;font-size:10px;display:flex;align-items:center;justify-content:center}
+.checker{width:18px;height:18px;border-radius:50%;display:block;margin:1px auto;text-align:center;line-height:18px;font-size:11px;box-shadow:0 1px 3px #000;width:18px;height:18px;border-radius:50%;margin:1px;font-size:10px;display:flex;align-items:center;justify-content:center}
 .checker.w{background:#f5f5f5;color:#111}.checker.b{background:#1a1a1a;color:#fff;border:1px solid #555}
 .pip{width:40px;height:40px;border-radius:8px;background:#2d3436;display:inline-flex;align-items:center;justify-content:center;margin:3px;font-size:16px}
 /* حکم میز */
@@ -382,16 +382,29 @@ function renderNardHub(a){
   a.innerHTML=`<div class="modebar">
     <button class="btn dark" onclick="nardStart('bot')">با ربات</button>
     <button class="btn dark" onclick="nardStart('2p')">دونفره</button>
+    <button class="btn dark" onclick="nardStart('online')">آنلاین</button>
   </div><div id="nardBox"></div>`;
 }
 function nardStart(mode){
-  // pts[0..23] count of white/black; white moves 0→23, black 23→0
+  const box=document.getElementById('nardBox');
+  if(!box) return;
+  if(mode==='online'){
+    box.innerHTML=`<p class="muted">تخته‌نرد آنلاین — اتاق بساز یا با کد وارد شو</p>
+      <button class="btn" onclick="nardCreate()">ساخت اتاق</button>
+      <input class="code" id="nardCode" placeholder="کد" style="width:90px"/>
+      <button class="btn ok" onclick="nardJoin()">ورود</button>
+      <p id="nardMsg" class="muted"></p>
+      <button class="btn" onclick="nardRollOnline()">🎲 تاس من</button>
+      <button class="btn" onclick="nardRefresh()">🔄 وضعیت</button>
+      <p class="muted">برای بازی کامل مهره‌دار از حالت با ربات استفاده کن.</p>`;
+    return;
+  }
+  // چیدمان استاندارد تخته‌نرد — ۱۵ مهره هر طرف
   const pts=Array.from({length:24},()=>({w:0,b:0}));
   pts[0].w=2; pts[11].w=5; pts[16].w=3; pts[18].w=5;
   pts[23].b=2; pts[12].b=5; pts[7].b=3; pts[5].b=5;
   window._nard={mode,turn:'w',dice:[],movesLeft:[],pts,bar:{w:0,b:0},off:{w:0,b:0},sel:null};
-  const box=document.getElementById('nardBox');
-  box.innerHTML=`<p class="muted">تخته‌نرد: تاس بزن، مهره را انتخاب کن، خانه مقصد را بزن. زدن مهرهٔ تک به بار می‌رود.</p>
+  box.innerHTML=`<p class="muted">تاس بزن → مهره را بزن → خانه مقصد. مهره سفید ● روشن، سیاه ● تیره</p>
     <div class="nard-board" id="nb"></div>
     <div><span class="pip" id="d1">?</span><span class="pip" id="d2">?</span></div>
     <p id="ni">نوبت سفید — تاس بزن</p>
@@ -407,9 +420,9 @@ function drawNard(){
     const step=rev?-1:1;
     for(let i=from; rev?i>=to:i<=to; i+=step){
       const c=n.pts[i]; let chips='';
-      for(let k=0;k<Math.min(c.w,5);k++) chips+='<div class="checker w">●</div>';
+      for(let k=0;k<Math.min(c.w,5);k++) chips+='<div class="checker w" title="سفید">○</div>';
       if(c.w>5) chips+='<div class="checker w">'+c.w+'</div>';
-      for(let k=0;k<Math.min(c.b,5);k++) chips+='<div class="checker b">●</div>';
+      for(let k=0;k<Math.min(c.b,5);k++) chips+='<div class="checker b" title="سیاه">●</div>';
       if(c.b>5) chips+='<div class="checker b">'+c.b+'</div>';
       const sel=n.sel===i?'outline:2px solid #ffeaa7;':'';
       h+=`<div class="nard-point" style="${sel}" onclick="nardClick(${i})">${chips||'<span class="muted">'+(i+1)+'</span>'}</div>`;
@@ -646,43 +659,6 @@ function renderHukumHub(a){
   </div><div id="hukumBox"></div>`;
   hukumStart('bot');
 }
-function renderNardHub(a){
-  if(!a) return;
-  a.innerHTML = `<div class="modebar">
-    <button class="btn dark" onclick="nardStart('bot')">با ربات</button>
-    <button class="btn dark" onclick="nardStart('online')">آنلاین</button>
-  </div><div id="nardBox"></div>`;
-  nardStart('bot');
-}
-function nardStart(mode){
-  const box=document.getElementById('nardBox');
-  if(!box) return;
-  if(mode==='online'){
-    box.innerHTML=`<p class="muted">تخته‌نرد آنلاین — کد اتاق بساز یا وارد شو</p>
-      <button class="btn" onclick="nardCreate()">ساخت اتاق</button>
-      <input class="code" id="nardCode" placeholder="کد اتاق" style="width:100px"/>
-      <button class="btn ok" onclick="nardJoin()">ورود</button>
-      <p id="nardMsg" class="muted"></p>
-      <button class="btn" onclick="nardRollOnline()">🎲 تاس من</button>
-      <button class="btn" onclick="nardRefresh()">🔄 وضعیت اتاق</button>`;
-    return;
-  }
-  box.innerHTML=`<p>تخته‌نرد با ربات</p>
-    <div class="nard-board" id="nardBoard"></div>
-    <button class="btn" onclick="nardRollBot()">🎲 تاس</button>
-    <p id="nardOut" class="muted"></p>`;
-  nardDrawBoard();
-}
-function nardDrawBoard(){
-  const b=document.getElementById('nardBoard'); if(!b) return;
-  let h='';
-  for(let row=0;row<2;row++){
-    h+='<div class="nard-row">';
-    for(let i=0;i<12;i++) h+='<div class="nard-point"></div>';
-    h+='</div>';
-  }
-  b.innerHTML=h;
-}
 async function nardCreate(){
   try{
     const j=await createRoom('nard');
@@ -693,7 +669,7 @@ async function nardCreate(){
     if(inp && j.code) inp.value=j.code;
   }catch(e){alert('خطا: '+e.message)}
 }
-async function nardJoin(){
+async funasync function nardJoin(){
   const code=(document.getElementById('nardCode').value||'').trim();
   if(!code){alert('کد را وارد کن');return;}
   try{
@@ -701,21 +677,17 @@ async function nardJoin(){
     document.getElementById('nardMsg').textContent=j.error||('وصل شدی · نفرات: '+(j.players||[]).length);
   }catch(e){alert(e.message)}
 }
-async function nardRefresh(){
+async funasync function nardRefresh(){
   const code=(document.getElementById('nardCode').value||'').trim();
   if(!code)return;
   const j=await roomStatus(code);
   document.getElementById('nardMsg').textContent=j.error||('نفرات: '+(j.players||[]).length+' | بازی: nard');
 }
-function nardRollBot(){
-  const a=1+Math.floor(Math.random()*6), b=1+Math.floor(Math.random()*6);
-  const c=1+Math.floor(Math.random()*6), d=1+Math.floor(Math.random()*6);
-  document.getElementById('nardOut').textContent='تو: '+a+'-'+b+' | ربات: '+c+'-'+d+' | '+(a+b>=c+d?'تو جلو':'ربات جلو');
-}
-function nardRollOnline(){
+function function nardRollOnline(){
   const a=1+Math.floor(Math.random()*6), b=1+Math.floor(Math.random()*6);
   document.getElementById('nardMsg').textContent='تاس تو: '+a+'-'+b+' (حریف در اتاق تاس خودش را می‌زند)';
 }
+
 function hukumStart(mode){
   const box=document.getElementById('hukumBox');
   if(!box) return;
