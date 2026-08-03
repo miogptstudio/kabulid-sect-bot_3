@@ -163,14 +163,12 @@ function rayMoves(from,dirs,board,tr){
   return out;
 }
 
-function legalMoves(from, board, tr){
+function pseudoMoves(from, board, tr){
   const pc=board[from]; if(!pc) return [];
   if(tr==='w'&&!isW(pc)) return [];
   if(tr==='b'&&!isB(pc)) return [];
   const [r,c]=rc(from); const moves=[];
   const add=(j)=>{if(j<0||j>63)return; const t=board[j]; if(!t||enemy(t,tr)) moves.push(j);};
-
-  // pawn
   if(pc==='♙'||pc==='♟'){
     const dir=pc==='♙'?-1:1;
     const startRow=pc==='♙'?6:1;
@@ -184,7 +182,6 @@ function legalMoves(from, board, tr){
     }
     return moves;
   }
-  // knight
   if(pc==='♘'||pc==='♞'){
     for(const [dr,dc] of [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]]){
       const nr=r+dr,nc=c+dc;
@@ -192,7 +189,6 @@ function legalMoves(from, board, tr){
     }
     return moves;
   }
-  // king
   if(pc==='♔'||pc==='♚'){
     for(let dr=-1;dr<=1;dr++) for(let dc=-1;dc<=1;dc++){
       if(!dr&&!dc) continue;
@@ -201,13 +197,68 @@ function legalMoves(from, board, tr){
     }
     return moves;
   }
-  // rook
   if(pc==='♖'||pc==='♜') return rayMoves(from,[[1,0],[-1,0],[0,1],[0,-1]],board,tr);
-  // bishop
   if(pc==='♗'||pc==='♝') return rayMoves(from,[[1,1],[1,-1],[-1,1],[-1,-1]],board,tr);
-  // queen
   if(pc==='♕'||pc==='♛') return rayMoves(from,[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]],board,tr);
   return moves;
+}
+
+function findKing(board, tr){
+  const k = tr==='w' ? '♔' : '♚';
+  for(let i=0;i<64;i++) if(board[i]===k) return i;
+  return -1;
+}
+
+function squareAttacked(board, sq, byTr){
+  // آیا طرف byTr این خانه را تهدید می‌کند؟
+  for(let i=0;i<64;i++){
+    const pc=board[i];
+    if(!pc) continue;
+    if(byTr==='w'&&!isW(pc)) continue;
+    if(byTr==='b'&&!isB(pc)) continue;
+    const moves = pseudoMoves(i, board, byTr);
+    if(moves.includes(sq)) return true;
+  }
+  return false;
+}
+
+function inCheck(board, tr){
+  const k = findKing(board, tr);
+  if(k<0) return true;
+  return squareAttacked(board, k, tr==='w'?'b':'w');
+}
+
+function legalMoves(from, board, tr){
+  const raw = pseudoMoves(from, board, tr);
+  const out=[];
+  for(const to of raw){
+    const nb = board.slice();
+    nb[to]=nb[from]; nb[from]='';
+    // ارتقای موقت سرباز برای چک
+    const [trr]=rc(to);
+    if(nb[to]==='♙'&&trr===0) nb[to]='♕';
+    if(nb[to]==='♟'&&trr===7) nb[to]='♛';
+    if(!inCheck(nb, tr)) out.push(to);
+  }
+  return out;
+}
+
+function hasAnyLegal(board, tr){
+  for(let i=0;i<64;i++){
+    if(tr==='w'&&isW(board[i]) || tr==='b'&&isB(board[i])){
+      if(legalMoves(i, board, tr).length) return true;
+    }
+  }
+  return false;
+}
+
+function gameStatus(board, tr){
+  const check = inCheck(board, tr);
+  const any = hasAnyLegal(board, tr);
+  if(!any && check) return {over:true, mate:true, check:true, text: (tr==='w'?'سفید':'سیاه')+' کیش و مات شد! برنده: '+(tr==='w'?'سیاه':'سفید')};
+  if(!any && !check) return {over:true, mate:false, check:false, text:'پات — مساوی'};
+  if(check) return {over:false, mate:false, check:true, text:'کیش! نوبت '+(tr==='w'?'سفید':'سیاه')};
+  return {over:false, mate:false, check:false, text:'نوبت: '+(tr==='w'?'سفید':'سیاه')};
 }
 
 function renderChessHub(a){
@@ -253,7 +304,7 @@ function drawChess(){
     d.textContent=pc; d.onclick=()=>clickChess(i); b.appendChild(d);
   });
   const cm=document.getElementById('cm');
-  if(cm) cm.textContent='نوبت: '+(turn==='w'?'سفید':'سیاه')+(sel!==null?' | حرکت قانونی سبز':'');
+  if(cm){ const st=gameStatus(pcs,turn); cm.textContent=st.text+(sel!==null?' | خانه سبز=حرکت مجاز':'')+(st.over?' 🏁':''); }
 }
 function clickChess(i){
   if(sel===null){
@@ -296,6 +347,8 @@ function clickChess(i){
   pcs[i]=piece; pcs[sel]=''; sel=null;
   turn=turn==='w'?'b':'w';
   drawChess();
+  const st=gameStatus(pcs,turn);
+  if(st.over){ const cm=document.getElementById('cm'); if(cm) cm.textContent=st.text; return; }
   if(chessMode==='bot'&&turn==='b') setTimeout(botChessLegal, 350);
 }
 function doPromo(piece){
@@ -304,6 +357,8 @@ function doPromo(piece){
   const bar=document.getElementById('promoBar'); if(bar) bar.remove();
   turn=turn==='w'?'b':'w';
   drawChess();
+  const st2=gameStatus(pcs,turn);
+  if(st2.over){ const cm=document.getElementById('cm'); if(cm) cm.textContent=st2.text; return; }
   if(chessMode==='bot'&&turn==='b') setTimeout(botChessLegal, 350);
 }
 function botChessLegal(){
@@ -311,7 +366,7 @@ function botChessLegal(){
   for(let i=0;i<64;i++) if(isB(pcs[i])){
     for(const j of legalMoves(i,pcs,'b')) all.push([i,j]);
   }
-  if(!all.length){ const cm=document.getElementById('cm'); if(cm) cm.textContent='سفید برنده (پات/مات تقریبی)'; return; }
+  if(!all.length){ const st=gameStatus(pcs,'b'); const cm=document.getElementById('cm'); if(cm) cm.textContent=st.text||'پایان بازی'; return; }
   // prefer capture
   all.sort((a,b)=> (pcs[b[1]]?1:0)-(pcs[a[1]]?1:0));
   const [f,to]=all[Math.floor(Math.random()*Math.min(3,all.length))];
