@@ -49,11 +49,11 @@ input.code{background:#222;border:1px solid #444;color:#fff;padding:8px;border-r
 <h1>⚔️ دنیای فرقه</h1>
 <nav>
   <button class="active" data-tab="daily">ورود</button>
-  <button data-tab="profile">پروفایل</button>
-  <button data-tab="global">جهانی</button>
-  <button data-tab="sect">فرقه</button>
-  <button data-tab="arena">آرنا</button>
-  <button data-tab="games">بازی‌ها</button>
+  <button type="button" data-tab="profile">پروفایل</button>
+  <button type="button" data-tab="global">جهانی</button>
+  <button type="button" data-tab="sect">فرقه</button>
+  <button type="button" data-tab="arena">آرنا</button>
+  <button type="button" data-tab="games">بازی‌ها</button>
 </nav>
 <div id="content"></div>
 <script>
@@ -582,30 +582,6 @@ function cas(){const x=Math.floor(Math.random()*100);
 
 /* ----- حکم ----- */
 const SUITS=['دل','خشت','خاج','پیک'], RANKS=['آس','شاه','بی‌بی','سرباز','۱۰','۹','۸','۷'];
-function renderHukumHub_UNUSED
-(a){
-  a.innerHTML=`<div class="modebar">
-    <button class="btn dark" onclick="hukumStart('bot')">با ربات</button>
-    <button class="btn dark" onclick="hukumStart('friends')">با دوستان (۲ تا ۸ نفر)</button>
-  </div><div id="hukumBox"></div>`;
-}
-function hukumStart(mode){
-  const box=document.getElementById('hukumBox');
-  if(mode==='bot'){
-    box.innerHTML=`<div class="hukum-table"><div class="hukum-center" id="hkc"><span>میز حکم</span></div></div>
-      <button class="btn" onclick="hukumBotDeal()">🃏 پخش کارت</button>
-      <div class="hand" id="hkhand"></div><p id="hkmsg" class="muted"></p>`;
-  } else {
-    box.innerHTML=`<p class="muted">اتاق ۲ تا ۸ نفره — کد را برای دوستان بفرست</p>
-      <button class="btn" onclick="hukumCreate()">ساخت میز</button>
-      <input class="code" id="hkCode" placeholder="کد"/>
-      <button class="btn ok" onclick="hukumJoin()">ورود به میز</button>
-      <p id="hkRoom" class="muted"></p>
-      <div class="hukum-table" id="hkTable"><div class="hukum-center">فرش سبز حکم</div></div>
-      <div id="hkSeats"></div>
-      <button class="btn" onclick="hukumRefresh()">🔄 بروزرسانی نفرات</button>`;
-  }
-}
 function hukumBotDeal(){
   const trump=SUITS[Math.floor(Math.random()*4)];
   const card=()=>RANKS[Math.floor(Math.random()*RANKS.length)]+' '+SUITS[Math.floor(Math.random()*4)];
@@ -669,7 +645,7 @@ async function nardCreate(){
     if(inp && j.code) inp.value=j.code;
   }catch(e){alert('خطا: '+e.message)}
 }
-async funasync function nardJoin(){
+async function nardJoin(){
   const code=(document.getElementById('nardCode').value||'').trim();
   if(!code){alert('کد را وارد کن');return;}
   try{
@@ -677,13 +653,13 @@ async funasync function nardJoin(){
     document.getElementById('nardMsg').textContent=j.error||('وصل شدی · نفرات: '+(j.players||[]).length);
   }catch(e){alert(e.message)}
 }
-async funasync function nardRefresh(){
+async function nardRefresh(){
   const code=(document.getElementById('nardCode').value||'').trim();
   if(!code)return;
   const j=await roomStatus(code);
   document.getElementById('nardMsg').textContent=j.error||('نفرات: '+(j.players||[]).length+' | بازی: nard');
 }
-function function nardRollOnline(){
+function nardRollOnline(){
   const a=1+Math.floor(Math.random()*6), b=1+Math.floor(Math.random()*6);
   document.getElementById('nardMsg').textContent='تاس تو: '+a+'-'+b+' (حریف در اتاق تاس خودش را می‌زند)';
 }
