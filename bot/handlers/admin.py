@@ -10,6 +10,7 @@ from database.models import (
 )
 from services.ranking import promote, demote, RANKS
 from services.roles import can_restrict, can_promote_demote, can_set_deputy, can_ban, can_manage
+from services.i18n import tr
 
 router = Router()
 
@@ -30,7 +31,7 @@ async def cmd_admin(message: Message):
 
     # فقط سازنده ربات (ADMIN_IDS)
     if not is_config_admin(message.from_user.id):
-        await message.answer("⛔️ پنل ادمین فقط برای سازنده ربات است.")
+        await message.answer(tr(message.from_user.id, "⛔️ پنل ادمین فقط برای سازنده ربات است."))
         return
 
     text = (
@@ -60,18 +61,18 @@ async def cmd_setrole(message: Message):
         )
 
         if not (is_config_admin(message.from_user.id) or actor.role == ROLE_LEADER):
-            await message.answer("⛔️ فقط رهبر می‌تونه نقش تعیین کنه.")
+            await message.answer(tr(message.from_user.id, "⛔️ فقط رهبر می‌تونه نقش تعیین کنه."))
             return
 
         parts = message.text.split(maxsplit=2)
         if len(parts) < 3:
-            await message.answer("فرمت: /setrole آیدی نقش")
+            await message.answer(tr(message.from_user.id, "فرمت: /setrole آیدی نقش"))
             return
 
         try:
             tg_id = int(parts[1])
         except ValueError:
-            await message.answer("آیدی باید عدد باشد.")
+            await message.answer(tr(message.from_user.id, "آیدی باید عدد باشد."))
             return
 
         role_name = parts[2].strip()
@@ -82,7 +83,7 @@ async def cmd_setrole(message: Message):
 
         target = await get_user_by_telegram_id(session, tg_id)
         if not target:
-            await message.answer("کاربر پیدا نشد.")
+            await message.answer(tr(message.from_user.id, "کاربر پیدا نشد."))
             return
 
         target.role = role_name
@@ -99,30 +100,30 @@ async def cmd_restrict(message: Message):
         )
 
         if not can_restrict(actor) and not is_config_admin(message.from_user.id):
-            await message.answer("⛔️ دسترسی نداری.")
+            await message.answer(tr(message.from_user.id, "⛔️ دسترسی نداری."))
             return
 
         parts = message.text.split()
         if len(parts) < 3:
-            await message.answer("فرمت: /restrict <telegram_id> <دقیقه> [دلیل]")
+            await message.answer(tr(message.from_user.id, "فرمت: /restrict <telegram_id> <دقیقه> [دلیل]"))
             return
 
         try:
             tg_id = int(parts[1])
             minutes = int(parts[2])
         except ValueError:
-            await message.answer("آیدی و دقیقه باید عدد باشند.")
+            await message.answer(tr(message.from_user.id, "آیدی و دقیقه باید عدد باشند."))
             return
 
         reason = " ".join(parts[3:]) if len(parts) > 3 else "بدون دلیل"
 
         target = await get_user_by_telegram_id(session, tg_id)
         if not target:
-            await message.answer("کاربر پیدا نشد.")
+            await message.answer(tr(message.from_user.id, "کاربر پیدا نشد."))
             return
 
         if not can_manage(actor, target) and not is_config_admin(message.from_user.id):
-            await message.answer("⛔️ نمی‌تونی این کاربر رو محدود کنی.")
+            await message.answer(tr(message.from_user.id, "⛔️ نمی‌تونی این کاربر رو محدود کنی."))
             return
 
         target.restricted_until = datetime.utcnow() + timedelta(minutes=minutes)
@@ -144,23 +145,23 @@ async def cmd_unrestrict(message: Message):
         )
 
         if not can_restrict(actor) and not is_config_admin(message.from_user.id):
-            await message.answer("⛔️ دسترسی نداری.")
+            await message.answer(tr(message.from_user.id, "⛔️ دسترسی نداری."))
             return
 
         parts = message.text.split()
         if len(parts) < 2:
-            await message.answer("فرمت: /unrestrict <telegram_id>")
+            await message.answer(tr(message.from_user.id, "فرمت: /unrestrict <telegram_id>"))
             return
 
         try:
             tg_id = int(parts[1])
         except ValueError:
-            await message.answer("آیدی باید عدد باشد.")
+            await message.answer(tr(message.from_user.id, "آیدی باید عدد باشد."))
             return
 
         target = await get_user_by_telegram_id(session, tg_id)
         if not target:
-            await message.answer("کاربر پیدا نشد.")
+            await message.answer(tr(message.from_user.id, "کاربر پیدا نشد."))
             return
 
         target.restricted_until = None
@@ -178,23 +179,23 @@ async def cmd_promote(message: Message):
         )
 
         if not can_promote_demote(actor) and not is_config_admin(message.from_user.id):
-            await message.answer("⛔️ دسترسی نداری.")
+            await message.answer(tr(message.from_user.id, "⛔️ دسترسی نداری."))
             return
 
         parts = message.text.split()
         if len(parts) < 2:
-            await message.answer("فرمت: /promote <telegram_id>")
+            await message.answer(tr(message.from_user.id, "فرمت: /promote <telegram_id>"))
             return
 
         try:
             tg_id = int(parts[1])
         except ValueError:
-            await message.answer("آیدی باید عدد باشد.")
+            await message.answer(tr(message.from_user.id, "آیدی باید عدد باشد."))
             return
 
         user = await get_user_by_telegram_id(session, tg_id)
         if not user:
-            await message.answer("کاربر پیدا نشد.")
+            await message.answer(tr(message.from_user.id, "کاربر پیدا نشد."))
             return
 
         new_rank = promote(user)
@@ -202,7 +203,7 @@ async def cmd_promote(message: Message):
         if new_rank:
             await message.answer(f"✅ {user.full_name} به «{new_rank}» ارتقا یافت.")
         else:
-            await message.answer("کاربر در بالاترین رتبه است.")
+            await message.answer(tr(message.from_user.id, "کاربر در بالاترین رتبه است."))
 
 
 @router.message(Command("demote"))
@@ -214,23 +215,23 @@ async def cmd_demote(message: Message):
         )
 
         if not can_promote_demote(actor) and not is_config_admin(message.from_user.id):
-            await message.answer("⛔️ دسترسی نداری.")
+            await message.answer(tr(message.from_user.id, "⛔️ دسترسی نداری."))
             return
 
         parts = message.text.split()
         if len(parts) < 2:
-            await message.answer("فرمت: /demote <telegram_id>")
+            await message.answer(tr(message.from_user.id, "فرمت: /demote <telegram_id>"))
             return
 
         try:
             tg_id = int(parts[1])
         except ValueError:
-            await message.answer("آیدی باید عدد باشد.")
+            await message.answer(tr(message.from_user.id, "آیدی باید عدد باشد."))
             return
 
         user = await get_user_by_telegram_id(session, tg_id)
         if not user:
-            await message.answer("کاربر پیدا نشد.")
+            await message.answer(tr(message.from_user.id, "کاربر پیدا نشد."))
             return
 
         new_rank = demote(user)
@@ -238,14 +239,14 @@ async def cmd_demote(message: Message):
         if new_rank:
             await message.answer(f"✅ {user.full_name} به «{new_rank}» تنزل یافت.")
         else:
-            await message.answer("کاربر در پایین‌ترین رتبه است.")
+            await message.answer(tr(message.from_user.id, "کاربر در پایین‌ترین رتبه است."))
 
 
 @router.message(Command("setcult", "تنظیم‌تذهیب"))
 async def cmd_set_cult(message: Message):
     """ادمین: /setcult قلمرو مرحله [انرژی] با ریپلای یا /setcult id قلمرو مرحله"""
     if not is_config_admin(message.from_user.id):
-        await message.answer("فقط سازنده.")
+        await message.answer(tr(message.from_user.id, "فقط سازنده."))
         return
     from database.models_v2 import CULTIVATION_REALMS
     from services.cultivation import get_or_create_cultivation
@@ -260,7 +261,7 @@ async def cmd_set_cult(message: Message):
             try:
                 tg = int(parts[1])
             except ValueError:
-                await message.answer("فرمت: ریپلای+/setcult قلمرو مرحله [انرژی]\nیا /setcult telegram_id قلمرو مرحله [انرژی]")
+                await message.answer(tr(message.from_user.id, "فرمت: ریپلای+/setcult قلمرو مرحله [انرژی]\nیا /setcult telegram_id قلمرو مرحله [انرژی]"))
                 return
             target = await get_user_by_telegram_id(session, tg)
             if not target:
@@ -274,12 +275,12 @@ async def cmd_set_cult(message: Message):
             )
             return
         if len(args) < 2:
-            await message.answer("قلمرو و مرحله لازم است.")
+            await message.answer(tr(message.from_user.id, "قلمرو و مرحله لازم است."))
             return
         realm, stage = args[0], int(args[1])
         energy = int(args[2]) if len(args) > 2 else 0
         if realm not in CULTIVATION_REALMS:
-            await message.answer("قلمرو نامعتبر.")
+            await message.answer(tr(message.from_user.id, "قلمرو نامعتبر."))
             return
         cult = await get_or_create_cultivation(session, target.id)
         cult.realm = realm
@@ -294,7 +295,7 @@ async def cmd_set_cult(message: Message):
 @router.message(Command("givemoney", "بده‌پول"))
 async def cmd_give_money(message: Message):
     if not is_config_admin(message.from_user.id):
-        await message.answer("فقط سازنده.")
+        await message.answer(tr(message.from_user.id, "فقط سازنده."))
         return
     from services.economy import get_or_create_wallet
     parts = (message.text or "").split()
@@ -307,7 +308,7 @@ async def cmd_give_money(message: Message):
         elif len(parts) >= 4:
             target = await get_user_by_telegram_id(session, int(parts[1]))
             if not target:
-                await message.answer("کاربر پیدا نشد.")
+                await message.answer(tr(message.from_user.id, "کاربر پیدا نشد."))
                 return
             args = parts[2:]
         else:
@@ -318,7 +319,7 @@ async def cmd_give_money(message: Message):
             )
             return
         if len(args) < 2:
-            await message.answer("نوع و مقدار لازم است.")
+            await message.answer(tr(message.from_user.id, "نوع و مقدار لازم است."))
             return
         kind, amount = args[0], int(args[1])
         w = await get_or_create_wallet(session, target.id)
@@ -333,7 +334,7 @@ async def cmd_give_money(message: Message):
         elif kind in ("god", "خدا"):
             w.god_stones = (w.god_stones or 0) + amount
         else:
-            await message.answer("نوع نامعتبر")
+            await message.answer(tr(message.from_user.id, "نوع نامعتبر"))
             return
         await session.commit()
     await message.answer(f"✅ به {target.full_name}: +{amount} {kind}")
@@ -342,7 +343,7 @@ async def cmd_give_money(message: Message):
 @router.message(Command("takemoney", "بگیر‌پول"))
 async def cmd_take_money(message: Message):
     if not is_config_admin(message.from_user.id):
-        await message.answer("فقط سازنده.")
+        await message.answer(tr(message.from_user.id, "فقط سازنده."))
         return
     from services.economy import get_or_create_wallet
     parts = (message.text or "").split()
@@ -355,10 +356,10 @@ async def cmd_take_money(message: Message):
             target = await get_user_by_telegram_id(session, int(parts[1]))
             args = parts[2:]
         else:
-            await message.answer("مثل /givemoney ولی کم می‌کند.")
+            await message.answer(tr(message.from_user.id, "مثل /givemoney ولی کم می‌کند."))
             return
         if not target or len(args) < 2:
-            await message.answer("ناقص")
+            await message.answer(tr(message.from_user.id, "ناقص"))
             return
         kind, amount = args[0], int(args[1])
         w = await get_or_create_wallet(session, target.id)
@@ -380,7 +381,7 @@ async def cmd_take_money(message: Message):
 @router.message(Command("ban"))
 async def cmd_ban(message: Message):
     if not is_config_admin(message.from_user.id):
-        await message.answer("فقط سازنده.")
+        await message.answer(tr(message.from_user.id, "فقط سازنده."))
         return
     parts = (message.text or "").split()
     async with async_session() as session:
@@ -391,13 +392,13 @@ async def cmd_ban(message: Message):
             try:
                 target = await get_user_by_telegram_id(session, int(parts[1]))
             except ValueError:
-                await message.answer("آیدی عدد باشد.")
+                await message.answer(tr(message.from_user.id, "آیدی عدد باشد."))
                 return
         else:
-            await message.answer("فرمت: /ban آیدی  یا ریپلای + /ban")
+            await message.answer(tr(message.from_user.id, "فرمت: /ban آیدی  یا ریپلای + /ban"))
             return
         if not target:
-            await message.answer("کاربر پیدا نشد.")
+            await message.answer(tr(message.from_user.id, "کاربر پیدا نشد."))
             return
         target.is_banned = True
         target.is_active = False
@@ -408,7 +409,7 @@ async def cmd_ban(message: Message):
 @router.message(Command("unban"))
 async def cmd_unban(message: Message):
     if not is_config_admin(message.from_user.id):
-        await message.answer("فقط سازنده.")
+        await message.answer(tr(message.from_user.id, "فقط سازنده."))
         return
     parts = (message.text or "").split()
     async with async_session() as session:
@@ -419,13 +420,13 @@ async def cmd_unban(message: Message):
             try:
                 target = await get_user_by_telegram_id(session, int(parts[1]))
             except ValueError:
-                await message.answer("آیدی عدد باشد.")
+                await message.answer(tr(message.from_user.id, "آیدی عدد باشد."))
                 return
         else:
-            await message.answer("فرمت: /unban آیدی  یا ریپلای + /unban")
+            await message.answer(tr(message.from_user.id, "فرمت: /unban آیدی  یا ریپلای + /unban"))
             return
         if not target:
-            await message.answer("کاربر پیدا نشد.")
+            await message.answer(tr(message.from_user.id, "کاربر پیدا نشد."))
             return
         target.is_banned = False
         target.is_active = True

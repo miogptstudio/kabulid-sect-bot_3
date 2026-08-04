@@ -8,6 +8,7 @@ from sqlalchemy import select
 from database.engine import async_session
 from database.crud import get_or_create_user, get_user_by_telegram_id
 from database.models_v3 import CultivationTechnique, UserTechnique
+from services.i18n import t_user, tr
 from services.cultivation import (
     get_or_create_cultivation, add_energy,
     ensure_default_techniques, get_active_technique,
@@ -20,8 +21,7 @@ _last_gather: dict[int, datetime] = {}
 COOLDOWN_SECONDS = 60
 
 GATHER_PHRASES = [
-    "جمع آوری چی", "جمع‌آوری چی", "جمع اوری چی",
-    "تذهیب کردن", "مدیتیت", "مدیتیشن",
+    'Cultivate', 'Gather Qi', 'Kültive et', 'Qi topla', 'Культивировать', 'Собрать Ци', 'تأمل', 'تذهیب کردن', 'جمع آوری چی', 'جمع الطاقة', 'جمع\u200cآوری چی', 'مدیتیت', '修炼', '聚气',
     "جمع چی", "جذب چی", "کشت چی",
 ]
 
@@ -86,7 +86,7 @@ async def cmd_techniques(message: Message):
         rows = result.all()
     
     if not rows:
-        await message.answer("هنوز تکنیکی بلد نیستی.\n/learntech بزن تا تکنیک پایه رو یاد بگیری.")
+        await message.answer(tr(message.from_user.id, "هنوز تکنیکی بلد نیستی.\n/learntech بزن تا تکنیک پایه رو یاد بگیری."))
         return
     
     builder = InlineKeyboardBuilder()
@@ -127,7 +127,7 @@ async def cmd_learn_forbidden(message: Message):
         )
         tech = result.scalar_one_or_none()
         if not tech:
-            await message.answer("تکنیک پیدا نشد. بعداً تلاش کن.")
+            await message.answer(tr(message.from_user.id, "تکنیک پیدا نشد. بعداً تلاش کن."))
             return
         msg = await learn_technique(session, user.id, tech)
         await message.answer(msg)
@@ -152,7 +152,7 @@ async def cmd_learn_starter(message: Message):
             )
             tech = result.scalar_one_or_none()
         if not tech:
-            await message.answer("تکنیک پایه‌ای پیدا نشد. یک‌بار /cultivation بزن و دوباره /learntech")
+            await message.answer(tr(message.from_user.id, "تکنیک پایه‌ای پیدا نشد. یک‌بار /cultivation بزن و دوباره /learntech"))
             return
         msg = await learn_technique(session, user.id, tech)
     await message.answer(msg)
@@ -161,7 +161,7 @@ async def cmd_learn_starter(message: Message):
 @router.message(Command("givetech", "انتقال‌تکنیک"))
 async def cmd_give_tech(message: Message):
     if not message.reply_to_message:
-        await message.answer("روی پیام کسی که می‌خوای تکنیک بدی ریپلای کن و /givetech بزن.")
+        await message.answer(tr(message.from_user.id, "روی پیام کسی که می‌خوای تکنیک بدی ریپلای کن و /givetech بزن."))
         return
     
     async with async_session() as session:
@@ -177,7 +177,7 @@ async def cmd_give_tech(message: Message):
         
         tech = await get_active_technique(session, teacher.id)
         if not tech:
-            await message.answer("تکنیک فعالی نداری که انتقال بدی.")
+            await message.answer(tr(message.from_user.id, "تکنیک فعالی نداری که انتقال بدی."))
             return
         
         msg = await learn_technique(session, student.id, tech, from_user_id=teacher.id)
@@ -218,7 +218,7 @@ async def do_gather(message: Message, amount: int = 5000):
             )
             return
         if user.is_dead:
-            await message.answer("💀 مرده‌ای. /afterdeath")
+            await message.answer(tr(message.from_user.id, "💀 مرده‌ای. /afterdeath"))
             return
         try:
             from services.prison import check_prison_block
@@ -298,11 +298,11 @@ async def cmd_solo(message: Message):
         )
         
         if user.is_dead:
-            await message.answer("💀 تو مرده‌ای و نمی‌تونی تذهیب کنی.")
+            await message.answer(tr(message.from_user.id, "💀 تو مرده‌ای و نمی‌تونی تذهیب کنی."))
             return
         
         if user.gender == "نامشخص":
-            await message.answer("اول با /gender جنسیت خودت رو مشخص کن.")
+            await message.answer(tr(message.from_user.id, "اول با /gender جنسیت خودت رو مشخص کن."))
             return
         
         count_this_hour = len(times)
@@ -398,7 +398,7 @@ async def cmd_afk(message: Message):
             message.from_user.full_name, message.from_user.username
         )
         if user.gender not in ("مرد", "زن"):
-            await message.answer("اول /gender")
+            await message.answer(tr(message.from_user.id, "اول /gender"))
             return
         cult = await get_or_create_cultivation(session, user.id)
         now = datetime.utcnow()
@@ -425,7 +425,7 @@ async def cmd_afk_claim(message: Message):
         cult = await get_or_create_cultivation(session, user.id)
         now = datetime.utcnow()
         if not cult.afk_until:
-            await message.answer("AFK فعال نیست. /afk")
+            await message.answer(tr(message.from_user.id, "AFK فعال نیست. /afk"))
             return
         if cult.afk_until > now:
             left = int((cult.afk_until - now).total_seconds())
@@ -475,7 +475,7 @@ async def cmd_body(message: Message):
             return
         name = parts[1].strip()
         if name not in BODY_TYPES:
-            await message.answer("نام بدن نامعتبر.")
+            await message.answer(tr(message.from_user.id, "نام بدن نامعتبر."))
             return
         if name != "بدن معمولی":
             from services.economy import get_or_create_wallet
@@ -486,7 +486,7 @@ async def cmd_body(message: Message):
             # خدای غبطه با سنگ خدا، بقیه بهشتی یا روحی
             if name == "بدن خدای غبطه‌انگیز":
                 if (w.god_stones or 0) < 1:
-                    await message.answer("نیاز ۱ سنگ خدا")
+                    await message.answer(tr(message.from_user.id, "نیاز ۱ سنگ خدا"))
                     return
                 w.god_stones -= 1
             elif name in ("بدن بهشتی", "بدن خدایان"):

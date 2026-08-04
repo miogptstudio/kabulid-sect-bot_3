@@ -1,3 +1,4 @@
+from services.i18n import t_user, LANGS, get_lang, t as _t, tr
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command
@@ -24,7 +25,7 @@ SECTIONS = {
         "۱۳) بعد از /kill طرف مسموم است؛ ۳ ساعت وقت /heal دارد\n"
         "۱۴) ازدواج: مرد-زن، مرد-مرد، زن-زن مجاز\n"
         "۱۵) بعد از مرگ: /afterdeath — روح، انتقام، یا پوچی (ریست کامل)\n"
-        "۱۶) بازی‌ها: هر ۵ دقیقه یک‌بار\n"
+        "۱۶) بازی‌ها: هر ۲ دقیقه یک‌بار\n"
         "۱۷) کشاورزی: هر ۵ ساعت یک گیاه؛ ظرفیت ۱۰ زمین (قابل خرید)\n"
         "۱۸) خرید فروشگاه با همه ارزها (سکه تا سنگ خدا) ممکن است"
     ),
@@ -119,8 +120,8 @@ SECTIONS = {
         "/buyland یا /خریدزمین — +۵ ظرفیت زمین (۵۰۰۰ سکه یا معادل؛ سقف ۵۰)"
     ),
     "social": (
-        "💍 اجتماعی و حیوان",
-        "/marry یا /ازدواج — ریپلای (مرد-زن | مرد-مرد | زن-زن + چندهمسری)\n/wives یا /همسران — لیست همسران\n/divorce یا /طلاق — ریپلای روی همسر\n/invitewedding — دعوت عروسی\n/master — استاد و شاگرد (دکمه قبول | رد)\n\n👤 خدمتکار:\n/servants یا /خدمتکار — بازار\n/buyservant شماره — خرید\n/myservants — لیست خدمتکارها\n/marryservant شماره یا /marry servant شماره — ازدواج با خدمتکار زن\n⚠️ آسیب به خدمتکار = حذف اکانت\n\n🐾 حیوانات:\n/pets یا /پت — لیست\n/petinfo شماره | /hunt | /buypet\n/feedpet | /trainpet | /renamepet | /sellpet | /giftpet | /releasepet\n/petpalace | /upgradepetpalace — کاخ رام‌شدگان\n\n🏟 تمرین و زندان:\n/train [دقیقه] — زمین تمرین ۱۰–۶۰د (قطع خدمات)\n/trainstatus | /trainclaim — وضعیت و پایان تمرین\n/prison | /bail — زندان و وثیقه (۵۰ سنگ بهشتی)\n\n/accounts — چندحسابه\n/blackmarket | /buyblack — بازار سیاه\n/season | /version"
+        "💍 اجتماعی، قبیله، بازرگانی",
+        "/marry — ریپلای (چندهمسری + دختر با دختر)\n/wives | /divorce | /havechild | /mychildren\n/master — استاد و شاگرد\n\n👤 خدمتکار: /servants /buyservant /marryservant\n/dualservant | /childservant\n\n🏕 قبیله: /createtribe /tribes /tribe /jointribe /setchief\n🛒 بازرگانی: /tradeguild /tradelist /tradeinfo /tradedeposit\n\n🩸 رگ معنوی: /vein /unlockvein (تا ۵ رگ از ۳۶ نوع)\n💎 هسته: /cores /findcore /mycore /usecore\n👻 روح رزمی: /awaken /spirit /trainspirit\n🌐 زبان: /lang\n\n🐾 پت: /pets /hunt /petpalace\n/accounts — چندحسابه"
     ),
     "death": (
         "💀 مرگ و روح",
@@ -134,7 +135,7 @@ SECTIONS = {
     ),
     "games": (
         "🎮 بازی‌ها و وب‌اپ",
-        "محدودیت: هر بازیکن هر ۵ دقیقه یک‌بار می‌تواند بازی کند.\n\n"
+        "محدودیت: هر بازیکن هر ۲ دقیقه یک‌بار می‌تواند بازی کند.\n\n"
         "/games یا /بازی‌ها — منوی بازی در چت\n"
         "/rps یا /سنگ‌کاغذ‌قیچی — با ربات یا دیگران\n"
         "/dice یا /تاس یا /تخته‌نرد — تاس\n"
@@ -170,15 +171,18 @@ SECTIONS = {
 
 @router.message(Command("help", "راهنما", "منو"))
 async def cmd_help_menu(message: Message):
+    lang = get_lang(message.from_user.id)
     builder = InlineKeyboardBuilder()
     for key, (title, _) in SECTIONS.items():
-        builder.button(text=title, callback_data=f"helpsec:{message.from_user.id}:{key}")
+        label = title
+        sk = f"sec_{key}"
+        from services.i18n import T as _T
+        if sk in _T:
+            label = _t(sk, lang)
+        builder.button(text=str(label)[:40], callback_data=f"helpsec:{message.from_user.id}:{key}")
     builder.adjust(1)
     await message.answer(
-        "📖 <b>راهنمای دنیای فرقه</b>\n"
-        "یک بخش را انتخاب کن تا دستورها را یکی‌یکی ببینی.\n\n"
-        "پیشنهاد: اول <b>قوانین</b> و <b>شروع</b>.\n"
-        "سریع: /rules | /gender | /race | /gather | /missions | /buildings | /garden | /itemlist",
+        _t("help_title", lang) + chr(10) + _t("help_hint", lang),
         reply_markup=builder.as_markup(),
     )
 
@@ -284,7 +288,7 @@ async def help_back(callback: CallbackQuery):
 @router.message(Command("helpforadmin", "راهنما‌ادمین"))
 async def cmd_help_admin(message: Message):
     if message.from_user.id not in ADMIN_IDS:
-        await message.answer("⛔️ فقط سازنده ربات.")
+        await message.answer(tr(message.from_user.id, "⛔️ فقط سازنده ربات."))
         return
     title, body = SECTIONS["admin"]
     body = body.replace("<", "[").replace(">", "]")
@@ -293,20 +297,9 @@ async def cmd_help_admin(message: Message):
 
 @router.message(Command("codex", "دانشنامه"))
 async def cmd_codex(message: Message):
+    lang = get_lang(message.from_user.id)
     await message.answer(
-        "📚 <b>دانشنامه کوتاه</b>\n\n"
-        "• <b>تذهیب</b>: جمع انرژی و بالا رفتن قلمرو\n"
-        "• <b>ریشه</b>: استعداد معنوی\n"
-        "• <b>نژاد</b>: سبک و ضریب تذهیب (/race)\n"
-        "• <b>فرقه</b>: گروه با رهبری و قلمرو\n"
-        "• <b>آرنا</b>: رقابت با هزینه ورود\n"
-        "• <b>سم</b>: بعد از /kill؛ ۳ ساعت /heal\n"
-        "• <b>پرورش ممنوعه</b>: قدرت سریع + قفل دائمی\n"
-        "• <b>شمشیر کوروش</b>: یکتا؛ ضربه = پاک شدن اکانت\n"
-        "• <b>چای‌خانه</b>: ده‌ها چای با اثر جدا\n"
-        "• <b>کشاورزی</b>: هر ۵س یک گیاه؛ ۱۰ زمین؛ /buyland\n"
-        "• <b>خرید</b>: با همه ارزها\n\n"
-        "/itemlist — آیتم‌ها\n/help — راهنمای کامل"
+        f"<b>{_t('codex_title', lang)}</b>" + chr(10) + chr(10) + _t("codex_body", lang)
     )
 
 
@@ -318,13 +311,13 @@ async def cmd_rules(message: Message):
 
 @router.message(Command("commands", "دستورات", "کامندها", "allcommands"))
 async def cmd_all_commands(message: Message):
+    """لیست کامل دستورات"""
     chunks = [
-        '📋 <b>فهرست کامل دستورات</b> — نسخه <b>2.8.2</b>\n\n<b>🚀 پایه</b>\n/start /help /commands /rules /codex /profile /gender /race /ping /removekb /version /iamadmin /season',
-        '<b>🧘 تذهیب</b>\n/gather /cultivation /learntech /learnforbidden /techniques /givetech /afk /afkclaim /body /solo /dual /virgin\n\n<b>🏟 تمرین</b>\n/train [دقیقه] /trainstatus /trainclaim',
-        '<b>⚔️ جنگ</b>\n/duel /deathduel /kill /equip /unequip /blood /heal /power /guardian /arena /arenafight /arenatop\n\n<b>🔒 زندان</b>\n/prison /bail',
-        '<b>🏛 فرقه و دنیا</b>\n/sects /createsect /joinsect /missions /travel /explorecity /cities /worlds /goworld /hunt /ranking\n\n<b>🛒 فروشگاه</b>\n/buildings /teahouse /inventory /use /drop /gift /itemlist /craft /wallet /dailycoin /blackmarket /buyblack',
-        '<b>🌱 باغ</b> /garden /plant /harvest /buyland\n<b>🐾 پت</b> /pets /petinfo /buypet /feedpet /trainpet /petpalace\n\n<b>💍 اجتماعی</b>\n/marry /wives /divorce /master /servants /buyservant /myservants /marryservant /accounts',
-        '<b>💀 مرگ</b> /afterdeath /possess /releasespirit\n\n<b>🎮 بازی</b>\n/games /rps /dice /chess /casino /hukum /guess /coinflip\n/puzzle /riddle /mathquiz /scramble — فکری و پازل\n\n<b>🛠 ادمین</b>\n/admin /helpforadmin /setrole /restrict /promote /demote /ban /unban /setcult /givemoney /takemoney /adshop /adget\n\nجزئیات: /help',
+        '📋 <b>فهرست کامل دستورات</b> — نسخه <b>2.9.2</b>\n\n<b>🚀 پایه</b>\n/start — شروع\n/help | /راهنما | /منو — راهنمای بخش\u200cبخش\n/commands | /دستورات — همین لیست\n/rules | /قوانین — قوانین\n/codex | /دانشنامه — مفاهیم\n/profile | /me | /پروفایل — پروفایل\n/gender | /جنسیت — مرد یا زن (دائمی)\n/race | /نژاد — نژاد پایه\n/lang | /زبان — زبان ربات\n/jobs /job /declarewar /buycyrus /luckdice /statuscard /events\n/ping | /تست\n/removekb | /حذف\u200cکیبورد\n/version | /نسخه\n/iamadmin | /مقام\u200cمن\n/season | /فصل\n\n<b>💎 هسته و نژاد</b>\n/cores | /هسته\u200cها — لیست هسته\u200cها\n/findcore — جستجوی هسته (هر ۲س)\n/mycore — هسته\u200cهای تو\n/usecore نام\u200cهسته — تبدیل نژاد',
+        '<b>🧘 تذهیب</b>\n/gather | /qi | /جمع | متن: تذهیب کردن | جمع آوری چی\n/cultivation | /تذهیب | /cult — وضعیت\n/learntech | /learnforbidden | /techniques | /givetech\n/afk | /afkclaim | /body | /solo | /dual | /virgin\n/vein | /رگ — رگ\u200cهای معنوی (۳۶ نوع، تا ۵ تا)\n/unlockvein نام\u200cرگ — باز کردن رگ\n\n<b>🏟 تمرین</b>\n/train [دقیقه] — ۱۰ تا ۶۰د (قطع خدمات)\n/trainstatus | /trainclaim\n\n<b>👻 روح رزمی</b>\n/awaken | /بیدار\u200cروح — بیدارسازی\n/spirit | /trainspirit | /spiritmode',
+        '<b>⚔️ جنگ و آرنا</b>\n/duel | /deathduel | /kill | /equip | /unequip\n/blood | /heal | /power | /guardian\n/arena | /arenafight | /arenatop | /lootarena\n/arenaopen | /arenajoin | /arenastart | /arenarooms\n\n<b>🔒 زندان</b>\n/prison | /bail (۵۰ سنگ بهشتی)\n\n<b>🏛 فرقه</b>\n/sects | /createsect | /joinsect | /leavesect | /sectinfo\n/missions | /completemission\n\n<b>🏕 قبیله</b>\n/createtribe نام | /tribes | /tribe\n/jointribe نام | /setchief | /tribeinvite | /tribeleave\n\n<b>🛒 بازرگانی</b>\n/tradeguild نام | /tradelist | /tradeinfo\n/tradejoin نام | /tradedeposit | /tradewithdraw | /tradeleave',
+        '<b>🌍 دنیا و شهر</b>\n/travel | /explorecity | /cities | /mycity | /worlds | /goworld\n/cave | /غار — غار شهر (غنیمت)\n/hunt | /شکار | /ranking | /dimension\n\n<b>🏪 فروشگاه</b>\n/buildings | /teahouse | /inventory | /use | /drop | /gift\n/itemlist | /craft | /wallet | /dailycoin\n/exchangestone | /blackmarket | /buyblack\n\n<b>🌱 باغ</b>\n/garden | /plant | /harvest | /buyland\n\n<b>🐾 پت</b>\n/pets | /petinfo | /buypet | /feedpet | /trainpet\n/petpalace | /upgradepetpalace',
+        '<b>💍 اجتماعی</b>\n/marry | /wives | /divorce | /invitewedding | /master\n/servants | /buyservant | /myservants\n/marryservant | /dualservant | /childservant\n/havechild — بچه زوج متاهل\n/mychildren | /accounts\n\n<b>💀 مرگ</b>\n/afterdeath | /possess | /releasespirit\n\n<b>🎮 بازی</b>\n/games | /rps | /dice | /chess | /casino | /hukum | /nard\n/puzzle | /riddle | /mathquiz | /scramble | /guess | /coinflip\n(محدودیت ۲ دقیقه بعد از شروع بازی)\n\n<b>🛠 ادمین</b>\n/admin | /helpforadmin | /adshop | /adget\n/setrole | /restrict | /unrestrict | /promote | /demote\n/ban | /unban | /setcult | /givemoney | /takemoney\n\nجزئیات هر بخش: /help',
     ]
     for chunk in chunks:
         await message.answer(chunk)

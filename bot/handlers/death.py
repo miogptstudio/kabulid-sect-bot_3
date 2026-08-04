@@ -7,6 +7,7 @@ from database.engine import async_session
 from database.crud import get_or_create_user
 from services.death import become_spirit_raiser, erase_existence
 from services.dimension import become_vengeful, release_spirit
+from services.i18n import tr
 
 router = Router()
 
@@ -28,12 +29,10 @@ async def cmd_afterdeath(message: Message):
             message.from_user.full_name, message.from_user.username
         )
         if user.is_spirit_raiser and not user.is_dead:
-            await message.answer(
-                "روح هستی. /releasespirit برای ترک انتقام (اگر انتقام‌جو باشی)."
-            )
+            await message.answer(tr(message.from_user.id, "روح هستی. /releasespirit برای ترک انتقام (اگر انتقام‌جو باشی)."))
             return
         if not user.is_dead:
-            await message.answer("زنده‌ای. این منو فقط بعد از مرگ است.")
+            await message.answer(tr(message.from_user.id, "زنده‌ای. این منو فقط بعد از مرگ است."))
             return
         await message.answer(
             "💀 <b>مرگ — انتخاب سرنوشت</b>\n\n"
@@ -64,7 +63,7 @@ async def cb_vengeful(callback: CallbackQuery):
             callback.from_user.full_name, callback.from_user.username
         )
         if not user.is_dead:
-            await callback.answer("مرده نیستی", show_alert=True)
+            await callback.answer(tr(callback.from_user.id, "مرده نیستی"), show_alert=True)
             return
         spirit = await become_vengeful(session, user, reason="انتخاب بعد از مرگ")
     await callback.message.edit_text(
@@ -97,7 +96,7 @@ async def cb_void_do(callback: CallbackQuery):
             callback.from_user.full_name, callback.from_user.username
         )
         if not user.is_dead:
-            await callback.message.edit_text("دیگر مرده نیستی.")
+            await callback.message.edit_text(tr(callback.from_user.id, "دیگر مرده نیستی."))
             await callback.answer()
             return
         msg = await erase_existence(session, user)
@@ -142,20 +141,20 @@ async def cmd_possess(message: Message):
             message.from_user.full_name, message.from_user.username
         )
         if not getattr(spirit, "is_spirit_raiser", False):
-            await message.answer("فقط پرورش‌دهنده روح می‌تواند تسخیر کند.")
+            await message.answer(tr(message.from_user.id, "فقط پرورش‌دهنده روح می‌تواند تسخیر کند."))
             return
         if message.from_user.id in _possessed_once:
-            await message.answer("قبلاً یک‌بار تسخیر کرده‌ای. دیگر ممکن نیست.")
+            await message.answer(tr(message.from_user.id, "قبلاً یک‌بار تسخیر کرده‌ای. دیگر ممکن نیست."))
             return
         tu = message.reply_to_message.from_user
         if tu.id == message.from_user.id:
-            await message.answer("خودت را نه.")
+            await message.answer(tr(message.from_user.id, "خودت را نه."))
             return
         target = await get_or_create_user(
             session, tu.id, tu.full_name, tu.username
         )
         if target.is_dead:
-            await message.answer("هدف مرده است.")
+            await message.answer(tr(message.from_user.id, "هدف مرده است."))
             return
         # تسخیر: روح وارد بدن می‌شود — روح زنده می‌شود روی هویت هدف؟ ساده: انرژی و سطح از هدف می‌گیرد و هدف موقتاً ضعیف
         from services.cultivation import get_or_create_cultivation

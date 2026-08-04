@@ -6,6 +6,7 @@ from database.crud import get_or_create_user
 from services.prison import try_bail, check_prison_block, kills_today, BAIL_HEAVENLY
 from services.economy import get_or_create_wallet, pay_any_currency
 from services.season import season_text
+from services.i18n import tr
 
 router = Router()
 
@@ -61,15 +62,15 @@ async def cmd_black_market(message: Message):
 async def cmd_buy_black(message: Message):
     parts = (message.text or "").split()
     if len(parts) < 2:
-        await message.answer("/buyblack شماره")
+        await message.answer(tr(message.from_user.id, "/buyblack شماره"))
         return
     try:
         idx = int(parts[1]) - 1
     except ValueError:
-        await message.answer("شماره نامعتبر")
+        await message.answer(tr(message.from_user.id, "شماره نامعتبر"))
         return
     if idx < 0 or idx >= len(BLACK_MARKET):
-        await message.answer("نامعتبر")
+        await message.answer(tr(message.from_user.id, "نامعتبر"))
         return
     it = BLACK_MARKET[idx]
     async with async_session() as session:

@@ -7,20 +7,27 @@ from bot.config import BOT_VERSION
 from database.crud import get_or_create_user
 from database.models import ROLE_LEADER
 from bot.config import ADMIN_IDS
+from services.i18n import t, get_lang, set_lang, LANGS, tr
 
 router = Router()
 
-def main_keyboard():
+
+def main_keyboard(lang: str = "fa"):
+    """منوی اصلی شبیه ربات‌های تزکیه"""
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="تذهیب کردن"), KeyboardButton(text="پروفایل")],
-            [KeyboardButton(text="فروشگاه"), KeyboardButton(text="دوئل")],
-            [KeyboardButton(text="تکنیک‌ها"), KeyboardButton(text="فرقه")],
-            [KeyboardButton(text="آرنا"), KeyboardButton(text="راهنما")],
-            [KeyboardButton(text="جمع آوری چی"), KeyboardButton(text="/gender")],
+            [KeyboardButton(text="👤 پروفایل"), KeyboardButton(text="🧘 تزکیه")],
+            [KeyboardButton(text="⚔️ نبرد"), KeyboardButton(text="🎒 کوله‌بار")],
+            [KeyboardButton(text="⚗ کیمیاگری"), KeyboardButton(text="🏛 فرقه")],
+            [KeyboardButton(text="🏪 بازار"), KeyboardButton(text="🎁 گنجینه")],
+            [KeyboardButton(text="📜 مأموریت‌ها"), KeyboardButton(text="🏆 دستاوردها")],
+            [KeyboardButton(text="📊 رتبه‌بندی"), KeyboardButton(text="🌍 رویدادها")],
+            [KeyboardButton(text="🎁 پاداش روزانه"), KeyboardButton(text="🎲 تاس شانس")],
+            [KeyboardButton(text="💼 شغل"), KeyboardButton(text="📖 راهنما")],
         ],
         resize_keyboard=True,
     )
+
 
 
 
@@ -34,43 +41,28 @@ async def cmd_start(message: Message):
             username=message.from_user.username
         )
 
+        lang = getattr(user, 'language', None) or 'fa'
+        set_lang(message.from_user.id, lang)
         if message.from_user.id in ADMIN_IDS:
             if user.role != ROLE_LEADER:
                 user.role = ROLE_LEADER
                 await session.commit()
 
-    text = (
-        f"سلام <b>{user.full_name}</b> 👋\n\n"
-        f"به ربات فرقه‌ای و تذهیب خوش اومدی!\n\n"
-        f"🏆 رتبه: <b>{user.rank}</b>\n"
-        f"⭐ نقش: <b>{user.role}</b>\n"
-        f"سطح: {user.level} | XP: {user.xp}\n\n"
-        f"دستورات اصلی:\n"
-        f"/profile — پروفایل\n"
-        f"/ranking — لیدربورد\n"
-        f"/sects — فرقه‌ها\n"
-        f"/cultivation — تذهیب\n"
-        f"/missions — مأموریت‌ها\n"
-        f"/arena — آرنا\n"
-        f"/master — استاد و شاگرد\n"
-        f"/accounts — چندحسابه\n"
-        f"/buildings — ساختمان‌ها\n"
-        f"/craft — ساخت معجون و طلسم\n"
-        f"/inventory — کیف\n"
-        f"/gender — جنسیت\n"
-        f"/dual — تذهیب دوگانه\n"
-        f"/marry — نامزدی و ازدواج\n"
-        f"/divorce — طلاق\n"
-        f"/wives — همسران\n"
-        f"/pets — حیوانات\n"
-        f"/wallet — سکه\n"
-        f"/hunt — شکار\n"
-        f"/afterdeath — بعد از مرگ\n"
-        f"/duel — دوئل\n"
-        f"/guardian — نگهبان\n"
-        f"/help — راهنمای کامل"
-    )
-    await message.answer(text, reply_markup=ReplyKeyboardRemove())
+        lang = get_lang(message.from_user.id, getattr(user, "language", None))
+        text = t(
+            "start",
+            lang,
+            name=user.full_name or "Player",
+            ver=__import__("bot.config", fromlist=["BOT_VERSION"]).BOT_VERSION,
+        )
+        text += chr(10) + chr(10) + t("help_hint", lang)
+        await message.answer(text, reply_markup=main_keyboard(lang))
+        # کارت وضعیت کوتاه
+        try:
+            from bot.handlers.jobs_events import cmd_status_card
+            await cmd_status_card(message)
+        except Exception:
+            pass
 
 
 @router.message(Command("help_old_disabled"))
@@ -140,10 +132,10 @@ async def cmd_iamadmin(message: Message):
 
 @router.message(Command("ping", "تست"))
 async def cmd_ping(message: Message):
-    await message.answer("pong ✅ ربات آنلاین است.")
+    await message.answer(tr(message.from_user.id, "pong ✅ ربات آنلاین است."))
 
 
-@router.message(F.text.in_({"تذهیب کردن", "جمع آوری چی", "جمع‌آوری چی", "مدیتیت"}))
+@router.message(F.text.in_(set(['تأمل', '修炼', 'تذهیب کردن', 'Kültive et', 'Cultivate', 'Культивировать', 'جمع آوری چی', 'Qi topla', 'Gather Qi', 'جمع الطاقة', '聚气', 'Собрать Ци', 'تذهیب کردن', 'جمع آوری چی', 'جمع\u200cآوری چی', 'مدیتیت'])))
 async def btn_gather(message: Message):
     """جمع انرژی از دکمه کیبورد"""
     try:
@@ -156,7 +148,7 @@ async def btn_gather(message: Message):
         )
 
 
-@router.message(F.text == "پروفایل")
+@router.message(F.text.in_(set(['Profile', 'الملف', 'پروفایل', 'Profil', 'Профиль', '资料', 'پروفایل'])))
 async def btn_profile(message: Message):
     try:
         from bot.handlers.profile import cmd_profile
@@ -165,7 +157,7 @@ async def btn_profile(message: Message):
         await message.answer(f"خطا پروفایل: {e}")
 
 
-@router.message(F.text == "راهنما")
+@router.message(F.text.in_(set(['Yardım', 'مساعدة', '帮助', 'راهنما', 'Справка', 'Help', 'راهنما'])))
 async def btn_help(message: Message):
     try:
         from bot.handlers.help_menu import cmd_help_menu
@@ -174,7 +166,7 @@ async def btn_help(message: Message):
         await message.answer(f"خطا راهنما: {e}")
 
 
-@router.message(F.text.in_({"فروشگاه", "مغازه"}))
+@router.message(F.text.in_(set(['商店', 'Dükkan', 'Магазин', 'فروشگاه', 'المتجر', 'Shop', 'فروشگاه', 'مغازه'])))
 async def btn_shop(message: Message):
     try:
         from bot.handlers.shop import cmd_buildings
@@ -183,7 +175,7 @@ async def btn_shop(message: Message):
         await message.answer(f"خطا فروشگاه: {e}")
 
 
-@router.message(F.text == "دوئل")
+@router.message(F.text.in_(set(['دوئل', '决斗', 'Duel', 'مبارزة', 'Дуэль', 'Düello', 'دوئل'])))
 async def btn_duel_help(message: Message):
     await message.answer(
         "⚔️ دوئل:" + chr(10)
@@ -193,7 +185,7 @@ async def btn_duel_help(message: Message):
     )
 
 
-@router.message(F.text == "تکنیک‌ها")
+@router.message(F.text.in_(set(['Teknikler', '功法', 'تکنیک\u200cها', 'Techniques', 'Техники', 'التقنيات', 'تکنیک\u200cها'])))
 async def btn_tech(message: Message):
     try:
         from bot.handlers.cultivation import cmd_techniques
@@ -202,7 +194,7 @@ async def btn_tech(message: Message):
         await message.answer(f"خطا تکنیک: {e}")
 
 
-@router.message(F.text == "فرقه")
+@router.message(F.text.in_(set(['宗门', 'فرقه', 'Секта', 'Tarikat', 'الطائفة', 'Sect', 'فرقه'])))
 async def btn_sect(message: Message):
     try:
         from bot.handlers.sects import cmd_sects
@@ -211,7 +203,7 @@ async def btn_sect(message: Message):
         await message.answer(f"خطا فرقه: {e}")
 
 
-@router.message(F.text == "آرنا")
+@router.message(F.text.in_(set(['Arena', 'Арена', 'آرنا', 'الحلبة', '竞技场', 'آرنا'])))
 async def btn_arena(message: Message):
     try:
         from bot.handlers.arena import cmd_arena
@@ -268,9 +260,113 @@ async def cmd_version(message: Message):
         from bot.config import BOT_VERSION, WEBAPP_VERSION
         v, w = BOT_VERSION, WEBAPP_VERSION
     except Exception:
-        v = w = "2.8.2"
+        v = w = "2.9.2"
     await message.answer(
         f"🤖 ربات: <b>{v}</b>" + chr(10)
         + f"🌐 وب‌اپ: <b>{w}</b>" + chr(10)
         + "🗓️ /season"
     )
+
+
+
+
+@router.message(F.text.in_({"👤 پروفایل", "پروفایل"}))
+async def kb_profile(message: Message):
+    from bot.handlers.profile import cmd_profile
+    await cmd_profile(message)
+
+
+@router.message(F.text.in_({"🧘 تزکیه", "تزکیه", "تذهیب کردن"}))
+async def kb_cult(message: Message):
+    from bot.handlers.cultivation import cmd_cultivation
+    await cmd_cultivation(message)
+
+
+@router.message(F.text.in_({"⚔️ نبرد", "نبرد", "دوئل"}))
+async def kb_battle(message: Message):
+    await message.answer(
+        "⚔️ نبرد:" + chr(10)
+        + "/duel /arena /kill /guardian /tribewarfight"
+    )
+
+
+@router.message(F.text.in_({"🎒 کوله‌بار", "کوله‌بار", "اینونتوری"}))
+async def kb_inv(message: Message):
+    try:
+        from bot.handlers.shop import cmd_inventory
+        await cmd_inventory(message)
+    except Exception:
+        await message.answer("/inventory")
+
+
+@router.message(F.text.in_({"⚗ کیمیاگری", "کیمیاگری"}))
+async def kb_craft(message: Message):
+    await message.answer("⚗ /craft /buildings")
+
+
+@router.message(F.text.in_({"🏛 فرقه", "فرقه"}))
+async def kb_sect(message: Message):
+    await message.answer("🏛 /sects /mysect /createtribe /declarewar")
+
+
+@router.message(F.text.in_({"🏪 بازار", "بازار"}))
+async def kb_market(message: Message):
+    await message.answer("🏪 /buildings /blackmarket /market /tradeguild")
+
+
+@router.message(F.text.in_({"🎁 گنجینه", "گنجینه"}))
+async def kb_treasure(message: Message):
+    await message.answer("🎁 /wallet /inventory /cyrussale /cave")
+
+
+@router.message(F.text.in_({"📜 مأموریت‌ها", "مأموریت‌ها"}))
+async def kb_missions(message: Message):
+    try:
+        from bot.handlers.missions import cmd_missions
+        await cmd_missions(message)
+    except Exception:
+        await message.answer("/missions")
+
+
+@router.message(F.text.in_({"🏆 دستاوردها", "دستاوردها"}))
+async def kb_ach(message: Message):
+    await message.answer("🏆 /ranking /achievements")
+
+
+@router.message(F.text.in_({"📊 رتبه‌بندی", "رتبه‌بندی"}))
+async def kb_rank(message: Message):
+    try:
+        from bot.handlers.ranking import cmd_ranking
+        await cmd_ranking(message)
+    except Exception:
+        await message.answer("/ranking")
+
+
+@router.message(F.text.in_({"🌍 رویدادها", "رویدادها"}))
+async def kb_events(message: Message):
+    from bot.handlers.jobs_events import cmd_events
+    await cmd_events(message)
+
+
+@router.message(F.text.in_({"🎁 پاداش روزانه", "پاداش روزانه"}))
+async def kb_daily(message: Message):
+    await message.answer("/dailycoin")
+
+
+@router.message(F.text.in_({"🎲 تاس شانس", "تاس شانس"}))
+async def kb_luck(message: Message):
+    from bot.handlers.jobs_events import cmd_luck_dice
+    await cmd_luck_dice(message)
+
+
+@router.message(F.text.in_({"💼 شغل", "شغل"}))
+async def kb_job(message: Message):
+    from bot.handlers.jobs_events import cmd_jobs
+    await cmd_jobs(message)
+
+
+@router.message(F.text.in_({"📖 راهنما", "راهنما"}))
+async def kb_help(message: Message):
+    from bot.handlers.help_menu import cmd_help_menu
+    await cmd_help_menu(message)
+

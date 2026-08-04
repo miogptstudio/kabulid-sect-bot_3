@@ -14,6 +14,7 @@ from services.xp import process_xp_for_duel
 from services.power import calc_power, win_chance
 from services.economy import get_or_create_wallet
 from services.sects import add_contribution
+from services.i18n import tr
 
 router = Router()
 _reject_counts: dict[tuple, int] = {}  # (user_id, date) -> count
@@ -129,7 +130,7 @@ async def cmd_duel(message: Message, state: FSMContext):
         if message.reply_to_message and message.reply_to_message.from_user:
             ou = message.reply_to_message.from_user
             if ou.id == message.from_user.id:
-                await message.answer("❌ با خودت نه!")
+                await message.answer(tr(message.from_user.id, "❌ با خودت نه!"))
                 return
             opponent = await get_or_create_user(session, ou.id, ou.full_name, ou.username)
         elif message.entities:
@@ -139,14 +140,14 @@ async def cmd_duel(message: Message, state: FSMContext):
                     opponent = await get_or_create_user(session, ou.id, ou.full_name, ou.username)
                     break
             if not opponent:
-                await message.answer("روی پیام حریف ریپلای کن و /duel بزن.")
+                await message.answer(tr(message.from_user.id, "روی پیام حریف ریپلای کن و /duel بزن."))
                 return
         else:
-            await message.answer("⚔️ روی پیام حریف ریپلای کن و /duel بزن.")
+            await message.answer(tr(message.from_user.id, "⚔️ روی پیام حریف ریپلای کن و /duel بزن."))
             return
 
         if opponent.is_banned or not opponent.is_active:
-            await message.answer("کاربر در دسترس نیست.")
+            await message.answer(tr(message.from_user.id, "کاربر در دسترس نیست."))
             return
 
         p1 = await calc_power(session, challenger)
@@ -198,7 +199,7 @@ async def cb_duel_accept(callback: CallbackQuery, state: FSMContext):
             cw = await get_or_create_wallet(session, challenger.id)
             ow = await get_or_create_wallet(session, opponent.id)
             if cw.coins < stake or ow.coins < stake:
-                await callback.message.edit_text("یکی از طرفین سکه شرط را ندارد. دوئل لغو.")
+                await callback.message.edit_text(tr(callback.from_user.id, "یکی از طرفین سکه شرط را ندارد. دوئل لغو."))
                 await state.clear()
                 await callback.answer()
                 return
@@ -221,10 +222,10 @@ async def cb_duel_reject(callback: CallbackQuery, state: FSMContext):
             await callback.answer()
             return
         if not _can_reject(callback.from_user.id):
-            await callback.answer("امروز ۵ بار رد کردی. فردا دوباره.", show_alert=True)
+            await callback.answer(tr(callback.from_user.id, "امروز ۵ بار رد کردی. فردا دوباره."), show_alert=True)
             return
         _inc_reject(callback.from_user.id)
-    await callback.message.edit_text("❌ دوئل رد شد.")
+    await callback.message.edit_text(tr(callback.from_user.id, "❌ دوئل رد شد."))
     await state.clear()
     await callback.answer()
 
@@ -235,7 +236,7 @@ async def accept_text(message: Message, state: FSMContext):
     async with async_session() as session:
         me = await get_user_by_telegram_id(session, message.from_user.id)
         if not me or me.id != data.get("opponent_id"):
-            await message.answer("فقط طرف مقابل!")
+            await message.answer(tr(message.from_user.id, "فقط طرف مقابل!"))
             return
         challenger = await session.get(User, data["challenger_id"])
         text = await _resolve_duel(session, challenger, me)
@@ -249,7 +250,7 @@ async def reject_text(message: Message, state: FSMContext):
     async with async_session() as session:
         me = await get_user_by_telegram_id(session, message.from_user.id)
         if not me or me.id not in (data.get("opponent_id"), data.get("challenger_id")):
-            await message.answer("این دوئل مال تو نیست.")
+            await message.answer(tr(message.from_user.id, "این دوئل مال تو نیست."))
             return
-    await message.answer("❌ دوئل رد شد.")
+    await message.answer(tr(message.from_user.id, "❌ دوئل رد شد."))
     await state.clear()

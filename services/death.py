@@ -1,3 +1,4 @@
+from services.cultivation import is_immortal_race
 from sqlalchemy import select, delete, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from database.models import User, Medal, UserAchievement, Duel, UserMission, Mission
@@ -9,6 +10,8 @@ from database.models_v3 import (
 
 
 async def become_spirit_raiser(session: AsyncSession, user: User) -> str:
+    if is_immortal_race(getattr(user, 'race', None)):
+        return "نژاد خدایان نامیراست."
     if not user.is_dead:
         return "تو نمرده‌ای."
     if user.is_spirit_raiser:

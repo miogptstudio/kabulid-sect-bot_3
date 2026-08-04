@@ -7,6 +7,7 @@ from database.engine import async_session
 from database.crud import get_or_create_user, get_user_by_telegram_id
 from database.models import User
 from services.master import take_disciple, get_disciples, get_master, leave_mastership
+from services.i18n import tr
 
 router = Router()
 
@@ -58,14 +59,14 @@ async def cmd_take_disciple(message: Message):
             session, du.id, du.full_name, du.username
         )
         if master.id == disciple.id:
-            await message.answer("نمی‌توانی خودت شاگرد خودت شوی.")
+            await message.answer(tr(message.from_user.id, "نمی‌توانی خودت شاگرد خودت شوی."))
             return
         # pre-check
         if await get_master(session, disciple.id):
-            await message.answer("این نفر الان استاد دارد.")
+            await message.answer(tr(message.from_user.id, "این نفر الان استاد دارد."))
             return
         if await get_master(session, master.id):
-            await message.answer("تو خودت شاگردی و نمی‌توانی استاد شوی.")
+            await message.answer(tr(message.from_user.id, "تو خودت شاگردی و نمی‌توانی استاد شوی."))
             return
 
     builder = InlineKeyboardBuilder()
@@ -92,7 +93,7 @@ async def cmd_take_disciple(message: Message):
 async def cmd_ask_master(message: Message):
     """شخص از کسی می‌خواهد شاگردش شود — استاد باید قبول کند"""
     if not message.reply_to_message:
-        await message.answer("روی پیام استاد مورد نظر ریپلای کن و /askmaster بزن.")
+        await message.answer(tr(message.from_user.id, "روی پیام استاد مورد نظر ریپلای کن و /askmaster بزن."))
         return
 
     async with async_session() as session:
@@ -105,13 +106,13 @@ async def cmd_ask_master(message: Message):
             session, mu.id, mu.full_name, mu.username
         )
         if master.id == disciple.id:
-            await message.answer("با خودت نه.")
+            await message.answer(tr(message.from_user.id, "با خودت نه."))
             return
         if await get_master(session, disciple.id):
-            await message.answer("تو الان استاد داری.")
+            await message.answer(tr(message.from_user.id, "تو الان استاد داری."))
             return
         if await get_master(session, master.id):
-            await message.answer("او خودش شاگرد است و نمی‌تواند استاد شود.")
+            await message.answer(tr(message.from_user.id, "او خودش شاگرد است و نمی‌تواند استاد شود."))
             return
 
     builder = InlineKeyboardBuilder()
@@ -178,7 +179,7 @@ async def cb_master_reject(callback: CallbackQuery):
         if me.id not in (master_id, disciple_id):
             await callback.answer()
             return
-    await callback.message.edit_text("❌ درخواست استاد-شاگردی رد شد.")
+    await callback.message.edit_text(tr(callback.from_user.id, "❌ درخواست استاد-شاگردی رد شد."))
     await callback.answer()
 
 
@@ -191,7 +192,7 @@ async def cmd_my_disciples(message: Message):
         )
         rows = await get_disciples(session, user.id)
         if not rows:
-            await message.answer("شاگردی نداری.")
+            await message.answer(tr(message.from_user.id, "شاگردی نداری."))
             return
         text = "🎓 شاگردان تو:\n"
         for r in rows:
@@ -209,7 +210,7 @@ async def cmd_my_master(message: Message):
         )
         rel = await get_master(session, user.id)
         if not rel:
-            await message.answer("استاد نداری.")
+            await message.answer(tr(message.from_user.id, "استاد نداری."))
             return
         m = await session.get(User, rel.master_id)
         await message.answer(f"استاد تو: <b>{m.full_name if m else rel.master_id}</b>")

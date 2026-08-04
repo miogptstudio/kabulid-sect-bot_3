@@ -8,6 +8,7 @@ from database.engine import async_session
 from database.crud import get_or_create_user
 from database.models_v3 import Recipe
 from services.crafting import ensure_default_recipes, craft, get_or_create_skill
+from services.i18n import tr
 
 router = Router()
 
@@ -25,7 +26,7 @@ async def cmd_craft(message: Message):
         )
     
     if not recipes:
-        await message.answer("هنوز دستوری برای ساخت وجود نداره.")
+        await message.answer(tr(message.from_user.id, "هنوز دستوری برای ساخت وجود نداره."))
         return
     
     builder = InlineKeyboardBuilder()
@@ -55,7 +56,7 @@ async def process_craft(callback: CallbackQuery):
         )
         recipe = await session.get(Recipe, recipe_id)
         if not recipe:
-            await callback.answer("دستور پیدا نشد.", show_alert=True)
+            await callback.answer(tr(callback.from_user.id, "دستور پیدا نشد."), show_alert=True)
             return
         
         result = await craft(session, user, recipe)

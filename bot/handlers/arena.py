@@ -19,6 +19,7 @@ from services.arena import (
     create_open_room, join_open_room, list_open_rooms, start_open_arena,
 )
 from services.power import calc_power
+from services.i18n import tr
 
 router = Router()
 
@@ -53,7 +54,7 @@ async def cmd_arena(message: Message):
 @router.message(Command("arenafight", "مبارزه‌آرنا", "آرنافایت"))
 async def cmd_arena_fight(message: Message):
     if not message.reply_to_message:
-        await message.answer("روی حریف ریپلای کن و /arenafight بزن.")
+        await message.answer(tr(message.from_user.id, "روی حریف ریپلای کن و /arenafight بزن."))
         return
 
     async with async_session() as session:
@@ -63,13 +64,13 @@ async def cmd_arena_fight(message: Message):
         )
         ou = message.reply_to_message.from_user
         if ou.id == message.from_user.id:
-            await message.answer("با خودت نه.")
+            await message.answer(tr(message.from_user.id, "با خودت نه."))
             return
         opponent = await get_or_create_user(
             session, ou.id, ou.full_name, ou.username
         )
         if challenger.is_dead or opponent.is_dead:
-            await message.answer("یکی مرده است.")
+            await message.answer(tr(message.from_user.id, "یکی مرده است."))
             return
 
         cp = await get_or_create_arena_profile(session, challenger.id)
@@ -168,7 +169,7 @@ async def cb_arena_reject(callback: CallbackQuery):
         if me.id != o_id:
             await callback.answer()
             return
-    await callback.message.edit_text("❌ چالش آرنا رد شد. هزینه‌ای کم نشد.")
+    await callback.message.edit_text(tr(callback.from_user.id, "❌ چالش آرنا رد شد. هزینه‌ای کم نشد."))
     await callback.answer()
 
 
@@ -210,12 +211,12 @@ async def cmd_arena_open(message: Message):
 async def cmd_arena_join(message: Message):
     parts = (message.text or "").split()
     if len(parts) < 2:
-        await message.answer("/arenajoin شماره‌اتاق\nلیست: /arenarooms")
+        await message.answer(tr(message.from_user.id, "/arenajoin شماره‌اتاق\nلیست: /arenarooms"))
         return
     try:
         rid = int(parts[1])
     except ValueError:
-        await message.answer("شماره نامعتبر")
+        await message.answer(tr(message.from_user.id, "شماره نامعتبر"))
         return
     async with async_session() as session:
         user = await get_or_create_user(

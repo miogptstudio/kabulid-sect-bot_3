@@ -13,6 +13,7 @@ from services.economy import get_or_create_wallet
 from database.models import User
 from database.models_v2 import Sect, SectMember, Cultivation
 from database.models_v3 import Marriage
+from services.i18n import tr
 
 router = Router()
 
@@ -27,6 +28,9 @@ SERVANTS = [
     {"id": 5, "name": "کای", "gender": "مرد", "price": 900, "desc": "آشپز ماهر"},
 ]
 _user_servants: dict[int, list] = {}  # telegram_id -> list of servant ids
+_user_married_servants: dict = {}  # telegram_id -> married servant ids
+_servant_children: dict = {}  # telegram_id -> list of child dicts
+_dual_servant_cd: dict = {}  # telegram_id -> last dual datetime
 _rps_challenges: dict[int, dict] = {}
 
 
@@ -47,11 +51,11 @@ async def cmd_pay(message: Message):
             try:
                 tg = int(parts[1])
             except ValueError:
-                await message.answer("فرمت: ریپلای + /pay نوع مقدار\nیا /pay telegram_id نوع مقدار\nنوع: coins|spirit|heavenly")
+                await message.answer(tr(message.from_user.id, "فرمت: ریپلای + /pay نوع مقدار\nیا /pay telegram_id نوع مقدار\nنوع: coins|spirit|heavenly"))
                 return
             target = await get_user_by_telegram_id(session, tg)
             if not target:
-                await message.answer("کاربر پیدا نشد.")
+                await message.answer(tr(message.from_user.id, "کاربر پیدا نشد."))
                 return
             args = parts[2:]
         else:
@@ -63,37 +67,37 @@ async def cmd_pay(message: Message):
             )
             return
         if len(args) < 2:
-            await message.answer("نوع و مقدار لازم است.")
+            await message.answer(tr(message.from_user.id, "نوع و مقدار لازم است."))
             return
         kind, amount = args[0], int(args[1])
         if amount <= 0:
-            await message.answer("مقدار باید مثبت باشد.")
+            await message.answer(tr(message.from_user.id, "مقدار باید مثبت باشد."))
             return
         if sender.id == target.id:
-            await message.answer("به خودت نه.")
+            await message.answer(tr(message.from_user.id, "به خودت نه."))
             return
         sw = await get_or_create_wallet(session, sender.id)
         tw = await get_or_create_wallet(session, target.id)
         if kind in ("coins", "سکه"):
             if sw.coins < amount:
-                await message.answer("سکه کافی نیست.")
+                await message.answer(tr(message.from_user.id, "سکه کافی نیست."))
                 return
             sw.coins -= amount
             tw.coins += amount
         elif kind in ("spirit", "روحی"):
             if sw.spirit_stones < amount:
-                await message.answer("سنگ روحی کافی نیست.")
+                await message.answer(tr(message.from_user.id, "سنگ روحی کافی نیست."))
                 return
             sw.spirit_stones -= amount
             tw.spirit_stones += amount
         elif kind in ("heavenly", "بهشتی"):
             if (sw.heavenly_stones or 0) < amount:
-                await message.answer("سنگ بهشتی کافی نیست.")
+                await message.answer(tr(message.from_user.id, "سنگ بهشتی کافی نیست."))
                 return
             sw.heavenly_stones = (sw.heavenly_stones or 0) - amount
             tw.heavenly_stones = (tw.heavenly_stones or 0) + amount
         else:
-            await message.answer("نوع: coins | spirit | heavenly")
+            await message.answer(tr(message.from_user.id, "نوع: coins | spirit | heavenly"))
             return
         await session.commit()
     await message.answer(f"✅ {amount} {kind} به {target.full_name} ارسال شد.")
@@ -126,19 +130,19 @@ async def cmd_market(message: Message):
 async def cmd_market_buy(message: Message):
     parts = (message.text or "").split()
     if len(parts) < 2:
-        await message.answer("/marketbuy شماره")
+        await message.answer(tr(message.from_user.id, "/marketbuy شماره"))
         return
     try:
         idx = int(parts[1]) - 1
     except ValueError:
-        await message.answer("عدد نامعتبر")
+        await message.answer(tr(message.from_user.id, "عدد نامعتبر"))
         return
     if idx < 0 or idx >= len(_market):
-        await message.answer("پیدا نشد.")
+        await message.answer(tr(message.from_user.id, "پیدا نشد."))
         return
     listing = _market[idx]
     if listing["seller"] == message.from_user.id:
-        await message.answer("مال خودت است.")
+        await message.answer(tr(message.from_user.id, "مال خودت است."))
         return
     async with async_session() as session:
         buyer = await get_or_create_user(
@@ -148,7 +152,7 @@ async def cmd_market_buy(message: Message):
         seller = await get_user_by_telegram_id(session, listing["seller"])
         bw = await get_or_create_wallet(session, buyer.id)
         if bw.coins < listing["price"]:
-            await message.answer("سکه کافی نیست.")
+            await message.answer(tr(message.from_user.id, "سکه کافی نیست."))
             return
         bw.coins -= listing["price"]
         if seller:
@@ -165,7 +169,7 @@ async def cmd_servants(message: Message):
     text += "⚠️ آسیب به خدمتکار = مرگ و حذف اکانت تو\n\n"
     for s in SERVANTS:
         text += f"{s['id']}. {s['name']} ({s['gender']}) — {s['price']} سکه\n  {s['desc']}\n"
-    text += "\n/buyservant شماره\n/myservants\n/marry servant شماره (ازدواج با خدمتکار زن)"
+    text += ("\n/buyservant شماره\n/myservants\n/marryservant شماره\n/dualservant شماره — تذهیب دوگانه با خدمتکار\n/childservant شماره — تلاش برای بچه با خدمتکار همسر\n/mychildren — لیست فرزندان")
     await message.answer(text)
 
 
@@ -173,12 +177,12 @@ async def cmd_servants(message: Message):
 async def cmd_buy_servant(message: Message):
     parts = (message.text or "").split()
     if len(parts) < 2:
-        await message.answer("/buyservant شماره")
+        await message.answer(tr(message.from_user.id, "/buyservant شماره"))
         return
     sid = int(parts[1])
     s = next((x for x in SERVANTS if x["id"] == sid), None)
     if not s:
-        await message.answer("پیدا نشد.")
+        await message.answer(tr(message.from_user.id, "پیدا نشد."))
         return
     async with async_session() as session:
         user = await get_or_create_user(
@@ -187,7 +191,7 @@ async def cmd_buy_servant(message: Message):
         )
         w = await get_or_create_wallet(session, user.id)
         if w.coins < s["price"]:
-            await message.answer("سکه کافی نیست.")
+            await message.answer(tr(message.from_user.id, "سکه کافی نیست."))
             return
         w.coins -= s["price"]
         await session.commit()
@@ -202,19 +206,24 @@ async def cmd_buy_servant(message: Message):
 async def cmd_my_servants(message: Message):
     ids = _user_servants.get(message.from_user.id, [])
     if not ids:
-        await message.answer("خدمتکاری نداری. /servants")
+        await message.answer(
+            "خدمتکاری نداری." + chr(10)
+            + "/servants — بازار" + chr(10)
+            + "/buyservant شماره — خرید"
+        )
         return
-    text = "خدمتکارهای تو:\n"
+    married = _user_married_servants.get(message.from_user.id, [])
+    text = "👤 <b>خدمتکارهای تو</b>" + chr(10) + chr(10)
     for i in ids:
         s = next((x for x in SERVANTS if x["id"] == i), None)
         if s:
-            tag = " 💍" if i in married else ""
-            text += f"• {s['name']} ({s['gender']}){tag}" + chr(10)
+            tag = " 💍 همسر" if i in married else ""
+            text += f"• #{s['id']} {s['name']} ({s['gender']}){tag}" + chr(10)
+    text += (
+        chr(10) + "/marryservant شماره — ازدواج با خدمتکار زن"
+        + chr(10) + "/servants — بازار دوباره"
+    )
     await message.answer(text)
-
-
-
-_user_married_servants: dict = {}  # telegram_id -> list of servant ids married
 
 
 @router.message(Command("marryservant", "ازدواج‌خدمتکار"))
@@ -244,11 +253,9 @@ async def cmd_marry_servant(message: Message):
         return
     s = next((x for x in SERVANTS if x["id"] == sid), None)
     if not s:
-        await message.answer("خدمتکار پیدا نشد. /servants")
+        await message.answer(tr(message.from_user.id, "خدمتکار پیدا نشد. /servants"))
         return
-    if s.get("gender") != "زن":
-        await message.answer("فقط با خدمتکار زن می‌شود ازدواج کرد.")
-        return
+    # ازدواج با خدمتکار هر جنسیتی — برای تذهیب دوگانه باید مخالف باشد
     owned = _user_servants.get(message.from_user.id, [])
     if sid not in owned:
         await message.answer("اول باید این خدمتکار را بخری. /buyservant " + str(sid))
@@ -276,12 +283,175 @@ async def cmd_marry_servant_text(message: Message):
         message.text = f"/marryservant {parts[2]}"
         await cmd_marry_servant(message)
 
+
+@router.message(Command("dualservant", "تذهیب‌خدمتکار", "دوگانه‌خدمتکار"))
+async def cmd_dual_servant(message: Message):
+    from datetime import datetime, timedelta
+    import random
+    parts = (message.text or "").split()
+    if len(parts) < 2:
+        await message.answer(
+            "☯️ /dualservant شماره" + chr(10)
+            + "نیاز: خرید + ازدواج با خدمتکار + /gender مخالف" + chr(10)
+            + "پاداش: +۵۰ انرژی | شانس نادر بچه | کول‌داون ۳۰ دقیقه"
+        )
+        return
+    try:
+        sid = int(parts[1])
+    except ValueError:
+        await message.answer(tr(message.from_user.id, "شماره نامعتبر."))
+        return
+    s = next((x for x in SERVANTS if x["id"] == sid), None)
+    if not s:
+        await message.answer(tr(message.from_user.id, "خدمتکار پیدا نشد. /servants"))
+        return
+    owned = _user_servants.get(message.from_user.id, [])
+    married = _user_married_servants.get(message.from_user.id, [])
+    if sid not in owned:
+        await message.answer("اول بخر: /buyservant " + str(sid))
+        return
+    if sid not in married:
+        await message.answer("اول ازدواج: /marryservant " + str(sid))
+        return
+    last = _dual_servant_cd.get(message.from_user.id)
+    if last and datetime.utcnow() - last < timedelta(minutes=30):
+        left = int((timedelta(minutes=30) - (datetime.utcnow() - last)).total_seconds() // 60) + 1
+        await message.answer(f"⏳ کول‌داون تذهیب دوگانه خدمتکار: {left} دقیقه")
+        return
+    async with async_session() as session:
+        user = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
+        if user.gender not in ("مرد", "زن"):
+            await message.answer(tr(message.from_user.id, "اول /gender بزن."))
+            return
+        if user.gender == s["gender"]:
+            await message.answer(
+                f"باید جنسیت مخالف باشد. تو: {user.gender} | خدمتکار: {s['gender']}"
+            )
+            return
+        from services.cultivation import get_or_create_cultivation, add_energy, get_active_technique
+        cult = await get_or_create_cultivation(session, user.id)
+        if getattr(cult, "spiritual_root", None) == "بدون ریشه":
+            await message.answer(tr(message.from_user.id, "هنوز ریشه معنوی نداری."))
+            return
+        tech = await get_active_technique(session, user.id)
+        if not tech:
+            await message.answer(tr(message.from_user.id, "تکنیک فعال نداری. /learntech"))
+            return
+        user.is_virgin = False
+        res = await add_energy(session, user.id, 50)
+        await session.commit()
+    _dual_servant_cd[message.from_user.id] = datetime.utcnow()
+    msg = f"☯️ تذهیب دوگانه با «{s['name']}» انجام شد." + chr(10) + "+۵۰ انرژی" + chr(10)
+    if res.get("messages"):
+        msg += chr(10).join(res["messages"]) + chr(10)
+    from services.dual import CHILD_CHANCE
+    if random.random() < CHILD_CHANCE:
+        child = {
+            "name": f"فرزند {message.from_user.full_name[:10]} و {s['name']}",
+            "gender": random.choice(["مرد", "زن"]),
+            "servant": s["name"],
+            "servant_id": sid,
+        }
+        _servant_children.setdefault(message.from_user.id, []).append(child)
+        msg += chr(10) + "👶✨ معجزه! فرزند: " + child["name"] + f" ({child['gender']})"
+    else:
+        msg += chr(10) + "فرزندی نبود. /childservant " + str(sid)
+    await message.answer(msg)
+
+
+@router.message(Command("childservant", "بچه‌خدمتکار", "فرزند‌خدمتکار"))
+async def cmd_child_servant(message: Message):
+    import random
+    from datetime import datetime, timedelta
+    from services.dual import CHILD_CHANCE
+    parts = (message.text or "").split()
+    if len(parts) < 2:
+        await message.answer(
+            "👶 /childservant شماره" + chr(10)
+            + "با خدمتکار همسر و جنسیت مخالف" + chr(10)
+            + f"شانس نادر ({CHILD_CHANCE}) | هر ۱ ساعت یک‌بار"
+        )
+        return
+    try:
+        sid = int(parts[1])
+    except ValueError:
+        await message.answer(tr(message.from_user.id, "شماره نامعتبر."))
+        return
+    s = next((x for x in SERVANTS if x["id"] == sid), None)
+    if not s:
+        await message.answer(tr(message.from_user.id, "پیدا نشد."))
+        return
+    owned = _user_servants.get(message.from_user.id, [])
+    married = _user_married_servants.get(message.from_user.id, [])
+    if sid not in owned or sid not in married:
+        await message.answer(tr(message.from_user.id, "باید /buyservant و /marryservant کرده باشی."))
+        return
+    key = f"child_{message.from_user.id}"
+    last = _dual_servant_cd.get(key)
+    if last and datetime.utcnow() - last < timedelta(hours=1):
+        await message.answer(tr(message.from_user.id, "⏳ هر ۱ ساعت یک‌بار."))
+        return
+    async with async_session() as session:
+        user = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
+        if user.gender not in ("مرد", "زن"):
+            await message.answer(tr(message.from_user.id, "اول /gender"))
+            return
+        if user.gender == s["gender"]:
+            await message.answer(tr(message.from_user.id, "جنسیت باید مخالف باشد."))
+            return
+        user.is_virgin = False
+        await session.commit()
+    _dual_servant_cd[key] = datetime.utcnow()
+    if random.random() < CHILD_CHANCE:
+        child = {
+            "name": f"فرزند {message.from_user.full_name[:10]} و {s['name']}",
+            "gender": random.choice(["مرد", "زن"]),
+            "servant": s["name"],
+            "servant_id": sid,
+        }
+        _servant_children.setdefault(message.from_user.id, []).append(child)
+        await message.answer(
+            "👶✨ معجزه!" + chr(10)
+            + f"{child['name']} ({child['gender']})" + chr(10)
+            + "/mychildren"
+        )
+    else:
+        await message.answer(
+            "این بار فرزندی نشد." + chr(10)
+            + f"شانس بسیار نادر ({CHILD_CHANCE})."
+        )
+
+
+@router.message(Command("mychildren", "فرزندان‌من", "بچه‌ها"))
+async def cmd_my_children(message: Message):
+    kids = _servant_children.get(message.from_user.id, [])
+    if not kids:
+        await message.answer(
+            "فرزندی نیست." + chr(10)
+            + "بازیکن: ریپلای + /dual" + chr(10)
+            + "خدمتکار: /dualservant یا /childservant شماره"
+        )
+        return
+    text = "👶 <b>فرزندان</b>" + chr(10) + chr(10)
+    for i, c in enumerate(kids, 1):
+        text += f"{i}. {c.get('name')} ({c.get('gender')})" + chr(10)
+        if c.get("servant"):
+            text += f"   خدمتکار: {c['servant']}" + chr(10)
+    await message.answer(text)
+
+
 @router.message(Command("harmservant", "آسیب‌خدمتکار"))
 async def cmd_harm_servant(message: Message):
     """آسیب = مرگ + حذف اکانت"""
     ids = _user_servants.get(message.from_user.id, [])
     if not ids:
-        await message.answer("خدمتکاری نداری.")
+        await message.answer(tr(message.from_user.id, "خدمتکاری نداری."))
         return
     async with async_session() as session:
         user = await get_or_create_user(
@@ -302,11 +472,11 @@ async def cmd_harm_servant(message: Message):
 @router.message(Command("rpsduel", "سنگ‌دوئل"))
 async def cmd_rps_duel(message: Message):
     if not message.reply_to_message:
-        await message.answer("روی حریف ریپلای کن و /rpsduel بزن.")
+        await message.answer(tr(message.from_user.id, "روی حریف ریپلای کن و /rpsduel بزن."))
         return
     opp = message.reply_to_message.from_user
     if opp.id == message.from_user.id:
-        await message.answer("با خودت نه.")
+        await message.answer(tr(message.from_user.id, "با خودت نه."))
         return
     _rps_challenges[opp.id] = {
         "from": message.from_user.id,

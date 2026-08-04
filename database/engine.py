@@ -44,6 +44,7 @@ USER_COLUMNS = [
     ("is_virgin", "BOOLEAN DEFAULT TRUE"),
     ("is_dead", "BOOLEAN DEFAULT FALSE"),
     ("race", "VARCHAR(32) DEFAULT 'انسان'"),
+    ("language", "VARCHAR(8) DEFAULT 'fa'"),
     ("garden_slots", "INTEGER DEFAULT 10"),
     ("last_plant_at", "TIMESTAMP NULL"),
     ("pet_slots", "INTEGER DEFAULT 10"),

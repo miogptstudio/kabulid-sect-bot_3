@@ -35,6 +35,12 @@ ROOT_BONUS = {
 
 async def calc_power(session: AsyncSession, user: User) -> dict:
     base = 20 + (user.level or 1) * 3
+    spirit_p = 0
+    try:
+        from services.martial_spirit import power_bonus
+        spirit_p = power_bonus(user.telegram_id)
+    except Exception:
+        spirit_p = 0
     rank_bonus = {"عضو دسته‌های پایین‌تر": 0, "عضو بیرونی": 5, "عضو داخلی": 12, "ارشد": 25, "ارجمند": 40}.get(user.rank, 0)
 
     cult = await get_or_create_cultivation(session, user.id)
@@ -62,7 +68,15 @@ async def calc_power(session: AsyncSession, user: User) -> dict:
             # اگر چیزی مجهز نیست، قوی‌ترین سلاح را حساب کن
             weapon_p = max(weapon_p, dp)
 
-    total = base + rank_bonus + realm_p + root_p + weapon_p
+    job_p = 0
+    try:
+        from services.jobs import get_job, JOBS
+        j = get_job(user.telegram_id)
+        if j and JOBS.get(j, {}).get('bonus') == 'duel':
+            job_p = int((base + realm_p) * (JOBS[j]['mult'] - 1))
+    except Exception:
+        job_p = 0
+    total = base + rank_bonus + realm_p + root_p + weapon_p + spirit_p + job_p
     if getattr(user, "is_spirit_raiser", False):
         total += 15
 
@@ -73,6 +87,7 @@ async def calc_power(session: AsyncSession, user: User) -> dict:
         "realm": realm_p,
         "root": root_p,
         "weapon": weapon_p,
+        "spirit": spirit_p,
         "root_name": cult.spiritual_root,
         "realm_name": cult.realm,
     }

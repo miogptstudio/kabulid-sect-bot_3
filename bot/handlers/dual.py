@@ -8,6 +8,7 @@ from database.engine import async_session
 from database.crud import get_or_create_user
 from database.models_v3 import DualCultivation
 from services.dual import request_dual, accept_dual, reject_dual
+from services.i18n import t_user, tr
 
 router = Router()
 LOCKED_GENDERS = ("مرد", "زن")
@@ -93,14 +94,14 @@ async def cmd_dual(message: Message):
             message.from_user.full_name, message.from_user.username
         )
         if user1.gender not in LOCKED_GENDERS:
-            await message.answer("اول با /gender جنسیت دائمی خودت را مشخص کن.")
+            await message.answer(tr(message.from_user.id, "اول با /gender جنسیت دائمی خودت را مشخص کن."))
             return
         u2 = message.reply_to_message.from_user
         user2 = await get_or_create_user(
             session, u2.id, u2.full_name, u2.username
         )
         if user2.gender not in LOCKED_GENDERS:
-            await message.answer("طرف مقابل هنوز /gender نزده.")
+            await message.answer(tr(message.from_user.id, "طرف مقابل هنوز /gender نزده."))
             return
 
         result = await request_dual(session, user1, user2)
@@ -110,8 +111,8 @@ async def cmd_dual(message: Message):
 
         dual = result
         builder = InlineKeyboardBuilder()
-        builder.button(text="قبول ✅", callback_data=f"dualaccept:{dual.id}:{user2.id}")
-        builder.button(text="رد ❌", callback_data=f"dualreject:{dual.id}:{user2.id}")
+        builder.button(text=t_user(message.from_user.id, "btn_accept"), callback_data=f"dualaccept:{dual.id}:{user2.id}")
+        builder.button(text=t_user(message.from_user.id, "btn_reject"), callback_data=f"dualreject:{dual.id}:{user2.id}")
         builder.adjust(1)
         await message.answer(
             f"☯️ <b>درخواست تذهیب دوگانه</b>\n\n"

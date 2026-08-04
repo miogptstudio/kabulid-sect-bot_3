@@ -8,6 +8,7 @@ from sqlalchemy import select
 from database.engine import async_session
 from database.crud import get_or_create_user
 from services.economy import get_or_create_wallet
+from services.i18n import tr
 
 router = Router()
 
@@ -74,10 +75,10 @@ async def cmd_auction(message: Message):
     try:
         price = int(try_price)
     except ValueError:
-        await message.answer("قیمت باید عدد باشد.")
+        await message.answer(tr(message.from_user.id, "قیمت باید عدد باشد."))
         return
     if price < 100:
-        await message.answer("حداقل شروع مزایده ۱۰۰ سکه.")
+        await message.answer(tr(message.from_user.id, "حداقل شروع مزایده ۱۰۰ سکه."))
         return
     async with async_session() as session:
         user = await get_or_create_user(
@@ -107,15 +108,15 @@ async def cmd_auction(message: Message):
 async def cmd_bid(message: Message):
     parts = (message.text or "").split()
     if len(parts) < 3:
-        await message.answer("فرمت: /bid شماره مبلغ")
+        await message.answer(tr(message.from_user.id, "فرمت: /bid شماره مبلغ"))
         return
     try:
         idx, amount = int(parts[1]) - 1, int(parts[2])
     except ValueError:
-        await message.answer("عدد نامعتبر")
+        await message.answer(tr(message.from_user.id, "عدد نامعتبر"))
         return
     if idx < 0 or idx >= len(_auctions):
-        await message.answer("مزایده پیدا نشد.")
+        await message.answer(tr(message.from_user.id, "مزایده پیدا نشد."))
         return
     a = _auctions[idx]
     if amount <= a["bid"]:
@@ -128,7 +129,7 @@ async def cmd_bid(message: Message):
         )
         w = await get_or_create_wallet(session, user.id)
         if w.coins < amount:
-            await message.answer("سکه کافی نیست.")
+            await message.answer(tr(message.from_user.id, "سکه کافی نیست."))
             return
         w.coins -= amount
         await session.commit()

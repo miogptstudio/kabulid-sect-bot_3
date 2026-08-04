@@ -7,6 +7,7 @@ from database.engine import async_session
 from database.crud import get_or_create_user
 from services.cultivation import get_or_create_cultivation
 from services.economy import get_or_create_wallet
+from services.i18n import tr
 
 router = Router()
 
@@ -90,7 +91,7 @@ async def cmd_path(message: Message):
             return
         path = parts[1].strip()
         if path not in PATHS:
-            await message.answer("مسیر نامعتبر.")
+            await message.answer(tr(message.from_user.id, "مسیر نامعتبر."))
             return
         # store on user role field side - use a simple attribute if exists
         if hasattr(user, "path"):
@@ -121,7 +122,7 @@ async def cmd_attack_dim(message: Message):
             message.from_user.full_name, message.from_user.username
         )
         if user.is_dead:
-            await message.answer("مرده‌ای.")
+            await message.answer(tr(message.from_user.id, "مرده‌ای."))
             return
         w = await get_or_create_wallet(session, user.id)
         if random.random() < 0.5:
@@ -133,6 +134,6 @@ async def cmd_attack_dim(message: Message):
             if random.random() < 0.1:
                 user.is_dead = True
                 await session.commit()
-                await message.answer("💀 در بُعد دیگر نابود شدی. /afterdeath")
+                await message.answer(tr(message.from_user.id, "💀 در بُعد دیگر نابود شدی. /afterdeath"))
             else:
-                await message.answer("حمله شکست خورد. بُعد مقاومت کرد.")
+                await message.answer(tr(message.from_user.id, "حمله شکست خورد. بُعد مقاومت کرد."))

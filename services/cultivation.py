@@ -9,10 +9,91 @@ from bot.config import ROOT_UNLOCK_ENERGY, ENERGY_BASE, ENERGY_PER_LEVEL_ADD
 
 MAX_STAGE = 10
 
+# رگ‌های معنوی (بیش از ۳۰ نوع) — هر بازیکن تا ۵ رگ
+SPIRITUAL_VEINS = {
+    "رگ یانگ": {"mult": 1.12, "desc": "جریان فعال تهاجمی"},
+    "رگ یین": {"mult": 1.12, "desc": "جریان آرام پایدار"},
+    "رگ آتش": {"mult": 1.14, "desc": "شعله درونی"},
+    "رگ آب": {"mult": 1.13, "desc": "جریان سیال"},
+    "رگ چوب": {"mult": 1.13, "desc": "رشد و حیات"},
+    "رگ فلز": {"mult": 1.15, "desc": "سختی و برش"},
+    "رگ خاک": {"mult": 1.12, "desc": "ثبات و دفاع"},
+    "رگ رعد": {"mult": 1.16, "desc": "سرعت آذرخش"},
+    "رگ یخ": {"mult": 1.14, "desc": "سرمایش و تمرکز"},
+    "رگ باد": {"mult": 1.13, "desc": "سبکی و گردش"},
+    "رگ نور": {"mult": 1.17, "desc": "پاکی نورانی"},
+    "رگ تاریکی": {"mult": 1.17, "desc": "سایه و نهان"},
+    "رگ روح": {"mult": 1.18, "desc": "پیوند روحی"},
+    "رگ خون": {"mult": 1.15, "desc": "نیروی خون"},
+    "رگ استخوان": {"mult": 1.14, "desc": "استحکام بدن"},
+    "رگ مغز": {"mult": 1.16, "desc": "ادراک و تکنیک"},
+    "رگ قلب": {"mult": 1.15, "desc": "اراده و حیات"},
+    "رگ چشم": {"mult": 1.13, "desc": "بینش انرژی"},
+    "رگ ستاره": {"mult": 1.19, "desc": "چی ستاره‌ای"},
+    "رگ ماه": {"mult": 1.16, "desc": "جزر و مد معنوی"},
+    "رگ خورشید": {"mult": 1.18, "desc": "گرمای سلطنتی"},
+    "رگ سیمرغ": {"mult": 1.2, "desc": "حکمت ایرانی"},
+    "رگ اژدها": {"mult": 1.21, "desc": "قدرت اژدها"},
+    "رگ ققنوس": {"mult": 1.2, "desc": "رستاخیز شعله"},
+    "رگ آناهیتا": {"mult": 1.19, "desc": "آب‌های مقدس"},
+    "رگ رخش": {"mult": 1.17, "desc": "سرعت پهلوانی"},
+    "رگ پوچی": {"mult": 1.22, "desc": "خلأ و نابودی"},
+    "رگ بهشتی": {"mult": 1.2, "desc": "برکت آسمان"},
+    "رگ زیرین": {"mult": 1.18, "desc": "جهان تاریک"},
+    "رگ ای‌تری": {"mult": 1.21, "desc": "جریان ای‌تری"},
+    "رگ الهی": {"mult": 1.25, "desc": "اراده خدایان"},
+    "رگ زمان": {"mult": 1.18, "desc": "کندی و شتاب چی"},
+    "رگ مکان": {"mult": 1.17, "desc": "جابه‌جایی انرژی"},
+    "رگ خواب": {"mult": 1.12, "desc": "تذهیب در رؤیا"},
+    "رگ جنگ": {"mult": 1.16, "desc": "چی رزمی"},
+    "رگ صلح": {"mult": 1.14, "desc": "تثبیت آرام"},
+}
+MAX_VEINS = 5
+_user_veins: dict[int, list] = {}
+
+def get_veins(user_id: int) -> list:
+    return _user_veins.get(user_id, [])
+
+def unlock_vein(user_id: int, vein: str) -> str:
+    vein = vein.strip()
+    if vein not in SPIRITUAL_VEINS:
+        # fuzzy
+        for k in SPIRITUAL_VEINS:
+            if vein in k or k in vein:
+                vein = k
+                break
+    if vein not in SPIRITUAL_VEINS:
+        return "رگ نامعتبر. /vein برای لیست"
+    cur = _user_veins.setdefault(user_id, [])
+    if vein in cur:
+        return f"قبلاً {vein} داری."
+    if len(cur) >= MAX_VEINS:
+        return f"حداکثر {MAX_VEINS} رگ معنوی."
+    cur.append(vein)
+    info = SPIRITUAL_VEINS[vein]
+    return f"✅ {vein} باز شد — {info['desc']} (×{info['mult']})"
+
+def vein_mult(user_id: int) -> float:
+    cur = get_veins(user_id)
+    if not cur:
+        return 1.0
+    m = 1.0
+    for v in cur:
+        m *= SPIRITUAL_VEINS.get(v, {}).get("mult", 1.0)
+    return m
+
+
 # نژاد → نوع تذهیب / ضریب
 RACES = [
-    "انسان", "جن", "اهریمن", "فرشته", "اژدهازاده", "خون‌آشام", "روح‌پیمان", "غول", "پری", "سایه‌رو"
+    "انسان", "جن", "اهریمن", "فرشته", "اژدهازاده", "خون‌آشام", "روح‌پیمان", "غول", "پری", "سایه‌رو",
+    "ققنوس‌زاده", "سیرن", "تایتان", "خندق‌نشین", "فرزند رعد", "یخ‌زاد", "جنگل‌رو", "ستاره‌پیمان",
+    # نژادهای ایرانی / اساطیری
+    "سیمرغ‌زاده", "دیوزاد", "پری‌ایرانی", "آناهیتا‌پیمان", "رخش‌تبار", "جمشید‌تبار",
+    "فریدون‌زاده", "زال‌تبار", "رستم‌تبار", "هما‌زاده", "کاوه‌تبار", "ضحاک‌تبار",
 ]
+# نژادهای فقط سازنده/ادمین
+ADMIN_RACES = ["خدایان"]
+ALL_RACES = RACES + ADMIN_RACES
 RACE_CULT = {
     "انسان": {"bonus": 1.0, "style": "تذهیب متعادل", "desc": "همه‌فن‌حریف"},
     "جن": {"bonus": 1.25, "style": "تذهیب آتشین", "desc": "چی آتش سریع‌تر"},
@@ -24,7 +105,31 @@ RACE_CULT = {
     "غول": {"bonus": 1.15, "style": "تذهیب جسمانی", "desc": "خون و زره بهتر"},
     "پری": {"bonus": 1.25, "style": "تذهیب طبیعت", "desc": "گیاه و کیمیاگری"},
     "سایه‌رو": {"bonus": 1.3, "style": "تذهیب تاریکی", "desc": "ریشه تاریکی و جاسوسی"},
+    "ققنوس‌زاده": {"bonus": 1.45, "style": "تذهیب رستاخیز", "desc": "پس از مرگ ضعیف‌تر زنده می‌شود"},
+    "سیرن": {"bonus": 1.28, "style": "تذهیب صوت", "desc": "چی از صدا و افسون"},
+    "تایتان": {"bonus": 1.5, "style": "تذهیب عظمت", "desc": "قدرت و خون بسیار بالا"},
+    "خندق‌نشین": {"bonus": 1.22, "style": "تذهیب زیرین", "desc": "دنیای زیرین و سم"},
+    "فرزند رعد": {"bonus": 1.38, "style": "تذهیب آذرخش", "desc": "سرعت و ضربه رعد"},
+    "یخ‌زاد": {"bonus": 1.32, "style": "تذهیب یخ", "desc": "کنترل و دفاع یخی"},
+    "جنگل‌رو": {"bonus": 1.27, "style": "تذهیب بیشه", "desc": "باغ و حیوانات بهتر"},
+    "ستاره‌پیمان": {"bonus": 1.48, "style": "تذهیب ستاره‌ای", "desc": "انرژی آسمانی و قلمرو بالا"},
+    "سیمرغ‌زاده": {"bonus": 1.55, "style": "تذهیب سیمرغ", "desc": "حکمت و شفا — پرندهٔ اساطیری ایران"},
+    "دیوزاد": {"bonus": 1.4, "style": "تذهیب دیو", "desc": "قدرت تاریک دیوان شاهنامه"},
+    "پری‌ایرانی": {"bonus": 1.35, "style": "تذهیب پری", "desc": "افسون پری‌های ایرانی"},
+    "آناهیتا‌پیمان": {"bonus": 1.5, "style": "تذهیب آب‌های مقدس", "desc": "برکت آناهیتا"},
+    "رخش‌تبار": {"bonus": 1.42, "style": "تذهیب شجاعت", "desc": "سرعت و وفاداری رخش"},
+    "جمشید‌تبار": {"bonus": 1.48, "style": "تذهیب شهریاری", "desc": "شکوه جمشید"},
+    "فریدون‌زاده": {"bonus": 1.46, "style": "تذهیب عدالت", "desc": "پیروزی بر ضحاک"},
+    "زال‌تبار": {"bonus": 1.44, "style": "تذهیب سپیدموی", "desc": "فرزند سیمرغ و خرد"},
+    "رستم‌تبار": {"bonus": 1.6, "style": "تذهیب پهلوانی", "desc": "نیرومندترین تبار شاهنامه"},
+    "هما‌زاده": {"bonus": 1.52, "style": "تذهیب سعادت", "desc": "مرغ سعادت ایرانی"},
+    "کاوه‌تبار": {"bonus": 1.38, "style": "تذهیب قیام", "desc": "آهنگر و آزادی"},
+    "ضحاک‌تبار": {"bonus": 1.45, "style": "تذهیب مارشانه", "desc": "قدرت نفرین‌شده"},
+    "خدایان": {"bonus": 2.5, "style": "تذهیب ابدی", "desc": "نامیرا — فقط ادمین | هیچ‌گاه نمی‌میرد"},
 }
+
+def is_immortal_race(race: str | None) -> bool:
+    return (race or "") == "خدایان"
 
 
 
@@ -82,6 +187,27 @@ FORBIDDEN_TECH_NAME = "پرورش ممنوعه"
 
 DEFAULT_TECHNIQUES = [
     {"name": "تنفس پایه", "description": "تکنیک ساده تذهیب برای مبتدیان", "grade": "پایه", "energy_bonus": 100, "required_root": None},
+    {"name": "تنفس مهتاب", "description": "تنفس آرام شبانه — چی پایدار", "grade": "پایه", "energy_bonus": 180, "required_root": None},
+    {"name": "تنفس کوهستان", "description": "نفس عمیق کوه — بدن و چی", "grade": "پایه", "energy_bonus": 220, "required_root": None},
+    {"name": "تنفس موج آرام", "description": "ریتم آب — چی متوسط", "grade": "پایه", "energy_bonus": 200, "required_root": None},
+    {"name": "تنفس جرقه", "description": "نفس آتش کوتاه — چی تند", "grade": "پایه", "energy_bonus": 250, "required_root": None},
+    {"name": "تنفس چهارفصل", "description": "چرخش فصل‌ها — چی متعادل بالا", "grade": "متوسط", "energy_bonus": 420, "required_root": None},
+    {"name": "تنفس نهان‌گاه", "description": "نفس مخفی سایه‌رو", "grade": "متوسط", "energy_bonus": 380, "required_root": None},
+    {"name": "تنفس خون‌جریان", "description": "چی خون‌آشام‌گونه", "grade": "متوسط", "energy_bonus": 450, "required_root": None},
+    {"name": "تنفس بال نور", "description": "نفس فرشته‌گون", "grade": "متوسط", "energy_bonus": 480, "required_root": "ریشه نور"},
+    {"name": "تنفس دوزخ", "description": "نفس اهریمنی داغ", "grade": "متوسط", "energy_bonus": 500, "required_root": None},
+    {"name": "تنفس ریشه کهن", "description": "نفس جنگل و چوب", "grade": "متوسط", "energy_bonus": 410, "required_root": "ریشه چوب"},
+    {"name": "تنفس رعد شکسته", "description": "نفس رعد و سرعت", "grade": "بالا", "energy_bonus": 720, "required_root": None},
+    {"name": "تنفس یخ ابدی", "description": "نفس یخ‌زاد", "grade": "بالا", "energy_bonus": 680, "required_root": None},
+    {"name": "تنفس ققنوس", "description": "رستاخیز شعله — چی قوی", "grade": "بالا", "energy_bonus": 950, "required_root": None},
+    {"name": "تنفس ستاره سقوط", "description": "چی ستاره‌ای", "grade": "بالا", "energy_bonus": 1100, "required_root": None},
+    {"name": "تنفس تایتان", "description": "نفس عظیم جسمانی", "grade": "بالا", "energy_bonus": 880, "required_root": None},
+    {"name": "تنفس خلأ", "description": "نفس پوچی و زیرین", "grade": "پیشرفته", "energy_bonus": 1800, "required_root": "ریشه پوچی"},
+    {"name": "تنفس کهکشان", "description": "جریان ستاره و آسمان", "grade": "پیشرفته", "energy_bonus": 2400, "required_root": "ریشه آسمانی"},
+    {"name": "تنفس ابدیت", "description": "نفس خدایان — فقط ریشه الهی", "grade": "پیشرفته", "energy_bonus": 5000, "required_root": "ریشه الهی"},
+    {"name": "تنفس نه رود", "description": "نه مسیر چی همزمان", "grade": "پیشرفته", "energy_bonus": 2800, "required_root": None},
+    {"name": "تنفس خاکستر زرین", "description": "بعد از سوختن قوی‌تر", "grade": "بالا", "energy_bonus": 820, "required_root": None},
+
     {"name": "جریان پنج‌عنصر", "description": "تکنیک متوسط بر پایه پنج عنصر", "grade": "متوسط", "energy_bonus": 300, "required_root": "ریشه پنج‌عنصر"},
     {"name": "شعله‌ی درونی", "description": "تکنیک آتشین", "grade": "متوسط", "energy_bonus": 350, "required_root": "ریشه آتش"},
     {"name": "موج آب", "description": "تکنیک ریشه آب", "grade": "متوسط", "energy_bonus": 350, "required_root": "ریشه آب"},
@@ -273,7 +399,12 @@ async def add_energy(session: AsyncSession, user_id: int, amount: int) -> dict:
             race_mult = float(RACE_CULT.get(_u.race, {}).get("bonus", 1.0))
     except Exception:
         pass
-    amount = max(1, int(amount * rmult * bmult * race_mult))
+    vmult = 1.0
+    try:
+        vmult = vein_mult(user_id)
+    except Exception:
+        pass
+    amount = max(1, int(amount * rmult * bmult * race_mult * vmult))
 
     if root == "بدون ریشه":
         cult.energy += amount

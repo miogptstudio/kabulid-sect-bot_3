@@ -15,6 +15,7 @@ from services.sects import (
     conquer_territory, get_rank_sword, can_create_sect
 )
 from services.cultivation import get_or_create_cultivation
+from services.i18n import tr
 
 router = Router()
 
@@ -98,7 +99,7 @@ async def cmd_create_sect(message: Message):
 async def cmd_join_sect(message: Message):
     parts = message.text.split(maxsplit=1)
     if len(parts) < 2:
-        await message.answer("فرمت: /joinsect &lt;نام فرقه&gt;")
+        await message.answer(tr(message.from_user.id, "فرمت: /joinsect &lt;نام فرقه&gt;"))
         return
     name = parts[1].strip()
     
@@ -112,7 +113,7 @@ async def cmd_join_sect(message: Message):
         )
         sect = result.scalar_one_or_none()
         if not sect:
-            await message.answer("فرقه پیدا نشد.")
+            await message.answer(tr(message.from_user.id, "فرقه پیدا نشد."))
             return
         try:
             member = await join_sect(session, user, sect)
@@ -130,7 +131,7 @@ async def cmd_my_sect(message: Message):
         )
         membership = await get_user_sect(session, user.id)
         if not membership:
-            await message.answer("عضو فرقه‌ای نیستی. تذهیب‌کننده دوره‌گرد هستی.")
+            await message.answer(tr(message.from_user.id, "عضو فرقه‌ای نیستی. تذهیب‌کننده دوره‌گرد هستی."))
             return
         sect = await session.get(Sect, membership.sect_id)
         is_leader = sect and sect.leader_id == user.id
@@ -155,7 +156,7 @@ async def cmd_challenge(message: Message):
         )
         membership = await get_user_sect(session, user.id)
         if not membership:
-            await message.answer("عضو فرقه نیستی.")
+            await message.answer(tr(message.from_user.id, "عضو فرقه نیستی."))
             return
         sect = await session.get(Sect, membership.sect_id)
         result = await challenge_leader(session, user, sect)
@@ -263,7 +264,7 @@ async def cmd_territories(message: Message):
         territories = result.scalars().all()
     
     if not territories:
-        await message.answer("قلمرویی ثبت نشده. با ساخت فرقه، قلمرو اولیه ساخته می‌شود.")
+        await message.answer(tr(message.from_user.id, "قلمرویی ثبت نشده. با ساخت فرقه، قلمرو اولیه ساخته می‌شود."))
         return
     
     text = "🗺️ <b>قلمروها</b>\n\n"
@@ -282,7 +283,7 @@ async def cmd_territories(message: Message):
 async def cmd_conquer(message: Message):
     parts = message.text.split(maxsplit=1)
     if len(parts) < 2:
-        await message.answer("فرمت: /conquer &lt;نام قلمرو&gt;")
+        await message.answer(tr(message.from_user.id, "فرمت: /conquer &lt;نام قلمرو&gt;"))
         return
     name = parts[1].strip()
     
@@ -293,13 +294,13 @@ async def cmd_conquer(message: Message):
         )
         membership = await get_user_sect(session, user.id)
         if not membership:
-            await message.answer("باید عضو فرقه باشی.")
+            await message.answer(tr(message.from_user.id, "باید عضو فرقه باشی."))
             return
         sect = await session.get(Sect, membership.sect_id)
         result = await session.execute(select(Territory).where(Territory.name == name))
         territory = result.scalar_one_or_none()
         if not territory:
-            await message.answer("قلمرو پیدا نشد. /territories")
+            await message.answer(tr(message.from_user.id, "قلمرو پیدا نشد. /territories"))
             return
         msg = await conquer_territory(session, sect, territory)
         await message.answer(msg)
@@ -308,7 +309,7 @@ async def cmd_conquer(message: Message):
 @router.message(Command("transferleader", "واگذاری‌رهبری"))
 async def cmd_transfer(message: Message):
     if not message.reply_to_message:
-        await message.answer("روی پیام عضو فرقه ریپلای کن و /transferleader بزن.")
+        await message.answer(tr(message.from_user.id, "روی پیام عضو فرقه ریپلای کن و /transferleader بزن."))
         return
     from services.sects import transfer_leadership
     async with async_session() as session:
@@ -327,7 +328,7 @@ async def cmd_newsect_buttons(message: Message):
     """ساخت فرقه با دکمه نوع"""
     parts = (message.text or "").split(maxsplit=1)
     if len(parts) < 2:
-        await message.answer("فرمت: /newsect نام‌فرقه\nبعد نوع را با دکمه انتخاب کن.")
+        await message.answer(tr(message.from_user.id, "فرمت: /newsect نام‌فرقه\nبعد نوع را با دکمه انتخاب کن."))
         return
     name = parts[1].strip()[:32]
     from aiogram.utils.keyboard import InlineKeyboardBuilder
@@ -378,11 +379,11 @@ async def cmd_sect_settings(message: Message):
         )
         membership = await get_user_sect(session, user.id)
         if not membership:
-            await message.answer("عضو فرقه نیستی.")
+            await message.answer(tr(message.from_user.id, "عضو فرقه نیستی."))
             return
         sect = await session.get(Sect, membership.sect_id)
         if not sect or sect.leader_id != user.id:
-            await message.answer("فقط رهبر فرقه می‌تواند تنظیمات را عوض کند.")
+            await message.answer(tr(message.from_user.id, "فقط رهبر فرقه می‌تواند تنظیمات را عوض کند."))
             return
         if len(parts) < 3:
             await message.answer(
@@ -402,6 +403,6 @@ async def cmd_sect_settings(message: Message):
             if hasattr(sect, "description"):
                 sect.description = val[:256]
                 await session.commit()
-            await message.answer("توضیح به‌روز شد.")
+            await message.answer(tr(message.from_user.id, "توضیح به‌روز شد."))
         else:
-            await message.answer("کلید: name یا desc")
+            await message.answer(tr(message.from_user.id, "کلید: name یا desc"))

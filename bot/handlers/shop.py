@@ -13,6 +13,7 @@ from services.shop import (
 )
 from database.models_v3 import ShopItem, Building
 from bot.utils.panels import ensure_owner, parse_owner_data
+from services.i18n import tr
 
 router = Router()
 
@@ -25,7 +26,7 @@ async def cmd_buildings(message: Message):
         buildings = await get_buildings(session)
 
     if not buildings:
-        await message.answer("هنوز ساختمونی وجود نداره.")
+        await message.answer(tr(message.from_user.id, "هنوز ساختمونی وجود نداره."))
         return
 
     builder = InlineKeyboardBuilder()
@@ -64,7 +65,7 @@ async def cmd_teahouse(message: Message):
         bid = b.id
 
     if not items:
-        await message.answer("چای‌خانه خالی است. /buildings را یک‌بار بزن و دوباره /teahouse")
+        await message.answer(tr(message.from_user.id, "چای‌خانه خالی است. /buildings را یک‌بار بزن و دوباره /teahouse"))
         return
 
     PER = 8
@@ -88,14 +89,14 @@ async def cmd_teahouse(message: Message):
 async def show_building_items(callback: CallbackQuery):
     owner_id, rest = parse_owner_data(callback.data, "building:")
     if owner_id is None:
-        await callback.answer("داده نامعتبر", show_alert=True)
+        await callback.answer(tr(callback.from_user.id, "داده نامعتبر"), show_alert=True)
         return
     if not await ensure_owner(callback, owner_id, "مغازه"):
         return
     try:
         building_id = int(rest)
     except ValueError:
-        await callback.answer("خطا", show_alert=True)
+        await callback.answer(tr(callback.from_user.id, "خطا"), show_alert=True)
         return
     await _render_building(callback, owner_id, building_id, 0)
 
@@ -123,7 +124,7 @@ async def _render_building(callback: CallbackQuery, owner_id: int, building_id: 
         building = await session.get(Building, building_id)
 
     if not items:
-        await callback.answer("آیتمی در این ساختمان نیست.", show_alert=True)
+        await callback.answer(tr(callback.from_user.id, "آیتمی در این ساختمان نیست."), show_alert=True)
         return
 
     bname = building.name if building else "ساختمان"
@@ -162,7 +163,7 @@ async def shop_back(callback: CallbackQuery):
     try:
         owner_id = int(callback.data.split(":")[1])
     except (IndexError, ValueError):
-        await callback.answer("خطا", show_alert=True)
+        await callback.answer(tr(callback.from_user.id, "خطا"), show_alert=True)
         return
     if not await ensure_owner(callback, owner_id, "مغازه"):
         return
@@ -186,7 +187,7 @@ async def shop_back(callback: CallbackQuery):
 async def process_buy(callback: CallbackQuery):
     owner_id, rest = parse_owner_data(callback.data, "buy:")
     if owner_id is None:
-        await callback.answer("داده نامعتبر", show_alert=True)
+        await callback.answer(tr(callback.from_user.id, "داده نامعتبر"), show_alert=True)
         return
     if not await ensure_owner(callback, owner_id, "مغازه"):
         return
@@ -194,7 +195,7 @@ async def process_buy(callback: CallbackQuery):
     try:
         item_id = int(rest)
     except ValueError:
-        await callback.answer("خطا", show_alert=True)
+        await callback.answer(tr(callback.from_user.id, "خطا"), show_alert=True)
         return
 
     try:
@@ -207,7 +208,7 @@ async def process_buy(callback: CallbackQuery):
             )
             item = await session.get(ShopItem, item_id)
             if not item:
-                await callback.answer("آیتم پیدا نشد.", show_alert=True)
+                await callback.answer(tr(callback.from_user.id, "آیتم پیدا نشد."), show_alert=True)
                 return
             msg = await buy_item(session, user, item)
     except Exception as e:
@@ -245,7 +246,7 @@ async def cmd_inventory(message: Message):
         rows = result.all()
 
     if not rows:
-        await message.answer("کیفت خالیه. از /buildings خرید کن.")
+        await message.answer(tr(message.from_user.id, "کیفت خالیه. از /buildings خرید کن."))
         return
 
     text = "🎒 <b>کیف تو</b>\n\n"
@@ -269,7 +270,7 @@ async def cmd_use_item(message: Message):
     try:
         idx = int(parts[1]) - 1
     except ValueError:
-        await message.answer("شماره نامعتبر")
+        await message.answer(tr(message.from_user.id, "شماره نامعتبر"))
         return
 
     async with async_session() as session:
@@ -287,7 +288,7 @@ async def cmd_use_item(message: Message):
         )
         rows = result.all()
         if idx < 0 or idx >= len(rows):
-            await message.answer("آیتم پیدا نشد. /inventory")
+            await message.answer(tr(message.from_user.id, "آیتم پیدا نشد. /inventory"))
             return
         inv, item = rows[idx]
         effect = item.effect or {}
@@ -356,13 +357,13 @@ async def cmd_drop_item(message: Message):
     """دور انداختن آیتم: /drop شماره [تعداد]"""
     parts = (message.text or "").split()
     if len(parts) < 2:
-        await message.answer("فرمت: /drop شماره\nیا /drop شماره تعداد\nمثال: /drop 1")
+        await message.answer(tr(message.from_user.id, "فرمت: /drop شماره\nیا /drop شماره تعداد\nمثال: /drop 1"))
         return
     try:
         idx = int(parts[1]) - 1
         qty = int(parts[2]) if len(parts) >= 3 else 1
     except ValueError:
-        await message.answer("عدد نامعتبر")
+        await message.answer(tr(message.from_user.id, "عدد نامعتبر"))
         return
 
     async with async_session() as session:
@@ -380,7 +381,7 @@ async def cmd_drop_item(message: Message):
         )
         rows = result.all()
         if idx < 0 or idx >= len(rows):
-            await message.answer("آیتم پیدا نشد. /inventory")
+            await message.answer(tr(message.from_user.id, "آیتم پیدا نشد. /inventory"))
             return
         inv, item = rows[idx]
         if qty < 1 or qty > inv.quantity:
@@ -403,12 +404,12 @@ async def cmd_gift_item(message: Message):
         return
     parts = (message.text or "").split()
     if len(parts) < 2:
-        await message.answer("/gift شماره")
+        await message.answer(tr(message.from_user.id, "/gift شماره"))
         return
     try:
         idx = int(parts[1]) - 1
     except ValueError:
-        await message.answer("شماره نامعتبر")
+        await message.answer(tr(message.from_user.id, "شماره نامعتبر"))
         return
     async with async_session() as session:
         giver = await get_or_create_user(
@@ -418,7 +419,7 @@ async def cmd_gift_item(message: Message):
         tu = message.reply_to_message.from_user
         recv = await get_or_create_user(session, tu.id, tu.full_name, tu.username)
         if giver.id == recv.id:
-            await message.answer("به خودت نه.")
+            await message.answer(tr(message.from_user.id, "به خودت نه."))
             return
         from sqlalchemy import select
         from database.models_v3 import UserInventory
@@ -429,11 +430,11 @@ async def cmd_gift_item(message: Message):
         )
         rows = result.all()
         if idx < 0 or idx >= len(rows):
-            await message.answer("آیتم پیدا نشد.")
+            await message.answer(tr(message.from_user.id, "آیتم پیدا نشد."))
             return
         inv, item = rows[idx]
         if item.item_type == "weapon_unique" or (isinstance(item.effect, dict) and item.effect.get("unique")):
-            await message.answer("آیتم یکتا قابل هدیه نیست.")
+            await message.answer(tr(message.from_user.id, "آیتم یکتا قابل هدیه نیست."))
             return
         # transfer 1
         inv.quantity -= 1
@@ -458,32 +459,66 @@ async def cmd_gift_item(message: Message):
 @router.message(Command("adshop", "فروشگاه‌ادمین"))
 async def cmd_admin_shop(message: Message):
     from bot.config import ADMIN_IDS
+    from sqlalchemy import select
     if message.from_user.id not in ADMIN_IDS:
-        await message.answer("فقط ادمین.")
+        await message.answer(tr(message.from_user.id, "فقط ادمین."))
         return
     async with async_session() as session:
         from services.shop import ensure_default_buildings_and_items, get_buildings, get_items_of_building
         await ensure_default_buildings_and_items(session)
+        # تضمین وجود شمشیر کوروش
+        r = await session.execute(select(ShopItem).where(ShopItem.name == "شمشیر کوروش بزرگ"))
+        if not r.scalar_one_or_none():
+            from services.shop import DEFAULT_ITEMS
+            cyrus = next((x for x in DEFAULT_ITEMS if "کوروش" in x.get("name", "")), None)
+            if cyrus:
+                # پیدا کردن آهنگری
+                buildings0 = await get_buildings(session)
+                forge = next((b for b in buildings0 if "آهن" in (b.name or "") or "آهنگری" in (b.name or "")), buildings0[0] if buildings0 else None)
+                if forge:
+                    session.add(ShopItem(
+                        building_id=forge.id,
+                        name=cyrus["name"],
+                        item_type=cyrus.get("item_type", "weapon_unique"),
+                        description=cyrus.get("description", ""),
+                        price=cyrus.get("price", 0),
+                        effect=cyrus.get("effect") or {},
+                    ))
+                    await session.commit()
         buildings = await get_buildings(session)
-        text = "🛠 <b>فروشگاه ادمین (رایگان)</b>" + chr(10) + "/adget نام‌آیتم" + chr(10) + chr(10)
+        text = "🛠 <b>فروشگاه ادمین (رایگان)</b>" + chr(10)
+        text += "/adget نام‌دقیق‌آیتم" + chr(10) + chr(10)
+        text += "⚔️ <b>خاص / یکتا</b>" + chr(10)
+        text += "• شمشیر کوروش بزرگ" + chr(10)
+        text += "• شمشیر ذوالفقار" + chr(10) + chr(10)
         for b in buildings:
             items = await get_items_of_building(session, b.id)
             text += f"<b>{b.name}</b>" + chr(10)
-            for it in items[:12]:
-                text += f"• {it.name}" + chr(10)
+            # اول یکتاها، بعد بقیه تا سقف
+            uniques = [it for it in items if (it.item_type == "weapon_unique") or ("کوروش" in (it.name or "")) or ("ذوالفقار" in (it.name or ""))]
+            rest = [it for it in items if it not in uniques]
+            shown = uniques + rest
+            for it in shown[:20]:
+                mark = " ⭐" if it in uniques else ""
+                text += f"• {it.name}{mark}" + chr(10)
             text += chr(10)
-        await message.answer(text[:4000])
+        # چند پیام اگر طولانی
+        if len(text) <= 4000:
+            await message.answer(text)
+        else:
+            await message.answer(text[:4000])
+            await message.answer(text[4000:8000] if len(text) > 4000 else "")
 
 
 @router.message(Command("adget", "ادمین‌بگیر"))
 async def cmd_admin_get(message: Message):
     from bot.config import ADMIN_IDS
     if message.from_user.id not in ADMIN_IDS:
-        await message.answer("فقط ادمین.")
+        await message.answer(tr(message.from_user.id, "فقط ادمین."))
         return
     parts = (message.text or "").split(maxsplit=1)
     if len(parts) < 2:
-        await message.answer("/adget نام دقیق آیتم")
+        await message.answer(tr(message.from_user.id, "/adget نام دقیق آیتم"))
         return
     name = parts[1].strip()
     async with async_session() as session:
@@ -496,8 +531,15 @@ async def cmd_admin_get(message: Message):
         r = await session.execute(select(ShopItem).where(ShopItem.name == name))
         item = r.scalar_one_or_none()
         if not item:
-            await message.answer("آیتم پیدا نشد. /adshop")
+            r = await session.execute(select(ShopItem).where(ShopItem.name.contains(name)))
+            item = r.scalars().first()
+        if not item and "کوروش" in name:
+            r = await session.execute(select(ShopItem).where(ShopItem.name.contains("کوروش")))
+            item = r.scalars().first()
+        if not item:
+            await message.answer(tr(message.from_user.id, "آیتم پیدا نشد. /adshop"))
             return
+        name = item.name
         r2 = await session.execute(
             select(UserInventory).where(
                 UserInventory.user_id == user.id,

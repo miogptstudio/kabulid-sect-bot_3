@@ -8,6 +8,7 @@ from database.engine import async_session
 from database.crud import get_or_create_user
 from database.models_v3 import GardenPlot
 from services.economy import get_or_create_wallet, pay_any_currency
+from services.i18n import tr
 
 router = Router()
 
@@ -91,7 +92,7 @@ async def cmd_plant(message: Message):
         if alt in PLANTS:
             name = alt
     if name not in PLANTS:
-        await message.answer("بذر نامعتبر. معمولی | معنوی | روحی")
+        await message.answer(tr(message.from_user.id, "بذر نامعتبر. معمولی | معنوی | روحی"))
         return
     info = PLANTS[name]
     now = datetime.utcnow()
@@ -166,7 +167,7 @@ async def cmd_harvest(message: Message):
     if gained:
         await message.answer(f"🌾 برداشت شد! +{gained} سکه")
     else:
-        await message.answer("چیزی آماده نیست.")
+        await message.answer(tr(message.from_user.id, "چیزی آماده نیست."))
 
 
 @router.message(Command("buyland", "خرید‌زمین", "خریدزمین"))

@@ -9,6 +9,7 @@ from database.engine import async_session
 from database.crud import get_or_create_user
 from database.models import Mission, UserMission, User
 from services.death import erase_existence
+from services.i18n import tr
 
 router = Router()
 
@@ -214,7 +215,7 @@ async def take_mission(callback: CallbackQuery):
                 await callback.message.answer(final)
             except Exception:
                 pass
-            await callback.answer("اکانت پاک شد.", show_alert=True)
+            await callback.answer(tr(callback.from_user.id, "اکانت پاک شد."), show_alert=True)
             return
 
         # هر مأموریت فقط یک‌بار در روز
@@ -229,7 +230,7 @@ async def take_mission(callback: CallbackQuery):
             )
         )
         if done_today.scalar_one_or_none():
-            await callback.answer("این مأموریت را امروز تمام کردی. فردا.", show_alert=True)
+            await callback.answer(tr(callback.from_user.id, "این مأموریت را امروز تمام کردی. فردا."), show_alert=True)
             return
 
         existing = await session.execute(
@@ -240,12 +241,12 @@ async def take_mission(callback: CallbackQuery):
             )
         )
         if existing.scalar_one_or_none():
-            await callback.answer("این مأموریت را قبلاً گرفتی!", show_alert=True)
+            await callback.answer(tr(callback.from_user.id, "این مأموریت را قبلاً گرفتی!"), show_alert=True)
             return
 
         mission = await session.get(Mission, mission_id)
         if not mission or not mission.is_active:
-            await callback.answer("مأموریت پیدا نشد.", show_alert=True)
+            await callback.answer(tr(callback.from_user.id, "مأموریت پیدا نشد."), show_alert=True)
             return
 
         user_mission = UserMission(user_id=user.id, mission_id=mission_id)
@@ -278,7 +279,7 @@ async def cmd_complete_mission(message: Message):
         )
         um = result.scalars().first()
         if not um:
-            await message.answer("مأموریت فعالی نداری. /missions")
+            await message.answer(tr(message.from_user.id, "مأموریت فعالی نداری. /missions"))
             return
         mission = await session.get(Mission, um.mission_id)
         um.progress = mission.target_value if mission else 1

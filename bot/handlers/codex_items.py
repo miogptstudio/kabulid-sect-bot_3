@@ -1,3 +1,4 @@
+from services.i18n import get_lang, t as _t, tr
 from aiogram import Router
 from aiogram.types import Message
 from aiogram.filters import Command
@@ -33,14 +34,15 @@ async def cmd_item_codex(message: Message):
         buildings = {b.id: b for b in (await session.execute(select(Building))).scalars().all()}
 
     if not items:
-        await message.answer("آیتمی نیست. /buildings")
+        await message.answer(tr(message.from_user.id, "آیتمی نیست. /buildings"))
         return
 
     by_type = {}
     for it in items:
         by_type.setdefault(it.item_type or "other", []).append(it)
 
-    chunks = ["📚 <b>دانشنامه آیتم‌ها</b>" + chr(10) + "چطور به دست می‌آید:" + chr(10)]
+    lang = get_lang(message.from_user.id)
+    chunks = [f"<b>{_t('item_codex_title', lang)}</b>" + chr(10)]
     for itype, lst in sorted(by_type.items()):
         how = HOW_TO.get(itype, "فروشگاه /buildings یا مأموریت")
         line = f"{chr(10)}<b>▸ {itype}</b> — {how}" + chr(10)
@@ -67,7 +69,7 @@ async def cmd_item_codex(message: Message):
 @router.message(Command("buildingscodex", "ساختمان‌دانشنامه"))
 async def cmd_building_codex(message: Message):
     await message.answer(
-        "🏛 <b>ساختمان دانشنامه</b>" + chr(10)
+        f"<b>{_t('building_codex_title', get_lang(message.from_user.id))}</b>" + chr(10)
         + "/itemlist — همه آیتم‌ها و روش تهیه" + chr(10)
         + "/buildings — خرید از ساختمان‌ها" + chr(10)
         + "/craft — ساخت معجون و طلسم" + chr(10)

@@ -7,7 +7,7 @@ from database.models_v3 import DualCultivation
 from services.cultivation import get_or_create_cultivation, add_energy, get_active_technique
 
 # شانس بچه‌دار شدن در تذهیب دوگانه
-CHILD_CHANCE = 0.000009  # ۰/۰۰۰۰۰۹
+CHILD_CHANCE = 0.10  # ۱۰٪
 
 
 async def request_dual(session: AsyncSession, user1: User, user2: User) -> DualCultivation | str:

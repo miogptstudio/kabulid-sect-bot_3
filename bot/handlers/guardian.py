@@ -15,6 +15,7 @@ from bot.config import XP_PER_GUARDIAN_WIN, GUARDIAN_TIMEOUT_SEC, GUARDIAN_COOLD
 from datetime import datetime, timedelta
 from services.sects import add_contribution
 from services.economy import get_or_create_wallet
+from services.i18n import tr
 
 router = Router()
 
@@ -114,7 +115,7 @@ async def _timeout_solo(bot, chat_id: int, user_id: int, message_id: int):
 async def cmd_guardian(message: Message):
     uid = message.from_user.id
     if uid in _active:
-        await message.answer("اول سوال فعلی را جواب بده یا صبر کن تا تمام شود.")
+        await message.answer(tr(message.from_user.id, "اول سوال فعلی را جواب بده یا صبر کن تا تمام شود."))
         return
     last = _last_guardian.get(uid)
     if last and (datetime.utcnow() - last).total_seconds() < GUARDIAN_COOLDOWN_SEC:
@@ -150,7 +151,7 @@ async def process_guardian_answer(callback: CallbackQuery):
     parts = callback.data.split(":")
     # gans:uid:qid:selected:correct
     if len(parts) < 5:
-        await callback.answer("نامعتبر", show_alert=True)
+        await callback.answer(tr(callback.from_user.id, "نامعتبر"), show_alert=True)
         return
     owner_id = int(parts[1])
     if callback.from_user.id != owner_id:
@@ -194,11 +195,11 @@ async def process_guardian_answer(callback: CallbackQuery):
 async def cmd_gduel(message: Message):
     """دوئل نگهبان دو نفره — ریپلای"""
     if not message.reply_to_message:
-        await message.answer("روی پیام حریف ریپلای کن و /gduel بزن.\nهر کس زودتر جواب درست بدهد می‌برد.")
+        await message.answer(tr(message.from_user.id, "روی پیام حریف ریپلای کن و /gduel بزن.\nهر کس زودتر جواب درست بدهد می‌برد."))
         return
     u2 = message.reply_to_message.from_user
     if u2.id == message.from_user.id:
-        await message.answer("با خودت نه!")
+        await message.answer(tr(message.from_user.id, "با خودت نه!"))
         return
 
     q = random.choice(SAMPLE_QUESTIONS)
@@ -251,17 +252,17 @@ async def gduel_ans(callback: CallbackQuery):
 
     g = _gduel.get(key)
     if not g:
-        await callback.answer("این دوئل تمام شده.", show_alert=True)
+        await callback.answer(tr(callback.from_user.id, "این دوئل تمام شده."), show_alert=True)
         return
     if callback.from_user.id not in g["players"]:
         await callback.answer()
         return
     if g["done"]:
-        await callback.answer("تمام شده", show_alert=True)
+        await callback.answer(tr(callback.from_user.id, "تمام شده"), show_alert=True)
         return
 
     if selected != correct:
-        await callback.answer("غلط!", show_alert=True)
+        await callback.answer(tr(callback.from_user.id, "غلط!"), show_alert=True)
         return
 
     g["done"] = True

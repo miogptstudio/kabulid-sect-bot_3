@@ -6,6 +6,7 @@ from sqlalchemy import select
 from database.engine import async_session
 from database.models import User
 from services.ranking import get_rank_index
+from services.i18n import tr
 
 router = Router()
 
@@ -20,7 +21,7 @@ async def cmd_ranking(message: Message):
         users = result.scalars().all()
 
     if not users:
-        await message.answer("هنوز کسی ثبت‌نام نکرده.")
+        await message.answer(tr(message.from_user.id, "هنوز کسی ثبت‌نام نکرده."))
         return
 
     # مرتب‌سازی بر اساس رتبه و XP و برد

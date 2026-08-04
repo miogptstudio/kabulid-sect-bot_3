@@ -128,12 +128,12 @@ async def cmd_upgrade_palace(message: Message):
 async def cmd_petinfo(message: Message):
     parts = (message.text or "").split()
     if len(parts) < 2:
-        await message.answer("فرمت: /petinfo شماره")
+        await message.answer(tr(message.from_user.id, "فرمت: /petinfo شماره"))
         return
     try:
         idx = int(parts[1]) - 1
     except ValueError:
-        await message.answer("شماره نامعتبر")
+        await message.answer(tr(message.from_user.id, "شماره نامعتبر"))
         return
     async with async_session() as session:
         user = await get_or_create_user(
@@ -142,7 +142,7 @@ async def cmd_petinfo(message: Message):
         )
         pets = await get_user_pets(session, user.id)
         if idx < 0 or idx >= len(pets):
-            await message.answer("حیوان پیدا نشد. /pets")
+            await message.answer(tr(message.from_user.id, "حیوان پیدا نشد. /pets"))
             return
         p = pets[idx]
     await message.answer(
@@ -165,7 +165,7 @@ async def cmd_hunt(message: Message):
             message.from_user.full_name, message.from_user.username
         )
         if user.is_dead:
-            await message.answer("مرده‌ای. /afterdeath")
+            await message.answer(tr(message.from_user.id, "مرده‌ای. /afterdeath"))
             return
 
         last = getattr(user, "last_hunt_at", None)
@@ -193,7 +193,7 @@ async def cmd_hunt(message: Message):
             user.is_dead = True
             user.world = "زیرین"
             await session.commit()
-            await message.answer("💀 در شکار کشته شدی. /afterdeath")
+            await message.answer(tr(message.from_user.id, "💀 در شکار کشته شدی. /afterdeath"))
             return
         if roll < risk:
             dmg = random.randint(5, 15)
@@ -246,7 +246,7 @@ async def cb_tame(callback: CallbackQuery):
         )
         pet = await session.get(Pet, pet_id)
         if not pet:
-            await callback.answer("دیگر اینجا نیست.", show_alert=True)
+            await callback.answer(tr(callback.from_user.id, "دیگر اینجا نیست."), show_alert=True)
             return
         msg = await tame_pet(session, user, pet)
     try:
@@ -272,7 +272,7 @@ async def cb_release(callback: CallbackQuery):
             await session.delete(pet)
             await session.commit()
     try:
-        await callback.message.edit_text("حیوان رها شد.")
+        await callback.message.edit_text(tr(callback.from_user.id, "حیوان رها شد."))
     except Exception:
         pass
     await callback.answer()
@@ -293,12 +293,12 @@ async def cmd_buy_pet(message: Message):
 async def cmd_feed_pet(message: Message):
     parts = (message.text or "").split()
     if len(parts) < 2:
-        await message.answer("فرمت: /feedpet شماره")
+        await message.answer(tr(message.from_user.id, "فرمت: /feedpet شماره"))
         return
     try:
         idx = int(parts[1]) - 1
     except ValueError:
-        await message.answer("شماره نامعتبر")
+        await message.answer(tr(message.from_user.id, "شماره نامعتبر"))
         return
     async with async_session() as session:
         user = await get_or_create_user(
@@ -307,7 +307,7 @@ async def cmd_feed_pet(message: Message):
         )
         pets = await get_user_pets(session, user.id)
         if idx < 0 or idx >= len(pets):
-            await message.answer("حیوان پیدا نشد. /pets")
+            await message.answer(tr(message.from_user.id, "حیوان پیدا نشد. /pets"))
             return
         msg = await feed_pet(session, pets[idx], cost=20)
     await message.answer(msg)
@@ -317,12 +317,12 @@ async def cmd_feed_pet(message: Message):
 async def cmd_train_pet(message: Message):
     parts = (message.text or "").split()
     if len(parts) < 2:
-        await message.answer("فرمت: /trainpet شماره")
+        await message.answer(tr(message.from_user.id, "فرمت: /trainpet شماره"))
         return
     try:
         idx = int(parts[1]) - 1
     except ValueError:
-        await message.answer("شماره نامعتبر")
+        await message.answer(tr(message.from_user.id, "شماره نامعتبر"))
         return
     async with async_session() as session:
         user = await get_or_create_user(
@@ -331,7 +331,7 @@ async def cmd_train_pet(message: Message):
         )
         pets = await get_user_pets(session, user.id)
         if idx < 0 or idx >= len(pets):
-            await message.answer("حیوان پیدا نشد. /pets")
+            await message.answer(tr(message.from_user.id, "حیوان پیدا نشد. /pets"))
             return
         msg = await train_pet(session, pets[idx], cost=50)
     await message.answer(msg)
@@ -341,16 +341,16 @@ async def cmd_train_pet(message: Message):
 async def cmd_rename_pet(message: Message):
     parts = (message.text or "").split(maxsplit=2)
     if len(parts) < 3:
-        await message.answer("فرمت: /renamepet شماره نام‌جدید")
+        await message.answer(tr(message.from_user.id, "فرمت: /renamepet شماره نام‌جدید"))
         return
     try:
         idx = int(parts[1]) - 1
     except ValueError:
-        await message.answer("شماره نامعتبر")
+        await message.answer(tr(message.from_user.id, "شماره نامعتبر"))
         return
     new_name = parts[2].strip()[:32]
     if not new_name:
-        await message.answer("نام خالی است.")
+        await message.answer(tr(message.from_user.id, "نام خالی است."))
         return
     async with async_session() as session:
         user = await get_or_create_user(
@@ -359,7 +359,7 @@ async def cmd_rename_pet(message: Message):
         )
         pets = await get_user_pets(session, user.id)
         if idx < 0 or idx >= len(pets):
-            await message.answer("حیوان پیدا نشد.")
+            await message.answer(tr(message.from_user.id, "حیوان پیدا نشد."))
             return
         pets[idx].name = new_name
         await session.commit()
@@ -370,12 +370,12 @@ async def cmd_rename_pet(message: Message):
 async def cmd_sell_pet(message: Message):
     parts = (message.text or "").split()
     if len(parts) < 2:
-        await message.answer("فرمت: /sellpet شماره")
+        await message.answer(tr(message.from_user.id, "فرمت: /sellpet شماره"))
         return
     try:
         idx = int(parts[1]) - 1
     except ValueError:
-        await message.answer("شماره نامعتبر")
+        await message.answer(tr(message.from_user.id, "شماره نامعتبر"))
         return
     async with async_session() as session:
         user = await get_or_create_user(
@@ -384,7 +384,7 @@ async def cmd_sell_pet(message: Message):
         )
         pets = await get_user_pets(session, user.id)
         if idx < 0 or idx >= len(pets):
-            await message.answer("حیوان پیدا نشد.")
+            await message.answer(tr(message.from_user.id, "حیوان پیدا نشد."))
             return
         pet = pets[idx]
         price = 50 + (pet.attack or 0) * 5 + (pet.defense or 0) * 3
@@ -399,16 +399,16 @@ async def cmd_sell_pet(message: Message):
 @router.message(Command("giftpet", "هدیه‌حیوان", "هدیهپت"))
 async def cmd_gift_pet(message: Message):
     if not message.reply_to_message:
-        await message.answer("روی پیام گیرنده ریپلای کن:\n/giftpet شماره")
+        await message.answer(tr(message.from_user.id, "روی پیام گیرنده ریپلای کن:\n/giftpet شماره"))
         return
     parts = (message.text or "").split()
     if len(parts) < 2:
-        await message.answer("فرمت: /giftpet شماره")
+        await message.answer(tr(message.from_user.id, "فرمت: /giftpet شماره"))
         return
     try:
         idx = int(parts[1]) - 1
     except ValueError:
-        await message.answer("شماره نامعتبر")
+        await message.answer(tr(message.from_user.id, "شماره نامعتبر"))
         return
     async with async_session() as session:
         user = await get_or_create_user(
@@ -419,7 +419,7 @@ async def cmd_gift_pet(message: Message):
         target = await get_or_create_user(session, t.id, t.full_name, t.username)
         pets = await get_user_pets(session, user.id)
         if idx < 0 or idx >= len(pets):
-            await message.answer("حیوان پیدا نشد.")
+            await message.answer(tr(message.from_user.id, "حیوان پیدا نشد."))
             return
         # capacity of target
         from services.pets import can_own_more
@@ -438,12 +438,12 @@ async def cmd_gift_pet(message: Message):
 async def cmd_release_pet(message: Message):
     parts = (message.text or "").split()
     if len(parts) < 2:
-        await message.answer("فرمت: /releasepet شماره")
+        await message.answer(tr(message.from_user.id, "فرمت: /releasepet شماره"))
         return
     try:
         idx = int(parts[1]) - 1
     except ValueError:
-        await message.answer("شماره نامعتبر")
+        await message.answer(tr(message.from_user.id, "شماره نامعتبر"))
         return
     async with async_session() as session:
         user = await get_or_create_user(
@@ -452,7 +452,7 @@ async def cmd_release_pet(message: Message):
         )
         pets = await get_user_pets(session, user.id)
         if idx < 0 or idx >= len(pets):
-            await message.answer("حیوان پیدا نشد.")
+            await message.answer(tr(message.from_user.id, "حیوان پیدا نشد."))
             return
         pet = pets[idx]
         name = pet.name
@@ -509,7 +509,7 @@ async def cmd_daily_coin(message: Message):
         if last is not None:
             try:
                 if last.date() == today:
-                    await message.answer("امروز سکه روزانه را گرفتی.")
+                    await message.answer(tr(message.from_user.id, "امروز سکه روزانه را گرفتی."))
                     return
             except Exception:
                 pass
@@ -524,7 +524,7 @@ async def cmd_daily_coin(message: Message):
 async def cmd_exchange_up(message: Message):
     parts = (message.text or "").split()
     if len(parts) < 2:
-        await message.answer("فرمت: /exchangeup heavenly | celestial | god [تعداد]")
+        await message.answer(tr(message.from_user.id, "فرمت: /exchangeup heavenly | celestial | god [تعداد]"))
         return
     kind = parts[1]
     try:

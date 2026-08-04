@@ -14,6 +14,7 @@ from services.combat_blood import (
 )
 from services.power import calc_power
 from services.economy import get_or_create_wallet
+from services.i18n import tr
 
 router = Router()
 
@@ -58,10 +59,10 @@ async def cmd_equip(message: Message):
         try:
             idx = int(parts[1]) - 1
         except ValueError:
-            await message.answer("شماره نامعتبر")
+            await message.answer(tr(message.from_user.id, "شماره نامعتبر"))
             return
         if idx < 0 or idx >= len(rows):
-            await message.answer("پیدا نشد")
+            await message.answer(tr(message.from_user.id, "پیدا نشد"))
             return
         inv, item = rows[idx]
         user.equipped_weapon_id = item.id
@@ -81,7 +82,7 @@ async def cmd_unequip(message: Message):
             message.from_user.full_name, message.from_user.username
         )
         if not user.equipped_weapon_id:
-            await message.answer("سلاحی مجهز نیست. /equip برای دیدن لیست.")
+            await message.answer(tr(message.from_user.id, "سلاحی مجهز نیست. /equip برای دیدن لیست."))
             return
         from sqlalchemy import select
         from database.models_v3 import ShopItem
@@ -130,7 +131,7 @@ async def cmd_heal(message: Message):
                 inv, pill = i, it
                 break
         if not pill:
-            await message.answer("قرص سلامتی/پادزهر در کیف نداری. از /buildings بخر.")
+            await message.answer(tr(message.from_user.id, "قرص سلامتی/پادزهر در کیف نداری. از /buildings بخر."))
             return
         inv.quantity -= 1
         if inv.quantity <= 0:
@@ -168,7 +169,7 @@ async def cmd_blood(message: Message):
 @router.message(Command("deathduel", "دوئل‌مرگ"))
 async def cmd_death_duel(message: Message):
     if not message.reply_to_message:
-        await message.answer("ریپلای + /deathduel — تا مرگ یکی ادامه دارد.")
+        await message.answer(tr(message.from_user.id, "ریپلای + /deathduel — تا مرگ یکی ادامه دارد."))
         return
     async with async_session() as session:
         a = await get_or_create_user(
@@ -177,11 +178,11 @@ async def cmd_death_duel(message: Message):
         )
         ou = message.reply_to_message.from_user
         if ou.id == message.from_user.id:
-            await message.answer("با خودت نه.")
+            await message.answer(tr(message.from_user.id, "با خودت نه."))
             return
         b = await get_or_create_user(session, ou.id, ou.full_name, ou.username)
         if a.is_dead or b.is_dead:
-            await message.answer("یکی مرده است.")
+            await message.answer(tr(message.from_user.id, "یکی مرده است."))
             return
         pa = await calc_power(session, a)
         pb = await calc_power(session, b)
@@ -254,5 +255,5 @@ async def cb_dduel_rej(callback: CallbackQuery):
             if me.id != int(parts[2]):
                 await callback.answer()
                 return
-    await callback.message.edit_text("دوئل مرگ رد شد.")
+    await callback.message.edit_text(tr(callback.from_user.id, "دوئل مرگ رد شد."))
     await callback.answer()

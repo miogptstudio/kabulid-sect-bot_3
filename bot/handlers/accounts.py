@@ -7,6 +7,7 @@ from aiogram.fsm.state import State, StatesGroup
 from database.engine import async_session
 from database.crud import get_or_create_user
 from services.accounts import create_account, login_account, get_user_accounts
+from services.i18n import tr
 
 router = Router()
 
@@ -42,14 +43,14 @@ async def cmd_accounts(message: Message):
 
 @router.message(Command("createaccount"))
 async def cmd_create_account(message: Message, state: FSMContext):
-    await message.answer("نام حساب جدید را بنویس:")
+    await message.answer(tr(message.from_user.id, "نام حساب جدید را بنویس:"))
     await state.set_state(AccountStates.waiting_name)
 
 
 @router.message(AccountStates.waiting_name)
 async def process_account_name(message: Message, state: FSMContext):
     await state.update_data(account_name=message.text.strip())
-    await message.answer("رمز عبور حساب را بنویس:")
+    await message.answer(tr(message.from_user.id, "رمز عبور حساب را بنویس:"))
     await state.set_state(AccountStates.waiting_password)
 
 
@@ -78,14 +79,14 @@ async def process_account_password(message: Message, state: FSMContext):
 
 @router.message(Command("login"))
 async def cmd_login(message: Message, state: FSMContext):
-    await message.answer("نام حساب را بنویس:")
+    await message.answer(tr(message.from_user.id, "نام حساب را بنویس:"))
     await state.set_state(AccountStates.waiting_login_name)
 
 
 @router.message(AccountStates.waiting_login_name)
 async def process_login_name(message: Message, state: FSMContext):
     await state.update_data(login_name=message.text.strip())
-    await message.answer("رمز عبور را بنویس:")
+    await message.answer(tr(message.from_user.id, "رمز عبور را بنویس:"))
     await state.set_state(AccountStates.waiting_login_password)
 
 
@@ -101,6 +102,6 @@ async def process_login_password(message: Message, state: FSMContext):
     if acc:
         await message.answer(f"✅ با موفقیت وارد حساب «{acc.account_name}» شدی.")
     else:
-        await message.answer("❌ نام حساب یا رمز اشتباه است.")
+        await message.answer(tr(message.from_user.id, "❌ نام حساب یا رمز اشتباه است."))
     
     await state.clear()

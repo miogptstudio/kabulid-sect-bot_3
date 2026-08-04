@@ -8,6 +8,7 @@ from services.power import calc_power
 from services.cities import get_city
 from services.economy import get_or_create_wallet
 from services.cultivation import get_or_create_cultivation
+from services.i18n import tr
 
 router = Router()
 
@@ -48,6 +49,7 @@ async def cmd_profile(message: Message):
             f"🏙️ شهر: {city['name']} ({city.get('country', '')})\n"
             f"🌌 دنیا: {world}\n"
             f"⚔️ قدرت: <b>{pw['total']}</b>\n"
+            f"👻 روح رزمی: +{pw.get('spirit', 0)}\n"        f"👻 روح رزمی: +{pw.get('spirit', 0)}\n"
             f"⏳ عمر: <b>{lifespan}%</b>\n"
             f"🧬 باکرگی: {virgin}\n"
             f"وضعیت: {status}\n"

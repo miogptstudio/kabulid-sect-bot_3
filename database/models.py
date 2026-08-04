@@ -43,6 +43,7 @@ class User(Base):
     lifespan: Mapped[int] = mapped_column(Integer, default=100)  # عمر ۰-۱۰۰
     is_spirit_raiser: Mapped[bool] = mapped_column(Boolean, default=False)  # پرورش‌دهنده روح بعد از مرگ
     race: Mapped[str] = mapped_column(String(32), default="انسان")  # نژاد
+    language: Mapped[str] = mapped_column(String(8), default="fa")  # fa en ar zh ru tr
     garden_slots: Mapped[int] = mapped_column(Integer, default=10)  # ظرفیت زمین
     last_plant_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     pet_slots: Mapped[int] = mapped_column(Integer, default=10)  # ظرفیت کاخ رام‌شدگان

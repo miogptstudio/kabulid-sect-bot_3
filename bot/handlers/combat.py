@@ -6,7 +6,9 @@ from aiogram.filters import Command
 from database.engine import async_session
 from database.crud import get_or_create_user
 from services.power import calc_power, win_chance
+# martial spirit bonus applied inside calc_power
 from services.combat_blood import apply_damage, apply_poison, check_poison_death, has_cyrus
+from services.i18n import tr
 
 router = Router()
 
@@ -21,7 +23,7 @@ async def cmd_kill(message: Message):
         )
         return
     if message.reply_to_message.from_user.id == message.from_user.id:
-        await message.answer("خودت را نه.")
+        await message.answer(tr(message.from_user.id, "خودت را نه."))
         return
 
     async with async_session() as session:
@@ -32,15 +34,19 @@ async def cmd_kill(message: Message):
         t = message.reply_to_message.from_user
         victim = await get_or_create_user(session, t.id, t.full_name, t.username)
         if attacker.is_dead:
-            await message.answer("تو مرده‌ای.")
+            await message.answer(tr(message.from_user.id, "تو مرده‌ای."))
             return
         from services.prison import check_prison_block, record_kill, put_in_prison, KILL_LIMIT_PER_DAY
         block = await check_prison_block(session, attacker)
         if block:
             await message.answer(block)
             return
+        from services.cultivation import is_immortal_race
+        if is_immortal_race(getattr(victim, "race", None)):
+            await message.answer(tr(message.from_user.id, "نژاد خدایان نامیراست — نمی‌میرد."))
+            return
         if victim.is_dead:
-            await message.answer("طرف مرده است.")
+            await message.answer(tr(message.from_user.id, "طرف مرده است."))
             return
         msg_p = await check_poison_death(session, attacker)
         if msg_p:

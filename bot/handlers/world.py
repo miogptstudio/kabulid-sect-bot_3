@@ -13,7 +13,9 @@ from services.cities import (
 from bot.config import ADMIN_IDS
 
 router = Router()
-WORLDS = ["فانی", "بهشتی", "زیرین"]
+from services.cities import ALL_WORLDS, WORLD_DEFAULT_CITY
+from services.i18n import tr
+WORLDS = list(ALL_WORLDS)
 
 
 @router.message(Command("power", "قدرت"))
@@ -83,7 +85,7 @@ async def cmd_travel(message: Message):
                 city_id = i
                 break
     if not city_id:
-        await message.answer("شهر پیدا نشد. /cities")
+        await message.answer(tr(message.from_user.id, "شهر پیدا نشد. /cities"))
         return
     city = get_city(city_id)
     async with async_session() as session:
@@ -122,19 +124,21 @@ async def cmd_worlds(message: Message):
             session, message.from_user.id,
             message.from_user.full_name, message.from_user.username
         )
-        w = getattr(user, "world", None) or "فانی"
-    await message.answer(
-        f"🌌 <b>دنیاها</b>\n\nفعلی: <b>{w}</b>\n\n"
-        f"• فانی — عادی\n• بهشتی — امن‌تر\n• زیرین — خطرناک‌تر\n\n"
-        f"/goworld فانی|بهشتی|زیرین"
-    )
+        cur = getattr(user, "world", None) or "فانی"
+    lines = ["🌌 <b>دنیاها</b>", "", f"فعلی: <b>{cur}</b>", ""]
+    for name in WORLDS:
+        lines.append("• " + name)
+    lines += ["", "/goworld نام‌دنیا", "/cities — شهرهای دنیای فعلی", "/cave — غار شهر"]
+    await message.answer(chr(10).join(lines))
 
 
 @router.message(Command("goworld", "رفتن‌دنیا"))
 async def cmd_go_world(message: Message):
     parts = (message.text or "").split(maxsplit=1)
     if len(parts) < 2 or parts[1].strip() not in WORLDS:
-        await message.answer("فرمت: /goworld فانی|بهشتی|زیرین")
+        await message.answer(
+            "فرمت: /goworld نام‌دنیا" + chr(10) + " | ".join(WORLDS)
+        )
         return
     world = parts[1].strip()
     async with async_session() as session:
@@ -143,17 +147,11 @@ async def cmd_go_world(message: Message):
             message.from_user.full_name, message.from_user.username
         )
         user.world = world
-        # شهر پیش‌فرض هر دنیا
-        if world == "بهشتی":
-            user.city = "heaven_1"
-        elif world == "زیرین":
-            user.city = "under_1"
-        elif not user.city or str(user.city).startswith(("heaven_", "under_")):
-            user.city = "tehran"
+        user.city = WORLD_DEFAULT_CITY.get(world, "tehran")
         await session.commit()
     await message.answer(
-        f"🌌 وارد دنیای <b>{world}</b> شدی.\n"
-        f"/cities — شهرها | /explorecity — کاوش | /travel نام‌شهر"
+        f"🌌 وارد دنیای <b>{world}</b> شدی." + chr(10)
+        + "/cities — شهرها | /cave — غار | /travel نام‌شهر"
     )
 
 
@@ -164,7 +162,7 @@ async def cmd_mate_help(message: Message):
         "۱) /gender (دائمی)\n"
         "۲) ریپلای + /dual\n"
         "۳) ریپلای + /marry\n"
-        "۴) /wives · /divorce"
+        "۴) /wives · /divorce\n\n""با خدمتکار:\n""/dualservant شماره · /childservant شماره · /mychildren"
     )
 
 
@@ -187,11 +185,11 @@ async def cmd_dimension(message: Message):
 async def cmd_set_dimension(message: Message):
     from services.dimension import set_group_dimension, DIM_TYPES
     if message.from_user.id not in ADMIN_IDS:
-        await message.answer("فقط سازنده ربات.")
+        await message.answer(tr(message.from_user.id, "فقط سازنده ربات."))
         return
     parts = (message.text or "").split(maxsplit=1)
     if len(parts) < 2 or parts[1].strip() not in DIM_TYPES:
-        await message.answer("فرمت: /setdimension فانی|بهشتی|زیرین")
+        await message.answer(tr(message.from_user.id, "فرمت: /setdimension فانی|بهشتی|زیرین"))
         return
     async with async_session() as session:
         g = await set_group_dimension(session, message.chat.id, parts[1].strip())
