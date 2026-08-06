@@ -10,7 +10,7 @@ from database.crud import get_or_create_user, get_user_by_telegram_id
 from database.models_v3 import CultivationTechnique, UserTechnique
 from services.i18n import t_user, tr
 from services.cultivation import (
-    get_or_create_cultivation, add_energy,
+    get_or_create_cultivation, add_energy, energy_needed_for_stage,
     ensure_default_techniques, get_active_technique,
     learn_technique, set_active_technique
 )
@@ -256,28 +256,35 @@ async def do_gather(message: Message, amount: int = 5000):
             need2 = energy_needed_for_stage(result.get("stage") or 1, result.get("realm"), result.get("root"))
         except Exception:
             need2 = result.get("need") or 0
-        # refresh cult for accurate numbers
-        cult2 = await get_or_create_cultivation(session, user.id)
-        need2 = energy_needed_for_stage(cult2.stage or 1, cult2.realm, cult2.spiritual_root)
-        cur2 = int(cult2.energy or 0)
-        stage2 = cult2.stage or 1
-        realm2 = cult2.realm or "?"
-        root2 = cult2.spiritual_root or "بدون ریشه"
-        tech2 = await get_active_technique(session, user.id)
-        tech_n = tech2.name if tech2 else "—"
-        absorbed = result.get("gained") or amount
-        text = (
-            f"🌀 <b>تزکیه / جمع چی</b>" + chr(10)
-            + f"چی جذب‌شده این بار: <b>+{absorbed}</b>" + chr(10) + chr(10)
-            + f"ریشه: <b>{root2}</b>" + chr(10)
-            + f"قلمرو: <b>{realm2}</b> | مرحله: {stage2}" + chr(10)
-            + f"انرژی: <b>{cur2}</b> / <b>{need2}</b>" + chr(10)
-            + f"مانده تا ارتقا: <b>{max(0, int(need2) - int(cur2))}</b>" + chr(10)
-            + f"تکنیک فعال: {tech_n}"
-        )
-        if result.get("messages"):
-            text += chr(10) + chr(10) + chr(10).join(result["messages"])
-        await message.answer(text)
+        try:
+            cult2 = await get_or_create_cultivation(session, user.id)
+            need2 = energy_needed_for_stage(cult2.stage or 1, cult2.realm, cult2.spiritual_root)
+            cur2 = int(cult2.energy or 0)
+            stage2 = cult2.stage or 1
+            realm2 = cult2.realm or "?"
+            root2 = cult2.spiritual_root or "بدون ریشه"
+            tech2 = await get_active_technique(session, user.id)
+            tech_n = tech2.name if tech2 else "—"
+            absorbed = result.get("gained") or amount
+            text = (
+                "🌀 <b>تزکیه / جمع چی</b>" + chr(10)
+                + f"چی جذب‌شده این بار: <b>+{absorbed}</b>" + chr(10) + chr(10)
+                + f"ریشه: <b>{root2}</b>" + chr(10)
+                + f"قلمرو: <b>{realm2}</b> | مرحله: {stage2}" + chr(10)
+                + f"انرژی: <b>{cur2}</b> / <b>{need2}</b>" + chr(10)
+                + f"مانده تا ارتقا: <b>{max(0, int(need2) - int(cur2))}</b>" + chr(10)
+                + f"تکنیک فعال: {tech_n}"
+            )
+            if result.get("messages"):
+                text += chr(10) + chr(10) + chr(10).join(result["messages"])
+            await message.answer(text)
+        except Exception as e:
+            absorbed = result.get("gained") or amount
+            await message.answer(
+                f"🌀 تذهیب انجام شد (+{absorbed})" + chr(10)
+                + f"انرژی: {result.get('energy', '?')}" + chr(10)
+                + f"جزئیات: {type(e).__name__}"
+            )
 
 
 # --- خودارضایی / تمرین انفرادی + یانگ/یین ---
