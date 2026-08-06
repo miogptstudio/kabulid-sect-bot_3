@@ -30,8 +30,8 @@ SECTIONS = {
         " /statuscard | /کارت — کارت وضعیت\n"
         " /luckdice | /تاس‌شانس — شانس روزانه\n"
         " /events | /رویدادها — رویدادهای فعال\n\n"
-        "ترتیب پیشنهادی: /start → /gender → /race → /cultbuilding | /upgradecultbuilding — ساختمان تزکیه
-/gather → /learntech"
+        "ترتیب پیشنهادی: /start → /gender → /race → /gather → /learntech\n"
+        "ساختمان تزکیه: /cultbuilding | /upgradecultbuilding"
     ),
     "cult": (
         "🧘 تذهیب و بدن",
@@ -108,8 +108,8 @@ SECTIONS = {
         " /divorce | /طلاق\n"
         " /propose | /نامزدی\n"
         " /servants | /خدمتکار — لیست خدمتکار\n"
-        " /calamitystatus | /protectsect — مصیبت فرقه هر ۱۰س
-/sect | /فرقه — منوی فرقه\n"
+        " /calamitystatus | /protectsect — مصیبت فرقه هر ۱۰ ساعت\n"
+        " /sect | /فرقه — منوی فرقه\n"
         " /createsect | /joinsect | /leavesect\n"
         " /transferleader | /واگذاری‌رهبری\n"
         " /createtribe | /tribes | /jointribe | /setchief — قبیله\n"
