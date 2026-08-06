@@ -13,12 +13,14 @@ from database.models import Base
 import database.models_v2  # noqa: F401
 import database.models_v3  # noqa: F401
 from bot.handlers import spirit as spirit  # noqa
+from bot.handlers import characters as characters  # noqa
 from bot.handlers import (
     start, profile, duel, guardian, ranking, admin, missions,
     sects, cultivation, master, arena, accounts, shop, crafting, dual, marriage, pets, death, world, help_menu, combat, engagement, games, garden, social, creatures, combat_extra, race, spirit, society_extra, lang, jobs_events, codex_items, prison_market, fallback
 )
 from bot.health import start_health_server
 from bot.middlewares.service_lock import ServiceLockMiddleware
+from bot.middlewares.auto_reply import AutoReplyMiddleware
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -44,6 +46,7 @@ async def main():
     )
     dp = Dispatcher(storage=MemoryStorage())
     dp.message.middleware(ServiceLockMiddleware())
+    dp.message.middleware(AutoReplyMiddleware())
     dp.callback_query.middleware(ServiceLockMiddleware())
 
     dp.include_router(start.router)
@@ -76,6 +79,7 @@ async def main():
     dp.include_router(spirit.router)
     dp.include_router(lang.router)
     dp.include_router(jobs_events.router)
+    dp.include_router(characters.router)
     dp.include_router(society_extra.router)
     dp.include_router(codex_items.router)
     dp.include_router(prison_market.router)

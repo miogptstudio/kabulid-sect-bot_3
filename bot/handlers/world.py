@@ -303,3 +303,50 @@ async def cmd_explore_city(message: Message):
         lines.append("/travel نام‌شهر — رفتن به شهر دیگر")
         lines.append("/cities — لیست شهرهای دنیای فعلی")
         await message.answer(chr(10).join(lines))
+
+
+@router.message(Command("region8", "هشت‌جهان", "جهان‌اولیه"))
+async def cmd_region8(message: Message):
+    from services.eight_worlds import status_text
+    await message.answer(status_text(message.from_user.id))
+
+
+@router.message(Command("enter8", "ورود‌هشت‌جهان"))
+async def cmd_enter8(message: Message):
+    from services.eight_worlds import enter
+    await message.answer(enter(message.from_user.id))
+
+
+@router.message(Command("goregion", "منطقه‌بعد", "regiongo"))
+async def cmd_goregion(message: Message):
+    parts = (message.text or "").split(maxsplit=1)
+    if len(parts) < 2:
+        await message.answer(
+            "فرمت: /goregion نام‌منطقه" + chr(10)
+            + "منطقه ۱ نامش نیک است." + chr(10)
+            + "منطقه ۳: والا مقام | منطقه ۴: بلند مرتبه" + chr(10)
+            + "بقیه: بی‌نام" + chr(10)
+            + "⚠️ نام اشتباه = حذف دائمی اکانت"
+        )
+        return
+    name = parts[1].strip()
+    from services.eight_worlds import try_advance
+    msg, wipe = try_advance(message.from_user.id, name)
+    if wipe:
+        async with async_session() as session:
+            user = await get_or_create_user(
+                session, message.from_user.id,
+                message.from_user.full_name, message.from_user.username
+            )
+            try:
+                from services.death import erase_existence
+                await erase_existence(session, user)
+            except Exception:
+                user.is_dead = True
+                await session.commit()
+        await message.answer(
+            "💀 نام اشتباه بود." + chr(10)
+            + "اکانت برای همیشه پاک شد. از /start دوباره شروع کن."
+        )
+        return
+    await message.answer(msg)

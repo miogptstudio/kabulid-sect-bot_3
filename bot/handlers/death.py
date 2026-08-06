@@ -176,3 +176,78 @@ async def cmd_possess(message: Message):
         f"+{steal} انرژی از او گرفتی.\n"
         f"⚠️ این تنها تسخیر مجاز تو بود."
     )
+
+
+@router.message(Command("suicide", "خودکشی", "انتحار"))
+async def cmd_suicide(message: Message):
+    """خودکشی درون‌بازی — مرگ کاراکتر و رفتن به منوی بعد از مرگ"""
+    async with async_session() as session:
+        user = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
+        if user.is_dead:
+            await message.answer(
+                "💀 همین حالا مرده‌ای." + chr(10) + "سرنوشتت را انتخاب کن: /afterdeath"
+            )
+            return
+        if getattr(user, "is_spirit_raiser", False):
+            await message.answer("روح هستی؛ خودکشی معنا ندارد. /releasespirit")
+            return
+    builder = InlineKeyboardBuilder()
+    builder.button(text="تأیید خودکشی ☠️", callback_data=f"suicide:yes:{message.from_user.id}")
+    builder.button(text="انصراف", callback_data=f"suicide:no:{message.from_user.id}")
+    builder.adjust(1)
+    await message.answer(
+        "☠️ <b>خودکشی (درون‌بازی)</b>" + chr(10) + chr(10)
+        + "کاراکترت می‌میرد و به منوی بعد از مرگ می‌روی." + chr(10)
+        + "می‌توانی پرورش‌دهنده روح، روح انتقام‌جو یا پوچی (حذف) را انتخاب کنی." + chr(10) + chr(10)
+        + "این عمل فقط روی <b>کاراکتر بازی</b> است." + chr(10)
+        + "مطمئنی؟",
+        reply_markup=builder.as_markup(),
+    )
+
+
+@router.callback_query(F.data.startswith("suicide:"))
+async def cb_suicide(callback: CallbackQuery):
+    parts = callback.data.split(":")
+    if len(parts) < 3:
+        await callback.answer()
+        return
+    action, owner = parts[1], int(parts[2])
+    if callback.from_user.id != owner:
+        await callback.answer()
+        return
+    if action == "no":
+        await callback.message.edit_text("انصراف از خودکشی.")
+        await callback.answer()
+        return
+    async with async_session() as session:
+        user = await get_or_create_user(
+            session, callback.from_user.id,
+            callback.from_user.full_name, callback.from_user.username
+        )
+        if user.is_dead:
+            await callback.message.edit_text("قبلاً مرده‌ای. /afterdeath")
+            await callback.answer()
+            return
+        user.is_dead = True
+        if hasattr(user, "blood"):
+            user.blood = 0
+        if hasattr(user, "restriction_reason"):
+            # خروج از تمرین/قفل‌های سبک
+            if user.restriction_reason == "تمرین":
+                user.restriction_reason = None
+                user.restricted_until = None
+        await session.commit()
+    await callback.message.edit_text(
+        "☠️ خودکشی انجام شد. کاراکتر مرد." + chr(10) + chr(10)
+        + "حالا سرنوشتت را انتخاب کن:" + chr(10)
+        + "/afterdeath" + chr(10) + chr(10)
+        + "👻 پرورش‌دهنده روح" + chr(10)
+        + "😈 روح انتقام‌جو" + chr(10)
+        + "🌑 پوچی (حذف دائمی اکانت)",
+        reply_markup=death_keyboard(),
+    )
+    await callback.answer()
+

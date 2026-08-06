@@ -21,6 +21,8 @@ _last_gather: dict[int, datetime] = {}
 COOLDOWN_SECONDS = 60
 
 GATHER_PHRASES = [
+    "تزکیه",
+
     'Cultivate', 'Gather Qi', 'Kültive et', 'Qi topla', 'Культивировать', 'Собрать Ци', 'تأمل', 'تذهیب کردن', 'جمع آوری چی', 'جمع الطاقة', 'جمع\u200cآوری چی', 'مدیتیت', '修炼', '聚气',
     "جمع چی", "جذب چی", "کشت چی",
 ]
@@ -250,17 +252,32 @@ async def do_gather(message: Message, amount: int = 5000):
                 pass
         except Exception:
             pass
-    
-    text = f"🌀 جمع‌آوری (+{amount} پایه)\n"
-    if result.get("messages"):
-        text += "\n".join(result["messages"])
-    else:
-        text += f"انرژی: {result.get('energy')} | {result.get('root', '')} | {result.get('realm')} سطح {result.get('stage')}"
-    if result.get("need"):
-        cur = result.get("energy", 0)
-        need = result["need"]
-        text += f"\n📊 تا سطح بعد: {max(0, need - cur)} انرژی لازم (الان {cur}/{need})"
-    await message.answer(text)
+        try:
+            need2 = energy_needed_for_stage(result.get("stage") or 1, result.get("realm"), result.get("root"))
+        except Exception:
+            need2 = result.get("need") or 0
+        # refresh cult for accurate numbers
+        cult2 = await get_or_create_cultivation(session, user.id)
+        need2 = energy_needed_for_stage(cult2.stage or 1, cult2.realm, cult2.spiritual_root)
+        cur2 = int(cult2.energy or 0)
+        stage2 = cult2.stage or 1
+        realm2 = cult2.realm or "?"
+        root2 = cult2.spiritual_root or "بدون ریشه"
+        tech2 = await get_active_technique(session, user.id)
+        tech_n = tech2.name if tech2 else "—"
+        absorbed = result.get("gained") or amount
+        text = (
+            f"🌀 <b>تزکیه / جمع چی</b>" + chr(10)
+            + f"چی جذب‌شده این بار: <b>+{absorbed}</b>" + chr(10) + chr(10)
+            + f"ریشه: <b>{root2}</b>" + chr(10)
+            + f"قلمرو: <b>{realm2}</b> | مرحله: {stage2}" + chr(10)
+            + f"انرژی: <b>{cur2}</b> / <b>{need2}</b>" + chr(10)
+            + f"مانده تا ارتقا: <b>{max(0, int(need2) - int(cur2))}</b>" + chr(10)
+            + f"تکنیک فعال: {tech_n}"
+        )
+        if result.get("messages"):
+            text += chr(10) + chr(10) + chr(10).join(result["messages"])
+        await message.answer(text)
 
 
 # --- خودارضایی / تمرین انفرادی + یانگ/یین ---
@@ -304,48 +321,58 @@ async def cmd_solo(message: Message):
         if user.gender == "نامشخص":
             await message.answer(tr(message.from_user.id, "اول با /gender جنسیت خودت رو مشخص کن."))
             return
-        
+
         count_this_hour = len(times)
         times.append(now)
-        
+
         # انرژی پایه
         result = await add_energy(session, user.id, 12)
-        if hasattr(user, "lifespan"):
+        user.solo_count = (getattr(user, "solo_count", 0) or 0) + 1
+
+        # ۳ بار اول در ساعت: بدون کاهش عمر | از بار چهارم عمر کم می‌شود
+        if count_this_hour < 3:
+            text = (
+                "🔥 خودارضایی (+انرژی)" + chr(10)
+                + f"در این ساعت: {count_this_hour + 1}/3 بدون کاهش عمر" + chr(10)
+            )
+            if hasattr(user, "lifespan"):
+                text += f"⏳ عمر: {user.lifespan or 100}%" + chr(10)
+        else:
             try:
                 from bot.config import SOLO_LIFESPAN_COST
-                cost = SOLO_LIFESPAN_COST
+                cost = int(SOLO_LIFESPAN_COST)
             except Exception:
                 cost = 5
-            user.lifespan = max(0, (user.lifespan or 100) - cost)
-            if user.lifespan <= 0:
-                user.is_dead = True
-        user.solo_count = (getattr(user, 'solo_count', 0) or 0) + 1
-        text = "🔥 خودارضایی (+انرژی کم، عمر کم شد)\n"
-        if hasattr(user, "lifespan"):
-            text += f"⏳ عمر باقی: {user.lifespan}%\n"
-        if user.is_dead:
-            text += "💀 عمر تمام شد. /afterdeath\n"
+            if hasattr(user, "lifespan"):
+                user.lifespan = max(0, (user.lifespan or 100) - cost)
+                if user.lifespan <= 0:
+                    user.is_dead = True
+            text = (
+                "🔥 خودارضایی — زیاده‌روی (بیش از ۳ بار در ساعت)" + chr(10)
+                + f"−{cost}% عمر" + chr(10)
+            )
+            if hasattr(user, "lifespan"):
+                text += f"⏳ عمر باقی: {user.lifespan}%" + chr(10)
+            if getattr(user, "is_dead", False):
+                text += "💀 عمر تمام شد. /afterdeath" + chr(10)
 
-        
-        # بیش از ۳ بار در ساعت
+        # بیش از ۳ بار در ساعت: یانگ/یین
         if count_this_hour >= 3:
             if user.gender == "مرد":
-                user.yang = max(0, user.yang - 1)
-                text += f"⚠️ زیاده‌روی! یانگ بدن: {user.yang}%\n"
+                user.yang = max(0, (user.yang or 100) - 1)
+                text += f"⚠️ یانگ بدن: {user.yang}%" + chr(10)
                 if user.yang <= 0:
                     user.is_dead = True
-                    text += "💀 یانگ بدنت تمام شد... مردی.\nبا /afterdeath سرنوشتت را انتخاب کن."
+                    text += "💀 یانگ تمام شد. /afterdeath" + chr(10)
             elif user.gender == "زن":
-                user.yin = min(100, user.yin + 1)
-                text += f"⚠️ زیاده‌روی! یین بدن: {user.yin}%\n"
+                user.yin = min(100, (user.yin or 0) + 1)
+                text += f"⚠️ یین بدن: {user.yin}%" + chr(10)
                 if user.yin >= 100:
                     user.is_dead = True
-                    text += "💀 یین بدنت به ۱۰۰٪ رسید... مردی.\nبا /afterdeath سرنوشتت را انتخاب کن."
-        
-        # از دست دادن باکرگی در اولین بار
+                    text += "💀 یین به ۱۰۰٪ رسید. /afterdeath" + chr(10)
+
         # خودارضایی باکرگی را از بین نمی‌برد
-            text += "🌸 وضعیت باکرگی: از دست رفت.\n"
-        
+
         await session.commit()
         
         if result.get("messages") and not user.is_dead:
@@ -502,3 +529,52 @@ async def cmd_body(message: Message):
         cult.body_type = name
         await session.commit()
         await message.answer(f"✅ بدن «{name}» فعال شد. (ضریب تذهیب ×{BODY_BONUS.get(name, 1)})")
+
+# ——— پرورش بدن ———
+@router.message(Command("bodytechs", "تکنیک‌بدن", "bodytechniques"))
+async def cmd_body_techs(message: Message):
+    from services import body_cult as bc
+    await message.answer(bc.list_techs())
+
+
+@router.message(Command("mybody", "بدن‌من", "وضعیت‌بدن"))
+async def cmd_my_body(message: Message):
+    from services import body_cult as bc
+    await message.answer(bc.status(message.from_user.id))
+
+
+@router.message(Command("bodycult", "پرورش‌بدن", "bodytrain"))
+async def cmd_body_cult(message: Message):
+    from services import body_cult as bc
+    from services.cultivation import get_or_create_cultivation
+    parts = (message.text or "").split(maxsplit=1)
+    tech = None
+    if len(parts) > 1:
+        tech = parts[1].strip()
+        if tech not in bc.BODY_TECHS:
+            for k in bc.BODY_TECHS:
+                if tech in k or k in tech:
+                    tech = k
+                    break
+    ok, msg, cost = bc.train_body(message.from_user.id, tech)
+    if not ok:
+        await message.answer(msg)
+        return
+    async with async_session() as session:
+        user = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
+        cult = await get_or_create_cultivation(session, user.id)
+        if (cult.energy or 0) < cost:
+            await message.answer(f"انرژی کافی نیست (نیاز {cost}). /gather یا /afk")
+            return
+        cult.energy = (cult.energy or 0) - cost
+        await session.commit()
+    await message.answer(msg)
+
+
+@router.message(F.text.in_({"پرورش بدن", "پرورش دادن بدن", "بدن پروری", "پرورش‌بدن"}))
+async def text_body_train(message: Message):
+    await cmd_body_cult(message)
+

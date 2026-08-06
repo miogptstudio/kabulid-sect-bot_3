@@ -7,7 +7,7 @@ from database.models import User
 
 from bot.config import ROOT_UNLOCK_ENERGY, ENERGY_BASE, ENERGY_PER_LEVEL_ADD
 
-MAX_STAGE = 10
+MAX_STAGE = 12
 
 # رگ‌های معنوی (بیش از ۳۰ نوع) — هر بازیکن تا ۵ رگ
 SPIRITUAL_VEINS = {
@@ -90,11 +90,15 @@ RACES = [
     # نژادهای ایرانی / اساطیری
     "سیمرغ‌زاده", "دیوزاد", "پری‌ایرانی", "آناهیتا‌پیمان", "رخش‌تبار", "جمشید‌تبار",
     "فریدون‌زاده", "زال‌تبار", "رستم‌تبار", "هما‌زاده", "کاوه‌تبار", "ضحاک‌تبار",
+    "نامیرا",
 ]
 # نژادهای فقط سازنده/ادمین
-ADMIN_RACES = ["خدایان"]
+ADMIN_RACES = ["خدایان", "قادر مطلق"]
 ALL_RACES = RACES + ADMIN_RACES
+STERILE_RACES = {"نامیرا", "قادر مطلق", "خدایان"}  # قدرت بالا، بدون تولیدمثل
 RACE_CULT = {
+    "نامیرا": {"bonus": 2.2, "style": "تذهیب ابدی", "desc": "نمی‌میرد آسان؛ قدرت بالا؛ بدون تولیدمثل"},
+    "قادر مطلق": {"bonus": 10.0, "style": "تذهیب مطلق", "desc": "قدرت بی‌کران؛ شانس نزدیک صفر؛ بدون تولیدمثل"},
     "انسان": {"bonus": 1.0, "style": "تذهیب متعادل", "desc": "همه‌فن‌حریف"},
     "جن": {"bonus": 1.25, "style": "تذهیب آتشین", "desc": "چی آتش سریع‌تر"},
     "اهریمن": {"bonus": 1.35, "style": "تذهیب شیطانی", "desc": "قدرت بالا، ریسک بالا"},
@@ -133,21 +137,130 @@ def is_immortal_race(race: str | None) -> bool:
 
 
 
+
 # هرچه ریشه کمیاب‌تر، بازدهی تذهیب بالاتر؛ چندعنصری سخت‌تر (ضریب انرژی لازم)
 ROOT_CULT_MULT = {
     "بدون ریشه": 0.5,
+    # پنج عنصر پایه
     "ریشه پنج‌عنصر": 1.0,
-    "ریشه آتش": 1.1, "ریشه آب": 1.1, "ریشه چوب": 1.1, "ریشه فلز": 1.15, "ریشه خاک": 1.1,
-    "ریشه دو‌عنصری آتش‌آب": 1.25, "ریشه دو‌عنصری چوب‌خاک": 1.25, "ریشه دو‌عنصری فلز‌آتش": 1.3,
-    "ریشه سه‌عنصری": 1.45, "ریشه چهار‌عنصری": 1.7,
-    "ریشه نور": 1.4, "ریشه تاریکی": 1.4, "ریشه روحی": 1.5, "ریشه روح": 1.55,
-    "ریشه بهشتی": 1.7, "ریشه آسمانی": 1.9, "ریشه الهی": 2.2, "ریشه پوچی": 2.0,
-    "ریشه ای‌تری": 1.85, "ریشه دوگانه": 1.6,
+    "ریشه آتش": 1.12, "ریشه آب": 1.12, "ریشه چوب": 1.12, "ریشه فلز": 1.15, "ریشه خاک": 1.12,
+    "ریشه باد": 1.14, "ریشه رعد": 1.18, "ریشه یخ": 1.16, "ریشه شعله": 1.17,
+    # دو عنصری
+    "ریشه دو‌عنصری آتش‌آب": 1.28, "ریشه دو‌عنصری چوب‌خاک": 1.26, "ریشه دو‌عنصری فلز‌آتش": 1.3,
+    "ریشه دو‌عنصری آب‌چوب": 1.26, "ریشه دو‌عنصری خاک‌فلز": 1.27, "ریشه دو‌عنصری باد‌رعد": 1.32,
+    "ریشه دو‌عنصری یخ‌آتش": 1.33, "ریشه دو‌عنصری نور‌تاریکی": 1.4,
+    # سه و چهار عنصری
+    "ریشه سه‌عنصری": 1.48, "ریشه سه‌عنصری آتش‌آب‌چوب": 1.5, "ریشه سه‌عنصری فلز‌خاک‌رعد": 1.52,
+    "ریشه چهار‌عنصری": 1.72, "ریشه چهار‌عنصری کامل": 1.8,
+    # نور / تاریکی / روح
+    "ریشه نور": 1.42, "ریشه تاریکی": 1.42, "ریشه روحی": 1.52, "ریشه روح": 1.55,
+    "ریشه سایه": 1.38, "ریشه مه": 1.3, "ریشه خون": 1.45, "ریشه استخوان": 1.35,
+    # آسمانی / الهی
+    "ریشه بهشتی": 1.72, "ریشه آسمانی": 1.95, "ریشه الهی": 2.25, "ریشه پوچی": 2.05,
+    "ریشه ای‌تری": 1.88, "ریشه دوگانه": 1.62, "ریشه ستاره‌ای": 1.9, "ریشه کهکشانی": 2.1,
+    "ریشه زمانی": 1.85, "ریشه مکانی": 1.8, "ریشه خواب": 1.35, "ریشه رویا": 1.4,
+    # اساطیر ایرانی
+    "ریشه سیمرغ": 1.75, "ریشه دیو": 1.55, "ریشه آناهیتا": 1.65, "ریشه رخش": 1.5,
+    "ریشه جمشید": 1.7, "ریشه فریدون": 1.68, "ریشه زال": 1.6, "ریشه رستم": 1.8,
+    "ریشه هما": 1.72, "ریشه کاوه": 1.55, "ریشه ضحاک": 1.7, "ریشه مهر": 1.6,
+    "ریشه آذر": 1.45, "ریشه ایزدی": 1.9, "ریشه اهریمنی": 1.75,
+    # طبیعت و حیوانات معنوی
+    "ریشه اژدها": 1.85, "ریشه ققنوس": 1.88, "ریشه ببر": 1.4, "ریشه گرگ": 1.38,
+    "ریشه مار": 1.42, "ریشه عقاب": 1.48, "ریشه نهنگ": 1.5, "ریشه لاک‌پشت": 1.35,
+    # کمیاب ویژه
+    "ریشه هرج‌ومرج": 2.0, "ریشه نظم": 1.7, "ریشه زندگی": 1.65, "ریشه مرگ": 1.7,
+    "ریشه آینه": 1.55, "ریشه کریستال": 1.5, "ریشه طلایی": 1.8, "ریشه نقره‌ای": 1.55,
+    "ریشه کهن": 1.9, "ریشه ازلی": 2.15, "ریشه بی‌نام": 2.3, "ریشه خالق": 2.5,
+    # --- گسترش بهشتی (۱۰+) ---
+    "ریشه بهشت‌نور": 1.6, "ریشه فرشته‌بهشتی": 1.65, "ریشه باغ‌عدن": 1.7,
+    "ریشه سدر بهشتی": 1.58, "ریشه ابر بهشتی": 1.52, "ریشه بال‌سفید": 1.62,
+    "ریشه نیلوفر بهشتی": 1.57, "ریشه سرود بهشتی": 1.54, "ریشه نگهبان بهشت": 1.72,
+    "ریشه دروازه بهشت": 1.68, "ریشه شهد بهشتی": 1.5, "ریشه سپیده بهشتی": 1.63,
+    # --- گسترش آسمانی (۱۰+) ---
+    "ریشه ستاره آسمان": 1.65, "ریشه رعد آسمانی": 1.7, "ریشه ابر آسمان": 1.55,
+    "ریشه ماه آسمانی": 1.62, "ریشه خورشید آسمان": 1.75, "ریشه کهکشان آسمانی": 1.85,
+    "ریشه شهاب آسمان": 1.68, "ریشه قطبی آسمان": 1.72, "ریشه نسیم آسمانی": 1.5,
+    "ریشه تاج آسمان": 1.8, "ریشه پلکان آسمان": 1.7, "ریشه افق آسمانی": 1.66,
+    # --- گسترش زیرین (۱۰+) ---
+    "ریشه زیرین": 1.55, "ریشه دوزخ‌زیرین": 1.7, "ریشه سایه زیرین": 1.6,
+    "ریشه استخوان‌زیرین": 1.65, "ریشه رود زیرین": 1.58, "ریشه گور زیرین": 1.62,
+    "ریشه زنجیر زیرین": 1.68, "ریشه خاکستر زیرین": 1.55, "ریشه فریاد زیرین": 1.72,
+    "ریشه نگهبان زیرین": 1.78, "ریشه تاریکی‌زیرین": 1.8, "ریشه زهر زیرین": 1.66,
+    # --- گسترش خدایی (۱۰+) ---
+    "ریشه خدایی": 1.9, "ریشه نیمه‌خدایی": 1.75, "ریشه خون خدایی": 1.95,
+    "ریشه چشم خدایی": 1.88, "ریشه کلام خدایی": 1.92, "ریشه تاج خدایی": 2.0,
+    "ریشه سپر خدایی": 1.85, "ریشه آتش خدایی": 1.9, "ریشه عدالت خدایی": 1.87,
+    "ریشه خشم خدایی": 1.93, "ریشه برکت خدایی": 1.82, "ریشه معبد خدایی": 1.86,
+    # --- گسترش خدا (۱۰+) ---
+    "ریشه خدا": 2.2, "ریشه خدای‌واحد": 2.4, "ریشه خدای‌نور": 2.25,
+    "ریشه خدای‌تاریکی": 2.25, "ریشه خدای‌زمان": 2.35, "ریشه خدای‌مکان": 2.3,
+    "ریشه خدای‌مرگ": 2.28, "ریشه خدای‌زندگی": 2.28, "ریشه خدای‌جنگ": 2.2,
+    "ریشه خدای‌صلح": 2.15, "ریشه خدای‌آسمان": 2.3, "ریشه خدای‌زیرین": 2.3,
+    "ریشه خالق‌خدا": 2.5, "ریشه بی‌نام‌خدا": 2.55,
+
 }
 ROOT_HARD_MULT = {
     "ریشه دو‌عنصری آتش‌آب": 1.3, "ریشه دو‌عنصری چوب‌خاک": 1.3, "ریشه دو‌عنصری فلز‌آتش": 1.35,
-    "ریشه سه‌عنصری": 1.6, "ریشه چهار‌عنصری": 2.0,
+    "ریشه دو‌عنصری آب‌چوب": 1.3, "ریشه دو‌عنصری خاک‌فلز": 1.32, "ریشه دو‌عنصری باد‌رعد": 1.4,
+    "ریشه دو‌عنصری یخ‌آتش": 1.42, "ریشه دو‌عنصری نور‌تاریکی": 1.5,
+    "ریشه سه‌عنصری": 1.6, "ریشه سه‌عنصری آتش‌آب‌چوب": 1.65, "ریشه سه‌عنصری فلز‌خاک‌رعد": 1.7,
+    "ریشه چهار‌عنصری": 2.0, "ریشه چهار‌عنصری کامل": 2.2,
+    "ریشه الهی": 1.5, "ریشه پوچی": 1.6, "ریشه ازلی": 1.8, "ریشه بی‌نام": 2.0, "ریشه خالق": 2.5,
+    "ریشه سیمرغ": 1.4, "ریشه اژدها": 1.45, "ریشه ققنوس": 1.45, "ریشه کهکشانی": 1.7,
+    "ریشه بهشتی": 1.35, "ریشه آسمانی": 1.45, "ریشه زیرین": 1.4,
+    "ریشه خدایی": 1.55, "ریشه خدا": 1.8, "ریشه خدای‌واحد": 2.0,
+    "ریشه کهکشان آسمانی": 1.6, "ریشه دوزخ‌زیرین": 1.5, "ریشه تاج خدایی": 1.7,
+
 }
+
+# وزن بیدار شدن ریشه (عدد بالاتر = شایع‌تر)
+ROOT_AWAKEN_WEIGHTS = [
+    ("ریشه پنج‌عنصر", 14),
+    ("ریشه آتش", 5), ("ریشه آب", 5), ("ریشه چوب", 5), ("ریشه فلز", 5), ("ریشه خاک", 5),
+    ("ریشه باد", 4), ("ریشه رعد", 3), ("ریشه یخ", 3), ("ریشه شعله", 3),
+    ("ریشه دو‌عنصری آتش‌آب", 3), ("ریشه دو‌عنصری چوب‌خاک", 3), ("ریشه دو‌عنصری فلز‌آتش", 2),
+    ("ریشه دو‌عنصری آب‌چوب", 2), ("ریشه دو‌عنصری خاک‌فلز", 2), ("ریشه دو‌عنصری باد‌رعد", 2),
+    ("ریشه دو‌عنصری یخ‌آتش", 2), ("ریشه دو‌عنصری نور‌تاریکی", 1),
+    ("ریشه سه‌عنصری", 2), ("ریشه سه‌عنصری آتش‌آب‌چوب", 1), ("ریشه سه‌عنصری فلز‌خاک‌رعد", 1),
+    ("ریشه چهار‌عنصری", 1), ("ریشه چهار‌عنصری کامل", 1),
+    ("ریشه نور", 3), ("ریشه تاریکی", 3), ("ریشه روحی", 2), ("ریشه روح", 2),
+    ("ریشه سایه", 2), ("ریشه مه", 2), ("ریشه خون", 2), ("ریشه استخوان", 2),
+    ("ریشه بهشتی", 1), ("ریشه آسمانی", 1), ("ریشه الهی", 1), ("ریشه پوچی", 1),
+    ("ریشه ای‌تری", 1), ("ریشه دوگانه", 1), ("ریشه ستاره‌ای", 1), ("ریشه کهکشانی", 1),
+    ("ریشه زمانی", 1), ("ریشه مکانی", 1), ("ریشه خواب", 2), ("ریشه رویا", 2),
+    ("ریشه سیمرغ", 1), ("ریشه دیو", 2), ("ریشه آناهیتا", 1), ("ریشه رخش", 2),
+    ("ریشه جمشید", 1), ("ریشه فریدون", 1), ("ریشه زال", 1), ("ریشه رستم", 1),
+    ("ریشه هما", 1), ("ریشه کاوه", 2), ("ریشه ضحاک", 1), ("ریشه مهر", 2),
+    ("ریشه آذر", 2), ("ریشه ایزدی", 1), ("ریشه اهریمنی", 1),
+    ("ریشه اژدها", 1), ("ریشه ققنوس", 1), ("ریشه ببر", 2), ("ریشه گرگ", 2),
+    ("ریشه مار", 2), ("ریشه عقاب", 2), ("ریشه نهنگ", 1), ("ریشه لاک‌پشت", 2),
+    ("ریشه هرج‌ومرج", 1), ("ریشه نظم", 1), ("ریشه زندگی", 1), ("ریشه مرگ", 1),
+    ("ریشه آینه", 1), ("ریشه کریستال", 2), ("ریشه طلایی", 1), ("ریشه نقره‌ای", 2),
+    ("ریشه کهن", 1), ("ریشه ازلی", 1), ("ریشه بی‌نام", 1), ("ریشه خالق", 1),
+    ("ریشه بهشت‌نور", 1), ("ریشه فرشته‌بهشتی", 1), ("ریشه باغ‌عدن", 1),
+    ("ریشه سدر بهشتی", 1), ("ریشه ابر بهشتی", 1), ("ریشه بال‌سفید", 1),
+    ("ریشه نیلوفر بهشتی", 1), ("ریشه سرود بهشتی", 1), ("ریشه نگهبان بهشت", 1),
+    ("ریشه دروازه بهشت", 1), ("ریشه شهد بهشتی", 1), ("ریشه سپیده بهشتی", 1),
+    ("ریشه ستاره آسمان", 1), ("ریشه رعد آسمانی", 1), ("ریشه ابر آسمان", 1),
+    ("ریشه ماه آسمانی", 1), ("ریشه خورشید آسمان", 1), ("ریشه کهکشان آسمانی", 1),
+    ("ریشه شهاب آسمان", 1), ("ریشه قطبی آسمان", 1), ("ریشه نسیم آسمانی", 1),
+    ("ریشه تاج آسمان", 1), ("ریشه پلکان آسمان", 1), ("ریشه افق آسمانی", 1),
+    ("ریشه زیرین", 1), ("ریشه دوزخ‌زیرین", 1), ("ریشه سایه زیرین", 1),
+    ("ریشه استخوان‌زیرین", 1), ("ریشه رود زیرین", 1), ("ریشه گور زیرین", 1),
+    ("ریشه زنجیر زیرین", 1), ("ریشه خاکستر زیرین", 1), ("ریشه فریاد زیرین", 1),
+    ("ریشه نگهبان زیرین", 1), ("ریشه تاریکی‌زیرین", 1), ("ریشه زهر زیرین", 1),
+    ("ریشه خدایی", 1), ("ریشه نیمه‌خدایی", 1), ("ریشه خون خدایی", 1),
+    ("ریشه چشم خدایی", 1), ("ریشه کلام خدایی", 1), ("ریشه تاج خدایی", 1),
+    ("ریشه سپر خدایی", 1), ("ریشه آتش خدایی", 1), ("ریشه عدالت خدایی", 1),
+    ("ریشه خشم خدایی", 1), ("ریشه برکت خدایی", 1), ("ریشه معبد خدایی", 1),
+    ("ریشه خدا", 1), ("ریشه خدای‌واحد", 1), ("ریشه خدای‌نور", 1),
+    ("ریشه خدای‌تاریکی", 1), ("ریشه خدای‌زمان", 1), ("ریشه خدای‌مکان", 1),
+    ("ریشه خدای‌مرگ", 1), ("ریشه خدای‌زندگی", 1), ("ریشه خدای‌جنگ", 1),
+    ("ریشه خدای‌صلح", 1), ("ریشه خدای‌آسمان", 1), ("ریشه خدای‌زیرین", 1),
+    ("ریشه خالق‌خدا", 1), ("ریشه بی‌نام‌خدا", 1),
+
+]
+
 
 BODY_TYPES = [
     "بدن معمولی", "بدن چوب زمینی", "بدن بهشتی", "بدن اژدهای اعظم",
@@ -167,80 +280,109 @@ BODY_BONUS = {
 
 
 def energy_needed_for_stage(stage: int, realm: str | None = None, root: str | None = None) -> int:
-    """هر مرحله سخت‌تر؛ قلمروهای بالاتر گنجایش بیشتر"""
+    """فاصله سطح‌ها بیشتر؛ قلمروهای بالاتر خیلی سخت‌تر"""
     from database.models_v2 import CULTIVATION_REALMS
     s = max(1, stage or 1)
     base = ENERGY_BASE + (s - 1) * ENERGY_PER_LEVEL_ADD
-    # ضریب قلمرو
+    # ضریب نمایی‌تر با قلمرو
     try:
         ri = CULTIVATION_REALMS.index(realm) if realm in CULTIVATION_REALMS else 0
     except Exception:
         ri = 0
-    mult = 1.0 + ri * 0.35
+    mult = 1.0 + ri * 0.55 + (ri ** 1.15) * 0.08
+    # مرحله‌های آخر هر قلمرو سخت‌تر
+    stage_mult = 1.0 + (s - 1) * 0.12
     hard = ROOT_HARD_MULT.get(root or '', 1.0)
-    return int(base * mult * hard)
+    return int(base * mult * stage_mult * hard)
 
 
 
 
 FORBIDDEN_TECH_NAME = "پرورش ممنوعه"
 
-DEFAULT_TECHNIQUES = [
-    {"name": "تنفس پایه", "description": "تکنیک ساده تذهیب برای مبتدیان", "grade": "پایه", "energy_bonus": 100, "required_root": None},
-    {"name": "تنفس مهتاب", "description": "تنفس آرام شبانه — چی پایدار", "grade": "پایه", "energy_bonus": 180, "required_root": None},
-    {"name": "تنفس کوهستان", "description": "نفس عمیق کوه — بدن و چی", "grade": "پایه", "energy_bonus": 220, "required_root": None},
-    {"name": "تنفس موج آرام", "description": "ریتم آب — چی متوسط", "grade": "پایه", "energy_bonus": 200, "required_root": None},
-    {"name": "تنفس جرقه", "description": "نفس آتش کوتاه — چی تند", "grade": "پایه", "energy_bonus": 250, "required_root": None},
-    {"name": "تنفس چهارفصل", "description": "چرخش فصل‌ها — چی متعادل بالا", "grade": "متوسط", "energy_bonus": 420, "required_root": None},
-    {"name": "تنفس نهان‌گاه", "description": "نفس مخفی سایه‌رو", "grade": "متوسط", "energy_bonus": 380, "required_root": None},
-    {"name": "تنفس خون‌جریان", "description": "چی خون‌آشام‌گونه", "grade": "متوسط", "energy_bonus": 450, "required_root": None},
-    {"name": "تنفس بال نور", "description": "نفس فرشته‌گون", "grade": "متوسط", "energy_bonus": 480, "required_root": "ریشه نور"},
-    {"name": "تنفس دوزخ", "description": "نفس اهریمنی داغ", "grade": "متوسط", "energy_bonus": 500, "required_root": None},
-    {"name": "تنفس ریشه کهن", "description": "نفس جنگل و چوب", "grade": "متوسط", "energy_bonus": 410, "required_root": "ریشه چوب"},
-    {"name": "تنفس رعد شکسته", "description": "نفس رعد و سرعت", "grade": "بالا", "energy_bonus": 720, "required_root": None},
-    {"name": "تنفس یخ ابدی", "description": "نفس یخ‌زاد", "grade": "بالا", "energy_bonus": 680, "required_root": None},
-    {"name": "تنفس ققنوس", "description": "رستاخیز شعله — چی قوی", "grade": "بالا", "energy_bonus": 950, "required_root": None},
-    {"name": "تنفس ستاره سقوط", "description": "چی ستاره‌ای", "grade": "بالا", "energy_bonus": 1100, "required_root": None},
-    {"name": "تنفس تایتان", "description": "نفس عظیم جسمانی", "grade": "بالا", "energy_bonus": 880, "required_root": None},
-    {"name": "تنفس خلأ", "description": "نفس پوچی و زیرین", "grade": "پیشرفته", "energy_bonus": 1800, "required_root": "ریشه پوچی"},
-    {"name": "تنفس کهکشان", "description": "جریان ستاره و آسمان", "grade": "پیشرفته", "energy_bonus": 2400, "required_root": "ریشه آسمانی"},
-    {"name": "تنفس ابدیت", "description": "نفس خدایان — فقط ریشه الهی", "grade": "پیشرفته", "energy_bonus": 5000, "required_root": "ریشه الهی"},
-    {"name": "تنفس نه رود", "description": "نه مسیر چی همزمان", "grade": "پیشرفته", "energy_bonus": 2800, "required_root": None},
-    {"name": "تنفس خاکستر زرین", "description": "بعد از سوختن قوی‌تر", "grade": "بالا", "energy_bonus": 820, "required_root": None},
+# نیازمندی قلمرو/مرحله برای هر تکنیک (و کتاب‌های هم‌نام)
+# required_realm: حداقل قلمرو | required_stage: حداقل مرحله در همان قلمرو
+TECH_REQUIREMENTS = {
+    "تنفس پایه": {"realm": "بیداری", "stage": 1},
+    "تنفس مهتاب": {"realm": "بیداری", "stage": 3},
+    "تنفس کوهستان": {"realm": "پایه", "stage": 1},
+    "تنفس بال نور": {"realm": "متوسط", "stage": 1},
+    "تنفس ریشه کهن": {"realm": "پایه", "stage": 5},
+    "جریان پنج‌عنصر": {"realm": "متوسط", "stage": 1},
+    "شعله‌ی درونی": {"realm": "متوسط", "stage": 2},
+    "موج آب": {"realm": "متوسط", "stage": 2},
+    "ریشه درخت": {"realm": "متوسط", "stage": 2},
+    "تیغه فلز": {"realm": "متوسط", "stage": 3},
+    "ستون خاک": {"realm": "متوسط", "stage": 3},
+    "نفس نورانی": {"realm": "بالا", "stage": 1},
+    "سایه ابدی": {"realm": "بالا", "stage": 1},
+    "همهمه روح": {"realm": "روح", "stage": 1},
+    "تنفس اژدها": {"realm": "بالا", "stage": 5},
+    "تنفس ستاره سقوط": {"realm": "آسمان", "stage": 1},
+    "تنفس تایتان": {"realm": "پیشرفته", "stage": 3},
+    "تنفس خلأ": {"realm": "پوچی", "stage": 1},
+    "تنفس کهکشان": {"realm": "کهکشانی", "stage": 1},
+    "تنفس ابدیت": {"realm": "خدا", "stage": 1},
+    "تنفس نه رود": {"realm": "استاد", "stage": 1},
+    "تنفس خاکستر زرین": {"realm": "اوج", "stage": 1},
+    "پیمان روح": {"realm": "روح", "stage": 3},
+    "پرورش ممنوعه": {"realm": "پایه", "stage": 1},
+    # کتاب‌ها (اگر به‌عنوان تکنیک ثبت شوند)
+    "کتاب تذهیب پایه": {"realm": "بیداری", "stage": 1},
+    "کتاب تذهیب میانه": {"realm": "میانه", "stage": 1},
+    "کتاب هسته": {"realm": "هسته", "stage": 1},
+    "کتاب روح": {"realm": "روح", "stage": 1},
+    "کتاب آسمان": {"realm": "آسمان", "stage": 1},
+    "کتاب پوچی": {"realm": "پوچی", "stage": 1},
+    "کتاب ازلی": {"realm": "ازلی", "stage": 1},
+}
 
-    {"name": "جریان پنج‌عنصر", "description": "تکنیک متوسط بر پایه پنج عنصر", "grade": "متوسط", "energy_bonus": 300, "required_root": "ریشه پنج‌عنصر"},
-    {"name": "شعله‌ی درونی", "description": "تکنیک آتشین", "grade": "متوسط", "energy_bonus": 350, "required_root": "ریشه آتش"},
-    {"name": "موج آب", "description": "تکنیک ریشه آب", "grade": "متوسط", "energy_bonus": 350, "required_root": "ریشه آب"},
-    {"name": "ریشه درخت", "description": "تکنیک ریشه چوب", "grade": "متوسط", "energy_bonus": 340, "required_root": "ریشه چوب"},
-    {"name": "تیغه فلز", "description": "تکنیک ریشه فلز", "grade": "متوسط", "energy_bonus": 360, "required_root": "ریشه فلز"},
-    {"name": "ستون خاک", "description": "تکنیک ریشه خاک", "grade": "متوسط", "energy_bonus": 340, "required_root": "ریشه خاک"},
-    {"name": "نفس نورانی", "description": "تکنیک نور", "grade": "بالا", "energy_bonus": 600, "required_root": "ریشه نور"},
-    {"name": "سایه ابدی", "description": "تکنیک تاریکی", "grade": "بالا", "energy_bonus": 600, "required_root": "ریشه تاریکی"},
-    {"name": "همهمه روح", "description": "تکنیک روحی", "grade": "بالا", "energy_bonus": 700, "required_root": "ریشه روحی"},
-    {"name": "تنفس اژدها", "description": "تنفس قوی", "grade": "بالا", "energy_bonus": 800, "required_root": None},
-    {"name": "جریان آسمانی", "description": "تکنیک آسمانی", "grade": "پیشرفته", "energy_bonus": 1200, "required_root": None},
-    {"name": "سکوت مرگ", "description": "تکنیک دنیای زیرین", "grade": "بالا", "energy_bonus": 900, "required_root": "ریشه روح"},
-    {"name": "دعای بهشتی", "description": "تکنیک بهشتی", "grade": "پیشرفته", "energy_bonus": 1500, "required_root": "ریشه بهشتی"},
-    {"name": "رعد آسمانی", "description": "تکنیک آسمانی", "grade": "پیشرفته", "energy_bonus": 2000, "required_root": "ریشه آسمانی"},
-    {"name": "اراده الهی", "description": "تکنیک الهی", "grade": "پیشرفته", "energy_bonus": 3000, "required_root": "ریشه الهی"},
-    {"name": "بلع پوچی", "description": "تکنیک پوچی", "grade": "پیشرفته", "energy_bonus": 2500, "required_root": "ریشه پوچی"},
-    {"name": "جریان ای‌تری", "description": "تکنیک ای‌تری", "grade": "پیشرفته", "energy_bonus": 2200, "required_root": "ریشه ای‌تری"},
-    {"name": "طوفان روح", "description": "باد و روح", "grade": "بالا", "energy_bonus": 750, "required_root": None},
-    {"name": "زره سنگی", "description": "دفاع تذهیب", "grade": "متوسط", "energy_bonus": 280, "required_root": None},
-    {"name": "چشم حقیقت", "description": "درک انرژی", "grade": "بالا", "energy_bonus": 500, "required_root": None},
-    {"name": "پنجه ببر", "description": "حمله", "grade": "بالا", "energy_bonus": 550, "required_root": None},
-    {"name": "مهر خون", "description": "مسیر شیطانی", "grade": "بالا", "energy_bonus": 650, "required_root": None},
-    {"name": "نَفَس اژدهای سرخ", "description": "تکنیک اژدهازاده", "grade": "بالا", "energy_bonus": 900, "required_root": None},
-    {"name": "سرود فرشتگان", "description": "تکنیک فرشته", "grade": "بالا", "energy_bonus": 850, "required_root": "ریشه نور"},
-    {"name": "طلسم اهریمن", "description": "تکنیک اهریمن", "grade": "بالا", "energy_bonus": 950, "required_root": None},
-    {"name": "رقص پری", "description": "تکنیک پری", "grade": "متوسط", "energy_bonus": 400, "required_root": None},
-    {"name": "سایه سایه‌رو", "description": "تکنیک تاریکی پیشرفته", "grade": "پیشرفته", "energy_bonus": 1600, "required_root": "ریشه تاریکی"},
-    {"name": "خون ابدی", "description": "تکنیک خون‌آشام", "grade": "بالا", "energy_bonus": 700, "required_root": None},
-    {"name": "ستون غول", "description": "قدرت جسمانی", "grade": "متوسط", "energy_bonus": 380, "required_root": None},
-    {"name": "پیمان روح", "description": "تکنیک روح‌پیمان", "grade": "پیشرفته", "energy_bonus": 1400, "required_root": "ریشه روحی"},
+DEFAULT_TECHNIQUES = [
+    
+    {"name": "ضربه اژدها", "description": "حمله سنگین | قلمرو بالا", "grade": "حمله", "energy_bonus": 200, "required_root": None},
+    {"name": "تیغ باد", "description": "حمله سریع", "grade": "حمله", "energy_bonus": 180, "required_root": "ریشه باد"},
+    {"name": "نیش تاریکی", "description": "حمله سایه‌ای", "grade": "حمله", "energy_bonus": 220, "required_root": "ریشه تاریکی"},
+    {"name": "سپراه‌آهنین", "description": "دفاع بدنی", "grade": "دفاع", "energy_bonus": 150, "required_root": None},
+    {"name": "دیوار نور", "description": "دفاع نورانی", "grade": "دفاع", "energy_bonus": 200, "required_root": "ریشه نور"},
+    {"name": "پوسته اژدها", "description": "دفاع سنگین", "grade": "دفاع", "energy_bonus": 250, "required_root": None},
+    {"name": "همهمه روح رزمی", "description": "تقویت روحی نبرد", "grade": "روحی", "energy_bonus": 300, "required_root": "ریشه روحی"},
+    {"name": "پیوند ارواح", "description": "تکنیک روحی گروهی", "grade": "روحی", "energy_bonus": 280, "required_root": "ریشه روح"},
+    {"name": "شعله خشم", "description": "حمله آتشین", "grade": "حمله", "energy_bonus": 240, "required_root": "ریشه آتش"},
+    {"name": "موج دفاعی آب", "description": "دفاع آبی", "grade": "دفاع", "energy_bonus": 190, "required_root": "ریشه آب"},
+
+    {"name": "تنفس پایه", "description": "پایه مبتدیان | قلمرو: بیداری", "grade": "پایه", "energy_bonus": 100, "required_root": None},
+    {"name": "تنفس مهتاب", "description": "چی پایدار شب | قلمرو: بیداری س۳+", "grade": "پایه", "energy_bonus": 180, "required_root": None},
+    {"name": "تنفس کوهستان", "description": "نفس کوه | قلمرو: پایه", "grade": "پایه", "energy_bonus": 220, "required_root": None},
+    {"name": "تنفس ریشه کهن", "description": "جنگل و چوب | پایه س۵+", "grade": "متوسط", "energy_bonus": 410, "required_root": "ریشه چوب"},
+    {"name": "جریان پنج‌عنصر", "description": "پنج عنصر | متوسط", "grade": "متوسط", "energy_bonus": 300, "required_root": "ریشه پنج‌عنصر"},
+    {"name": "شعله‌ی درونی", "description": "آتش | متوسط س۲", "grade": "متوسط", "energy_bonus": 350, "required_root": "ریشه آتش"},
+    {"name": "موج آب", "description": "آب | متوسط س۲", "grade": "متوسط", "energy_bonus": 350, "required_root": "ریشه آب"},
+    {"name": "ریشه درخت", "description": "چوب | متوسط", "grade": "متوسط", "energy_bonus": 340, "required_root": "ریشه چوب"},
+    {"name": "تیغه فلز", "description": "فلز | متوسط س۳", "grade": "متوسط", "energy_bonus": 360, "required_root": "ریشه فلز"},
+    {"name": "ستون خاک", "description": "خاک | متوسط س۳", "grade": "متوسط", "energy_bonus": 340, "required_root": "ریشه خاک"},
+    {"name": "نفس نورانی", "description": "نور | قلمرو بالا", "grade": "بالا", "energy_bonus": 600, "required_root": "ریشه نور"},
+    {"name": "سایه ابدی", "description": "تاریکی | بالا", "grade": "بالا", "energy_bonus": 600, "required_root": "ریشه تاریکی"},
+    {"name": "همهمه روح", "description": "روحی | قلمرو روح", "grade": "بالا", "energy_bonus": 700, "required_root": "ریشه روحی"},
+    {"name": "تنفس اژدها", "description": "قوی | بالا س۵", "grade": "بالا", "energy_bonus": 800, "required_root": None},
+    {"name": "تنفس بال نور", "description": "فرشته‌گون | متوسط+", "grade": "متوسط", "energy_bonus": 480, "required_root": "ریشه نور"},
+    {"name": "تنفس تایتان", "description": "جسمانی | پیشرفته س۳", "grade": "بالا", "energy_bonus": 880, "required_root": None},
+    {"name": "تنفس ستاره سقوط", "description": "ستاره‌ای | آسمان", "grade": "بالا", "energy_bonus": 1100, "required_root": None},
+    {"name": "تنفس خاکستر زرین", "description": "بعد سوختن | اوج", "grade": "بالا", "energy_bonus": 820, "required_root": None},
+    {"name": "تنفس نه رود", "description": "نه مسیر چی | استاد", "grade": "پیشرفته", "energy_bonus": 2800, "required_root": None},
+    {"name": "تنفس خلأ", "description": "پوچی | قلمرو پوچی", "grade": "پیشرفته", "energy_bonus": 1800, "required_root": "ریشه پوچی"},
+    {"name": "تنفس کهکشان", "description": "کهکشانی", "grade": "پیشرفته", "energy_bonus": 2400, "required_root": "ریشه آسمانی"},
+    {"name": "تنفس ابدیت", "description": "خدایان | قلمرو خدا", "grade": "پیشرفته", "energy_bonus": 5000, "required_root": "ریشه الهی"},
+    {"name": "پیمان روح", "description": "روح‌پیمان | روح س۳", "grade": "پیشرفته", "energy_bonus": 1400, "required_root": "ریشه روحی"},
+    {"name": "کتاب تذهیب پایه", "description": "کتاب قلمرو بیداری", "grade": "کتاب", "energy_bonus": 150, "required_root": None},
+    {"name": "کتاب تذهیب میانه", "description": "کتاب قلمرو میانه", "grade": "کتاب", "energy_bonus": 400, "required_root": None},
+    {"name": "کتاب هسته", "description": "کتاب قلمرو هسته", "grade": "کتاب", "energy_bonus": 900, "required_root": None},
+    {"name": "کتاب روح", "description": "کتاب قلمرو روح", "grade": "کتاب", "energy_bonus": 1500, "required_root": None},
+    {"name": "کتاب آسمان", "description": "کتاب قلمرو آسمان", "grade": "کتاب", "energy_bonus": 2500, "required_root": None},
+    {"name": "کتاب پوچی", "description": "کتاب قلمرو پوچی", "grade": "کتاب", "energy_bonus": 4000, "required_root": None},
+    {"name": "کتاب ازلی", "description": "کتاب قلمرو ازلی", "grade": "کتاب", "energy_bonus": 8000, "required_root": None},
     {
         "name": "پرورش ممنوعه",
-        "description": "⚠️ ممنوع: بار اول +۱ سطح. بعد قفل ابدی — فقط این تکنیک. هر بار استفاده +۱ چی",
+        "description": "⚠️ ممنوع: بار اول +۱ سطح. قفل ابدی. هر بار +۱ چی | حداقل پایه",
         "grade": "ممنوعه",
         "energy_bonus": 1,
         "required_root": None,
@@ -248,14 +390,35 @@ DEFAULT_TECHNIQUES = [
 ]
 
 
+def can_learn_tech(cult, technique_name: str) -> tuple[bool, str]:
+    """چک قلمرو و مرحله برای یادگیری تکنیک/کتاب"""
+    req = TECH_REQUIREMENTS.get(technique_name)
+    if not req:
+        return True, ""
+    need_realm = req.get("realm")
+    need_stage = int(req.get("stage") or 1)
+    from database.models_v2 import CULTIVATION_REALMS
+    cur_realm = cult.realm or "بیداری"
+    cur_stage = int(cult.stage or 1)
+    try:
+        ci = CULTIVATION_REALMS.index(cur_realm) if cur_realm in CULTIVATION_REALMS else 0
+        ni = CULTIVATION_REALMS.index(need_realm) if need_realm in CULTIVATION_REALMS else 0
+    except Exception:
+        ci, ni = 0, 0
+    if ci < ni:
+        return False, f"نیاز به قلمرو «{need_realm}» یا بالاتر (الان: {cur_realm})"
+    if ci == ni and cur_stage < need_stage:
+        return False, f"در قلمرو {need_realm} حداقل مرحله {need_stage} لازم است (الان: {cur_stage})"
+    return True, ""
+
+
 async def ensure_default_techniques(session: AsyncSession):
     result = await session.execute(select(CultivationTechnique))
     existing = {x.name for x in result.scalars().all()}
     for data in DEFAULT_TECHNIQUES:
-        if data["name"] in existing:
+        if data['name'] in existing:
             continue
-        # فقط فیلدهای مدل
-        allowed = {k: v for k, v in data.items() if k in ("name", "description", "grade", "energy_bonus", "required_root")}
+        allowed = {k: v for k, v in data.items() if k in ('name', 'description', 'grade', 'energy_bonus', 'required_root')}
         session.add(CultivationTechnique(**allowed))
     await session.commit()
 
@@ -317,6 +480,11 @@ async def learn_technique(session: AsyncSession, user_id: int, technique: Cultiv
     if await has_forbidden_lock(session, user_id) and technique.name != FORBIDDEN_TECH_NAME:
         return "⚠️ پرورش ممنوعه را یاد گرفته‌ای؛ دیگر نمی‌توانی تکنیک دیگری یاد بگیری یا فعال کنی."
 
+    # چک قلمرو / مرحله
+    ok, why = can_learn_tech(cult, technique.name)
+    if not ok:
+        return f"🔒 {why}"
+
     # چک ریشه مورد نیاز
     if technique.required_root and cult.spiritual_root != technique.required_root:
         if cult.spiritual_root == "بدون ریشه":
@@ -348,10 +516,20 @@ async def learn_technique(session: AsyncSession, user_id: int, technique: Cultiv
         if cult.talent != "forbidden_used":
             cult.talent = "forbidden_ready"
         await session.commit()
+        try:
+            from services.forbidden_lock import lock_consume
+            # user telegram id via User
+            from database.models import User
+            u = await session.get(User, user_id)
+            if u and getattr(u, "telegram_id", None):
+                lock_consume(int(u.telegram_id))
+        except Exception:
+            pass
         return (
             f"☠️ تکنیک «{FORBIDDEN_TECH_NAME}» یاد گرفته شد و قفل شد.\n"
             f"دیگر نمی‌توانی آن را برداری یا تکنیک دیگری فعال کنی.\n"
-            f"اولین تذهیب با آن: +۱ سطح | هر بار استفاده: +۱ چی"
+            f"اولین تذهیب با آن: +۱ سطح | هر بار استفاده: +۱ چی\n"
+            f"☠️ قفل مصرف: دیگر هیچ چای/قرص/آیتمی مصرف نمی‌کنی."
         )
 
     await session.commit()
@@ -385,6 +563,15 @@ def energy_status_line(cult) -> str:
     return f"انرژی: {cur}/{need} | باقی تا سطح بعد: {left} | {cult.realm} مرحله {cult.stage}"
 
 async def add_energy(session: AsyncSession, user_id: int, amount: int) -> dict:
+
+    try:
+        from services.cult_building import bonus_mult
+        from database.models import User as _U
+        _u = await session.get(_U, user_id)
+        if _u and getattr(_u, 'telegram_id', None):
+            amount = int(amount * bonus_mult(int(_u.telegram_id)))
+    except Exception:
+        pass
     cult = await get_or_create_cultivation(session, user_id)
     messages = []
     root = cult.spiritual_root or "بدون ریشه"
@@ -409,19 +596,7 @@ async def add_energy(session: AsyncSession, user_id: int, amount: int) -> dict:
     if root == "بدون ریشه":
         cult.energy += amount
         if cult.energy >= ROOT_UNLOCK_ENERGY:
-            roots = [
-                ("ریشه پنج‌عنصر", 18),
-                ("ریشه آتش", 6), ("ریشه آب", 6), ("ریشه چوب", 6),
-                ("ریشه فلز", 6), ("ریشه خاک", 6),
-                ("ریشه دو‌عنصری آتش‌آب", 5), ("ریشه دو‌عنصری چوب‌خاک", 5),
-                ("ریشه دو‌عنصری فلز‌آتش", 4),
-                ("ریشه سه‌عنصری", 3), ("ریشه چهار‌عنصری", 2),
-                ("ریشه نور", 4), ("ریشه تاریکی", 4),
-                ("ریشه روحی", 3), ("ریشه روح", 3),
-                ("ریشه بهشتی", 2), ("ریشه آسمانی", 2),
-                ("ریشه الهی", 1), ("ریشه پوچی", 1),
-                ("ریشه ای‌تری", 2), ("ریشه دوگانه", 2),
-            ]
+            roots = list(ROOT_AWAKEN_WEIGHTS)
             names, weights = zip(*roots)
             chosen = random.choices(names, weights=weights, k=1)[0]
             cult.spiritual_root = chosen
@@ -433,6 +608,7 @@ async def add_energy(session: AsyncSession, user_id: int, amount: int) -> dict:
             messages.append(f"قلمرو: {cult.realm}")
         await session.commit()
         return {
+            "gained": int(amount) if amount else 0,
             "energy": cult.energy,
             "stage": cult.stage,
             "realm": cult.realm,
@@ -464,6 +640,14 @@ async def add_energy(session: AsyncSession, user_id: int, amount: int) -> dict:
             except Exception:
                 pass
             messages.append("☠️ اولین استفاده پرورش ممنوعه: +۱ سطح تذهیب و +۱ سطح بازی!")
+            try:
+                from services.forbidden_lock import lock_consume
+                from database.models import User as _UU
+                _uu = await session.get(_UU, user_id)
+                if _uu and getattr(_uu, "telegram_id", None):
+                    lock_consume(int(_uu.telegram_id))
+            except Exception:
+                pass
     if not tech:
         messages.append("ℹ️ تکنیک فعال نداری — فقط انرژی پایه ذخیره می‌شود. /learntech")
         bonus = 0

@@ -495,29 +495,43 @@ async def cmd_ex_coin(message: Message):
     await message.answer(msg)
 
 
-@router.message(Command("dailycoin", "سکهروزانه"))
+@router.message(Command("dailycoin", "سکهروزانه", "سکه_روزانه"))
 async def cmd_daily_coin(message: Message):
-    from datetime import date
+    from datetime import date, datetime as _dt
+    uid = message.from_user.id
+    today = date.today().isoformat()
+    # حافظه کمکی در صورت مشکل DB
+    if not hasattr(cmd_daily_coin, "_mem"):
+        cmd_daily_coin._mem = {}
+    if cmd_daily_coin._mem.get(uid) == today:
+        await message.answer(tr(message.from_user.id, "امروز سکه روزانه را گرفتی."))
+        return
     async with async_session() as session:
         user = await get_or_create_user(
             session, message.from_user.id,
             message.from_user.full_name, message.from_user.username
         )
         w = await get_or_create_wallet(session, user.id)
-        today = date.today()
-        last = w.last_daily_coin
+        last = getattr(w, "last_daily_coin", None)
         if last is not None:
             try:
-                if last.date() == today:
+                ld = last.date() if hasattr(last, "date") else last
+                if str(ld)[:10] == today:
+                    cmd_daily_coin._mem[uid] = today
                     await message.answer(tr(message.from_user.id, "امروز سکه روزانه را گرفتی."))
                     return
             except Exception:
                 pass
         w.coins = (w.coins or 0) + 30
-        w.last_daily_coin = datetime.utcnow()
+        try:
+            w.last_daily_coin = _dt.utcnow()
+        except Exception:
+            pass
         await session.commit()
-        total = w.coins
-    await message.answer(f"🪙 +۳۰ سکه روزانه!\nموجودی: {total}")
+        total = w.coins or 0
+    cmd_daily_coin._mem[uid] = today
+    await message.answer(f"🪙 +۳۰ سکه روزانه!" + chr(10) + f"موجودی: {total}")
+
 
 
 @router.message(Command("exchangeup", "ارتقای‌ارز"))

@@ -145,3 +145,15 @@ async def cmd_train_claim(message: Message):
         from services.training import claim_training
         msg = await claim_training(session, user)
     await message.answer(msg)
+
+
+@router.message(Command("trainstop", "انصراف‌تمرین", "قطع‌تمرین", "stoptrain"))
+async def cmd_train_stop(message: Message):
+    async with async_session() as session:
+        user = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
+        from services.training import stop_training
+        msg = await stop_training(session, user)
+    await message.answer(msg)

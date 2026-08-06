@@ -224,3 +224,114 @@ async def cmd_status_card(message: Message):
             f"⏳ عمر: {getattr(user, 'lifespan', 100)}%"
         )
     await message.answer(text)
+
+
+# ——— معدن سنگ روح ———
+@router.message(Command("mine", "معدن"))
+async def cmd_mine(message: Message):
+    from services import spirit_mine as sm
+    await message.answer(sm.status(message.from_user.id))
+
+
+@router.message(Command("buymine", "خرید‌معدن"))
+async def cmd_buy_mine(message: Message):
+    from services import spirit_mine as sm
+    async with async_session() as session:
+        user = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
+        w = await get_or_create_wallet(session, user.id)
+        ok, msg, new_sp = sm.buy_mine(message.from_user.id, w.spirit_stones or 0)
+        if ok:
+            w.spirit_stones = new_sp
+            await session.commit()
+        await message.answer(msg)
+
+
+@router.message(Command("claimmine", "برداشت‌معدن"))
+async def cmd_claim_mine(message: Message):
+    from services import spirit_mine as sm
+    ok, msg, amount = sm.claim(message.from_user.id)
+    if ok and amount:
+        async with async_session() as session:
+            user = await get_or_create_user(
+                session, message.from_user.id,
+                message.from_user.full_name, message.from_user.username
+            )
+            w = await get_or_create_wallet(session, user.id)
+            w.spirit_stones = (w.spirit_stones or 0) + amount
+            await session.commit()
+    await message.answer(msg)
+
+
+@router.message(Command("upgrademine", "ارتقا‌معدن"))
+async def cmd_upgrade_mine(message: Message):
+    from services import spirit_mine as sm
+    async with async_session() as session:
+        user = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
+        w = await get_or_create_wallet(session, user.id)
+        ok, msg, new_sp = sm.upgrade(message.from_user.id, w.spirit_stones or 0)
+        if ok:
+            w.spirit_stones = new_sp
+            await session.commit()
+        await message.answer(msg)
+
+
+from aiogram import Router as _R
+from aiogram.filters import Command
+from aiogram.types import Message
+from database.engine import async_session
+from database.crud import get_or_create_user
+from bot.config import ADMIN_IDS
+
+# reuse router if exists
+try:
+    router
+except NameError:
+    router = _R()
+
+
+@router.message(Command("cultbuilding", "ساختمان‌تزکیه", "تزکیه‌خانه"))
+async def cmd_cult_building(message: Message):
+    from services.cult_building import status
+    await message.answer(status(message.from_user.id))
+
+
+@router.message(Command("upgradecultbuilding", "ارتقا‌تزکیه"))
+async def cmd_up_cult_building(message: Message):
+    async with async_session() as session:
+        user = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
+        from services.cult_building import upgrade
+        msg = await upgrade(session, user.id, message.from_user.id)
+    await message.answer(msg)
+
+
+@router.message(Command("calamitystatus", "وضعیت‌مصیبت"))
+async def cmd_calamity(message: Message):
+    from services.sect_calamity import status_text, tick_calamity
+    async with async_session() as session:
+        msgs = await tick_calamity(session)
+    text = status_text()
+    if msgs:
+        text += chr(10) + chr(10) + chr(10).join(msgs)
+    await message.answer(text)
+
+
+@router.message(Command("protectsect", "محافظت‌فرقه"))
+async def cmd_protect_sect(message: Message):
+    if message.from_user.id not in ADMIN_IDS:
+        await message.answer("فقط ادمین.")
+        return
+    parts = (message.text or "").split()
+    if len(parts) < 2:
+        await message.answer("فرمت: /protectsect sect_id")
+        return
+    from services.sect_calamity import protect_sect
+    await message.answer(protect_sect(int(parts[1])))

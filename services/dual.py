@@ -14,18 +14,15 @@ async def request_dual(session: AsyncSession, user1: User, user2: User) -> DualC
     if user1.id == user2.id:
         return "نمی‌تونی با خودت تذهیب دوگانه کنی."
     
-    # جنسیت: باید یکی مرد و یکی زن باشه
+    # جنسیت مشخص باشد — مرد/زن، زن/زن و مرد/مرد مجاز
     g1 = user1.gender or "نامشخص"
     g2 = user2.gender or "نامشخص"
-    
+
     if g1 == "نامشخص" or g2 == "نامشخص":
         return "هر دو نفر باید جنسیت خود را با /gender مشخص کرده باشند."
-    
-    if g1 == g2:
-        return "تذهیب دوگانه فقط بین مرد و زن ممکن است."
-    
-    if {g1, g2} != {"مرد", "زن"}:
-        return "تذهیب دوگانه فقط بین یک مرد و یک زن قبول می‌شود."
+
+    if g1 not in ("مرد", "زن") or g2 not in ("مرد", "زن"):
+        return "جنسیت نامعتبر. /gender"
     
     cult1 = await get_or_create_cultivation(session, user1.id)
     cult2 = await get_or_create_cultivation(session, user2.id)
@@ -97,8 +94,16 @@ async def accept_dual(session: AsyncSession, dual: DualCultivation, accepter_id:
     if r2.get("messages"):
         msg += "نفر دوم: " + " | ".join(r2["messages"])
     
-    # شانس بچه‌دار شدن
-    if random.random() < CHILD_CHANCE:
+    # شانس بچه‌دار شدن — نژاد نامیرا / قادر مطلق / خدایان نازا هستند
+    try:
+        from services.cultivation import STERILE_RACES
+    except Exception:
+        STERILE_RACES = {"نامیرا", "قادر مطلق", "خدایان"}
+    u1r = getattr(u1, "race", None) if u1 else None
+    u2r = getattr(u2, "race", None) if u2 else None
+    if (u1r in STERILE_RACES) or (u2r in STERILE_RACES):
+        msg += "\n⚠️ یکی از طرفین نژاد نامیرا/قادر مطلق است — تولیدمثل ممکن نیست."
+    elif random.random() < CHILD_CHANCE:
         from database.models import User
         u1 = await session.get(User, dual.user1_id)
         u2 = await session.get(User, dual.user2_id)

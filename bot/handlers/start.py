@@ -3,7 +3,7 @@ from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton, ReplyKey
 from aiogram.filters import CommandStart, Command
 
 from database.engine import async_session
-from bot.config import BOT_VERSION
+from bot.config import BOT_VERSION, CREATOR_NOTICE
 from database.crud import get_or_create_user
 from database.models import ROLE_LEADER
 from bot.config import ADMIN_IDS
@@ -57,6 +57,10 @@ async def cmd_start(message: Message):
         )
         text += chr(10) + chr(10) + t("help_hint", lang)
         await message.answer(text, reply_markup=main_keyboard(lang))
+        try:
+            await message.answer(CREATOR_NOTICE)
+        except Exception:
+            pass
         # کارت وضعیت کوتاه
         try:
             from bot.handlers.jobs_events import cmd_status_card
@@ -257,10 +261,10 @@ async def cmd_remove_kb(message: Message):
 @router.message(Command("version", "نسخه"))
 async def cmd_version(message: Message):
     try:
-        from bot.config import BOT_VERSION, WEBAPP_VERSION
+        from bot.config import BOT_VERSION, CREATOR_NOTICE, WEBAPP_VERSION
         v, w = BOT_VERSION, WEBAPP_VERSION
     except Exception:
-        v = w = "2.9.2"
+        v = w = "3.10.6"
     await message.answer(
         f"🤖 ربات: <b>{v}</b>" + chr(10)
         + f"🌐 وب‌اپ: <b>{w}</b>" + chr(10)
@@ -370,3 +374,9 @@ async def kb_help(message: Message):
     from bot.handlers.help_menu import cmd_help_menu
     await cmd_help_menu(message)
 
+
+
+@router.message(Command("notice", "پیام‌سازنده", "اعلامیه"))
+async def cmd_notice(message: Message):
+    from bot.config import CREATOR_NOTICE
+    await message.answer(CREATOR_NOTICE)

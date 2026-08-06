@@ -34,24 +34,57 @@ _dual_servant_cd: dict = {}  # telegram_id -> last dual datetime
 _rps_challenges: dict[int, dict] = {}
 
 
-@router.message(Command("pay", "ارسال‌پول", "بفرست‌پول"))
+@router.message(Command("pay", "ارسال‌پول", "بفرست‌پول", "انتقال‌ارز", "transfer"))
 async def cmd_pay(message: Message):
-    """ارسال پول به دیگران — برای همه باز است"""
+    """انتقال همه ارزها به دیگران"""
+    CURRENCY = {
+        "coins": ("coins", "سکه"),
+        "سکه": ("coins", "سکه"),
+        "coin": ("coins", "سکه"),
+        "spirit": ("spirit_stones", "سنگ روحی"),
+        "روحی": ("spirit_stones", "سنگ روحی"),
+        "spirit_stones": ("spirit_stones", "سنگ روحی"),
+        "سنگ‌روحی": ("spirit_stones", "سنگ روحی"),
+        "heavenly": ("heavenly_stones", "سنگ بهشتی"),
+        "بهشتی": ("heavenly_stones", "سنگ بهشتی"),
+        "heavenly_stones": ("heavenly_stones", "سنگ بهشتی"),
+        "celestial": ("celestial_stones", "سنگ آسمانی"),
+        "آسمانی": ("celestial_stones", "سنگ آسمانی"),
+        "celestial_stones": ("celestial_stones", "سنگ آسمانی"),
+        "god": ("god_stones", "سنگ خدا"),
+        "خدا": ("god_stones", "سنگ خدا"),
+        "god_stones": ("god_stones", "سنگ خدا"),
+    }
+    HELP = (
+        "💸 <b>انتقال ارز</b>" + chr(10) + chr(10)
+        + "ریپلای + /pay نوع مقدار" + chr(10)
+        + "یا /pay آیدی‌عددی نوع مقدار" + chr(10) + chr(10)
+        + "<b>انواع:</b>" + chr(10)
+        + "• coins / سکه" + chr(10)
+        + "• spirit / روحی" + chr(10)
+        + "• heavenly / بهشتی" + chr(10)
+        + "• celestial / آسمانی" + chr(10)
+        + "• god / خدا" + chr(10) + chr(10)
+        + "چند ارز با هم:" + chr(10)
+        + "/payall ریپلای‌شده → /payall coins 10 spirit 2" + chr(10)
+        + "یا /payall 123456 coins 10 heavenly 1" + chr(10) + chr(10)
+        + "مثال: /pay بهشتی 5"
+    )
     parts = (message.text or "").split()
     async with async_session() as session:
         sender = await get_or_create_user(
             session, message.from_user.id,
             message.from_user.full_name, message.from_user.username
         )
-        if message.reply_to_message:
-            t = message.reply_to_message.from_user
-            target = await get_or_create_user(session, t.id, t.full_name, t.username)
+        if message.reply_to_message and message.reply_to_message.from_user:
+            tu = message.reply_to_message.from_user
+            target = await get_or_create_user(session, tu.id, tu.full_name, tu.username)
             args = parts[1:]
         elif len(parts) >= 4:
             try:
                 tg = int(parts[1])
             except ValueError:
-                await message.answer(tr(message.from_user.id, "فرمت: ریپلای + /pay نوع مقدار\nیا /pay telegram_id نوع مقدار\nنوع: coins|spirit|heavenly"))
+                await message.answer(HELP)
                 return
             target = await get_user_by_telegram_id(session, tg)
             if not target:
@@ -59,48 +92,132 @@ async def cmd_pay(message: Message):
                 return
             args = parts[2:]
         else:
-            await message.answer(
-                "💸 ارسال پول:\n"
-                "ریپلای + /pay coins 50\n"
-                "یا /pay 123456789 coins 50\n"
-                "نوع: coins | spirit | heavenly"
-            )
+            await message.answer(HELP)
             return
         if len(args) < 2:
-            await message.answer(tr(message.from_user.id, "نوع و مقدار لازم است."))
+            await message.answer(HELP)
             return
-        kind, amount = args[0], int(args[1])
+        kind_raw = args[0]
+        try:
+            amount = int(args[1])
+        except ValueError:
+            await message.answer("مقدار باید عدد باشد.")
+            return
         if amount <= 0:
             await message.answer(tr(message.from_user.id, "مقدار باید مثبت باشد."))
             return
+        if amount > 10**15:
+            await message.answer("مقدار خیلی بزرگ است.")
+            return
+        # جلوگیری از ارسال به اکانت ربات
+        try:
+            from bot.config import ADMIN_IDS
+            # اگر target همان ربات باشد (از طریق getMe ذخیره نشده) — چک username bot
+            if getattr(target, "telegram_id", None) and message.bot:
+                me = await message.bot.get_me()
+                if target.telegram_id == me.id:
+                    await message.answer("🤖 ربات چیزی از بازیکن‌ها دریافت نمی‌کند (ارز/آیتم).")
+                    return
+        except Exception:
+            pass
         if sender.id == target.id:
             await message.answer(tr(message.from_user.id, "به خودت نه."))
             return
+        if kind_raw not in CURRENCY:
+            await message.answer(HELP)
+            return
+        field, label = CURRENCY[kind_raw]
         sw = await get_or_create_wallet(session, sender.id)
         tw = await get_or_create_wallet(session, target.id)
-        if kind in ("coins", "سکه"):
-            if sw.coins < amount:
-                await message.answer(tr(message.from_user.id, "سکه کافی نیست."))
-                return
-            sw.coins -= amount
-            tw.coins += amount
-        elif kind in ("spirit", "روحی"):
-            if sw.spirit_stones < amount:
-                await message.answer(tr(message.from_user.id, "سنگ روحی کافی نیست."))
-                return
-            sw.spirit_stones -= amount
-            tw.spirit_stones += amount
-        elif kind in ("heavenly", "بهشتی"):
-            if (sw.heavenly_stones or 0) < amount:
-                await message.answer(tr(message.from_user.id, "سنگ بهشتی کافی نیست."))
-                return
-            sw.heavenly_stones = (sw.heavenly_stones or 0) - amount
-            tw.heavenly_stones = (tw.heavenly_stones or 0) + amount
-        else:
-            await message.answer(tr(message.from_user.id, "نوع: coins | spirit | heavenly"))
+        have = int(getattr(sw, field, 0) or 0)
+        if have < amount:
+            await message.answer(f"{label} کافی نیست (داری: {have}).")
             return
+        setattr(sw, field, have - amount)
+        setattr(tw, field, int(getattr(tw, field, 0) or 0) + amount)
         await session.commit()
-    await message.answer(f"✅ {amount} {kind} به {target.full_name} ارسال شد.")
+    await message.answer(
+        f"✅ انتقال انجام شد" + chr(10)
+        + f"{amount} {label} → <b>{target.full_name}</b>"
+    )
+
+
+@router.message(Command("payall", "انتقال‌چندارز", "بفرست‌همه"))
+async def cmd_payall(message: Message):
+    """چند ارز در یک دستور: /payall coins 10 spirit 2 heavenly 1"""
+    CURRENCY = {
+        "coins": ("coins", "سکه"), "سکه": ("coins", "سکه"), "coin": ("coins", "سکه"),
+        "spirit": ("spirit_stones", "سنگ روحی"), "روحی": ("spirit_stones", "سنگ روحی"),
+        "heavenly": ("heavenly_stones", "سنگ بهشتی"), "بهشتی": ("heavenly_stones", "سنگ بهشتی"),
+        "celestial": ("celestial_stones", "سنگ آسمانی"), "آسمانی": ("celestial_stones", "سنگ آسمانی"),
+        "god": ("god_stones", "سنگ خدا"), "خدا": ("god_stones", "سنگ خدا"),
+    }
+    parts = (message.text or "").split()
+    async with async_session() as session:
+        sender = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
+        if message.reply_to_message and message.reply_to_message.from_user:
+            tu = message.reply_to_message.from_user
+            target = await get_or_create_user(session, tu.id, tu.full_name, tu.username)
+            args = parts[1:]
+        elif len(parts) >= 2:
+            try:
+                tg = int(parts[1])
+                target = await get_user_by_telegram_id(session, tg)
+                if not target:
+                    await message.answer("کاربر پیدا نشد.")
+                    return
+                args = parts[2:]
+            except ValueError:
+                await message.answer(
+                    "فرمت: ریپلای + /payall coins 10 spirit 2" + chr(10)
+                    + "یا /payall آیدی coins 10 heavenly 1"
+                )
+                return
+        else:
+            await message.answer("ریپلای کن یا آیدی بده. مثال: /payall coins 10 spirit 5")
+            return
+        if sender.id == target.id:
+            await message.answer("به خودت نه.")
+            return
+        if len(args) < 2 or len(args) % 2 != 0:
+            await message.answer("جفت نوع+مقدار لازم است. مثال: coins 10 spirit 2")
+            return
+        pairs = []
+        for i in range(0, len(args), 2):
+            k, a = args[i], args[i + 1]
+            if k not in CURRENCY:
+                await message.answer(f"نوع نامعتبر: {k}")
+                return
+            try:
+                amt = int(a)
+            except ValueError:
+                await message.answer(f"مقدار نامعتبر: {a}")
+                return
+            if amt <= 0:
+                await message.answer("مقدار باید مثبت باشد.")
+                return
+            pairs.append((CURRENCY[k][0], CURRENCY[k][1], amt))
+        sw = await get_or_create_wallet(session, sender.id)
+        tw = await get_or_create_wallet(session, target.id)
+        for field, label, amt in pairs:
+            have = int(getattr(sw, field, 0) or 0)
+            if have < amt:
+                await message.answer(f"{label} کافی نیست (داری: {have}، نیاز: {amt}).")
+                return
+        lines = []
+        for field, label, amt in pairs:
+            setattr(sw, field, int(getattr(sw, field, 0) or 0) - amt)
+            setattr(tw, field, int(getattr(tw, field, 0) or 0) + amt)
+            lines.append(f"• {amt} {label}")
+        await session.commit()
+    await message.answer(
+        f"✅ انتقال چندارزی به <b>{target.full_name}</b>" + chr(10)
+        + chr(10).join(lines)
+    )
+
 
 
 @router.message(Command("market", "بازار"))
@@ -351,6 +468,7 @@ async def cmd_dual_servant(message: Message):
     if random.random() < CHILD_CHANCE:
         child = {
             "name": f"فرزند {message.from_user.full_name[:10]} و {s['name']}",
+            "techs": [],
             "gender": random.choice(["مرد", "زن"]),
             "servant": s["name"],
             "servant_id": sid,
@@ -411,6 +529,7 @@ async def cmd_child_servant(message: Message):
     if random.random() < CHILD_CHANCE:
         child = {
             "name": f"فرزند {message.from_user.full_name[:10]} و {s['name']}",
+            "techs": [],
             "gender": random.choice(["مرد", "زن"]),
             "servant": s["name"],
             "servant_id": sid,
@@ -434,16 +553,111 @@ async def cmd_my_children(message: Message):
     if not kids:
         await message.answer(
             "فرزندی نیست." + chr(10)
-            + "بازیکن: ریپلای + /dual" + chr(10)
-            + "خدمتکار: /dualservant یا /childservant شماره"
+            + "تذهیب دوگانه / خدمتکار شانس بچه دارد." + chr(10)
+            + "/childservant شماره | /namechild | /teachchild"
         )
         return
     text = "👶 <b>فرزندان</b>" + chr(10) + chr(10)
     for i, c in enumerate(kids, 1):
-        text += f"{i}. {c.get('name')} ({c.get('gender')})" + chr(10)
+        techs = c.get("techs") or []
+        text += f"{i}. <b>{c.get('name')}</b> ({c.get('gender')})" + chr(10)
         if c.get("servant"):
-            text += f"   خدمتکار: {c['servant']}" + chr(10)
+            text += f"   مادر/پدر خدمتکار: {c['servant']}" + chr(10)
+        text += f"   تکنیک‌ها: {', '.join(techs) if techs else '—'}" + chr(10)
+    text += chr(10) + "/namechild شماره نام‌جدید" + chr(10) + "/teachchild شماره نام‌تکنیک"
     await message.answer(text)
+
+
+@router.message(Command("namechild", "اسم‌بچه", "نام‌فرزند"))
+async def cmd_name_child(message: Message):
+    """ /namechild شماره نام """
+    parts = (message.text or "").split(maxsplit=2)
+    if len(parts) < 3:
+        await message.answer("فرمت: /namechild شماره نام‌جدید" + chr(10) + "مثال: /namechild 1 آریا")
+        return
+    try:
+        idx = int(parts[1]) - 1
+    except ValueError:
+        await message.answer("شماره نامعتبر.")
+        return
+    new_name = parts[2].strip()[:32]
+    if not new_name:
+        await message.answer("نام خالی است.")
+        return
+    kids = _servant_children.get(message.from_user.id, [])
+    if idx < 0 or idx >= len(kids):
+        await message.answer("فرزندی با این شماره نیست. /mychildren")
+        return
+    old = kids[idx].get("name", "?")
+    kids[idx]["name"] = new_name
+    await message.answer(f"✅ نام فرزند عوض شد:" + chr(10) + f"{old} → <b>{new_name}</b>")
+
+
+@router.message(Command("teachchild", "آموزش‌بچه", "تکنیک‌فرزند"))
+async def cmd_teach_child(message: Message):
+    """ /teachchild شماره نام‌تکنیک — از تکنیک‌های خودت به فرزند یاد بده """
+    parts = (message.text or "").split(maxsplit=2)
+    if len(parts) < 3:
+        await message.answer(
+            "فرمت: /teachchild شماره نام‌تکنیک" + chr(10)
+            + "باید خودت آن تکنیک را بلد باشی." + chr(10)
+            + "مثال: /teachchild 1 تنفس پایه"
+        )
+        return
+    try:
+        idx = int(parts[1]) - 1
+    except ValueError:
+        await message.answer("شماره نامعتبر.")
+        return
+    tech_name = parts[2].strip()
+    kids = _servant_children.setdefault(message.from_user.id, [])
+    if idx < 0 or idx >= len(kids):
+        await message.answer("فرزند پیدا نشد. /mychildren")
+        return
+    # چک تکنیک بازیکن
+    known = False
+    async with async_session() as session:
+        user = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
+        try:
+            from sqlalchemy import select
+            from database.models_v2 import UserTechnique, CultivationTechnique
+            rows = await session.execute(
+                select(CultivationTechnique.name)
+                .join(UserTechnique, UserTechnique.technique_id == CultivationTechnique.id)
+                .where(UserTechnique.user_id == user.id)
+            )
+            names = [r[0] for r in rows.all()]
+            for n in names:
+                if tech_name in n or n in tech_name:
+                    tech_name = n
+                    known = True
+                    break
+        except Exception:
+            # fallback: accept any short name
+            known = len(tech_name) >= 2
+    if not known:
+        await message.answer(
+            f"تکنیک «{tech_name}» را بلد نیستی." + chr(10)
+            + "/techniques — لیست تکنیک‌های خودت"
+        )
+        return
+    child = kids[idx]
+    techs = child.setdefault("techs", [])
+    if tech_name in techs:
+        await message.answer(f"{child.get('name')} قبلاً «{tech_name}» را بلد است.")
+        return
+    if len(techs) >= 8:
+        await message.answer("این فرزند حداکثر ۸ تکنیک می‌تواند یاد بگیرد.")
+        return
+    techs.append(tech_name)
+    await message.answer(
+        f"📚 به <b>{child.get('name')}</b> تکنیک «{tech_name}» یاد دادی." + chr(10)
+        + f"تکنیک‌های فرزند: {', '.join(techs)}"
+    )
+
 
 
 @router.message(Command("harmservant", "آسیب‌خدمتکار"))

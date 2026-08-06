@@ -1,3 +1,10 @@
+def is_bot_protected(user) -> bool:
+    # اکانت‌های سیستمی/ربات کشته نمی‌شوند
+    name = (getattr(user, 'full_name', None) or '') + (getattr(user, 'username', None) or '')
+    if 'bot' in name.lower() and getattr(user, 'telegram_id', 0) < 0:
+        return True
+    return False
+
 """سیستم خون، زخم، سم، شمشیر کوروش — آسیب پایدار تا درمان"""
 from datetime import datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession

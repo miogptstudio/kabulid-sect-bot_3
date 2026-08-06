@@ -15,6 +15,11 @@ router = Router()
 
 @router.message(Command("kill", "بکش", "قتل"))
 async def cmd_kill(message: Message):
+    if message.reply_to_message and message.reply_to_message.from_user:
+        if message.reply_to_message.from_user.is_bot:
+            await message.answer("🤖 کسی نمی‌تواند ربات را بکشد.")
+            return
+
     if not message.reply_to_message:
         await message.answer(
             "☠️ حمله: ریپلای + /kill\n"

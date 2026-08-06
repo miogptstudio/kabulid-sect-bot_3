@@ -194,23 +194,27 @@ async def process_arena_result(
 async def run_arena_fight(session: AsyncSession, p1: User, p2: User) -> str:
     power1 = await calc_power(session, p1)
     power2 = await calc_power(session, p2)
-    chance = win_chance(power1["total"], power2["total"])
-    if random.random() < chance:
+    # بر اساس قدرت — بدون شانس تصادفی
+    if power1["total"] > power2["total"]:
         winner, loser = p1, p2
-    else:
+    elif power2["total"] > power1["total"]:
         winner, loser = p2, p1
+    else:
+        winner, loser = (p1, p2) if random.random() < 0.5 else (p2, p1)
 
     extra, wprof, lprof = await process_arena_result(session, winner, loser)
     text = (
-        f"🏟️ <b>نتیجه آرنا</b>\n\n"
-        f"{p1.full_name} ({power1['total']}) vs {p2.full_name} ({power2['total']})\n\n"
-        f"🏆 برنده: <b>{winner.full_name}</b>\n"
-        f"درجه: {wprof.tier} | امتیاز: {wprof.points}\n"
-        f"بازنده: {loser.full_name} ({lprof.tier} | {lprof.points})\n"
+        "🏟️ <b>نتیجه آرنا</b>" + chr(10) + chr(10)
+        + f"{p1.full_name} ({power1['total']}) vs {p2.full_name} ({power2['total']})" + chr(10)
+        + "⚖️ بر اساس قدرت" + chr(10) + chr(10)
+        + f"🏆 برنده: <b>{winner.full_name}</b>" + chr(10)
+        + f"درجه: {wprof.tier} | امتیاز: {wprof.points}" + chr(10)
+        + f"بازنده: {loser.full_name} ({lprof.tier} | {lprof.points})" + chr(10)
     )
     if extra:
-        text += f"\n{extra}"
+        text += chr(10) + str(extra)
     return text
+
 
 
 async def arena_leaderboard(session: AsyncSession, limit: int = 10) -> str:
@@ -308,9 +312,7 @@ async def start_open_arena(session: AsyncSession, room_id: int, starter_id: int)
     if len(fighters) < 3:
         return "بازیکن معتبر کافی نیست."
     fighters.sort(key=lambda x: x[1], reverse=True)
-    # کمی تصادف
-    if random.random() < 0.3 and len(fighters) > 1:
-        fighters[0], fighters[1] = fighters[1], fighters[0]
+    # فقط قدرت — بدون شانس
     winner = fighters[0][0]
     # امتیاز
     wp = await get_or_create_arena_profile(session, winner.id)

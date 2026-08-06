@@ -278,6 +278,10 @@ async def cmd_use_item(message: Message):
             session, message.from_user.id,
             message.from_user.full_name, message.from_user.username
         )
+        from services.forbidden_lock import is_consume_locked, lock_consume, lock_message, FORBIDDEN_TEA_NAME
+        if is_consume_locked(message.from_user.id):
+            await message.answer(lock_message())
+            return
         from sqlalchemy import select
         from database.models_v3 import UserInventory
 
@@ -292,12 +296,52 @@ async def cmd_use_item(message: Message):
             return
         inv, item = rows[idx]
         effect = item.effect or {}
+        if isinstance(effect, str):
+            import json
+            try:
+                effect = json.loads(effect)
+            except Exception:
+                effect = {}
+        if not isinstance(effect, dict):
+            effect = {}
         msg_parts = [f"✅ از «{item.name}» استفاده کردی."]
+        # چای/آیتم ممنوعه → قفل مصرف ابدی
+        if item.name == FORBIDDEN_TEA_NAME or effect.get("forbidden") or "ممنوعه" in (item.name or ""):
+            lock_consume(message.from_user.id)
+            msg_parts.append("☠️ قفل مصرف ابدی فعال شد — دیگر هیچ چیز مصرف نمی‌کنی.")
 
         if isinstance(effect, dict):
             if effect.get("xp"):
                 user.xp += int(effect["xp"])
                 msg_parts.append(f"+{effect['xp']} XP")
+            # عمر
+            if effect.get("lifespan_full"):
+                user.lifespan = 100
+                msg_parts.append(f"❤️ عمر کامل شد (۱۰۰)")
+            if effect.get("lifespan") or effect.get("life") or effect.get("age"):
+                add_life = int(effect.get("lifespan") or effect.get("life") or effect.get("age") or 0)
+                cur = int(getattr(user, "lifespan", 100) or 100)
+                user.lifespan = min(500, cur + add_life)
+                msg_parts.append(f"+{add_life} عمر (الان: {user.lifespan})")
+            # انرژی مستقیم (قرص و غیره — غیر از چای که پایین‌تر هندل می‌شود)
+            if effect.get("energy") and not (
+                item.item_type == "tea" or effect.get("cooldown_min") or "چای" in (item.name or "")
+            ):
+                from services.cultivation import add_energy as _ae
+                _gain = int(effect["energy"])
+                _res = await _ae(session, user.id, _gain)
+                msg_parts.append(f"+{_gain} انرژی تذهیب")
+                if _res.get("messages"):
+                    msg_parts.extend(_res["messages"])
+            # خون
+            if effect.get("blood"):
+                b = int(effect["blood"])
+                cur_b = int(getattr(user, "blood", 100) or 100)
+                user.blood = min(500, cur_b + b)
+                msg_parts.append(f"+{b} خون (الان: {user.blood})")
+            # محافظ
+            if effect.get("protect"):
+                msg_parts.append("سپر محافظ فعال شد (۱ بار).")
             if effect.get("duel_power"):
                 msg_parts.append(f"قدرت دوئل (از آیتم): {effect['duel_power']}")
             if effect.get("learn_tech"):
@@ -337,6 +381,24 @@ async def cmd_use_item(message: Message):
                 from services.combat_blood import heal_poison
                 msg_parts.append(await heal_poison(session, user))
 
+        # fallback نام‌محور اگر effect خالی بود
+        if not effect or (isinstance(effect, dict) and not effect):
+            nm = item.name or ""
+            if "عمر" in nm:
+                cur = int(getattr(user, "lifespan", 100) or 100)
+                user.lifespan = min(500, cur + 10)
+                msg_parts.append(f"+۱۰ عمر (الان: {user.lifespan})")
+            elif "انرژی" in nm or "چی" in nm:
+                from services.cultivation import add_energy as _ae2
+                _r = await _ae2(session, user.id, 5000)
+                msg_parts.append("+۵۰۰۰ انرژی")
+            elif "سلامت" in nm or "پادزهر" in nm:
+                try:
+                    from services.combat_blood import heal_poison
+                    msg_parts.append(await heal_poison(session, user))
+                except Exception:
+                    msg_parts.append("درمان اعمال شد.")
+
         # منابع از مواد
         if getattr(item, "item_type", "") in ("material", "herb_normal", "herb_spiritual"):
             from services.economy import get_or_create_wallet as _gw
@@ -371,6 +433,10 @@ async def cmd_drop_item(message: Message):
             session, message.from_user.id,
             message.from_user.full_name, message.from_user.username
         )
+        from services.forbidden_lock import is_consume_locked, lock_consume, lock_message, FORBIDDEN_TEA_NAME
+        if is_consume_locked(message.from_user.id):
+            await message.answer(lock_message())
+            return
         from sqlalchemy import select
         from database.models_v3 import UserInventory
 

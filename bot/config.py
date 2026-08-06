@@ -1,5 +1,19 @@
-BOT_VERSION = "2.9.2"
-WEBAPP_VERSION = "2.9.2"
+BOT_VERSION = "3.10.6"
+WEBAPP_VERSION = "3.10.6"
+# پیام عمومی سازنده
+CREATOR_NOTICE = """📢 <b>پیام سازنده ربات</b>
+
+نسخه <b>۲.۹.۴</b>
+
+از طرف سازنده:
+لطفاً دیگر درخواست‌های عجیب و غریب نفرستید.
+همین یک‌بار برخی قابلیت‌ها اضافه شد؛ یعنی چی که مدام بخواید با مردم لز کنید یا با مردا گی کنید؟
+
+تمرکز ربات روی تذهیب، فرقه، دوئل و رقابت است.
+درخواست‌های نامربوط بعدی نادیده گرفته می‌شود.
+
+— سازنده"""
+
 import os
 from dotenv import load_dotenv
 
@@ -49,12 +63,12 @@ XP_NEEDED_PER_LEVEL = 100
 MAX_LEVEL = 120
 
 # تذهیب: سطح ۱→۲ = ۲۰۰۰۰۰، هر سطح بعد +۲۵۰۰۰۰
-ENERGY_BASE = 30_000
-ENERGY_PER_LEVEL_ADD = 40_000
-ROOT_UNLOCK_ENERGY = 50_000
+ENERGY_BASE = 200_000
+ENERGY_PER_LEVEL_ADD = 250_000
+ROOT_UNLOCK_ENERGY = 200_000
 GATHER_ENERGY_AMOUNT = 5_000
 
-GUARDIAN_TIMEOUT_SEC = 15
+GUARDIAN_TIMEOUT_SEC = 12
 GUARDIAN_COOLDOWN_SEC = 5 * 60  # هر ۵ دقیقه
 HUNT_RISK_NORMAL = 0.15
 HUNT_RISK_UNDERWORLD = 0.35

@@ -232,8 +232,13 @@ async def api_game_room(request):
             body = await request.json()
         except Exception:
             body = {}
-        room["state"] = body.get("state", room["state"])
-        room["turn"] = body.get("turn", room["turn"])
+        # فقط بازیکن داخل اتاق
+        if tg_id and not any(p.get("id") == tg_id for p in room.get("players", [])):
+            return web.json_response({"error": "عضو این اتاق نیستی"})
+        if "state" in body and body["state"] is not None:
+            room["state"] = body["state"]
+        if "turn" in body and body["turn"] is not None:
+            room["turn"] = body["turn"]
         return web.json_response({"ok": True, "state": room["state"], "turn": room["turn"], "players": room["players"]})
 
     return web.json_response({"error": "action نامعتبر"})

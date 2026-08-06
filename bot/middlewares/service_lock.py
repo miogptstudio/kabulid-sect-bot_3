@@ -6,7 +6,7 @@ from aiogram.types import TelegramObject, Message, CallbackQuery
 # دستوراتی که حتی در قفل مجازند
 ALLOWED_PREFIXES = (
     "/start", "/help", "/commands", "/دستورات", "/راهنما", "/منو",
-    "/trainstatus", "/trainclaim", "/train", "/تمرین", "/وضعیت‌تمرین", "/پایان‌تمرین", "/دریافت‌تمرین",
+    "/trainstatus", "/trainclaim", "/trainstop", "/train", "/تمرین", "/وضعیت‌تمرین", "/پایان‌تمرین", "/دریافت‌تمرین", "/انصراف‌تمرین", "/قطع‌تمرین", "/stoptrain",
     "/prison", "/زندان", "/bail", "/وثیقه", "/آزادی‌زندان",
     "/version", "/نسخه", "/ping", "/تست", "/profile", "/me", "/پروفایل",
     "/rules", "/قوانین",

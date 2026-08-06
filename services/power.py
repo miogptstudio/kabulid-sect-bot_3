@@ -69,6 +69,52 @@ async def calc_power(session: AsyncSession, user: User) -> dict:
             weapon_p = max(weapon_p, dp)
 
     job_p = 0
+    body_p = 0
+    char_p = 0
+    race_p = 0
+    try:
+        from services.cultivation import RACE_CULT
+        rn = getattr(user, 'race', None) or 'انسان'
+        race_p = int(50 * (float(RACE_CULT.get(rn, {}).get('bonus', 1.0)) - 1.0))
+    except Exception:
+        race_p = 0
+    try:
+        from services.characters import total_power_bonus
+        char_p = int(total_power_bonus(getattr(user, 'telegram_id', 0) or 0))
+    except Exception:
+        char_p = 0
+    race_p = 0
+    try:
+        from services.cultivation import RACE_CULT
+        rn = getattr(user, 'race', None) or 'انسان'
+        race_p = int(50 * (float(RACE_CULT.get(rn, {}).get('bonus', 1.0)) - 1.0))
+    except Exception:
+        race_p = 0
+    try:
+        from services.body_cult import body_power_bonus
+        body_p = body_power_bonus(user.telegram_id)
+    except Exception:
+        body_p = 0
+    char_p = 0
+    race_p = 0
+    try:
+        from services.cultivation import RACE_CULT
+        rn = getattr(user, 'race', None) or 'انسان'
+        race_p = int(50 * (float(RACE_CULT.get(rn, {}).get('bonus', 1.0)) - 1.0))
+    except Exception:
+        race_p = 0
+    try:
+        from services.characters import total_power_bonus
+        char_p = int(total_power_bonus(getattr(user, 'telegram_id', 0) or 0))
+    except Exception:
+        char_p = 0
+    race_p = 0
+    try:
+        from services.cultivation import RACE_CULT
+        rn = getattr(user, 'race', None) or 'انسان'
+        race_p = int(50 * (float(RACE_CULT.get(rn, {}).get('bonus', 1.0)) - 1.0))
+    except Exception:
+        race_p = 0
     try:
         from services.jobs import get_job, JOBS
         j = get_job(user.telegram_id)
@@ -76,7 +122,53 @@ async def calc_power(session: AsyncSession, user: User) -> dict:
             job_p = int((base + realm_p) * (JOBS[j]['mult'] - 1))
     except Exception:
         job_p = 0
-    total = base + rank_bonus + realm_p + root_p + weapon_p + spirit_p + job_p
+    body_p = 0
+    char_p = 0
+    race_p = 0
+    try:
+        from services.cultivation import RACE_CULT
+        rn = getattr(user, 'race', None) or 'انسان'
+        race_p = int(50 * (float(RACE_CULT.get(rn, {}).get('bonus', 1.0)) - 1.0))
+    except Exception:
+        race_p = 0
+    try:
+        from services.characters import total_power_bonus
+        char_p = int(total_power_bonus(getattr(user, 'telegram_id', 0) or 0))
+    except Exception:
+        char_p = 0
+    race_p = 0
+    try:
+        from services.cultivation import RACE_CULT
+        rn = getattr(user, 'race', None) or 'انسان'
+        race_p = int(50 * (float(RACE_CULT.get(rn, {}).get('bonus', 1.0)) - 1.0))
+    except Exception:
+        race_p = 0
+    try:
+        from services.body_cult import body_power_bonus
+        body_p = body_power_bonus(user.telegram_id)
+    except Exception:
+        body_p = 0
+    char_p = 0
+    race_p = 0
+    try:
+        from services.cultivation import RACE_CULT
+        rn = getattr(user, 'race', None) or 'انسان'
+        race_p = int(50 * (float(RACE_CULT.get(rn, {}).get('bonus', 1.0)) - 1.0))
+    except Exception:
+        race_p = 0
+    try:
+        from services.characters import total_power_bonus
+        char_p = int(total_power_bonus(getattr(user, 'telegram_id', 0) or 0))
+    except Exception:
+        char_p = 0
+    race_p = 0
+    try:
+        from services.cultivation import RACE_CULT
+        rn = getattr(user, 'race', None) or 'انسان'
+        race_p = int(50 * (float(RACE_CULT.get(rn, {}).get('bonus', 1.0)) - 1.0))
+    except Exception:
+        race_p = 0
+    total = base + rank_bonus + realm_p + root_p + weapon_p + spirit_p + job_p + body_p + char_p + race_p
     if getattr(user, "is_spirit_raiser", False):
         total += 15
 

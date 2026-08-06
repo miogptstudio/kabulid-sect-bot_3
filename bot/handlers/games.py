@@ -108,7 +108,7 @@ async def cb_game_menu(callback: CallbackQuery):
             reply_markup=builder.as_markup(),
         )
     elif kind == "nard":
-        await callback.message.edit_text(tr(callback.from_user.id, "🎯 تخته‌نرد: /nard\nآنلاین در وب‌اپ → تخته‌نرد → آنلاین"))
+        await callback.message.edit_text(tr(callback.from_user.id, "🎯 تخته‌نرد واقعی در وب‌اپ:\nهمه مهره‌ها را به خانه بیاور → مهره را بزن → دکمه «خروج مهره»\n/nard"))
     elif kind == "dice":
         d1, d2 = random.randint(1, 6), random.randint(1, 6)
         await callback.message.edit_text(
@@ -521,20 +521,15 @@ async def cb_nard_bot(callback: CallbackQuery):
     if callback.from_user.id != owner:
         await callback.answer()
         return
-    a, b = random.randint(1, 6), random.randint(1, 6)
-    c, d = random.randint(1, 6), random.randint(1, 6)
-    me, bot = a + b, c + d
-    res = "مساوی"
-    if me > bot:
-        res = "تو جلو هستی ✅"
-    elif me < bot:
-        res = "ربات جلو ❌"
     await callback.message.edit_text(
-        f"🎲 تخته‌نرد" + chr(10)
-        + f"تو: {a}-{b} = {me}" + chr(10)
-        + f"ربات: {c}-{d} = {bot}" + chr(10)
-        + res + chr(10)
-        + "/nard دوباره | آنلاین: وب‌اپ → تخته‌نرد → آنلاین"
+        "🎲 <b>تخته‌نرد واقعی</b>" + chr(10)
+        + "برای حرکت مهره، بار، و <b>خروج (bearing off)</b> از وب‌اپ استفاده کن:" + chr(10)
+        + "منوی ربات → Open WebApp → بازی‌ها → تخته‌نرد → با ربات" + chr(10) + chr(10)
+        + "قوانین خروج:" + chr(10)
+        + "• همه ۱۵ مهره باید در خانه باشند" + chr(10)
+        + "• تاس دقیق یا بالاترین مهره برای خروج" + chr(10)
+        + "• دکمه «خروج مهره» را بزن یا روی همان خانه کلیک کن" + chr(10) + chr(10)
+        + "اتاق دو نفره: تخته‌نرد → آنلاین"
     )
     await callback.answer()
 

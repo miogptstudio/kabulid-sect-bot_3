@@ -42,7 +42,7 @@ async def cmd_race(message: Message):
     choices = list(RACES) + (list(ADMIN_RACES) if is_admin else [])
     builder = InlineKeyboardBuilder()
     # فقط چند نژاد پایه در دکمه؛ بقیه با هسته
-    basic = ["انسان", "جن", "غول", "پری", "سایه‌رو", "فرشته", "اهریمن"]
+    basic = ["انسان", "جن", "غول", "پری", "سایه‌رو", "فرشته", "اهریمن", "نامیرا"]
     if is_admin:
         basic = basic + list(ADMIN_RACES)
     for r in basic:
@@ -58,7 +58,7 @@ async def cmd_race(message: Message):
     text2 += "نژادهای قوی‌تر و ایرانی با <b>هسته</b>:" + chr(10)
     text2 += "/cores · /findcore · /usecore نام‌هسته" + chr(10)
     if is_admin:
-        text2 += chr(10) + "👑 خدایان فقط ادمین"
+        text2 += chr(10) + "👑 خدایان و قادر مطلق فقط ادمین" + chr(10) + "⚠️ نامیرا: قدرت بالا، بدون تولیدمثل"
     await message.answer(text2, reply_markup=builder.as_markup())
 
 
@@ -73,7 +73,7 @@ async def cb_set_race(callback: CallbackQuery):
         await callback.answer()
         return
     if race in ADMIN_RACES and callback.from_user.id not in ADMIN_IDS:
-        await callback.answer(tr(callback.from_user.id, "نژاد خدایان فقط برای ادمین"), show_alert=True)
+        await callback.answer(tr(callback.from_user.id, "این نژاد فقط برای ادمین/سازنده است"), show_alert=True)
         return
     async with async_session() as session:
         user = await get_or_create_user(
@@ -91,8 +91,9 @@ async def cb_set_race(callback: CallbackQuery):
         f"✅ نژاد «<b>{race}</b>» ثبت شد." + chr(10)
         + f"سبک: {info['style']}" + chr(10)
         + f"{info['desc']}" + chr(10)
-        + f"ضریب: ×{info['bonus']}" + chr(10) + chr(10)
-        + "برای نژادهای دیگر: /cores"
+        + f"ضریب: ×{info['bonus']}" + chr(10)
+        + (("⚠️ این نژاد نمی‌تواند تولیدمثل کند." + chr(10)) if race in ("نامیرا", "قادر مطلق", "خدایان") else "")
+        + chr(10) + "برای نژادهای دیگر: /cores"
     )
     await callback.answer()
 
