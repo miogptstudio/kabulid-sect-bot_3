@@ -11,18 +11,29 @@ class AutoReplyMiddleware(BaseMiddleware):
         event: TelegramObject,
         data: Dict[str, Any],
     ) -> Any:
-        if isinstance(event, Message) and event.chat and event.message_id:
-            orig = event.answer
+        if not isinstance(event, Message) or not event.chat or not event.message_id:
+            return await handler(event, data)
 
-            async def answer_with_reply(*args, **kwargs):
-                if "reply_to_message_id" not in kwargs and "reply_parameters" not in kwargs:
-                    kwargs["reply_to_message_id"] = event.message_id
-                try:
-                    return await orig(*args, **kwargs)
-                except Exception:
-                    # اگر ریپلای ممکن نبود، بدون ریپلای
-                    kwargs.pop("reply_to_message_id", None)
-                    return await orig(*args, **kwargs)
+        msg_id = event.message_id
+        bot = data.get("bot")
+        # به‌جای تغییر event.answer از bot.send_message با reply استفاده می‌کنیم
+        # با نگه‌داشتن answer اصلی و پچ امن
+        orig = Message.answer
 
-            event.answer = answer_with_reply  # type: ignore
+        async def bound_answer(self_msg, text=None, **kwargs):
+            if "reply_to_message_id" not in kwargs and "reply_parameters" not in kwargs:
+                kwargs["reply_to_message_id"] = self_msg.message_id
+            try:
+                return await orig(self_msg, text, **kwargs)
+            except Exception:
+                kwargs.pop("reply_to_message_id", None)
+                kwargs.pop("reply_parameters", None)
+                return await orig(self_msg, text, **kwargs)
+
+        # پچ کلاس فقط برای این درخواست خطرناک است؛ فقط این instance:
+        try:
+            object.__setattr__(event, "answer", bound_answer.__get__(event, Message))
+        except Exception:
+            pass
+
         return await handler(event, data)
