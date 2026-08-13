@@ -264,7 +264,7 @@ async def cmd_version(message: Message):
         from bot.config import BOT_VERSION, CREATOR_NOTICE, WEBAPP_VERSION
         v, w = BOT_VERSION, WEBAPP_VERSION
     except Exception:
-        v = w = "3.10.6"
+        v = w = "4.4.0"
     await message.answer(
         f"🤖 ربات: <b>{v}</b>" + chr(10)
         + f"🌐 وب‌اپ: <b>{w}</b>" + chr(10)

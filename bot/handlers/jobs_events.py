@@ -89,51 +89,16 @@ async def cmd_tribe_fight(message: Message):
 
 @router.message(Command("cyrussale", "فروش‌کوروش"))
 async def cmd_cyrus_sale(message: Message):
-    await message.answer(cs.sale_info())
+    await message.answer("⚔️ ایونت فروش شمشیر کوروش پایان یافته و حذف شده است.")
+
+
 
 
 @router.message(Command("buycyrus", "خرید‌کوروش"))
 async def cmd_buy_cyrus(message: Message):
-    ok, msg = cs.can_buy(message.from_user.id)
-    if not ok:
-        await message.answer(msg)
-        return
-    async with async_session() as session:
-        user = await get_or_create_user(
-            session, message.from_user.id,
-            message.from_user.full_name, message.from_user.username
-        )
-        w = await get_or_create_wallet(session, user.id)
-        price = cs.PUBLIC_PRICE
-        if (w.spirit_stones or 0) < price:
-            await message.answer(f"نیاز به {price} سنگ روحی داری.")
-            return
-        from sqlalchemy import select
-        from database.models_v3 import ShopItem, UserInventory
-        from services.shop import ensure_default_buildings_and_items
-        await ensure_default_buildings_and_items(session)
-        r = await session.execute(select(ShopItem).where(ShopItem.name.contains("کوروش")))
-        item = r.scalars().first()
-        if not item:
-            await message.answer(tr(message.from_user.id, "آیتم کوروش در دیتابیس نیست. یک‌بار /buildings بزن."))
-            return
-        w.spirit_stones -= price
-        inv = await session.execute(
-            select(UserInventory).where(
-                UserInventory.user_id == user.id, UserInventory.item_id == item.id
-            )
-        )
-        existing = inv.scalar_one_or_none()
-        if existing:
-            existing.quantity += 1
-        else:
-            session.add(UserInventory(user_id=user.id, item_id=item.id, quantity=1))
-        user.has_cyrus_sword = True
-        await session.commit()
-    cs._bought.add(message.from_user.id)
-    await message.answer(
-        f"✅ شمشیر کوروش بزرگ خریداری شد (−{cs.PUBLIC_PRICE} سنگ روحی).\n/equip برای تجهیز"
-    )
+    await message.answer("⚔️ ایونت کوروش حذف شده؛ خرید عمومی ممکن نیست.")
+
+
 
 
 @router.message(Command("luckdice", "تاس‌شانس", "شانس"))
@@ -335,3 +300,175 @@ async def cmd_protect_sect(message: Message):
         return
     from services.sect_calamity import protect_sect
     await message.answer(protect_sect(int(parts[1])))
+
+
+
+@router.message(Command("knowledge", "دانش", "statscombat", "نرخ‌نبرد"))
+async def cmd_knowledge(message: Message):
+    from services.knowledge import status
+    await message.answer(status(message.from_user.id))
+
+
+@router.message(Command("readbook", "کتاب‌خواندن", "خواندن‌کتاب"))
+async def cmd_readbook(message: Message):
+    from services.knowledge import read_book
+    await message.answer(read_book(message.from_user.id))
+
+
+@router.message(Command("wanderworld", "گردش‌جهان", "جهانگردی"))
+async def cmd_wander(message: Message):
+    from services.knowledge import wander_world
+    await message.answer(wander_world(message.from_user.id))
+
+
+@router.message(Command("talkmaster", "گفتگو‌استاد", "صحبت‌استاد"))
+async def cmd_talk_master(message: Message):
+    from services.knowledge import talk_master
+    has = False
+    async with async_session() as session:
+        user = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
+        try:
+            from services.master import get_master
+            rel = await get_master(session, user.id)
+            has = rel is not None
+        except Exception:
+            has = False
+    await message.answer(talk_master(message.from_user.id, has))
+
+
+@router.message(Command("trainbody", "تمرین‌بدن", "لول‌بدن"))
+async def cmd_train_body(message: Message):
+    from services.knowledge import train_body
+    await message.answer(train_body(message.from_user.id))
+
+
+@router.message(Command("trainspirit", "تمرین‌روح", "لول‌روح"))
+async def cmd_train_spirit(message: Message):
+    from services.knowledge import train_spirit
+    await message.answer(train_spirit(message.from_user.id))
+
+
+@router.message(Command("knights", "شوالیه", "شوالیه‌ها"))
+async def cmd_knights(message: Message):
+    from services.knights import list_text
+    await message.answer(list_text())
+
+
+@router.message(Command("buyknight", "خرید‌شوالیه"))
+async def cmd_buy_knight(message: Message):
+    parts = (message.text or "").split()
+    if len(parts) < 2:
+        await message.answer("فرمت: /buyknight شماره")
+        return
+    try:
+        kid = int(parts[1])
+    except ValueError:
+        await message.answer("شماره نامعتبر")
+        return
+    async with async_session() as session:
+        user = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
+        w = await get_or_create_wallet(session, user.id)
+        from services.knights import buy
+        ok, msg, left = buy(message.from_user.id, kid, int(w.coins or 0))
+        if ok:
+            w.coins = left
+            await session.commit()
+    await message.answer(msg)
+
+
+@router.message(Command("myknights", "شوالیه‌های‌من"))
+async def cmd_my_knights(message: Message):
+    from services.knights import my_knights
+    await message.answer(my_knights(message.from_user.id))
+
+
+
+@router.message(Command("myhome", "خانه", "خونه"))
+async def cmd_myhome(message: Message):
+    from services.housing import status
+    await message.answer(status(message.from_user.id))
+
+
+@router.message(Command("upgradehome", "ارتقا‌خانه"))
+async def cmd_upgrade_home(message: Message):
+    async with async_session() as session:
+        user = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
+        from services.housing import upgrade
+        msg = await upgrade(session, user.id, message.from_user.id)
+    await message.answer(msg)
+
+
+@router.message(Command("buyfurniture", "خرید‌وسیله"))
+async def cmd_buy_furn(message: Message):
+    parts = (message.text or "").split(maxsplit=1)
+    if len(parts) < 2:
+        from services.housing import FURNITURE_SHOP
+        await message.answer("فرمت: /buyfurniture نام\n" + "، ".join(FURNITURE_SHOP.keys()))
+        return
+    from services.housing import buy_furniture
+    ok, cost, msg = buy_furniture(message.from_user.id, parts[1].strip())
+    if not ok:
+        await message.answer(msg)
+        return
+    async with async_session() as session:
+        user = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
+        from services.economy import get_or_create_wallet, pay_any_currency
+        w = await get_or_create_wallet(session, user.id)
+        paid, pmsg = pay_any_currency(w, cost)
+        if not paid:
+            # rollback furniture
+            from services.housing import get_home
+            h = get_home(message.from_user.id)
+            if h.get("furniture"):
+                h["furniture"].pop()
+            await message.answer(pmsg)
+            return
+        await session.commit()
+    await message.answer(msg + chr(10) + pmsg)
+
+
+
+@router.message(Command("bodyrealms", "قلمرو‌بدن", "قلمروبدن"))
+async def cmd_body_realms(message: Message):
+    from services.body_spirit_realms import body_realm_status
+    await message.answer(body_realm_status(message.from_user.id))
+
+
+@router.message(Command("spiritrealms", "قلمرو‌روح", "قلمروروح"))
+async def cmd_spirit_realms(message: Message):
+    from services.body_spirit_realms import spirit_realm_status
+    await message.answer(spirit_realm_status(message.from_user.id))
+
+
+
+@router.message(Command("cultpath", "مسیر‌تذهیب", "مسیرتذهیب"))
+async def cmd_cult_path(message: Message):
+    from services.cult_paths import list_paths, set_path, get_path
+    parts = (message.text or "").split(maxsplit=1)
+    if len(parts) < 2:
+        cur = get_path(message.from_user.id)
+        await message.answer(list_paths() + chr(10) + f"مسیر فعلی: <b>{cur}</b>")
+        return
+    await message.answer(set_path(message.from_user.id, parts[1].strip()))
+
+
+@router.message(Command("worldblade", "نابودکننده", "شمشیر‌جهان"))
+async def cmd_world_blade(message: Message):
+    from services.world_blade import status, ITEM_NAME, PRICE
+    await message.answer(
+        status(message.from_user.id) + chr(10) + chr(10)
+        + f"خرید از آهنگری: <b>{ITEM_NAME}</b>" + chr(10)
+        + f"قیمت: {PRICE:,} سکه"
+    )

@@ -15,7 +15,7 @@ from services.pets import (
 )
 from services.economy import (
     get_or_create_wallet, exchange_to_stones, exchange_to_coins,
-    exchange_up, wallet_text, pay_any_currency
+    exchange_up, exchange_down, wallet_text, pay_any_currency,
 )
 
 router = Router()
@@ -475,23 +475,41 @@ async def cmd_wallet(message: Message):
 
 @router.message(Command("exchangestone"))
 async def cmd_ex_stone(message: Message):
+    parts = (message.text or "").split()
+    n = 1
+    if len(parts) >= 2:
+        try:
+            n = max(1, int(parts[1]))
+        except ValueError:
+            await message.answer("تعداد نامعتبر")
+            return
     async with async_session() as session:
         user = await get_or_create_user(
             session, message.from_user.id,
             message.from_user.full_name, message.from_user.username
         )
-        msg = await exchange_to_stones(session, user.id, 1)
+        from services.economy import exchange_to_stones
+        msg = await exchange_to_stones(session, user.id, n)
     await message.answer(msg)
 
 
 @router.message(Command("exchangecoin"))
 async def cmd_ex_coin(message: Message):
+    parts = (message.text or "").split()
+    n = 1
+    if len(parts) >= 2:
+        try:
+            n = max(1, int(parts[1]))
+        except ValueError:
+            await message.answer("تعداد نامعتبر")
+            return
     async with async_session() as session:
         user = await get_or_create_user(
             session, message.from_user.id,
             message.from_user.full_name, message.from_user.username
         )
-        msg = await exchange_to_coins(session, user.id, 1)
+        from services.economy import exchange_to_coins
+        msg = await exchange_to_coins(session, user.id, n)
     await message.answer(msg)
 
 
@@ -551,4 +569,36 @@ async def cmd_exchange_up(message: Message):
             message.from_user.full_name, message.from_user.username
         )
         msg = await exchange_up(session, user.id, kind, amount)
+    await message.answer(msg)
+
+
+@router.message(Command("exchangedown", "تبدیل‌پایین", "تبدیل_پایین", "نزول‌ارز"))
+async def cmd_exchange_down(message: Message):
+    """تبدیل ارز بالاتر به پایین‌تر"""
+    parts = (message.text or "").split()
+    if len(parts) < 2:
+        await message.answer(
+            "⬇️ <b>تبدیل به ارز پایین‌تر</b>" + chr(10)
+            + "/exchangedown spirit [n] — روحی → سکه (×1000)" + chr(10)
+            + "/exchangedown heavenly [n] — بهشتی → روحی (×1000)" + chr(10)
+            + "/exchangedown celestial [n] — آسمانی → بهشتی (×1000)" + chr(10)
+            + "/exchangedown god [n] — خدا → آسمانی (×1e9)" + chr(10)
+            + "مثال: /exchangedown heavenly 2"
+        )
+        return
+    kind = parts[1]
+    amount = 1
+    if len(parts) >= 3:
+        try:
+            amount = max(1, int(parts[2]))
+        except ValueError:
+            await message.answer("تعداد نامعتبر")
+            return
+    async with async_session() as session:
+        user = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
+        from services.economy import exchange_down
+        msg = await exchange_down(session, user.id, kind, amount)
     await message.answer(msg)

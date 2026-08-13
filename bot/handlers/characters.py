@@ -35,7 +35,17 @@ async def cmd_pull(message: Message):
             return
         w.coins -= cost
         await session.commit()
-    await message.answer(msg)
+    if _card:
+        try:
+            from services.portraits import character_url
+            await message.answer_photo(
+                photo=character_url(_card.get("name", "?"), _card.get("rarity", "معمولی")),
+                caption=msg,
+            )
+        except Exception:
+            await message.answer(msg)
+    else:
+        await message.answer(msg)
 
 
 @router.message(Command("mychars", "کاراکترها", "لیست‌کاراکتر"))
@@ -46,3 +56,71 @@ async def cmd_list(message: Message):
 @router.message(Command("bestchar", "بهترین‌کاراکتر"))
 async def cmd_best(message: Message):
     await message.answer(chars.best_char(message.from_user.id))
+
+
+
+@router.message(Command("mychars", "کاراکترها", "لیست‌کاراکتر"))
+async def cmd_mychars(message: Message):
+    await message.answer(chars.list_owned_indexed(message.from_user.id))
+
+
+@router.message(Command("tradechar", "معاوضه‌کاراکتر"))
+async def cmd_trade_char(message: Message):
+    parts = (message.text or "").split()
+    # /tradechar target_tg idx_me idx_them  OR reply + idx_me idx_them
+    target = None
+    if message.reply_to_message and message.reply_to_message.from_user:
+        target = message.reply_to_message.from_user.id
+        if len(parts) < 3:
+            await message.answer("ریپلای + /tradechar شماره_من شماره_او")
+            return
+        idx_a, idx_b = int(parts[1]), int(parts[2])
+    else:
+        if len(parts) < 4:
+            await message.answer("فرمت: /tradechar آیدی_عددی شماره_من شماره_او\nیا ریپلای + /tradechar شماره_من شماره_او")
+            return
+        target, idx_a, idx_b = int(parts[1]), int(parts[2]), int(parts[3])
+    ok, msg, key = chars.propose_trade(message.from_user.id, target, idx_a, idx_b)
+    await message.answer(msg)
+
+
+@router.message(Command("accepttrade", "قبول‌معاوضه"))
+async def cmd_accept_trade(message: Message):
+    parts = (message.text or "").split(maxsplit=1)
+    if len(parts) < 2:
+        await message.answer("/accepttrade کلید")
+        return
+    await message.answer(chars.accept_trade(parts[1].strip(), message.from_user.id))
+
+
+@router.message(Command("charduel", "دوئل‌کاراکتر"))
+async def cmd_char_duel(message: Message):
+    parts = (message.text or "").split()
+    target = None
+    if message.reply_to_message and message.reply_to_message.from_user:
+        target = message.reply_to_message.from_user.id
+        if len(parts) < 3:
+            await message.answer("ریپلای + /charduel شماره_من شماره_او")
+            return
+        idx_a, idx_b = int(parts[1]), int(parts[2])
+    else:
+        if len(parts) < 4:
+            await message.answer("فرمت: /charduel آیدی شماره_من شماره_او")
+            return
+        target, idx_a, idx_b = int(parts[1]), int(parts[2]), int(parts[3])
+    ok, msg, key = chars.propose_char_duel(message.from_user.id, target, idx_a, idx_b)
+    await message.answer(msg)
+
+
+@router.message(Command("acceptcharduel", "قبول‌دوئل‌کاراکتر"))
+async def cmd_accept_cduel(message: Message):
+    parts = (message.text or "").split(maxsplit=1)
+    if len(parts) < 2:
+        await message.answer("/acceptcharduel کلید")
+        return
+    await message.answer(chars.accept_char_duel(parts[1].strip(), message.from_user.id))
+
+
+@router.message(Command("mergechar", "ترکیب‌کاراکتر", "ادغام‌کاراکتر"))
+async def cmd_merge_char(message: Message):
+    await message.answer(chars.merge_duplicates(message.from_user.id))

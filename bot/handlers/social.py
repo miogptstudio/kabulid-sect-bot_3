@@ -1,4 +1,6 @@
 """ارسال پول، بازار آزاد، خدمتکار، RPS دو نفره، لیدربوردها"""
+from services import servants as servmod
+
 import random
 from datetime import datetime
 from aiogram import Router, F
@@ -25,9 +27,27 @@ SERVANTS = [
     {"id": 2, "name": "لیان", "gender": "زن", "price": 800, "desc": "خدمتکار جنگی"},
     {"id": 3, "name": "مینگ", "gender": "مرد", "price": 600, "desc": "نگهبان خانه"},
     {"id": 4, "name": "سارا", "gender": "زن", "price": 1200, "desc": "خدمتکار نجیب"},
-    {"id": 5, "name": "کای", "gender": "مرد", "price": 900, "desc": "آشپز ماهر"},
+    {"id": 5, "name": "کای", "gender": "مرد", "price": 900, "desc": "نگهبان دروازه"},
+    {"id": 6, "name": "یوکی", "gender": "زن", "price": 1500, "desc": "خدمتکار شرقی"},
+    {"id": 7, "name": "رستم‌یار", "gender": "مرد", "price": 2000, "desc": "برده جنگی ایرانی"},
+    {"id": 8, "name": "شیرین", "gender": "زن", "price": 1800, "desc": "خدمتکار دربار"},
+    {"id": 9, "name": "بهرام", "gender": "مرد", "price": 2200, "desc": "برده شکارچی"},
+    {"id": 10, "name": "نرگس", "gender": "زن", "price": 1600, "desc": "خدمتکار باغ"},
+    {"id": 11, "name": "آرش", "gender": "مرد", "price": 2500, "desc": "برده کماندار"},
+    {"id": 12, "name": "لاله", "gender": "زن", "price": 1400, "desc": "خدمتکار آشپزخانه"},
+    {"id": 13, "name": "کاوه", "gender": "مرد", "price": 3000, "desc": "برده آهنگر"},
+    {"id": 14, "name": "مهتاب", "gender": "زن", "price": 2800, "desc": "خدمتکار روحانی"},
+    {"id": 15, "name": "سهراب", "gender": "مرد", "price": 3500, "desc": "برده پهلوان"},
+    {"id": 16, "name": "پریسا", "gender": "زن", "price": 3200, "desc": "خدمتکار جادویی"},
+    {"id": 17, "name": "توران", "gender": "مرد", "price": 4000, "desc": "برده نگهبان فرقه"},
+    {"id": 18, "name": "آناهیتا", "gender": "زن", "price": 5000, "desc": "خدمتکار مقدس"},
+    {"id": 19, "name": "دیو‌بنده", "gender": "مرد", "price": 6000, "desc": "برده تاریک"},
+    {"id": 20, "name": "فرشته‌یار", "gender": "زن", "price": 6000, "desc": "خدمتکار نورانی"},
 ]
-_user_servants: dict[int, list] = {}  # telegram_id -> list of servant ids
+from services.persist import get_dict as _sg, save as _ss
+def _servants_map():
+    return _sg("servants")
+
 _user_married_servants: dict = {}  # telegram_id -> married servant ids
 _servant_children: dict = {}  # telegram_id -> list of child dicts
 _dual_servant_cd: dict = {}  # telegram_id -> last dual datetime
@@ -51,9 +71,34 @@ async def cmd_pay(message: Message):
         "celestial": ("celestial_stones", "سنگ آسمانی"),
         "آسمانی": ("celestial_stones", "سنگ آسمانی"),
         "celestial_stones": ("celestial_stones", "سنگ آسمانی"),
+        "destiny": ("destiny_stones", "سنگ تقدیر"),
+        "تقدیر": ("destiny_stones", "سنگ تقدیر"),
+        "immortal": ("immortal_stones", "سنگ جاودان"),
+        "جاودان": ("immortal_stones", "سنگ جاودان"),
+        "creation": ("creation_stones", "سنگ خلقت"),
+        "خلقت": ("creation_stones", "سنگ خلقت"),
+        "absolute": ("absolute_stones", "سنگ مطلق"),
+        "مطلق": ("absolute_stones", "سنگ مطلق"),
+        "faith": ("faith_stones", "سنگ ایمان"),
+        "ایمان": ("faith_stones", "سنگ ایمان"),
+        "dragon": ("dragon_coins", "سکه اژدها"),
+        "اژدها": ("dragon_coins", "سکه اژدها"),
         "god": ("god_stones", "سنگ خدا"),
         "خدا": ("god_stones", "سنگ خدا"),
         "god_stones": ("god_stones", "سنگ خدا"),
+        "chaos": ("chaos_stones", "سنگ هرج‌ومرج"),
+        "هرج": ("chaos_stones", "سنگ هرج‌ومرج"),
+        "chaos_stones": ("chaos_stones", "سنگ هرج‌ومرج"),
+        "void": ("void_stones", "سنگ پوچی"),
+        "پوچی": ("void_stones", "سنگ پوچی"),
+        "void_stones": ("void_stones", "سنگ پوچی"),
+        "origin": ("origin_stones", "سنگ ازلی"),
+        "ازلی": ("origin_stones", "سنگ ازلی"),
+        "origin_stones": ("origin_stones", "سنگ ازلی"),
+        "karma": ("karma_points", "کارما"),
+        "کارما": ("karma_points", "کارما"),
+        "karma_points": ("karma_points", "کارما"),
+
     }
     HELP = (
         "💸 <b>انتقال ارز</b>" + chr(10) + chr(10)
@@ -276,11 +321,17 @@ async def cmd_market_buy(message: Message):
             sw = await get_or_create_wallet(session, seller.id)
             sw.coins += listing["price"]
         await session.commit()
+    try:
+        from services.retention import market_fee
+        fee = market_fee(int(listing.get("price") or 0))
+        w.coins = max(0, int(w.coins or 0) - fee)  # کارمزد از خریدار
+    except Exception:
+        fee = 0
     _market.pop(idx)
     await message.answer(f"✅ «{listing['item']}» خریداری شد.")
 
 
-@router.message(Command("servants", "خدمتکار", "برده"))
+@router.message(Command("servants_legacy_disabled"))
 async def cmd_servants(message: Message):
     text = "👤 <b>بازار خدمتکار</b>\n\n"
     text += "⚠️ آسیب به خدمتکار = مرگ و حذف اکانت تو\n\n"
@@ -312,16 +363,16 @@ async def cmd_buy_servant(message: Message):
             return
         w.coins -= s["price"]
         await session.commit()
-    _user_servants.setdefault(message.from_user.id, []).append(s["id"])
+    (_servants_map().setdefault(str(message.from_user.id), []).append(s["id"]), _ss("servants"))
     await message.answer(
         f"✅ {s['name']} را خریدی.\n"
         f"⚠️ آسیب زدن به خدمتکار ممنوع است و باعث مرگ و حذف اکانت می‌شود."
     )
 
 
-@router.message(Command("myservants", "خدمتکار‌من"))
+@router.message(Command("myservants_old", "خدمتکار‌من"))
 async def cmd_my_servants(message: Message):
-    ids = _user_servants.get(message.from_user.id, [])
+    ids = _servants_map().get(str(message.from_user.id), [])
     if not ids:
         await message.answer(
             "خدمتکاری نداری." + chr(10)
@@ -373,7 +424,7 @@ async def cmd_marry_servant(message: Message):
         await message.answer(tr(message.from_user.id, "خدمتکار پیدا نشد. /servants"))
         return
     # ازدواج با خدمتکار هر جنسیتی — برای تذهیب دوگانه باید مخالف باشد
-    owned = _user_servants.get(message.from_user.id, [])
+    owned = _servants_map().get(str(message.from_user.id), [])
     if sid not in owned:
         await message.answer("اول باید این خدمتکار را بخری. /buyservant " + str(sid))
         return
@@ -422,7 +473,7 @@ async def cmd_dual_servant(message: Message):
     if not s:
         await message.answer(tr(message.from_user.id, "خدمتکار پیدا نشد. /servants"))
         return
-    owned = _user_servants.get(message.from_user.id, [])
+    owned = _servants_map().get(str(message.from_user.id), [])
     married = _user_married_servants.get(message.from_user.id, [])
     if sid not in owned:
         await message.answer("اول بخر: /buyservant " + str(sid))
@@ -502,7 +553,7 @@ async def cmd_child_servant(message: Message):
     if not s:
         await message.answer(tr(message.from_user.id, "پیدا نشد."))
         return
-    owned = _user_servants.get(message.from_user.id, [])
+    owned = _servants_map().get(str(message.from_user.id), [])
     married = _user_married_servants.get(message.from_user.id, [])
     if sid not in owned or sid not in married:
         await message.answer(tr(message.from_user.id, "باید /buyservant و /marryservant کرده باشی."))
@@ -663,7 +714,7 @@ async def cmd_teach_child(message: Message):
 @router.message(Command("harmservant", "آسیب‌خدمتکار"))
 async def cmd_harm_servant(message: Message):
     """آسیب = مرگ + حذف اکانت"""
-    ids = _user_servants.get(message.from_user.id, [])
+    ids = _servants_map().get(str(message.from_user.id), [])
     if not ids:
         await message.answer(tr(message.from_user.id, "خدمتکاری نداری."))
         return
@@ -676,7 +727,7 @@ async def cmd_harm_servant(message: Message):
         await session.commit()
         from services.death import erase_existence
         msg = await erase_existence(session, user)
-    _user_servants.pop(message.from_user.id, None)
+    (_servants_map().pop(str(message.from_user.id), None), _ss("servants"))
     await message.answer(
         "💀 آسیب به خدمتکار ممنوع بود.\n"
         "اکانت تو برای همیشه پاک شد.\n" + msg
@@ -788,3 +839,146 @@ async def cmd_solo_top(message: Message):
         if shown == 0:
             lines.append("هنوز آماری نیست. با /solo ثبت می‌شود.")
         await message.answer(chr(10).join(lines))
+
+
+
+
+@router.message(Command("servants", "خدمتکار", "برده", "بازارخدمتکار"))
+async def cmd_servants_v2(message: Message):
+    await message.answer(servmod.market_list())
+
+
+@router.message(Command("buyservant", "خریدخدمتکار"))
+async def cmd_buy_servant_v2(message: Message):
+    parts = (message.text or "").split()
+    if len(parts) < 2 or not parts[1].isdigit():
+        await message.answer("فرمت: /buyservant شماره")
+        return
+    async with async_session() as session:
+        user = await get_or_create_user(session, message.from_user.id, message.from_user.full_name, message.from_user.username)
+        from services.economy import get_or_create_wallet
+        w = await get_or_create_wallet(session, user.id)
+        ok, msg, left = servmod.buy(message.from_user.id, int(parts[1]), int(w.coins or 0))
+        if ok:
+            w.coins = left
+            await session.commit()
+            try:
+                from services.portraits import portrait_url
+                s = next((x for x in servmod.MARKET if x['id']==int(parts[1])), None)
+                if s:
+                    await message.answer_photo(
+                        photo=portrait_url(s['name'], s.get('gender','زن'), s.get('race','انسان')),
+                        caption=msg,
+                    )
+                else:
+                    await message.answer(msg)
+            except Exception:
+                await message.answer(msg)
+        else:
+            await message.answer(msg)
+
+
+@router.message(Command("myservants", "خدمتکارها‌ی‌من", "لیست‌خدمتکار"))
+async def cmd_my_servants_v2(message: Message):
+    from services.portraits import portrait_url, servant_caption
+    bag = servmod.list_owned(message.from_user.id)
+    if not bag:
+        await message.answer(servmod.owned_text(message.from_user.id))
+        return
+    await message.answer(servmod.owned_text(message.from_user.id))
+    # حداکثر ۳ عکس اول برای اسپم‌نشدن
+    for s in bag[:3]:
+        try:
+            url = portrait_url(s.get("name", "?"), s.get("gender", "زن"), s.get("race", "انسان"))
+            await message.answer_photo(photo=url, caption=servant_caption(s))
+        except Exception:
+            continue
+    if len(bag) > 3:
+        await message.answer(f"... و {len(bag)-3} خدمتکار دیگر (عکس ۳تای اول نمایش داده شد)")
+
+
+@router.message(Command("showservant", "عکس‌خدمتکار", "پرتره‌خدمتکار"))
+async def cmd_show_servant(message: Message):
+    """نمایش عکس یک خدمتکار: /showservant شماره"""
+    from services.portraits import portrait_url, servant_caption
+    parts = (message.text or "").split()
+    if len(parts) < 2 or not parts[1].isdigit():
+        await message.answer("فرمت: /showservant شماره  (از /myservants)")
+        return
+    bag = servmod.list_owned(message.from_user.id)
+    idx = int(parts[1])
+    if idx < 1 or idx > len(bag):
+        await message.answer("شماره نامعتبر.")
+        return
+    s = bag[idx - 1]
+    url = portrait_url(s.get("name", "?"), s.get("gender", "زن"), s.get("race", "انسان"))
+    try:
+        await message.answer_photo(photo=url, caption=servant_caption(s))
+    except Exception as e:
+        await message.answer(servant_caption(s) + chr(10) + f"(عکس لود نشد: {e})")
+
+
+@router.message(Command("huntservant", "شکارخدمتکار", "تسخیرنژاد"))
+async def cmd_hunt_servant(message: Message):
+    async with async_session() as session:
+        user = await get_or_create_user(session, message.from_user.id, message.from_user.full_name, message.from_user.username)
+        try:
+            from services.power import calc_power
+            p = await calc_power(session, user)
+            power = int(p.get("total") or 20)
+        except Exception:
+            power = 20 + int(user.level or 1) * 3
+        msg = servmod.hunt(message.from_user.id, power)
+        await message.answer(msg)
+        if 'تسخیر موفق' in msg:
+            bag = servmod.list_owned(message.from_user.id)
+            if bag:
+                s = bag[-1]
+                try:
+                    from services.portraits import portrait_url, servant_caption
+                    await message.answer_photo(
+                        photo=portrait_url(s.get('name','?'), s.get('gender','زن'), s.get('race','انسان')),
+                        caption=servant_caption(s),
+                    )
+                except Exception:
+                    pass
+
+
+@router.message(Command("trainservant", "پرورش‌خدمتکار"))
+async def cmd_train_servant(message: Message):
+    parts = (message.text or "").split()
+    if len(parts) < 2 or not parts[1].isdigit():
+        await message.answer("فرمت: /trainservant شماره")
+        return
+    await message.answer(servmod.train(message.from_user.id, int(parts[1])))
+
+
+@router.message(Command("transformservant", "دگرگونی‌خدمتکار"))
+async def cmd_transform_servant(message: Message):
+    parts = (message.text or "").split()
+    if len(parts) < 2 or not parts[1].isdigit():
+        await message.answer("فرمت: /transformservant شماره")
+        return
+    await message.answer(servmod.transform(message.from_user.id, int(parts[1])))
+
+
+@router.message(Command("feedloyalty", "وفاداری", "loyalty"))
+async def cmd_feed_loyalty(message: Message):
+    parts = (message.text or "").split()
+    if len(parts) < 2 or not parts[1].isdigit():
+        await message.answer("فرمت: /feedloyalty شماره  (۵۰ سکه)")
+        return
+    async with async_session() as session:
+        user = await get_or_create_user(session, message.from_user.id, message.from_user.full_name, message.from_user.username)
+        from services.economy import get_or_create_wallet
+        w = await get_or_create_wallet(session, user.id)
+        msg, left = servmod.feed_loyalty(message.from_user.id, int(parts[1]), int(w.coins or 0))
+        if left != int(w.coins or 0):
+            w.coins = left
+            await session.commit()
+        await message.answer(msg)
+
+
+@router.message(Command("checkbetray", "بررسی‌خیانت"))
+async def cmd_check_betray(message: Message):
+    await message.answer(servmod.check_betrayal(message.from_user.id))

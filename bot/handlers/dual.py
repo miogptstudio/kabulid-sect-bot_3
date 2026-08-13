@@ -137,7 +137,10 @@ async def dual_accept(callback: CallbackQuery):
             await callback.answer()
             return
         if dual.user2_id != user.id:
-            await callback.answer()  # بی‌صدا — مال او نیست
+            await callback.answer("این درخواست برای تو نیست.", show_alert=False)
+            return
+        if dual.status != "pending":
+            await callback.answer("این درخواست دیگر معتبر نیست.", show_alert=True)
             return
         msg = await accept_dual(session, dual, user.id)
         try:
@@ -169,3 +172,38 @@ async def dual_reject(callback: CallbackQuery):
         except Exception:
             await callback.message.answer(msg)
     await callback.answer()
+
+
+@router.message(Command("canceldual", "لغو‌دوگانه"))
+async def cmd_cancel_dual(message: Message):
+    from services.dual import cancel_dual
+    async with async_session() as session:
+        user = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
+        msg = await cancel_dual(session, user.id)
+    await message.answer(msg)
+
+
+@router.message(F.text.in_({"مرد", "زن", "جنسیت مرد", "جنسیت زن"}))
+async def text_gender(message: Message):
+    """انتخاب جنسیت با نوشتن مرد / زن"""
+    t = (message.text or "").strip()
+    gender = "مرد" if "مرد" in t else ("زن" if "زن" in t else None)
+    if not gender:
+        return
+    async with async_session() as session:
+        user = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
+        if user.gender in LOCKED_GENDERS:
+            await message.answer(f"جنسیت تو «{user.gender}» است و قابل تغییر نیست.")
+            return
+        user.gender = gender
+        await session.commit()
+    await message.answer(
+        f"✅ جنسیت «<b>{gender}</b>» با نوشتن ثبت شد." + chr(10)
+        + "دیگر قابل تغییر نیست."
+    )

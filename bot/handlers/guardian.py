@@ -213,6 +213,11 @@ async def process_guardian_answer(callback: CallbackQuery):
             w = await get_or_create_wallet(session, user.id)
             w.coins += 10
             await session.commit()
+        try:
+            from services.missions_progress import bump_mission
+            await bump_mission(session, user.id, "guardian")
+        except Exception:
+            pass
             text = f"✅ درست!\n+{XP_PER_GUARDIAN_WIN} XP و +۱۰ سکه"
             if res.get("messages"):
                 text += "\n" + "\n".join(res["messages"])

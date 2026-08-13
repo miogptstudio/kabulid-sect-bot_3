@@ -25,8 +25,6 @@ EXTRA_MISSIONS = [
     {"title": "مأموریت چندنفره: دوئل دو نفره", "description": "با یک نفر /duel کن.", "mission_type": "multi", "target_type": "duels", "target_value": 1, "reward_xp": 2, "reward_medal": None},
     {"title": "مأموریت فرقه‌ای: عضوگیری", "description": "عضو فرقه شو یا دعوت کن /sects.", "mission_type": "sect", "target_type": "sect", "target_value": 1, "reward_xp": 2, "reward_medal": None},
     {"title": "مأموریت فرقه‌ای: مشارکت", "description": "امتیاز مشارکت فرقه بگیر (دوئل/تذهیب).", "mission_type": "sect", "target_type": "contrib", "target_value": 1, "reward_xp": 2, "reward_medal": None},
-    {"title": "نابودی نوادگان ضحاک", "description": "مأموریت جهانی: نوادگان ضحاک در ایران را بکش و عکس سر را بفرست (/zahhakproof). جایزه: ۵٬۰۰۰٬۰۰۰ سنگ خدا (پرداخت توسط ادمین).", "mission_type": "global", "target_type": "zahhak", "target_value": 1, "reward_xp": 50, "reward_medal": "ضحاک‌شکن"},
-    {"title": "عکس‌های سیاه‌وسفید منظره", "description": "مأموریت جهانی سطح ۵: ۵ عکس سیاه‌وسفید از یک منظره بفرست (در بازی با /missionphoto شمارش می‌شود).", "mission_type": "global", "target_type": "bw_photo", "target_value": 5, "reward_xp": 10, "reward_medal": "عکاس جهان"},
     {"title": "حمله به فرقه دشمن", "description": "هدف جهانی: در جنگ قلمرو فرقه شرکت کن.", "mission_type": "global", "target_type": "sectwar", "target_value": 1, "reward_xp": 6, "reward_medal": "تهاجم"},
 ]
 
@@ -90,6 +88,15 @@ DAILY_MISSIONS = [
 
 
 async def ensure_daily_missions(session):
+    # حذف مأموریت‌های منسوخ
+    for bad in ("نابودی نوادگان ضحاک", "عکس‌های سیاه‌وسفید منظره"):
+        try:
+            r = await session.execute(select(Mission).where(Mission.title == bad))
+            for row in r.scalars().all():
+                row.is_active = False
+        except Exception:
+            pass
+
     for m in DAILY_MISSIONS + EXTRA_MISSIONS:
         result = await session.execute(
             select(Mission).where(Mission.title == m["title"], Mission.mission_type == m["mission_type"])
@@ -106,6 +113,61 @@ async def ensure_daily_missions(session):
                 is_active=True,
             ))
     await session.commit()
+
+
+
+
+async def auto_accept_dailies(session, user: User) -> list[str]:
+    """مأموریت‌های روزانه را خودکار فعال کن"""
+    msgs = []
+    await ensure_daily_missions(session)
+    result = await session.execute(
+        select(Mission).where(Mission.is_active == True, Mission.mission_type == "daily")
+    )
+    for mission in result.scalars().all():
+        existing = await session.execute(
+            select(UserMission).where(
+                UserMission.user_id == user.id,
+                UserMission.mission_id == mission.id,
+            )
+        )
+        um = existing.scalar_one_or_none()
+        if not um:
+            session.add(UserMission(user_id=user.id, mission_id=mission.id, progress=0))
+            msgs.append(f"📌 فعال شد: {mission.title}")
+    await session.commit()
+    return msgs
+
+
+async def auto_finish_ready(session, user: User) -> list[str]:
+    """مأموریت‌هایی که پیشرفت‌شان کامل است را خودکار تمام کن و پاداش بده"""
+    msgs = []
+    result = await session.execute(
+        select(UserMission).where(
+            UserMission.user_id == user.id,
+            UserMission.is_completed == False,
+        )
+    )
+    for um in result.scalars().all():
+        mission = await session.get(Mission, um.mission_id)
+        if not mission:
+            continue
+        if (um.progress or 0) >= (mission.target_value or 1):
+            um.is_completed = True
+            um.completed_at = datetime.utcnow()
+            um.reward_claimed = True
+            user.xp = int(user.xp or 0) + int(mission.reward_xp or 0)
+            try:
+                from services.economy import get_or_create_wallet
+                w = await get_or_create_wallet(session, user.id)
+                w.coins = int(w.coins or 0) + 50
+                w.spirit_stones = int(getattr(w, "spirit_stones", 0) or 0) + 1
+            except Exception:
+                pass
+            msgs.append(f"✅ «{mission.title}» خودکار تمام شد! +{mission.reward_xp or 0} XP")
+    await session.commit()
+    return msgs
+
 
 
 async def count_completed_today(session, user_id: int) -> int:
@@ -296,49 +358,3 @@ async def cmd_complete_mission(message: Message):
             f"امروز: {done}/3\n"
             f"{'⚠️ یک مأموریت دیگر نگیر وگرنه…' if done >= 3 else ''}"
         )
-
-
-_zahhak_claims: set[int] = set()
-
-@router.message(Command("zahhakproof", "اثبات‌ضحاک", "سر‌ضحاک"))
-async def cmd_zahhak(message: Message):
-    """ثبت ادعای مأموریت جهانی ضحاک — جایزه فقط توسط ادمین"""
-    uid = message.from_user.id
-    if uid in _zahhak_claims:
-        await message.answer("📷 قبلاً اثبات ثبت شده. منتظر بررسی ادمین باش.")
-        return
-    _zahhak_claims.add(uid)
-    await message.answer(
-        "⚔️ <b>اثبات مأموریت جهانی ثبت شد</b>" + chr(10)
-        + "هدف: کشتن نوادگان ضحاک و ارسال تصویر سر" + chr(10)
-        + "جایزه پس از تأیید ادمین: <b>۵٬۰۰۰٬۰۰۰ سنگ خدا</b>" + chr(10)
-        + "ادمین: /rewardzahhak آیدی‌عددی"
-    )
-
-
-@router.message(Command("rewardzahhak"))
-async def cmd_reward_zahhak(message: Message):
-    from bot.config import ADMIN_IDS
-    if message.from_user.id not in ADMIN_IDS:
-        await message.answer("فقط ادمین.")
-        return
-    parts = (message.text or "").split()
-    if len(parts) < 2:
-        await message.answer("فرمت: /rewardzahhak telegram_id")
-        return
-    try:
-        tg = int(parts[1])
-    except ValueError:
-        await message.answer("آیدی نامعتبر")
-        return
-    async with async_session() as session:
-        from database.crud import get_user_by_telegram_id
-        from services.economy import get_or_create_wallet
-        u = await get_user_by_telegram_id(session, tg)
-        if not u:
-            await message.answer("کاربر نیست")
-            return
-        w = await get_or_create_wallet(session, u.id)
-        w.god_stones = int(getattr(w, "god_stones", 0) or 0) + 5_000_000
-        await session.commit()
-    await message.answer(f"✅ ۵٬۰۰۰٬۰۰۰ سنگ خدا به {tg} داده شد.")

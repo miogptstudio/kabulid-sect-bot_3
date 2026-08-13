@@ -432,3 +432,52 @@ async def cmd_unban(message: Message):
         target.is_active = True
         await session.commit()
     await message.answer(f"✅ آنبن شد: {target.full_name}")
+
+
+@router.message(Command("unlockconsume", "باز‌قفل‌مصرف"))
+async def cmd_unlock_consume(message: Message):
+    """ادمین: برداشتن قفل مصرف برای خود یا آیدی"""
+    from bot.config import ADMIN_IDS
+    if message.from_user.id not in ADMIN_IDS:
+        await message.answer("فقط ادمین.")
+        return
+    parts = (message.text or "").split()
+    tg = message.from_user.id
+    if len(parts) >= 2:
+        try:
+            tg = int(parts[1])
+        except ValueError:
+            await message.answer("آیدی نامعتبر")
+            return
+    from services.forbidden_lock import unlock_consume
+    unlock_consume(tg)
+    # حذف تکنیک ممنوعه از DB اگر خواست
+    try:
+        async with async_session() as session:
+            from database.crud import get_user_by_telegram_id
+            from services.cultivation import FORBIDDEN_TECH_NAME
+            from database.models_v3 import UserTechnique, CultivationTechnique
+            from sqlalchemy import select, delete
+            u = await get_user_by_telegram_id(session, tg)
+            if u:
+                r = await session.execute(
+                    select(CultivationTechnique.id).where(CultivationTechnique.name == FORBIDDEN_TECH_NAME)
+                )
+                tid = r.scalar_one_or_none()
+                if tid:
+                    await session.execute(
+                        delete(UserTechnique).where(
+                            UserTechnique.user_id == u.id,
+                            UserTechnique.technique_id == tid,
+                        )
+                    )
+                from database.models_v2 import Cultivation
+                cr = await session.execute(select(Cultivation).where(Cultivation.user_id == u.id))
+                cult = cr.scalar_one_or_none()
+                if cult and cult.talent in ("forbidden_ready", "forbidden_used"):
+                    cult.talent = None
+                await session.commit()
+    except Exception as e:
+        await message.answer(f"قفل حافظه برداشته شد؛ DB: {type(e).__name__}")
+        return
+    await message.answer(f"✅ قفل مصرف برای {tg} برداشته شد (حافظه + تکنیک ممنوعه DB).")

@@ -14,6 +14,7 @@ import database.models_v2  # noqa: F401
 import database.models_v3  # noqa: F401
 from bot.handlers import spirit as spirit  # noqa
 from bot.handlers import characters as characters  # noqa
+from bot.handlers import retention as retention  # noqa
 from bot.handlers import (
     start, profile, duel, guardian, ranking, admin, missions,
     sects, cultivation, master, arena, accounts, shop, crafting, dual, marriage, pets, death, world, help_menu, combat, engagement, games, garden, social, creatures, combat_extra, race, spirit, society_extra, lang, jobs_events, codex_items, prison_market, fallback
@@ -30,6 +31,14 @@ async def on_startup():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     await migrate_schema()
+    try:
+        from services.persist import preload_all, load_from_db, sync_to_db
+        preload_all()
+        n = await load_from_db()
+        logger.info("Persist loaded from DB: %s namespaces", n)
+        await sync_to_db()
+    except Exception as e:
+        logger.warning("persist init: %s", e)
     logger.info("Database tables created + migrated (v1 + v2 + v3).")
 
 
@@ -70,6 +79,7 @@ async def main():
     dp.include_router(help_menu.router)
     dp.include_router(combat.router)
     dp.include_router(engagement.router)
+    dp.include_router(retention.router)
     dp.include_router(games.router)
     dp.include_router(garden.router)
     dp.include_router(social.router)

@@ -77,7 +77,7 @@ async def cmd_teahouse(message: Message):
         desc = (item.description or "")[:50]
         text += f"• <b>{item.name}</b>" + chr(10) + f"  {desc}" + chr(10) + f"  قیمت: <b>{item.price}</b> سکه" + chr(10) + chr(10)
         btn = item.name if len(item.name) <= 28 else item.name[:26] + "…"
-        builder.button(text=f"خرید {btn}", callback_data=f"buy:{uid}:{item.id}")
+        builder.button(text=f"خرید {btn}", callback_data=f"buyq:{uid}:{item.id}")
     builder.adjust(1)
     if total_pages > 1:
         builder.button(text="بعدی ➡️", callback_data=f"bpage:{uid}:{bid}:1")
@@ -138,7 +138,7 @@ async def _render_building(callback: CallbackQuery, owner_id: int, building_id: 
         desc = (item.description or "")[:50]
         text += f"• <b>{item.name}</b>\n  {desc}\n  قیمت: <b>{item.price}</b> سکه\n\n"
         btn = item.name if len(item.name) <= 28 else item.name[:26] + "…"
-        builder.button(text=f"خرید {btn}", callback_data=f"buy:{owner_id}:{item.id}")
+        builder.button(text=f"خرید {btn}", callback_data=f"buyq:{owner_id}:{item.id}")
     builder.adjust(1)
     if page > 0:
         builder.button(text="⬅️ قبلی", callback_data=f"bpage:{owner_id}:{building_id}:{page - 1}")
@@ -183,6 +183,44 @@ async def shop_back(callback: CallbackQuery):
     await callback.answer()
 
 
+
+@router.callback_query(F.data.startswith("buyq:"))
+async def process_buy_qty_menu(callback: CallbackQuery):
+    """منوی انتخاب تعداد خرید"""
+    owner_id, rest = parse_owner_data(callback.data, "buyq:")
+    if owner_id is None:
+        await callback.answer("داده نامعتبر", show_alert=True)
+        return
+    if not await ensure_owner(callback, owner_id, "مغازه"):
+        return
+    try:
+        item_id = int(rest)
+    except ValueError:
+        await callback.answer("خطا", show_alert=True)
+        return
+    async with async_session() as session:
+        item = await session.get(ShopItem, item_id)
+        if not item:
+            await callback.answer("آیتم پیدا نشد", show_alert=True)
+            return
+        name = item.name
+        price = int(item.price or 0)
+    builder = InlineKeyboardBuilder()
+    for q in (1, 2, 3, 5, 10, 20, 50):
+        builder.button(
+            text=f"×{q} ({price * q:,})",
+            callback_data=f"buy:{owner_id}:{item_id}:{q}",
+        )
+    builder.adjust(3)
+    builder.button(text="انصراف", callback_data=f"shopback:{owner_id}")
+    await callback.message.answer(
+        f"🛒 <b>{name}</b>\nقیمت واحد: <b>{price:,}</b>\nچند تا می‌خری؟\n"
+        f"(یا دستور: <code>/buyitem {item_id} تعداد</code>)",
+        reply_markup=builder.as_markup(),
+    )
+    await callback.answer()
+
+
 @router.callback_query(F.data.startswith("buy:"))
 async def process_buy(callback: CallbackQuery):
     owner_id, rest = parse_owner_data(callback.data, "buy:")
@@ -193,7 +231,10 @@ async def process_buy(callback: CallbackQuery):
         return
 
     try:
-        item_id = int(rest)
+        parts_r = rest.split(":")
+        item_id = int(parts_r[0])
+        qty = int(parts_r[1]) if len(parts_r) > 1 else 1
+        qty = max(1, min(qty, 100))
     except ValueError:
         await callback.answer(tr(callback.from_user.id, "خطا"), show_alert=True)
         return
@@ -210,7 +251,7 @@ async def process_buy(callback: CallbackQuery):
             if not item:
                 await callback.answer(tr(callback.from_user.id, "آیتم پیدا نشد."), show_alert=True)
                 return
-            msg = await buy_item(session, user, item)
+            msg = await buy_item(session, user, item, qty=qty)
     except Exception as e:
         msg = f"❌ خطا در خرید: {type(e).__name__}: {e}"
 
@@ -252,19 +293,20 @@ async def cmd_inventory(message: Message):
     text = "🎒 <b>کیف تو</b>\n\n"
     for i, (inv, item) in enumerate(rows, 1):
         text += f"{i}. {item.name} ×{inv.quantity}\n"
-    text += "\n/use شماره — استفاده\n/drop شماره — دور انداختن"
+    text += "\n/use شماره [تعداد] — استفاده (مثلاً /use 1 4)\n/drop شماره [تعداد] — دور انداختن\n/buyitem نام تعداد — خرید دسته‌ای"
     await message.answer(text)
 
 
 @router.message(Command("use", "استفاده"))
 async def cmd_use_item(message: Message):
-    """استفاده از آیتم: /use شماره"""
+    """استفاده از آیتم: /use شماره [تعداد]"""
     parts = (message.text or "").split()
     if len(parts) < 2:
         await message.answer(
-            "فرمت: /use شماره\n"
+            "فرمت: /use شماره [تعداد]\n"
             "اول /inventory بزن؛ شماره ردیف آیتم را ببین.\n"
-            "مثال: /use 1"
+            "مثال: /use 1\n"
+            "مثال دسته‌ای: /use 1 4  ← چهارتا با هم"
         )
         return
     try:
@@ -272,13 +314,19 @@ async def cmd_use_item(message: Message):
     except ValueError:
         await message.answer(tr(message.from_user.id, "شماره نامعتبر"))
         return
+    use_qty = 1
+    if len(parts) >= 3:
+        try:
+            use_qty = max(1, min(int(parts[2]), 50))
+        except ValueError:
+            use_qty = 1
 
     async with async_session() as session:
         user = await get_or_create_user(
             session, message.from_user.id,
             message.from_user.full_name, message.from_user.username
         )
-        from services.forbidden_lock import is_consume_locked, lock_consume, lock_message, FORBIDDEN_TEA_NAME
+        from services.forbidden_lock import is_consume_locked, lock_consume, lock_message, is_forbidden_item, FORBIDDEN_TEA_NAME
         if is_consume_locked(message.from_user.id):
             await message.answer(lock_message())
             return
@@ -295,6 +343,9 @@ async def cmd_use_item(message: Message):
             await message.answer(tr(message.from_user.id, "آیتم پیدا نشد. /inventory"))
             return
         inv, item = rows[idx]
+        if inv.quantity < use_qty:
+            await message.answer(f"فقط {inv.quantity} عدد داری.")
+            return
         effect = item.effect or {}
         if isinstance(effect, str):
             import json
@@ -306,11 +357,34 @@ async def cmd_use_item(message: Message):
             effect = {}
         msg_parts = [f"✅ از «{item.name}» استفاده کردی."]
         # چای/آیتم ممنوعه → قفل مصرف ابدی
-        if item.name == FORBIDDEN_TEA_NAME or effect.get("forbidden") or "ممنوعه" in (item.name or ""):
+        msg_parts = []
+        if (item.item_type or "") == "pill" or "قرص" in (item.name or ""):
+            from services.pill_limit import register_pill
+            from services.cultivation import get_or_create_cultivation as _goc
+            _cult = await _goc(session, user.id)
+            _okp, _pillmsg, _pill_died = register_pill(message.from_user.id, _cult.realm or "بیداری")
+            if _pill_died:
+                user.is_dead = True
+                user.blood = 0
+                inv.quantity = max(0, (inv.quantity or 1) - 1)
+                if inv.quantity <= 0:
+                    await session.delete(inv)
+                await session.commit()
+                await message.answer(_pillmsg + chr(10) + "💀 /afterdeath")
+                return
+            # ادامه با هشدار
+            _pill_warn = _pillmsg
+        else:
+            _pill_warn = ""
+        if is_forbidden_item(item.name, effect):
             lock_consume(message.from_user.id)
             msg_parts.append("☠️ قفل مصرف ابدی فعال شد — دیگر هیچ چیز مصرف نمی‌کنی.")
 
         if isinstance(effect, dict):
+            if effect.get("knowledge"):
+                from services.knowledge import add_knowledge
+                tot, tier = add_knowledge(message.from_user.id, int(effect["knowledge"]))
+                msg_parts.append(f"📚 دانش +{effect['knowledge']} (کل {tot} — {tier})")
             if effect.get("xp"):
                 user.xp += int(effect["xp"])
                 msg_parts.append(f"+{effect['xp']} XP")
@@ -337,11 +411,23 @@ async def cmd_use_item(message: Message):
             if effect.get("blood"):
                 b = int(effect["blood"])
                 cur_b = int(getattr(user, "blood", 100) or 100)
-                user.blood = min(500, cur_b + b)
+                user.blood = min(500, cur_b + b * use_qty)
                 msg_parts.append(f"+{b} خون (الان: {user.blood})")
             # محافظ
             if effect.get("protect"):
                 msg_parts.append("سپر محافظ فعال شد (۱ بار).")
+            if effect.get("combat_power") or effect.get("power_stat"):
+                from services.knowledge import add_combat_stat
+                amt = int(effect.get("combat_power") or effect.get("power_stat") or 5)
+                msg_parts.append(add_combat_stat(message.from_user.id, "power", amt))
+            if effect.get("combat_speed") or effect.get("speed_stat"):
+                from services.knowledge import add_combat_stat
+                amt = int(effect.get("combat_speed") or effect.get("speed_stat") or 5)
+                msg_parts.append(add_combat_stat(message.from_user.id, "speed", amt))
+            if effect.get("combat_defense") or effect.get("defense_stat"):
+                from services.knowledge import add_combat_stat
+                amt = int(effect.get("combat_defense") or effect.get("defense_stat") or 5)
+                msg_parts.append(add_combat_stat(message.from_user.id, "defense", amt))
             if effect.get("duel_power"):
                 msg_parts.append(f"قدرت دوئل (از آیتم): {effect['duel_power']}")
             if effect.get("learn_tech"):
@@ -363,7 +449,7 @@ async def cmd_use_item(message: Message):
                     await message.answer(f"⏳ چای هنوز اثر دارد. {left} دقیقه صبر کن.")
                     return
                 from services.cultivation import add_energy
-                gain = int(effect.get("energy") or 8000)
+                gain = int(effect.get("energy") or 8000) * use_qty
                 res = await add_energy(session, user.id, gain)
                 _tea_cd[uid] = now + timedelta(minutes=wait)
                 msg_parts.append(f"🍵 +{gain} انرژی تذهیب")
@@ -372,9 +458,9 @@ async def cmd_use_item(message: Message):
                 msg_parts.append(f"📊 انرژی فعلی: {res.get('energy', '?')}")
             elif effect.get("energy") and item.item_type in ("pill", "tea"):
                 from services.cultivation import add_energy
-                gain = int(effect["energy"])
+                gain = int(effect["energy"]) * use_qty
                 res = await add_energy(session, user.id, gain)
-                msg_parts.append(f"+{gain} انرژی")
+                msg_parts.append(f"+{gain} انرژی (×{use_qty})")
                 if res.get("messages"):
                     msg_parts.extend(res["messages"])
             if effect.get("heal"):
@@ -406,12 +492,13 @@ async def cmd_use_item(message: Message):
             _gain = 15
             _w.coins += _gain
             msg_parts.append(f"منابع: +{_gain} سکه")
-        inv.quantity -= 1
+        inv.quantity -= use_qty
         if inv.quantity <= 0:
             await session.delete(inv)
         await session.commit()
 
-    await message.answer("\n".join(msg_parts))
+    head = f"📦 استفاده ×{use_qty} از «{item.name if 'item' in dir() else 'آیتم'}»\n"
+    await message.answer(head + "\n".join(msg_parts))
 
 
 @router.message(Command("drop", "دورریختن", "حذف‌آیتم"))
@@ -433,7 +520,7 @@ async def cmd_drop_item(message: Message):
             session, message.from_user.id,
             message.from_user.full_name, message.from_user.username
         )
-        from services.forbidden_lock import is_consume_locked, lock_consume, lock_message, FORBIDDEN_TEA_NAME
+        from services.forbidden_lock import is_consume_locked, lock_consume, lock_message, is_forbidden_item, FORBIDDEN_TEA_NAME
         if is_consume_locked(message.from_user.id):
             await message.answer(lock_message())
             return
@@ -621,3 +708,178 @@ async def cmd_admin_get(message: Message):
             user.has_cyrus_sword = True
         await session.commit()
     await message.answer(f"✅ رایگان: «{name}» به کیف اضافه شد.")
+
+
+
+# --- انتخاب با نوشتن ---
+BUILDING_ALIASES = {
+    "داروخانه": "داروخانه",
+    "دارو": "داروخانه",
+    "کیمیاگری": "کیمیاگری",
+    "کیمیا": "کیمیاگری",
+    "طلسم‌خانه": "طلسم‌خانه",
+    "طلسم خانه": "طلسم‌خانه",
+    "طلسمخانه": "طلسم‌خانه",
+    "آهنگری": "آهنگری",
+    "آهنگر": "آهنگری",
+    "کتابخانه": "کتابخانه",
+    "کتاب": "کتابخانه",
+    "چای‌خانه": "چای‌خانه",
+    "چایخانه": "چای‌خانه",
+    "چای": "چای‌خانه",
+}
+
+
+@router.message(F.text.func(lambda t: bool(t) and t.strip() in BUILDING_ALIASES))
+async def text_open_building(message: Message):
+    """باز کردن ساختمان با نوشتن نام: داروخانه، آهنگری، ..."""
+    key = BUILDING_ALIASES.get((message.text or "").strip())
+    if not key:
+        return
+    uid = message.from_user.id
+    from sqlalchemy import select as sel
+    async with async_session() as session:
+        await ensure_default_buildings_and_items(session)
+        result = await session.execute(sel(Building).where(Building.building_type == key))
+        b = result.scalar_one_or_none()
+        if not b:
+            result = await session.execute(sel(Building).where(Building.name.contains(key)))
+            b = result.scalar_one_or_none()
+        if not b:
+            await message.answer(f"ساختمان «{key}» پیدا نشد. /buildings")
+            return
+        items = list(await get_items_of_building(session, b.id))
+        bid = b.id
+    if not items:
+        await message.answer(f"«{key}» خالی است.")
+        return
+    PER = 8
+    total_pages = max(1, (len(items) + PER - 1) // PER)
+    chunk = items[:PER]
+    builder = InlineKeyboardBuilder()
+    text = f"🏪 <b>{b.name}</b>" + chr(10) + f"صفحه 1/{total_pages}" + chr(10) + chr(10)
+    text += "خرید با دکمه یا بنویس: <code>خرید نام‌آیتم</code>" + chr(10) + chr(10)
+    for item in chunk:
+        desc = (item.description or "")[:50]
+        text += f"• <b>{item.name}</b> — {item.price} سکه" + chr(10)
+        if desc:
+            text += f"  {desc}" + chr(10)
+        btn = item.name if len(item.name) <= 28 else item.name[:26] + "…"
+        builder.button(text=f"خرید {btn}", callback_data=f"buyq:{uid}:{item.id}")
+    builder.adjust(1)
+    if total_pages > 1:
+        builder.button(text="بعدی ➡️", callback_data=f"bpage:{uid}:{bid}:1")
+    builder.button(text="همه ساختمان‌ها", callback_data=f"shopback:{uid}")
+    builder.adjust(1)
+    await message.answer(text, reply_markup=builder.as_markup())
+
+
+@router.message(F.text.regexp(r"^(?:خرید|بخر)\s+.+$"))
+async def text_buy_item(message: Message):
+    """خرید با نوشتن: خرید قرص طول عمر"""
+    t = (message.text or "").strip()
+    for prefix in ("خرید ", "بخر "):
+        if t.startswith(prefix):
+            name = t[len(prefix):].strip()
+            break
+    else:
+        return
+    if not name:
+        await message.answer("مثال: خرید قرص طول عمر")
+        return
+    from sqlalchemy import select as sel
+    async with async_session() as session:
+        await ensure_default_buildings_and_items(session)
+        user = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
+        result = await session.execute(sel(ShopItem))
+        items = list(result.scalars().all())
+        # match exact or contains
+        item = next((i for i in items if (i.name or "") == name), None)
+        if not item:
+            item = next((i for i in items if name in (i.name or "")), None)
+        if not item:
+            await message.answer(f"آیتم «{name}» پیدا نشد. اول داروخانه یا /buildings را باز کن.")
+            return
+        # reuse buy logic via price
+        from services.economy import get_or_create_wallet, pay_any_currency
+        from database.models_v3 import UserInventory
+        w = await get_or_create_wallet(session, user.id)
+        ok, pmsg = pay_any_currency(w, int(item.price or 0))
+        if not ok:
+            await message.answer(pmsg)
+            return
+        r = await session.execute(
+            sel(UserInventory).where(
+                UserInventory.user_id == user.id,
+                UserInventory.item_id == item.id,
+            )
+        )
+        inv = r.scalar_one_or_none()
+        if inv:
+            inv.quantity = int(inv.quantity or 0) + 1
+        else:
+            session.add(UserInventory(user_id=user.id, item_id=item.id, quantity=1))
+        await session.commit()
+        await message.answer(
+            f"✅ «<b>{item.name}</b>» خریده شد." + chr(10) + pmsg + chr(10)
+            + "/inventory — کیف"
+        )
+
+
+@router.message(Command("pillstatus", "وضعیت‌قرص", "سقف‌قرص"))
+async def cmd_pill_status(message: Message):
+    async with async_session() as session:
+        user = await get_or_create_user(session, message.from_user.id, message.from_user.full_name, message.from_user.username)
+        from services.cultivation import get_or_create_cultivation
+        from services.pill_limit import status, max_pills
+        cult = await get_or_create_cultivation(session, user.id)
+        lim = max_pills(cult.realm or "بیداری")
+        await message.answer(
+            status(message.from_user.id, cult.realm or "بیداری") + chr(10)
+            + f"هر قلمرو بالاتر سقف را افزایش می‌دهد." + chr(10)
+            + "بیش از سقف = ۶۰٪ احتمال انفجار و مرگ."
+        )
+
+
+@router.message(Command("buyitem", "خریدآیتم", "بخر"))
+async def cmd_buyitem(message: Message):
+    """خرید تعدادی: /buyitem شماره_یا_نام تعداد"""
+    parts = (message.text or "").split(maxsplit=2)
+    if len(parts) < 2:
+        await message.answer(
+            "🛒 خرید دسته‌ای\n"
+            "فرمت: /buyitem شماره تعداد\n"
+            "یا: /buyitem نام‌آیتم تعداد\n"
+            "مثال: /buyitem 3 10\n"
+            "اول از /buildings لیست را ببین."
+        )
+        return
+    qty = 1
+    key = parts[1]
+    if len(parts) >= 3:
+        try:
+            qty = max(1, min(int(parts[2]), 100))
+        except ValueError:
+            qty = 1
+    async with async_session() as session:
+        await ensure_default_buildings_and_items(session)
+        user = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
+        item = None
+        try:
+            iid = int(key)
+            item = await session.get(ShopItem, iid)
+        except ValueError:
+            from sqlalchemy import select as sel
+            r = await session.execute(sel(ShopItem).where(ShopItem.name.contains(key)))
+            item = r.scalars().first()
+        if not item:
+            await message.answer("آیتم پیدا نشد.")
+            return
+        msg = await buy_item(session, user, item, qty=qty)
+    await message.answer(msg)

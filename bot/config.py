@@ -1,18 +1,14 @@
-BOT_VERSION = "3.10.6"
-WEBAPP_VERSION = "3.10.6"
+BOT_VERSION = "4.6.4"
+WEBAPP_VERSION = "4.6.4"
 # پیام عمومی سازنده
-CREATOR_NOTICE = """📢 <b>پیام سازنده ربات</b>
+CREATOR_NOTICE = """📢 پیام جهانی — نسخه 4.6.4
 
-نسخه <b>۲.۹.۴</b>
+• راهنما و دانشنامه به‌روز شد: /help /commands /codex /codexguide
+• قلمرو بدن و روح: /bodyrealms /spiritrealms
+• ذخیره پایدار داده‌ها فعال است
+• انتخاب با نوشتن: مرد/زن، داروخانه، خرید نام‌آیتم
 
-از طرف سازنده:
-لطفاً دیگر درخواست‌های عجیب و غریب نفرستید.
-همین یک‌بار برخی قابلیت‌ها اضافه شد؛ یعنی چی که مدام بخواید با مردم لز کنید یا با مردا گی کنید؟
-
-تمرکز ربات روی تذهیب، فرقه، دوئل و رقابت است.
-درخواست‌های نامربوط بعدی نادیده گرفته می‌شود.
-
-— سازنده"""
+/help برای بخش‌ها"""
 
 import os
 from dotenv import load_dotenv
@@ -63,8 +59,8 @@ XP_NEEDED_PER_LEVEL = 100
 MAX_LEVEL = 120
 
 # تذهیب: سطح ۱→۲ = ۲۰۰۰۰۰، هر سطح بعد +۲۵۰۰۰۰
-ENERGY_BASE = 200_000
-ENERGY_PER_LEVEL_ADD = 250_000
+ENERGY_BASE = 500_000
+ENERGY_PER_LEVEL_ADD = 600_000
 ROOT_UNLOCK_ENERGY = 200_000
 GATHER_ENERGY_AMOUNT = 5_000
 

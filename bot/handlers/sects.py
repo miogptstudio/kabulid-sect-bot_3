@@ -1,3 +1,4 @@
+from services.retention import war_is_open, territory_war_window
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command
@@ -70,7 +71,7 @@ async def cmd_create_sect(message: Message):
         await message.answer(
             f"فرمت: /createsect &lt;نام&gt; &lt;نوع&gt;\n"
             f"انواع: {', '.join(SECT_TYPES)}\n"
-            f"⚠️ نیاز به قلمرو تذهیب «بالا» یا بالاتر"
+            f"⚠️ نیاز به قلمرو بالاتر از «بالا» (حداقل پیشرفته)"
         )
         return
     
@@ -86,6 +87,12 @@ async def cmd_create_sect(message: Message):
         )
         try:
             sect = await create_sect(session, name, sect_type, user)
+            try:
+                from services.dao_path import set_dao
+                if sect_type in ("ارتدوکس", "شیطانی", "بی‌طرف"):
+                    set_dao(message.from_user.id, sect_type)
+            except Exception:
+                pass
             await message.answer(
                 f"✅ فرقه <b>{sect.name}</b> ({sect.sect_type}) ساخته شد.\n"
                 f"تو رهبر و عضو داخلی هستی.\n"
@@ -116,7 +123,7 @@ async def cmd_join_sect(message: Message):
             await message.answer(tr(message.from_user.id, "فرقه پیدا نشد."))
             return
         try:
-            member = await join_sect(session, user, sect)
+            member = await join_sect(session, user, sect, tg_id=message.from_user.id)
             await message.answer(f"✅ به <b>{sect.name}</b> پیوستی. وضعیت: {member.status}")
         except ValueError as e:
             await message.answer(str(e))
@@ -169,10 +176,15 @@ async def cmd_challenge(message: Message):
         leader = await session.get(__import__("database.models", fromlist=["User"]).User, sect.leader_id)
         p1 = await calc_power(session, user)
         p2 = await calc_power(session, leader) if leader else {"total": 50}
-        # شانس بر اساس قدرت
-        ratio = p1["total"] / max(p1["total"] + p2["total"], 1)
-        won = random.random() < max(0.2, min(0.8, ratio))
+        # بدون شانس — فقط قدرت خالص
+        t1 = int(p1.get("total") or 0)
+        t2 = int(p2.get("total") or 0)
+        if t1 == t2:
+            won = False  # تساوی = رهبر می‌ماند
+        else:
+            won = t1 > t2
         msg = await resolve_challenge(session, challenge, won)
+        power_line = f"قدرت چالش‌گر: <b>{t1}</b> | قدرت رهبر: <b>{t2}</b>" + chr(10)
         if msg == "LOST_NEED_PARDON":
             user.is_dead = True
             await session.commit()
@@ -188,14 +200,14 @@ async def cmd_challenge(message: Message):
             )
             builder.adjust(1)
             await message.answer(
-                f"⚔️ چالش رهبری <b>{sect.name}</b> شکست خورد.\n"
+                power_line + f"⚔️ چالش رهبری <b>{sect.name}</b> شکست خورد.\n"
                 f"{user.full_name} در آستانه مرگ است.\n"
                 f"فقط رهبر می‌تواند ببخشد یا رها کند.",
                 reply_markup=builder.as_markup(),
             )
         else:
             await message.answer(
-                f"⚔️ چالش رهبری فرقه <b>{sect.name}</b>\n\n{msg}"
+                power_line + f"⚔️ چالش رهبری فرقه <b>{sect.name}</b>\n\n{msg}"
             )
 
 
@@ -406,3 +418,388 @@ async def cmd_sect_settings(message: Message):
             await message.answer(tr(message.from_user.id, "توضیح به‌روز شد."))
         else:
             await message.answer(tr(message.from_user.id, "کلید: name یا desc"))
+
+
+
+# ===== سیستم‌های فرقه: خزانه، برج، کتابخانه، مأموریت =====
+from services import sect_systems as ssys
+
+
+async def _require_sect(session, user):
+    from services.sects import get_user_sect
+    mem = await get_user_sect(session, user.id)
+    return mem
+
+
+def _is_officer(status: str) -> bool:
+    s = status or ""
+    return any(x in s for x in ("رهبر", "ارجمند", "ارشد", "معاون"))
+
+
+@router.message(Command("secttreasury", "خزانهفرقه", "خزانه"))
+async def cmd_sect_treasury(message: Message):
+    async with async_session() as session:
+        user = await get_or_create_user(session, message.from_user.id, message.from_user.full_name, message.from_user.username)
+        mem = await _require_sect(session, user)
+        if not mem:
+            await message.answer("عضو فرقه نیستی.")
+            return
+        from database.models_v2 import Sect
+        sect = await session.get(Sect, mem.sect_id)
+        await message.answer(ssys.treasury_text(mem.sect_id, sect.name if sect else ""))
+
+
+@router.message(Command("sectdeposit", "واریزفرقه"))
+async def cmd_sect_deposit(message: Message):
+    parts = (message.text or "").split()
+    if len(parts) < 3:
+        await message.answer("فرمت: /sectdeposit coins|spirit|heavenly|materials مقدار")
+        return
+    cur, amt = parts[1], int(parts[2])
+    async with async_session() as session:
+        user = await get_or_create_user(session, message.from_user.id, message.from_user.full_name, message.from_user.username)
+        mem = await _require_sect(session, user)
+        if not mem:
+            await message.answer("عضو فرقه نیستی.")
+            return
+        from services.economy import get_or_create_wallet
+        w = await get_or_create_wallet(session, user.id)
+        field = {"coins": "coins", "سکه": "coins", "spirit": "spirit_stones", "روحی": "spirit_stones",
+                 "heavenly": "heavenly_stones", "بهشتی": "heavenly_stones", "materials": None, "مواد": None}.get(cur.lower())
+        if field is None and cur.lower() in ("materials", "مواد"):
+            # مواد از خزانه مستقیم بدون کیف
+            await message.answer(ssys.deposit(mem.sect_id, "materials", amt))
+            return
+        if not field:
+            await message.answer("ارز: coins spirit heavenly materials")
+            return
+        have = int(getattr(w, field, 0) or 0)
+        if have < amt:
+            await message.answer("موجودی کافی نیست.")
+            return
+        setattr(w, field, have - amt)
+        await session.commit()
+        await message.answer(ssys.deposit(mem.sect_id, "coins" if field=="coins" else ("spirit" if "spirit" in field else "heavenly"), amt))
+
+
+@router.message(Command("sectwithdraw", "برداشتفرقه"))
+async def cmd_sect_withdraw(message: Message):
+    parts = (message.text or "").split()
+    if len(parts) < 3:
+        await message.answer("فرمت: /sectwithdraw coins|spirit|heavenly|materials مقدار")
+        return
+    cur, amt = parts[1], int(parts[2])
+    async with async_session() as session:
+        user = await get_or_create_user(session, message.from_user.id, message.from_user.full_name, message.from_user.username)
+        mem = await _require_sect(session, user)
+        if not mem or not _is_officer(mem.status):
+            await message.answer("فقط رهبر/ارجمند/ارشد.")
+            return
+        ok, msg = ssys.withdraw(mem.sect_id, cur, amt)
+        if not ok:
+            await message.answer(msg)
+            return
+        from services.economy import get_or_create_wallet
+        w = await get_or_create_wallet(session, user.id)
+        if cur.lower() in ("coins", "سکه"):
+            w.coins = int(w.coins or 0) + amt
+        elif cur.lower() in ("spirit", "روحی"):
+            w.spirit_stones = int(getattr(w, "spirit_stones", 0) or 0) + amt
+        elif cur.lower() in ("heavenly", "بهشتی"):
+            w.heavenly_stones = int(getattr(w, "heavenly_stones", 0) or 0) + amt
+        await session.commit()
+        await message.answer(msg + " به کیف تو واریز شد.")
+
+
+@router.message(Command("sectbuildings", "ساختمانفرقه", "برجفرقه"))
+async def cmd_sect_buildings(message: Message):
+    async with async_session() as session:
+        user = await get_or_create_user(session, message.from_user.id, message.from_user.full_name, message.from_user.username)
+        mem = await _require_sect(session, user)
+        if not mem:
+            await message.answer("عضو فرقه نیستی.")
+            return
+        await message.answer(ssys.buildings_text(mem.sect_id))
+
+
+@router.message(Command("sectupgrade", "ارتقابرج", "ارتقاساختمان"))
+async def cmd_sect_upgrade(message: Message):
+    parts = (message.text or "").split()
+    if len(parts) < 2:
+        await message.answer("فرمت: /sectupgrade tower|library|forge")
+        return
+    async with async_session() as session:
+        user = await get_or_create_user(session, message.from_user.id, message.from_user.full_name, message.from_user.username)
+        mem = await _require_sect(session, user)
+        if not mem or not _is_officer(mem.status):
+            await message.answer("فقط رهبر/ارجمند.")
+            return
+        await message.answer(ssys.upgrade_building(mem.sect_id, parts[1].lower()))
+
+
+@router.message(Command("sectlibrary", "کتابخانهفرقه"))
+async def cmd_sect_library(message: Message):
+    async with async_session() as session:
+        user = await get_or_create_user(session, message.from_user.id, message.from_user.full_name, message.from_user.username)
+        mem = await _require_sect(session, user)
+        if not mem:
+            await message.answer("عضو فرقه نیستی.")
+            return
+        await message.answer(ssys.list_library_techs(mem.sect_id))
+
+
+@router.message(Command("learnsecttech", "یادگیری‌تکنیک‌فرقه"))
+async def cmd_learn_sect_tech(message: Message):
+    parts = (message.text or "").split(maxsplit=1)
+    if len(parts) < 2:
+        await message.answer("فرمت: /learnsecttech نام‌تکنیک")
+        return
+    async with async_session() as session:
+        user = await get_or_create_user(session, message.from_user.id, message.from_user.full_name, message.from_user.username)
+        mem = await _require_sect(session, user)
+        if not mem:
+            await message.answer("عضو فرقه نیستی.")
+            return
+        await message.answer(ssys.learn_sect_tech(message.from_user.id, mem.sect_id, parts[1].strip(), ssys.get_contrib(message.from_user.id)))
+
+
+@router.message(Command("leaderpromotion", "مقامرهبر", "ارتقاع رهبری"))
+async def cmd_leader_rank(message: Message):
+    async with async_session() as session:
+        user = await get_or_create_user(session, message.from_user.id, message.from_user.full_name, message.from_user.username)
+        mem = await _require_sect(session, user)
+        if not mem:
+            await message.answer("عضو فرقه نیستی.")
+            return
+        await message.answer(ssys.leader_rank_text(mem.sect_id))
+
+
+@router.message(Command("sectmissions", "مأموریتفرقه", "ماموریتفرقه"))
+async def cmd_sect_missions(message: Message):
+    async with async_session() as session:
+        user = await get_or_create_user(session, message.from_user.id, message.from_user.full_name, message.from_user.username)
+        mem = await _require_sect(session, user)
+        if not mem:
+            await message.answer("عضو فرقه نیستی.")
+            return
+        text = ssys.list_open_missions(mem.sect_id)
+        text = text.replace("امتیاز مشارکت تو: 0 (با /mysectmission ببین)", f"امتیاز مشارکت تو: {ssys.get_contrib(message.from_user.id)}")
+        await message.answer(text)
+
+
+@router.message(Command("assignsectmission", "صدورمأموریت"))
+async def cmd_assign_mission(message: Message):
+    async with async_session() as session:
+        user = await get_or_create_user(session, message.from_user.id, message.from_user.full_name, message.from_user.username)
+        mem = await _require_sect(session, user)
+        if not mem or not _is_officer(mem.status):
+            await message.answer("فقط رهبر یا ارجمند می‌تواند مأموریت بدهد.")
+            return
+        await message.answer(ssys.assign_missions(mem.sect_id, 3))
+
+
+@router.message(Command("dosectmission", "انجاممأموریتفرقه"))
+async def cmd_do_sect_mission(message: Message):
+    parts = (message.text or "").split()
+    if len(parts) < 2 or not parts[1].isdigit():
+        await message.answer("فرمت: /dosectmission شماره")
+        return
+    async with async_session() as session:
+        user = await get_or_create_user(session, message.from_user.id, message.from_user.full_name, message.from_user.username)
+        mem = await _require_sect(session, user)
+        if not mem:
+            await message.answer("عضو فرقه نیستی.")
+            return
+        msg = ssys.do_mission(message.from_user.id, mem.sect_id, int(parts[1]))
+        # personal coin reward
+        if "انجام شد" in msg:
+            from services.economy import get_or_create_wallet
+            w = await get_or_create_wallet(session, user.id)
+            # extract half coins roughly 20
+            w.coins = int(w.coins or 0) + 25
+            await session.commit()
+        await message.answer(msg)
+
+
+@router.message(Command("mysectmission", "مشارکت‌من"))
+async def cmd_my_contrib(message: Message):
+    c = ssys.get_contrib(message.from_user.id)
+    await message.answer(f"🏅 امتیاز مشارکت فرقه تو: <b>{c}</b>\nبا مأموریت فرقه (/sectmissions) افزایش می‌یابد.")
+
+
+
+# ===== قوانین، آزمون عضویت، مسابقه ارتقا =====
+from services import sect_exam as sexam
+
+
+@router.message(Command("sectrules", "قوانین‌فرقه", "قوانینفرقه"))
+async def cmd_sect_rules(message: Message):
+    parts = (message.text or "").split(maxsplit=1)
+    async with async_session() as session:
+        user = await get_or_create_user(session, message.from_user.id, message.from_user.full_name, message.from_user.username)
+        if len(parts) >= 2:
+            name = parts[1].strip()
+            result = await session.execute(select(Sect).where(Sect.name == name, Sect.is_active == True))
+            sect = result.scalar_one_or_none()
+            if not sect:
+                await message.answer("فرقه پیدا نشد.")
+                return
+            await message.answer(sexam.rules_text(sect.id, sect.name))
+            return
+        mem = await get_user_sect(session, user.id)
+        if not mem:
+            await message.answer("نام فرقه را بنویس: /sectrules نام")
+            return
+        sect = await session.get(Sect, mem.sect_id)
+        await message.answer(sexam.rules_text(mem.sect_id, sect.name if sect else ""))
+
+
+@router.message(Command("setsectrules", "تنظیم‌قوانین"))
+async def cmd_set_rules(message: Message):
+    parts = (message.text or "").split(maxsplit=1)
+    if len(parts) < 2:
+        await message.answer("فرمت: /setsectrules قانون1 | قانون2 | قانون3")
+        return
+    rules = [r.strip() for r in parts[1].split("|")]
+    async with async_session() as session:
+        user = await get_or_create_user(session, message.from_user.id, message.from_user.full_name, message.from_user.username)
+        mem = await get_user_sect(session, user.id)
+        if not mem:
+            await message.answer("عضو فرقه نیستی.")
+            return
+        sect = await session.get(Sect, mem.sect_id)
+        if not sect or sect.leader_id != user.id:
+            await message.answer("فقط رهبر.")
+            return
+        await message.answer(sexam.set_rules(mem.sect_id, rules))
+
+
+@router.message(Command("sectexam", "آزمون‌فرقه", "آزمونفرقه"))
+async def cmd_sect_exam(message: Message):
+    parts = (message.text or "").split(maxsplit=1)
+    if len(parts) < 2:
+        await message.answer("فرمت: /sectexam نام‌فرقه\nقبلش /sectrules نام‌فرقه")
+        return
+    name = parts[1].strip()
+    async with async_session() as session:
+        result = await session.execute(select(Sect).where(Sect.name == name, Sect.is_active == True))
+        sect = result.scalar_one_or_none()
+        if not sect:
+            await message.answer("فرقه پیدا نشد.")
+            return
+        await message.answer(sexam.start_exam(message.from_user.id, sect.id, sect.name))
+
+
+@router.message(Command("examanswer", "پاسخ‌آزمون"))
+async def cmd_exam_answer(message: Message):
+    parts = (message.text or "").split()
+    if len(parts) < 2 or not parts[1].isdigit():
+        await message.answer("فرمت: /examanswer شماره")
+        return
+    await message.answer(sexam.answer_exam(message.from_user.id, int(parts[1])))
+
+
+@router.message(Command("startpromocomp", "مسابقهارتقا"))
+async def cmd_start_promo(message: Message):
+    parts = (message.text or "").split(maxsplit=1)
+    if len(parts) < 2:
+        await message.answer(
+            "فرمت: /startpromocomp مقصد\n"
+            "مقصدها: عضو بیرونی | عضو داخلی | ارشد | ارجمند"
+        )
+        return
+    target = parts[1].strip()
+    async with async_session() as session:
+        user = await get_or_create_user(session, message.from_user.id, message.from_user.full_name, message.from_user.username)
+        mem = await get_user_sect(session, user.id)
+        if not mem:
+            await message.answer("عضو فرقه نیستی.")
+            return
+        sect = await session.get(Sect, mem.sect_id)
+        if not sect or sect.leader_id != user.id:
+            # ارجمند هم بتواند
+            if not mem.status or "ارجمند" not in mem.status:
+                await message.answer("فقط رهبر یا ارجمند.")
+                return
+        await message.answer(sexam.start_promo_comp(mem.sect_id, target, hours=24))
+
+
+@router.message(Command("promocompete", "شرکت‌مسابقه"))
+async def cmd_promo_compete(message: Message):
+    async with async_session() as session:
+        user = await get_or_create_user(session, message.from_user.id, message.from_user.full_name, message.from_user.username)
+        mem = await get_user_sect(session, user.id)
+        if not mem:
+            await message.answer("عضو فرقه نیستی.")
+            return
+        # امتیاز بر اساس مشارکت ذخیره‌شده + امتیاز مسابقه
+        from services.sect_systems import get_contrib
+        base = max(1, get_contrib(message.from_user.id) // 10)
+        sexam.add_promo_score(mem.sect_id, message.from_user.id, base)
+        await message.answer(
+            f"🏅 +{base} امتیاز مسابقه ثبت شد." + chr(10) + sexam.promo_status(mem.sect_id)
+        )
+
+
+@router.message(Command("promostatus", "وضعیت‌مسابقه"))
+async def cmd_promo_status(message: Message):
+    async with async_session() as session:
+        user = await get_or_create_user(session, message.from_user.id, message.from_user.full_name, message.from_user.username)
+        mem = await get_user_sect(session, user.id)
+        if not mem:
+            await message.answer("عضو فرقه نیستی.")
+            return
+        await message.answer(sexam.promo_status(mem.sect_id))
+
+
+@router.message(Command("endpromocomp", "پایان‌مسابقه"))
+async def cmd_end_promo(message: Message):
+    async with async_session() as session:
+        user = await get_or_create_user(session, message.from_user.id, message.from_user.full_name, message.from_user.username)
+        mem = await get_user_sect(session, user.id)
+        if not mem:
+            await message.answer("عضو فرقه نیستی.")
+            return
+        sect = await session.get(Sect, mem.sect_id)
+        if not sect or sect.leader_id != user.id:
+            await message.answer("فقط رهبر.")
+            return
+        winner_tg, msg = sexam.end_promo_comp(mem.sect_id)
+        await message.answer(msg)
+
+
+@router.message(Command("promotewinner", "ارتقابرنده"))
+async def cmd_promote_winner(message: Message):
+    """اعمال ارتقای برنده مسابقه"""
+    async with async_session() as session:
+        user = await get_or_create_user(session, message.from_user.id, message.from_user.full_name, message.from_user.username)
+        mem = await get_user_sect(session, user.id)
+        if not mem:
+            await message.answer("عضو فرقه نیستی.")
+            return
+        sect = await session.get(Sect, mem.sect_id)
+        if not sect or sect.leader_id != user.id:
+            await message.answer("فقط رهبر.")
+            return
+        data = sexam._promo().get(str(int(mem.sect_id))) or {}
+        scores = data.get("scores") or {}
+        if not scores:
+            await message.answer("برنده‌ای نیست.")
+            return
+        winner_tg = max(scores.items(), key=lambda x: int(x[1]))[0]
+        target = data.get("target") or "عضو بیرونی"
+        # پیدا کردن user برنده در همین فرقه
+        from sqlalchemy import select as sq
+        from database.models import User as U
+        res = await session.execute(sq(U).where(U.telegram_id == int(winner_tg)))
+        wuser = res.scalar_one_or_none()
+        if not wuser:
+            await message.answer("کاربر برنده پیدا نشد.")
+            return
+        wmem = await get_user_sect(session, wuser.id)
+        if not wmem or wmem.sect_id != mem.sect_id:
+            await message.answer("برنده عضو این فرقه نیست.")
+            return
+        wmem.status = target
+        await session.commit()
+        await message.answer(f"✅ `{winner_tg}` به مقام <b>{target}</b> ارتقا یافت.")

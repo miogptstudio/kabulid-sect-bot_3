@@ -581,7 +581,306 @@ async def cmd_body_cult(message: Message):
     await message.answer(msg)
 
 
-@router.message(F.text.in_({"پرورش بدن", "پرورش دادن بدن", "بدن پروری", "پرورش‌بدن"}))
+@router.message(F.text.func(lambda t: bool(t) and (t.strip() in {"پرورش بدن", "پرورش دادن بدن", "بدن پروری", "پرورش‌بدن"} or t.strip().startswith("پرورش "))))
 async def text_body_train(message: Message):
     await cmd_body_cult(message)
 
+
+
+
+# --- تکنیک مخفی: کنترل پوچی اطراف ---
+@router.message(Command("voidtech", "تکنیک‌پوچی", "کنترل‌پوچی"))
+async def cmd_void_shop(message: Message):
+    from services.secret_tech import shop_line
+    from aiogram.utils.keyboard import InlineKeyboardBuilder
+    builder = InlineKeyboardBuilder()
+    builder.button(text="🛒 خرید (۹۹۹۹۹۹۹۹۹ سنگ خدا)", callback_data=f"voidbuy:{message.from_user.id}")
+    await message.answer(shop_line(), reply_markup=builder.as_markup())
+
+
+@router.message(Command("buyvoidtech", "خرید‌پوچی"))
+async def cmd_buy_void(message: Message):
+    async with async_session() as session:
+        user = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
+        from services.economy import get_or_create_wallet
+        w = await get_or_create_wallet(session, user.id)
+        from services.secret_tech import buy
+        ok, msg, left = buy(message.from_user.id, int(getattr(w, "god_stones", 0) or 0))
+        if ok:
+            w.god_stones = left
+            await session.commit()
+        from aiogram.utils.keyboard import InlineKeyboardBuilder
+        builder = InlineKeyboardBuilder()
+        if ok:
+            builder.button(text="📜 نمایش متن فقط برای من", callback_data=f"voidshow:{message.from_user.id}")
+            builder.button(text="✅ یادگیری (حذف متن)", callback_data=f"voidlearn:{message.from_user.id}")
+            builder.adjust(1)
+            await message.answer(msg, reply_markup=builder.as_markup())
+        else:
+            await message.answer(msg)
+
+
+@router.message(Command("showvoidtech", "متن‌پوچی"))
+async def cmd_show_void(message: Message):
+    from services.secret_tech import get_secret_text, is_owner
+    if not is_owner(message.from_user.id):
+        await message.answer("این تکنیک را نخریده‌ای.")
+        return
+    text = get_secret_text(message.from_user.id)
+    if not text:
+        await message.answer("متنی برای نمایش نیست.")
+        return
+    # فقط در چت خصوصی واضح‌تر است؛ در گروه هم فقط به این پیام جواب می‌دهد
+    await message.answer(text)
+
+
+@router.message(Command("learnvoidtech", "یادگیری‌پوچی"))
+async def cmd_learn_void(message: Message):
+    from services.secret_tech import consume_and_learn, has_learned, TECH_NAME
+    msg = consume_and_learn(message.from_user.id)
+    if has_learned(message.from_user.id):
+        # ثبت در تکنیک‌های کاربر اگر ممکن
+        try:
+            async with async_session() as session:
+                await ensure_default_techniques(session)
+                user = await get_or_create_user(
+                    session, message.from_user.id,
+                    message.from_user.full_name, message.from_user.username
+                )
+                from database.models_v3 import CultivationTechnique
+                from sqlalchemy import select
+                r = await session.execute(
+                    select(CultivationTechnique).where(CultivationTechnique.name == TECH_NAME)
+                )
+                tech = r.scalar_one_or_none()
+                if not tech:
+                    tech = CultivationTechnique(
+                        name=TECH_NAME,
+                        description="تکنیک مخفی — متن پس از یادگیری حذف شده",
+                        grade="پوچی",
+                        energy_bonus=500,
+                        is_starter=False,
+                    )
+                    session.add(tech)
+                    await session.flush()
+                await learn_technique(session, user.id, tech)
+                await session.commit()
+        except Exception:
+            pass
+    await message.answer(msg)
+
+
+@router.message(Command("myvoidtech", "وضعیت‌پوچی"))
+async def cmd_my_void(message: Message):
+    from services.secret_tech import status
+    from aiogram.utils.keyboard import InlineKeyboardBuilder
+    st = status(message.from_user.id)
+    builder = InlineKeyboardBuilder()
+    builder.button(text="📜 نمایش متن فقط برای من", callback_data=f"voidshow:{message.from_user.id}")
+    builder.button(text="✅ یادگیری (حذف متن)", callback_data=f"voidlearn:{message.from_user.id}")
+    builder.adjust(1)
+    await message.answer(st, reply_markup=builder.as_markup())
+
+
+@router.callback_query(F.data.startswith("voidbuy:"))
+async def cb_void_buy(callback: CallbackQuery):
+    try:
+        owner = int(callback.data.split(":")[1])
+    except Exception:
+        await callback.answer()
+        return
+    if callback.from_user.id != owner:
+        await callback.answer("این دکمه برای تو نیست.", show_alert=False)
+        return
+    async with async_session() as session:
+        user = await get_or_create_user(
+            session, callback.from_user.id,
+            callback.from_user.full_name, callback.from_user.username
+        )
+        from services.economy import get_or_create_wallet
+        w = await get_or_create_wallet(session, user.id)
+        from services.secret_tech import buy
+        ok, msg, left = buy(callback.from_user.id, int(getattr(w, "god_stones", 0) or 0))
+        if ok:
+            w.god_stones = left
+            await session.commit()
+    await callback.answer()
+    from aiogram.utils.keyboard import InlineKeyboardBuilder
+    builder = InlineKeyboardBuilder()
+    if ok:
+        builder.button(text="📜 نمایش متن فقط برای من", callback_data=f"voidshow:{callback.from_user.id}")
+        builder.button(text="✅ یادگیری (حذف متن)", callback_data=f"voidlearn:{callback.from_user.id}")
+        builder.adjust(1)
+        await callback.message.answer(msg, reply_markup=builder.as_markup())
+    else:
+        await callback.message.answer(msg)
+
+
+@router.callback_query(F.data.startswith("voidshow:"))
+async def cb_void_show(callback: CallbackQuery):
+    try:
+        owner = int(callback.data.split(":")[1])
+    except Exception:
+        await callback.answer()
+        return
+    if callback.from_user.id != owner:
+        await callback.answer("این دکمه برای تو نیست.", show_alert=False)
+        return
+    from services.secret_tech import get_secret_text
+    text = get_secret_text(callback.from_user.id)
+    await callback.answer()
+    if not text:
+        await callback.message.answer("متنی برای نمایش نیست.")
+        return
+    # پیام جدید فقط برای کسی که دکمه را زده (در پرایوت کامل مخفی است)
+    await callback.message.answer(text)
+
+
+@router.callback_query(F.data.startswith("voidlearn:"))
+async def cb_void_learn(callback: CallbackQuery):
+    try:
+        owner = int(callback.data.split(":")[1])
+    except Exception:
+        await callback.answer()
+        return
+    if callback.from_user.id != owner:
+        await callback.answer("این دکمه برای تو نیست.", show_alert=False)
+        return
+    # reuse command logic
+    class _M:
+        from_user = callback.from_user
+        async def answer(self, *a, **k):
+            return await callback.message.answer(*a, **k)
+    await cmd_learn_void(_M())  # type: ignore
+    await callback.answer("انجام شد")
+
+@router.message(F.text.func(lambda t: bool(t) and (t.strip().startswith("پرورش ") or t.strip() in {"پرورش بدن", "پرورش دادن بدن", "بدن پروری", "پرورش‌بدن"})))
+async def text_body_train(message: Message):
+    # اگر «پرورش پوست» و غیره بود، نام تکنیک را به bodycult بده
+    t = (message.text or "").strip()
+    from services import body_cult as bc
+    tech = None
+    if t.startswith("پرورش ") and t not in {"پرورش بدن", "پرورش دادن بدن"}:
+        # match tech
+        for k in bc.BODY_TECHS:
+            if t == k or t in k or k in t:
+                tech = k
+                break
+        if tech is None:
+            tech = t  # let train_body handle unknown
+    ok, msg, cost = bc.train_body(message.from_user.id, tech)
+    if not ok:
+        await message.answer(msg)
+        return
+    async with async_session() as session:
+        user = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
+        cult = await get_or_create_cultivation(session, user.id)
+        if (cult.energy or 0) < cost:
+            await message.answer(f"انرژی کافی نیست (نیاز {cost}). /gather یا /afk")
+            return
+        cult.energy = (cult.energy or 0) - cost
+        await session.commit()
+    await message.answer(msg)
+
+
+
+# --- بازگرداندن یانگ / متعادل کردن یین با تمرین ---
+_recover_cd: dict[int, datetime] = {}
+RECOVER_CD_SEC = 180  # هر ۳ دقیقه یک‌بار
+RECOVER_YANG = 3      # مرد: +یانگ
+RECOVER_YIN = 3       # زن: −یین (به سمت تعادل)
+
+
+@router.message(Command("trainyang", "تمرین‌یانگ", "بازیابی‌یانگ", "recoverys", "recoveryang", "تمرین"))
+@router.message(F.text.in_({
+    "تمرین یانگ", "تمرین کردن", "بازیابی یانگ", "تمرین بدن یانگ",
+    "تمرین یین", "متعادل کردن یین", "تمرین تعادل",
+}))
+async def cmd_recover_yang(message: Message):
+    """با تمرین، یانگ از‌دست‌رفته برمی‌گردد (مرد) یا یین اضافه کم می‌شود (زن)"""
+    tg = message.from_user.id
+    now = datetime.utcnow()
+    last = _recover_cd.get(tg)
+    if last and (now - last).total_seconds() < RECOVER_CD_SEC:
+        left = int(RECOVER_CD_SEC - (now - last).total_seconds())
+        await message.answer(f"⏳ تمرین تعادل هر {RECOVER_CD_SEC // 60} دقیقه. {left}ث صبر کن.")
+        return
+
+    async with async_session() as session:
+        user = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username,
+        )
+        if user.is_dead:
+            await message.answer("💀 مرده‌ای. /afterdeath")
+            return
+        if user.gender == "نامشخص":
+            await message.answer("اول /gender")
+            return
+
+        # کمی انرژی هم بده
+        try:
+            result = await add_energy(session, user.id, 8)
+        except Exception:
+            result = {}
+
+        lines = ["🏋️ <b>تمرین تعادل بدن</b>"]
+        if user.gender == "مرد":
+            old = int(user.yang if user.yang is not None else 100)
+            if old >= 100:
+                lines.append("یانگ کامل است (۱۰۰٪). نیازی به بازیابی نیست.")
+            else:
+                user.yang = min(100, old + RECOVER_YANG)
+                lines.append(f"☯️ یانگ: {old}% → <b>{user.yang}%</b> (+{user.yang - old})")
+                if user.yang >= 100:
+                    lines.append("✅ یانگ کاملاً ترمیم شد.")
+        elif user.gender == "زن":
+            old = int(user.yin if user.yin is not None else 0)
+            if old <= 0:
+                lines.append("یین در تعادل است (۰٪ اضافه).")
+            else:
+                user.yin = max(0, old - RECOVER_YIN)
+                lines.append(f"☯️ یین اضافه: {old}% → <b>{user.yin}%</b> (−{old - user.yin})")
+                if user.yin <= 0:
+                    lines.append("✅ یین به تعادل برگشت.")
+        else:
+            lines.append("جنسیت پشتیبانی نمی‌شود.")
+
+        # کمی پرورش بدن هم ثبت کن (اختیاری)
+        try:
+            from services.body_cult import train_body
+            # بدون اجبار تکنیک — فقط اگر CD بدن آزاد باشد
+            ok, bmsg, cost = train_body(tg, None)
+            if ok and cost:
+                cult = await get_or_create_cultivation(session, user.id)
+                if (cult.energy or 0) >= cost:
+                    cult.energy = (cult.energy or 0) - cost
+                    lines.append(bmsg)
+        except Exception:
+            pass
+
+        await session.commit()
+        _recover_cd[tg] = now
+        if result.get("messages"):
+            lines.append(" | ".join(result["messages"][:2]))
+        await message.answer(chr(10).join(lines))
+
+
+@router.message(Command("daopath", "مسیرمعنوی", "مسیر‌معنوی", "dao"))
+async def cmd_dao_path(message: Message):
+    from services.dao_path import get_dao, set_dao, list_help, PATHS
+    parts = (message.text or "").split(maxsplit=1)
+    tg = message.from_user.id
+    if len(parts) < 2:
+        cur = get_dao(tg)
+        await message.answer(
+            list_help() + chr(10) + chr(10) + f"مسیر فعلی تو: <b>{cur}</b>"
+        )
+        return
+    await message.answer(set_dao(tg, parts[1].strip()))
