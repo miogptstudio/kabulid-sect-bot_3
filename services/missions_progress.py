@@ -22,6 +22,13 @@ async def bump_mission(session: AsyncSession, user_id: int, target_type: str, am
             um.is_completed = True
             um.completed_at = datetime.utcnow()
             um.reward_claimed = True
+            try:
+                from database.models import User as _U
+                u = await session.get(_U, user_id)
+                if u:
+                    u.xp = int(u.xp or 0) + int(mission.reward_xp or 0)
+            except Exception:
+                pass
             messages.append(
                 f"✅ مأموریت «{mission.title}» تمام شد! +{mission.reward_xp or 0} XP"
             )

@@ -33,8 +33,12 @@ CORES = {
 }
 
 FIND_COOLDOWN = timedelta(hours=2)
-_user_cores: dict[int, dict[str, int]] = {}  # tg_id -> {core_name: qty}
-_last_find: dict[int, datetime] = {}
+from services.persist import get_dict, save as _psave
+def _cores_map():
+    return get_dict("cores")
+def _last_map():
+    return get_dict("cores_last")
+
 
 
 def list_cores_text() -> str:
@@ -49,7 +53,7 @@ def list_cores_text() -> str:
 
 
 def get_user_cores(tg_id: int) -> dict[str, int]:
-    return _user_cores.setdefault(tg_id, {})
+    return (_cores_map().setdefault(str(int(tg_id)), {}), _psave('cores'))[0]
 
 
 def add_core(tg_id: int, name: str, qty: int = 1):
@@ -59,11 +63,11 @@ def add_core(tg_id: int, name: str, qty: int = 1):
 
 def find_core(tg_id: int) -> tuple[str | None, str]:
     now = datetime.utcnow()
-    last = _last_find.get(tg_id)
+    last = _last_map().get(str(int(tg_id)))
     if last and now - last < FIND_COOLDOWN:
         left = int((FIND_COOLDOWN - (now - last)).total_seconds() // 60) + 1
         return None, f"⏳ تا جستجوی بعدی حدود {left} دقیقه"
-    _last_find[tg_id] = now
+    _last_map()[str(int(tg_id))] = now
     # weighted random
     names = list(CORES.keys())
     weights = [CORES[n]["chance"] for n in names]
@@ -102,3 +106,5 @@ def use_core(tg_id: int, core_name: str) -> tuple[str | None, str]:
         f"✨ هسته «{core_name}» جذب شد!" + chr(10)
         + f"نژاد جدید: <b>{race}</b>"
     )
+
+# auto-save helpers used inline

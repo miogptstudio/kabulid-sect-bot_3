@@ -20,11 +20,14 @@ REGION_ORDER = [
 MAX_INDEX = len(REGION_ORDER) - 1  # 0-based last index
 
 # tg_id -> index در REGION_ORDER (0..MAX_INDEX)، -1 = وارد نشده
-_user_index: dict[int, int] = {}
+from services.persist import get_dict, save as _psave
+def _idx_map():
+    return get_dict("eight_worlds")
+
 
 
 def current_index(tg_id: int) -> int:
-    return int(_user_index.get(tg_id, -1))
+    return int(_idx_map().get(str(int(tg_id)), -1))
 
 
 def current_region_info(tg_id: int) -> dict | None:
@@ -71,7 +74,7 @@ def status_text(tg_id: int) -> str:
 
 
 def enter(tg_id: int) -> str:
-    _user_index[tg_id] = 0
+    _idx_map()[str(int(tg_id))] = 0; _psave("eight_worlds")
     return (
         f"وارد {WORLD_NAME} شدی." + chr(10)
         + "منطقه ۱: <b>نیک</b>" + chr(10)
@@ -120,7 +123,7 @@ def try_advance(tg_id: int, name_attempt: str) -> tuple[str, bool]:
             + "اکانت برای همیشه پاک می‌شود.",
             True,
         )
-    _user_index[tg_id] = i + 1
+    _idx_map()[str(int(tg_id))] = i + 1; _psave("eight_worlds")
     if nxt["name"]:
         shown = nxt["name"]
     elif nxt["label"] == "ای‌تری":

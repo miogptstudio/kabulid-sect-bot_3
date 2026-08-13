@@ -7,8 +7,12 @@ from database.models import User
 from services.cultivation import get_or_create_cultivation
 
 # فقط از قلمرو «بالا» به بعد می‌تونه فرقه بسازه
-MIN_REALM_TO_CREATE_SECT = "بالا"
-REALM_ORDER = ["پایه", "متوسط", "بالا", "پیشرفته", "خدا"]
+MIN_REALM_TO_CREATE_SECT = "پیشرفته"  # بالاتر از «بالا»
+REALM_ORDER = [
+    "بیداری", "پایه", "متوسط", "بالا", "پیشرفته", "هسته", "روح",
+    "نیمه‌خدا", "خدا", "آسمان", "ای‌تری", "جاودان", "ابدی",
+    "خلقت", "پوچی", "فراپوچی", "مطلق",
+]
 
 # شمشیرهای مخصوص رتبه
 RANK_SWORDS = {
@@ -25,8 +29,15 @@ LEADER_CHALLENGE_COOLDOWN_HOURS = 1  # چالش رهبری هر ۱ ساعت
 async def can_create_sect(session: AsyncSession, user: User) -> tuple[bool, str]:
     cult = await get_or_create_cultivation(session, user.id)
     try:
-        if REALM_ORDER.index(cult.realm) < REALM_ORDER.index(MIN_REALM_TO_CREATE_SECT):
-            return False, f"برای ساخت فرقه باید حداقل قلمرو «{MIN_REALM_TO_CREATE_SECT}» باشی (الان: {cult.realm})"
+        order = REALM_ORDER
+        try:
+            from database.models_v2 import CULTIVATION_REALMS
+            if cult.realm in CULTIVATION_REALMS:
+                order = list(CULTIVATION_REALMS)
+        except Exception:
+            pass
+        if order.index(cult.realm) < order.index(MIN_REALM_TO_CREATE_SECT):
+            return False, f"برای ساخت فرقه باید بالاتر از «بالا» باشی (حداقل «{MIN_REALM_TO_CREATE_SECT}») — الان: {cult.realm}"
     except ValueError:
         return False, "قلمرو تذهیب نامعتبر است."
     
@@ -83,7 +94,19 @@ async def create_sect(
     return sect
 
 
-async def join_sect(session: AsyncSession, user: User, sect: Sect) -> SectMember:
+async def join_sect(session: AsyncSession, user: User, sect: Sect, tg_id: int | None = None) -> SectMember:
+    # آزمون عضویت
+    try:
+        from services.sect_exam import has_passed
+        tid = int(tg_id or getattr(user, 'telegram_id', 0) or 0)
+        if tid and not has_passed(tid, sect.id):
+            raise ValueError(
+                f"اول آزمون عضویت را بگذران: /sectrules {sect.name} سپس /sectexam {sect.name}"
+            )
+    except ValueError:
+        raise
+    except Exception:
+        pass
     existing = await session.execute(
         select(SectMember).where(SectMember.user_id == user.id)
     )

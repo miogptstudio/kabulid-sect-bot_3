@@ -6,6 +6,87 @@ from database.models import User
 
 # آیتم‌های پیش‌فرض: قرص، طلسم، مواد، گیاه، سلاح
 DEFAULT_ITEMS = [
+    {
+        "building_type": "آهنگری",
+        "name": "شمشیر نابودکننده جهان",
+        "item_type": "weapon_unique",
+        "description": "۹۹۹ میلیارد سنگ خدا؛ با هر قتل نفوذ سپر/دفاع بیشتر",
+        "price": 999000000000,
+        "effect": {
+            "duel_power": 50000, "penetration": 200, "unique": "world_blade",
+            "armor_pen": 200, "currency": "god", "god_price": 999000000000
+        }
+    },
+    # ===== سپرها =====
+    {
+        "building_type": "آهنگری",
+        "name": "سپر چوبی",
+        "item_type": "shield",
+        "description": "سپر مبتدی — دفاع کم",
+        "price": 80,
+        "effect": {"armor": 15, "duel_power": 5, "shield": "wood"}
+    },
+    {
+        "building_type": "آهنگری",
+        "name": "سپر آهنی",
+        "item_type": "shield",
+        "description": "دفاع متوسط",
+        "price": 400,
+        "effect": {"armor": 40, "duel_power": 12, "shield": "iron"}
+    },
+    {
+        "building_type": "آهنگری",
+        "name": "سپر روحی",
+        "item_type": "shield",
+        "description": "جذب بخشی از آسیب به انرژی",
+        "price": 2500,
+        "effect": {"armor": 70, "duel_power": 20, "shield": "spirit", "damage_to_energy": 0.1}
+    },
+    {
+        "building_type": "آهنگری",
+        "name": "سپر انعکاسی",
+        "item_type": "shield",
+        "description": "بخشی از آسیب را به مهاجم برمی‌گرداند",
+        "price": 8000,
+        "effect": {"armor": 50, "duel_power": 15, "shield": "reflect", "reflect": 0.25}
+    },
+    {
+        "building_type": "آهنگری",
+        "name": "سپر بهشتی",
+        "item_type": "shield",
+        "description": "مقاومت بالا در برابر نفوذ",
+        "price": 50000,
+        "effect": {"armor": 120, "duel_power": 30, "shield": "heaven", "anti_pen": 80}
+    },
+    {
+        "building_type": "آهنگری",
+        "name": "سپر اژدها",
+        "item_type": "shield",
+        "description": "دفاع سنگین + کمی قدرت",
+        "price": 120000,
+        "effect": {"armor": 180, "duel_power": 45, "shield": "dragon"}
+    },
+    {
+        "building_type": "آهنگری",
+        "name": "سپر ابدی",
+        "item_type": "shield",
+        "description": "کاهش شدید آسیب کشنده",
+        "price": 5000000,
+        "effect": {"armor": 300, "duel_power": 60, "shield": "eternal", "death_resist": 0.5}
+    },
+    {
+        "building_type": "آهنگری",
+        "name": "سپر پوچی",
+        "item_type": "shield",
+        "description": "هیچ حمله‌ای اثر ندارد؛ صاحب نمی‌میرد — ۹۹۹ میلیارد سنگ خدا",
+        "price": 999000000000,
+        "effect": {
+            "armor": 999999, "duel_power": 100, "shield": "void",
+            "immune": True, "unique": "void_shield",
+            "currency": "god", "god_price": 999000000000
+        }
+    },
+
     # ===== داروخانه =====
     {
         "building_type": "داروخانه",
@@ -172,6 +253,7 @@ DEFAULT_ITEMS = [
         "effect": {}
     },
 
+    {"building_type": "سالن تکنیک", "name": "کتاب ساخت جهان", "item_type": "tech_book", "description": "یادگیری تکنیک ساخت جهان | نیاز قلمرو خدا س۹", "price": 999999999, "effect": {"learn_tech": "ساخت جهان"}},
     {"building_type": "سالن تکنیک", "name": "کتاب تنفس پایه", "item_type": "tech_book", "description": "یادگیری تنفس پایه", "price": 100, "effect": {"learn_tech": "تنفس پایه"}},
     {"building_type": "سالن تکنیک", "name": "کتاب جریان پنج‌عنصر", "item_type": "tech_book", "description": "تکنیک پنج‌عنصر", "price": 250, "effect": {"learn_tech": "جریان پنج‌عنصر"}},
     {"building_type": "سالن تکنیک", "name": "کتاب شعله درونی", "item_type": "tech_book", "description": "تکنیک آتش", "price": 300, "effect": {"learn_tech": "شعله‌ی درونی"}},
@@ -263,6 +345,13 @@ DEFAULT_ITEMS = [
     {"building_type": "چای‌خانه", "name": "چای آسمانی", "item_type": "tea", "description": "انرژی آسمان | +15000 انرژی | CD 10د", "price": 600, "effect": {"energy": 15000, "cooldown_min": 10}},
     {"building_type": "چای‌خانه", "name": "چای الهی", "item_type": "tea", "description": "انرژی الهی | +25000 انرژی | CD 10د", "price": 1000, "effect": {"energy": 25000, "cooldown_min": 10}},
     
+    
+    {"building_type": "داروخانه", "name": "قرص قدرت نبرد+", "item_type": "pill", "description": "+۱۰ قدرت نبرد دائمی", "price": 700, "effect": {"combat_power": 10}},
+    {"building_type": "داروخانه", "name": "قرص سرعت", "item_type": "pill", "description": "+۱۰ سرعت (جاخالی)", "price": 700, "effect": {"combat_speed": 10}},
+    {"building_type": "داروخانه", "name": "قرص دفاع فولادی", "item_type": "pill", "description": "+۱۰ دفاع (بلاک)", "price": 700, "effect": {"combat_defense": 10}},
+    {"building_type": "داروخانه", "name": "قرص دانش", "item_type": "pill", "description": "دانش از کیمیاگری", "price": 500, "effect": {"knowledge": 20}},
+    {"building_type": "داروخانه", "name": "معجون سه نرخ", "item_type": "pill", "description": "+5 قدرت/سرعت/دفاع", "price": 2000, "effect": {"combat_power": 5, "combat_speed": 5, "combat_defense": 5}},
+
     {"building_type": "داروخانه", "name": "قرص طول عمر کامل", "item_type": "pill", "description": "عمر را تا سقف پر می‌کند", "price": 800, "effect": {"lifespan_full": 1}},
     {"building_type": "داروخانه", "name": "قرص عمر+", "item_type": "pill", "description": "+۲۵ عمر", "price": 500, "effect": {"lifespan": 25}},
     {"building_type": "داروخانه", "name": "قرص خون‌رسان", "item_type": "pill", "description": "+۵۰ خون", "price": 200, "effect": {"blood": 50}},
@@ -336,6 +425,22 @@ DEFAULT_ITEMS = [
     {"building_type": "چای‌خانه", "name": "چای خدایان", "item_type": "tea", "description": "افسانه‌ای | +100000 انرژی | CD 10د", "price": 5000, "effect": {"energy": 100000, "cooldown_min": 10}},
 ]
 
+async def _sync_unique_prices(session: AsyncSession):
+    """به‌روزرسانی قیمت آیتم‌های خاص"""
+    from sqlalchemy import select as _s
+    for name, price, eff in (
+        ("شمشیر نابودکننده جهان", 999000000000, {"duel_power": 50000, "penetration": 200, "unique": "world_blade", "armor_pen": 200, "currency": "god", "god_price": 999000000000}),
+        ("سپر پوچی", 999000000000, {"armor": 999999, "duel_power": 100, "shield": "void", "immune": True, "unique": "void_shield", "currency": "god", "god_price": 999000000000}),
+    ):
+        r = await session.execute(_s(ShopItem).where(ShopItem.name == name))
+        it = r.scalar_one_or_none()
+        if it:
+            it.price = price
+            it.effect = eff
+            it.description = it.description or name
+    await session.commit()
+
+
 async def ensure_default_buildings_and_items(session: AsyncSession):
     """ساختمان‌ها و آیتم‌های پیش‌فرض را در صورت نبودن اضافه می‌کند"""
     types = ["داروخانه", "کیمیاگری", "طلسم‌خانه", "باغ گیاهان", "آهنگری", "سالن تکنیک", "چای‌خانه"]
@@ -368,6 +473,10 @@ async def ensure_default_buildings_and_items(session: AsyncSession):
         )
         session.add(item)
     await session.commit()
+    try:
+        await _sync_unique_prices(session)
+    except Exception:
+        pass
 
 
 async def get_buildings(session: AsyncSession):
@@ -382,12 +491,15 @@ async def get_items_of_building(session: AsyncSession, building_id: int):
     return result.scalars().all()
 
 
-async def buy_item(session: AsyncSession, user: User, item: ShopItem) -> str:
+async def buy_item(session: AsyncSession, user: User, item: ShopItem, qty: int = 1) -> str:
+    qty = max(1, min(int(qty or 1), 100))  # سقف ۱۰۰ در هر خرید
     if getattr(item, 'is_active', True) is False:
         return "❌ این آیتم غیرفعال است."
     if item.price is None:
         item.price = 0
-    if item.item_type == "weapon_unique" or (isinstance(item.effect, dict) and item.effect.get("unique")):
+    is_unique = item.item_type == "weapon_unique" or (isinstance(item.effect, dict) and item.effect.get("unique"))
+    if is_unique:
+        qty = 1
         from sqlalchemy import select as sel
         owned = await session.execute(
             sel(UserInventory).join(ShopItem, UserInventory.item_id == ShopItem.id).where(
@@ -399,13 +511,24 @@ async def buy_item(session: AsyncSession, user: User, item: ShopItem) -> str:
 
     from services.economy import get_or_create_wallet, pay_any_currency
     w = await get_or_create_wallet(session, user.id)
-    ok, pay_msg = pay_any_currency(w, int(item.price or 0))
+    # پرداخت با سنگ خدا برای آیتم‌های خاص
+    effect = item.effect if isinstance(item.effect, dict) else {}
+    total_price = int(item.price or 0) * qty
+    if effect.get("currency") == "god" or effect.get("god_price"):
+        need = int(effect.get("god_price") or item.price or 0) * qty
+        have = int(getattr(w, "god_stones", 0) or 0)
+        if have < need:
+            return f"❌ نیاز {need:,} سنگ خدا (داری {have:,})"
+        w.god_stones = have - need
+        pay_msg = f"−{need:,} سنگ خدا"
+        ok = True
+    else:
+        ok, pay_msg = pay_any_currency(w, total_price)
     if not ok:
         return pay_msg
-    effect = item.effect or {}
     extra = ""
 
-    # کتاب تکنیک → یادگیری مستقیم
+    # کتاب تکنیک → یادگیری مستقیم (فقط ۱)
     if item.item_type == "tech_book" or (isinstance(effect, dict) and effect.get("learn_tech")):
         tech_name = effect.get("learn_tech") if isinstance(effect, dict) else None
         if tech_name:
@@ -422,7 +545,7 @@ async def buy_item(session: AsyncSession, user: User, item: ShopItem) -> str:
             else:
                 extra = f"تکنیک «{tech_name}» در دیتابیس نبود."
         await session.commit()
-        return f"✅ «{item.name}» خریداری شد.\n{extra}\n{pay_msg}"
+        return f"✅ «{item.name}» ×{qty} خریداری شد.\n{extra}\n{pay_msg}"
 
     result = await session.execute(
         select(UserInventory).where(
@@ -432,10 +555,10 @@ async def buy_item(session: AsyncSession, user: User, item: ShopItem) -> str:
     )
     inv = result.scalar_one_or_none()
     if inv:
-        inv.quantity += 1
+        inv.quantity = int(inv.quantity or 0) + qty
     else:
-        inv = UserInventory(user_id=user.id, item_id=item.id, quantity=1)
+        inv = UserInventory(user_id=user.id, item_id=item.id, quantity=qty)
         session.add(inv)
 
     await session.commit()
-    return f"✅ «{item.name}» خریداری شد. {pay_msg}"
+    return f"✅ «{item.name}» ×{qty} خریداری شد. {pay_msg}"

@@ -7,7 +7,7 @@ from database.models import User
 
 from bot.config import ROOT_UNLOCK_ENERGY, ENERGY_BASE, ENERGY_PER_LEVEL_ADD
 
-MAX_STAGE = 12
+MAX_STAGE = 15
 
 # رگ‌های معنوی (بیش از ۳۰ نوع) — هر بازیکن تا ۵ رگ
 SPIRITUAL_VEINS = {
@@ -49,10 +49,13 @@ SPIRITUAL_VEINS = {
     "رگ صلح": {"mult": 1.14, "desc": "تثبیت آرام"},
 }
 MAX_VEINS = 5
-_user_veins: dict[int, list] = {}
+from services.persist import get_dict as _vein_get, save as _vein_save
+def _veins_map():
+    return _vein_get("veins")
+
 
 def get_veins(user_id: int) -> list:
-    return _user_veins.get(user_id, [])
+    return _veins_map().get(str(int(user_id)), [])
 
 def unlock_vein(user_id: int, vein: str) -> str:
     vein = vein.strip()
@@ -64,23 +67,40 @@ def unlock_vein(user_id: int, vein: str) -> str:
                 break
     if vein not in SPIRITUAL_VEINS:
         return "رگ نامعتبر. /vein برای لیست"
-    cur = _user_veins.setdefault(user_id, [])
+    cur = _veins_map().setdefault(str(int(user_id)), [])
     if vein in cur:
         return f"قبلاً {vein} داری."
     if len(cur) >= MAX_VEINS:
         return f"حداکثر {MAX_VEINS} رگ معنوی."
     cur.append(vein)
+    _vein_save("veins")
     info = SPIRITUAL_VEINS[vein]
     return f"✅ {vein} باز شد — {info['desc']} (×{info['mult']})"
 
-def vein_mult(user_id: int) -> float:
+def vein_mult(user_id: int, telegram_id: int | None = None) -> float:
     cur = get_veins(user_id)
+    if not cur and telegram_id:
+        cur = get_veins(telegram_id)
     if not cur:
         return 1.0
     m = 1.0
     for v in cur:
-        m *= SPIRITUAL_VEINS.get(v, {}).get("mult", 1.0)
+        m *= float(SPIRITUAL_VEINS.get(v, {}).get("mult", 1.0))
     return m
+
+
+def root_cult_mult(root: str) -> float:
+    """ضریب ریشه با تطبیق تقریبی نام"""
+    if not root or root == "بدون ریشه":
+        return 1.0
+    if root in ROOT_CULT_MULT:
+        return float(ROOT_CULT_MULT[root])
+    # تطبیق جزئی
+    best = 1.0
+    for k, v in ROOT_CULT_MULT.items():
+        if k in root or root in k:
+            best = max(best, float(v))
+    return best
 
 
 # نژاد → نوع تذهیب / ضریب
@@ -289,9 +309,10 @@ def energy_needed_for_stage(stage: int, realm: str | None = None, root: str | No
         ri = CULTIVATION_REALMS.index(realm) if realm in CULTIVATION_REALMS else 0
     except Exception:
         ri = 0
-    mult = 1.0 + ri * 0.55 + (ri ** 1.15) * 0.08
+    # فاصله قلمروها خیلی بیشتر
+    mult = 1.0 + ri * 0.85 + (ri ** 1.25) * 0.12
     # مرحله‌های آخر هر قلمرو سخت‌تر
-    stage_mult = 1.0 + (s - 1) * 0.12
+    stage_mult = 1.0 + (s - 1) * 0.18
     hard = ROOT_HARD_MULT.get(root or '', 1.0)
     return int(base * mult * stage_mult * hard)
 
@@ -323,6 +344,8 @@ TECH_REQUIREMENTS = {
     "تنفس خلأ": {"realm": "پوچی", "stage": 1},
     "تنفس کهکشان": {"realm": "کهکشانی", "stage": 1},
     "تنفس ابدیت": {"realm": "خدا", "stage": 1},
+    "ساخت جهان": {"realm": "خدا", "stage": 9},
+    "تکنیک ساخت جهان": {"realm": "خدا", "stage": 9},
     "تنفس نه رود": {"realm": "استاد", "stage": 1},
     "تنفس خاکستر زرین": {"realm": "اوج", "stage": 1},
     "پیمان روح": {"realm": "روح", "stage": 3},
@@ -350,6 +373,14 @@ DEFAULT_TECHNIQUES = [
     {"name": "شعله خشم", "description": "حمله آتشین", "grade": "حمله", "energy_bonus": 240, "required_root": "ریشه آتش"},
     {"name": "موج دفاعی آب", "description": "دفاع آبی", "grade": "دفاع", "energy_bonus": 190, "required_root": "ریشه آب"},
 
+    {"name": "نفس نور قدیس", "description": "ارتدوکس | تنفس نورانی", "grade": "ارتدوکس", "energy_bonus": 200, "required_root": None},
+    {"name": "شمشیر عدالت", "description": "ارتدوکس | ضربه مقدس", "grade": "ارتدوکس", "energy_bonus": 280, "required_root": None},
+    {"name": "زره فرشته", "description": "ارتدوکس | دفاع نور", "grade": "ارتدوکس", "energy_bonus": 220, "required_root": None},
+    {"name": "سرود بهشت", "description": "ارتدوکس | تقویت روح", "grade": "ارتدوکس", "energy_bonus": 300, "required_root": "ریشه نور"},
+    {"name": "نفس اهریمنی", "description": "شیطانی | تنفس تاریک", "grade": "شیطانی", "energy_bonus": 210, "required_root": None},
+    {"name": "چنگال شیطان", "description": "شیطانی | حمله خونی", "grade": "شیطانی", "energy_bonus": 300, "required_root": None},
+    {"name": "زره نفرین‌شده", "description": "شیطانی | دفاع تاریک", "grade": "شیطانی", "energy_bonus": 230, "required_root": None},
+    {"name": "پیمان خون", "description": "شیطانی | پیوند اهریمنی", "grade": "شیطانی", "energy_bonus": 320, "required_root": "ریشه تاریکی"},
     {"name": "تنفس پایه", "description": "پایه مبتدیان | قلمرو: بیداری", "grade": "پایه", "energy_bonus": 100, "required_root": None},
     {"name": "تنفس مهتاب", "description": "چی پایدار شب | قلمرو: بیداری س۳+", "grade": "پایه", "energy_bonus": 180, "required_root": None},
     {"name": "تنفس کوهستان", "description": "نفس کوه | قلمرو: پایه", "grade": "پایه", "energy_bonus": 220, "required_root": None},
@@ -372,6 +403,7 @@ DEFAULT_TECHNIQUES = [
     {"name": "تنفس خلأ", "description": "پوچی | قلمرو پوچی", "grade": "پیشرفته", "energy_bonus": 1800, "required_root": "ریشه پوچی"},
     {"name": "تنفس کهکشان", "description": "کهکشانی", "grade": "پیشرفته", "energy_bonus": 2400, "required_root": "ریشه آسمانی"},
     {"name": "تنفس ابدیت", "description": "خدایان | قلمرو خدا", "grade": "پیشرفته", "energy_bonus": 5000, "required_root": "ریشه الهی"},
+    {"name": "ساخت جهان", "description": "تکنیک نهایی | آفرینش پاره‌جهان | قلمرو خدا س۹+ | بی‌طرف | با فعال‌سازی چی عظیم و بونوس قدرت جهان‌ساز", "grade": "افسانه‌ای", "energy_bonus": 50000, "required_root": "ریشه خالق"},
     {"name": "پیمان روح", "description": "روح‌پیمان | روح س۳", "grade": "پیشرفته", "energy_bonus": 1400, "required_root": "ریشه روحی"},
     {"name": "کتاب تذهیب پایه", "description": "کتاب قلمرو بیداری", "grade": "کتاب", "energy_bonus": 150, "required_root": None},
     {"name": "کتاب تذهیب میانه", "description": "کتاب قلمرو میانه", "grade": "کتاب", "energy_bonus": 400, "required_root": None},
@@ -563,63 +595,124 @@ def energy_status_line(cult) -> str:
     return f"انرژی: {cur}/{need} | باقی تا سطح بعد: {left} | {cult.realm} مرحله {cult.stage}"
 
 async def add_energy(session: AsyncSession, user_id: int, amount: int) -> dict:
-
-    try:
-        from services.cult_building import bonus_mult
-        from database.models import User as _U
-        _u = await session.get(_U, user_id)
-        if _u and getattr(_u, 'telegram_id', None):
-            amount = int(amount * bonus_mult(int(_u.telegram_id)))
-    except Exception:
-        pass
+    """جمع انرژی با اعمال همه ضریب‌ها: ریشه، بدن، نژاد، رگ، مسیر، برج فرقه، خانه، ساختمان تذهیب، تکنیک"""
+    base_amount = max(0, int(amount or 0))
     cult = await get_or_create_cultivation(session, user_id)
-    messages = []
-    root = cult.spiritual_root or "بدون ریشه"
-    rmult = ROOT_CULT_MULT.get(root, 1.0)
-    bmult = BODY_BONUS.get(getattr(cult, "body_type", None) or "بدن معمولی", 1.0)
-    # race bonus
-    race_mult = 1.0
+    messages: list[str] = []
+    breakdown: list[str] = []
+
+    tg = None
+    user_obj = None
     try:
         from database.models import User as _U
-        _u = await session.get(_U, user_id)
-        if _u and getattr(_u, "race", None):
-            race_mult = float(RACE_CULT.get(_u.race, {}).get("bonus", 1.0))
+        user_obj = await session.get(_U, user_id)
+        if user_obj:
+            tg = int(getattr(user_obj, "telegram_id", 0) or 0) or None
     except Exception:
         pass
+
+    root = cult.spiritual_root or "بدون ریشه"
+    rmult = root_cult_mult(root) if "root_cult_mult" in dir() else float(ROOT_CULT_MULT.get(root, 1.0))
+    try:
+        rmult = root_cult_mult(root)
+    except Exception:
+        rmult = float(ROOT_CULT_MULT.get(root, 1.0))
+    bmult = float(BODY_BONUS.get(getattr(cult, "body_type", None) or "بدن معمولی", 1.0))
+
+    race_mult = 1.0
+    if user_obj and getattr(user_obj, "race", None):
+        race_mult = float(RACE_CULT.get(user_obj.race, {}).get("bonus", 1.0))
+
     vmult = 1.0
     try:
-        vmult = vein_mult(user_id)
+        vmult = float(vein_mult(user_id, tg))
     except Exception:
-        pass
-    amount = max(1, int(amount * rmult * bmult * race_mult * vmult))
+        try:
+            vmult = float(vein_mult(user_id))
+        except Exception:
+            vmult = 1.0
 
-    if root == "بدون ریشه":
-        cult.energy += amount
-        if cult.energy >= ROOT_UNLOCK_ENERGY:
-            roots = list(ROOT_AWAKEN_WEIGHTS)
-            names, weights = zip(*roots)
-            chosen = random.choices(names, weights=weights, k=1)[0]
-            cult.spiritual_root = chosen
-            cult.energy = 0
-            if cult.realm == "بیداری":
-                cult.realm = "پایه"
-                cult.stage = 1
-            messages.append(f"🌟 ریشه «{chosen}» بیدار شد!")
-            messages.append(f"قلمرو: {cult.realm}")
-        await session.commit()
-        return {
-            "gained": int(amount) if amount else 0,
-            "energy": cult.energy,
-            "stage": cult.stage,
-            "realm": cult.realm,
-            "root": cult.spiritual_root,
-            "messages": messages or [f"در حال بیدار کردن ریشه... ({cult.energy}/{ROOT_UNLOCK_ENERGY})"],
-        }
+    # مسیر تذهیب (قدرت/سرعت/دفاع) — روی انرژی هم اثر می‌گذارد
+    path_mult = 1.0
+    path_name = "خالص"
+    if tg:
+        try:
+            from services.cult_paths import mults, get_path
+            path_name = get_path(tg)
+            pm = mults(tg)
+            # میانگین ضرایب مسیر به‌عنوان ضریب جذب چی
+            path_mult = (float(pm.get("power", 1)) + float(pm.get("speed", 1)) + float(pm.get("defense", 1))) / 3.0
+        except Exception:
+            path_mult = 1.0
 
-    tech = await get_active_technique(session, user_id)
-    # پرورش ممنوعه: هر بار +۱ چی؛ بار اول +۱ سطح
-    if tech and tech.name == FORBIDDEN_TECH_NAME:
-        amount = amount + 1  # یک چی
+    # برج تهذیب فرقه
+    tower_m = 1.0
+    if user_obj:
+        try:
+            from services.sects import get_user_sect
+            from services.sect_systems import tower_bonus
+            mem = await get_user_sect(session, user_id)
+            if mem:
+                tower_m = float(tower_bonus(mem.sect_id))
+        except Exception:
+            tower_m = 1.0
+
+    # ساختمان تذهیب شخصی
+    build_m = 1.0
+    if tg:
+        try:
+            from services.cult_building import bonus_mult
+            build_m = float(bonus_mult(tg))
+        except Exception:
+            build_m = 1.0
+
+    # خانه
+    home_m = 1.0
+    if tg:
+        try:
+            from services.housing import cult_bonus
+            home_m = float(cult_bonus(tg))
+        except Exception:
+            home_m = 1.0
+
+    # تکنیک فعال
+    tech_bonus = 0
+    tech_name = "—"
+    try:
+        tech = await get_active_technique(session, user_id)
+        if tech:
+            tech_name = tech.name
+            tech_bonus = int(getattr(tech, "energy_bonus", 0) or 0)
+    except Exception:
+        tech = None
+
+    # محاسبه نهایی
+    mult_total = rmult * bmult * race_mult * vmult * path_mult * tower_m * build_m * home_m
+    amount = max(1, int(base_amount * mult_total) + tech_bonus)
+
+    breakdown.append(f"پایه: {base_amount}")
+    if rmult != 1.0:
+        breakdown.append(f"ریشه ×{rmult:.2f}")
+    if bmult != 1.0:
+        breakdown.append(f"بدن ×{bmult:.2f}")
+    if race_mult != 1.0:
+        breakdown.append(f"نژاد ×{race_mult:.2f}")
+    if vmult != 1.0:
+        breakdown.append(f"رگ ×{vmult:.2f}")
+    if path_mult != 1.0:
+        breakdown.append(f"مسیر({path_name}) ×{path_mult:.2f}")
+    if tower_m != 1.0:
+        breakdown.append(f"برج‌فرقه ×{tower_m:.2f}")
+    if build_m != 1.0:
+        breakdown.append(f"ساختمان‌تذهیب ×{build_m:.2f}")
+    if home_m != 1.0:
+        breakdown.append(f"خانه ×{home_m:.2f}")
+    if tech_bonus:
+        breakdown.append(f"تکنیک({tech_name}) +{tech_bonus}")
+
+    # پرورش ممنوعه
+    if tech and getattr(tech, "name", None) == FORBIDDEN_TECH_NAME:
+        amount = amount + 1
         messages.append("☠️ پرورش ممنوعه: +۱ چی")
         if cult.talent == "forbidden_ready":
             cult.stage = (cult.stage or 1) + 1
@@ -632,72 +725,86 @@ async def add_energy(session: AsyncSession, user_id: int, amount: int) -> dict:
                 except ValueError:
                     pass
             cult.talent = "forbidden_used"
-            try:
-                from database.models import User
-                u = await session.get(User, user_id)
-                if u:
-                    u.level = (u.level or 1) + 1
-            except Exception:
-                pass
-            messages.append("☠️ اولین استفاده پرورش ممنوعه: +۱ سطح تذهیب و +۱ سطح بازی!")
+            if user_obj:
+                user_obj.level = (user_obj.level or 1) + 1
+            messages.append("☠️ اولین استفاده پرورش ممنوعه: +۱ سطح")
             try:
                 from services.forbidden_lock import lock_consume
-                from database.models import User as _UU
-                _uu = await session.get(_UU, user_id)
-                if _uu and getattr(_uu, "telegram_id", None):
-                    lock_consume(int(_uu.telegram_id))
+                if tg:
+                    lock_consume(tg)
             except Exception:
                 pass
-    if not tech:
-        messages.append("ℹ️ تکنیک فعال نداری — فقط انرژی پایه ذخیره می‌شود. /learntech")
-        bonus = 0
-    else:
-        bonus = getattr(tech, "energy_bonus", 0) or 0
-        amount = amount + int(bonus)
-    cult.energy = int(cult.energy or 0) + int(amount)
-    messages.append(f"+{amount} انرژی (ریشه ×{rmult:.2f} | بدن ×{bmult:.2f})")
 
-    leveled = False
-    while cult.energy >= energy_needed_for_stage(cult.stage, cult.realm, cult.spiritual_root):
-        need = energy_needed_for_stage(cult.stage, cult.realm, cult.spiritual_root)
-        cult.energy -= need
-        cult.stage += 1
-        leveled = True
+    if root == "بدون ریشه":
+        cult.energy = int(cult.energy or 0) + amount
+        if cult.energy >= ROOT_UNLOCK_ENERGY:
+            roots = list(ROOT_AWAKEN_WEIGHTS)
+            names, weights = zip(*roots)
+            chosen = random.choices(names, weights=weights, k=1)[0]
+            cult.spiritual_root = chosen
+            cult.energy = 0
+            if cult.realm == "بیداری":
+                cult.realm = "پایه"
+                cult.stage = 1
+            messages.append(f"🌟 ریشه «{chosen}» بیدار شد!")
+            messages.append(f"قلمرو: {cult.realm}")
+        messages.append("📊 " + " | ".join(breakdown))
+        messages.append(f"⚡ چی نهایی: +{amount}")
+        await session.commit()
+        return {
+            "gained": amount,
+            "energy": cult.energy,
+            "stage": cult.stage,
+            "realm": cult.realm,
+            "root": cult.spiritual_root,
+            "messages": messages or [f"در حال بیدار کردن ریشه... ({cult.energy}/{ROOT_UNLOCK_ENERGY})"],
+        }
+
+    if not tech:
+        messages.append("ℹ️ تکنیک فعال نداری — /learntech")
+
+    cult.energy = int(cult.energy or 0) + int(amount)
+    messages.append("📊 " + " | ".join(breakdown))
+    messages.append(f"⚡ چی نهایی: +{amount}")
+
+    # ارتقای مرحله
+    while True:
+        need = energy_needed_for_stage(cult.stage or 1, cult.realm, cult.spiritual_root)
+        if int(cult.energy or 0) < need:
+            break
+        cult.energy = int(cult.energy or 0) - need
+        cult.stage = int(cult.stage or 1) + 1
         if cult.stage > MAX_STAGE:
             cult.stage = 1
             try:
                 idx = CULTIVATION_REALMS.index(cult.realm)
                 if idx < len(CULTIVATION_REALMS) - 1:
                     cult.realm = CULTIVATION_REALMS[idx + 1]
-                    messages.append(f"🌟 قلمرو → «{cult.realm}»")
+                    messages.append(f"🌌 عروج قلمرو → <b>{cult.realm}</b>")
+                    # پاداش شانسی ساده
                     try:
                         from services.economy import get_or_create_wallet
-                        w = await get_or_create_wallet(session, cult.user_id)
-                        import random as _r
-                        reward = _r.choice([("coins", 150), ("spirit", 1), ("heavenly", 1)])
-                        if reward[0] == "coins":
-                            w.coins += reward[1]
-                            messages.append(f"🎁 +{reward[1]} سکه")
-                        elif reward[0] == "spirit":
-                            w.spirit_stones += reward[1]
-                            messages.append(f"🎁 +{reward[1]} سنگ روحی")
-                        else:
-                            w.heavenly_stones = (w.heavenly_stones or 0) + 1
-                            messages.append("🎁 +۱ سنگ بهشتی")
+                        w = await get_or_create_wallet(session, user_id)
+                        w.coins = int(w.coins or 0) + 100
+                        messages.append("🎁 +۱۰۰ سکه عروج")
                     except Exception:
                         pass
                 else:
                     cult.stage = MAX_STAGE
-                    cult.energy = energy_needed_for_stage(cult.stage, cult.realm, cult.spiritual_root) - 1
+                    cult.energy = need - 1
+                    break
             except ValueError:
-                pass
+                break
         messages.append(f"⬆️ مرحله {cult.stage}/{MAX_STAGE} | {cult.realm}")
 
     await session.commit()
     return {
+        "gained": amount,
         "energy": cult.energy,
         "stage": cult.stage,
         "realm": cult.realm,
         "root": cult.spiritual_root,
         "messages": messages,
     }
+
+

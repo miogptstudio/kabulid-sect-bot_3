@@ -1,52 +1,46 @@
-"""ساختمان تزکیه — ارتقا با ارز بازی"""
+"""ساختمان تذهیب شخصی — پایدار"""
 from __future__ import annotations
+from services.persist import get_dict, save as _psave
 
-# tg_id -> level
-_levels: dict[int, int] = {}
-MAX_LV = 20
-# هزینه هر سطح به سکه (تقریبی) — ارز بالاتر هم قبول
-BASE_COST = 5000
+MAX_LEVEL = 20
+BASE_COST = 500  # سکه
 
 
-def level(tg_id: int) -> int:
-    return int(_levels.get(tg_id, 0))
+def _map() -> dict:
+    return get_dict("cult_building")
 
 
-def cost_for(next_lv: int) -> int:
-    return BASE_COST * (next_lv ** 2)
+def level(tg: int) -> int:
+    return int(_map().get(str(int(tg)), 0) or 0)
 
 
-def bonus_mult(tg_id: int) -> float:
-    return 1.0 + level(tg_id) * 0.08
+def bonus_mult(tg: int) -> float:
+    return 1.0 + level(tg) * 0.03
 
 
-def status(tg_id: int) -> str:
-    lv = level(tg_id)
-    nxt = lv + 1
-    if lv >= MAX_LV:
-        return f"🏛 ساختمان تزکیه سطح {lv}/{MAX_LV} (حداکثر)" + chr(10) + f"ضریب چی: ×{bonus_mult(tg_id):.2f}"
+def upgrade_cost(tg: int) -> int:
+    lv = level(tg)
+    return int(BASE_COST * (1.6 ** lv))
+
+
+def upgrade(tg: int) -> tuple[int, int]:
+    """returns new_level, cost — caller pays"""
+    m = _map()
+    sk = str(int(tg))
+    lv = int(m.get(sk, 0) or 0)
+    if lv >= MAX_LEVEL:
+        return lv, 0
+    cost = int(BASE_COST * (1.6 ** lv))
+    m[sk] = lv + 1
+    _psave("cult_building")
+    return lv + 1, cost
+
+
+def status(tg: int) -> str:
+    lv = level(tg)
     return (
-        f"🏛 <b>ساختمان تزکیه</b> سطح {lv}/{MAX_LV}" + chr(10)
-        + f"ضریب جذب چی: ×{bonus_mult(tg_id):.2f}" + chr(10)
-        + f"ارتقا به {nxt}: {cost_for(nxt)} سکه (یا معادل)" + chr(10)
+        f"🏛 <b>ساختمان تذهیب</b> سطح {lv}/{MAX_LEVEL}" + chr(10)
+        + f"بونوس انرژی: +{int((bonus_mult(tg)-1)*100)}٪" + chr(10)
+        + f"هزینه ارتقا: {upgrade_cost(tg):,} سکه" + chr(10)
         + "/upgradecultbuilding"
-    )
-
-
-async def upgrade(session, user_id: int, tg_id: int) -> str:
-    lv = level(tg_id)
-    if lv >= MAX_LV:
-        return "ساختمان در حداکثر سطح است."
-    from services.economy import get_or_create_wallet, pay_any_currency
-    w = await get_or_create_wallet(session, user_id)
-    cost = cost_for(lv + 1)
-    ok, msg = pay_any_currency(w, cost)
-    if not ok:
-        return msg
-    _levels[tg_id] = lv + 1
-    await session.commit()
-    return (
-        f"✅ ساختمان تزکیه → سطح {_levels[tg_id]}" + chr(10)
-        + f"ضریب چی: ×{bonus_mult(tg_id):.2f}" + chr(10)
-        + msg
     )

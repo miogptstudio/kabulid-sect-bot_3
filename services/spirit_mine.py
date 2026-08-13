@@ -1,27 +1,33 @@
-"""معدن سنگ روح — خرید و ارتقای روزانه"""
+"""معدن سنگ روح — خرید و ارتقای روزانه — پایدار"""
 from datetime import datetime, date
-
-_mines: dict[int, dict] = {}
+from services.persist import get_dict, save as _psave
 
 BUY_COST = 50
 BASE_YIELD = 2
 
 
+def _map() -> dict:
+    return get_dict("spirit_mine")
+
+
 def get_mine(tg_id: int) -> dict | None:
-    return _mines.get(tg_id)
+    return _map().get(str(int(tg_id)))
 
 
 def buy_mine(tg_id: int, spirit: int) -> tuple[bool, str, int]:
-    if tg_id in _mines:
+    m = _map()
+    sk = str(int(tg_id))
+    if sk in m:
         return False, "قبلاً معدن داری. /mine /claimmine /upgrademine", spirit
     if spirit < BUY_COST:
         return False, f"نیاز به {BUY_COST} سنگ روحی برای خرید معدن.", spirit
-    _mines[tg_id] = {
+    m[sk] = {
         "level": 1,
         "last_claim": None,
         "last_upgrade": None,
         "bought": datetime.utcnow().isoformat(),
     }
+    _psave("spirit_mine")
     msg = (
         f"✅ معدن سنگ روح خریداری شد (−{BUY_COST} سنگ روحی)."
         + chr(10) + "روزانه با /claimmine برداشت کن."
@@ -30,49 +36,55 @@ def buy_mine(tg_id: int, spirit: int) -> tuple[bool, str, int]:
 
 
 def claim(tg_id: int) -> tuple[bool, str, int]:
-    m = _mines.get(tg_id)
-    if not m:
+    m = _map()
+    sk = str(int(tg_id))
+    mine = m.get(sk)
+    if not mine:
         return False, "معدن نداری. /buymine", 0
     today = date.today().isoformat()
-    if m.get("last_claim") == today:
+    if mine.get("last_claim") == today:
         return False, "امروز برداشت کردی. فردا دوباره /claimmine", 0
-    amount = BASE_YIELD * int(m.get("level", 1))
-    m["last_claim"] = today
-    return True, f"⛏ +{amount} سنگ روحی از معدن (سطح {m['level']})", amount
+    amount = BASE_YIELD * int(mine.get("level", 1))
+    mine["last_claim"] = today
+    _psave("spirit_mine")
+    return True, f"⛏ +{amount} سنگ روحی از معدن (سطح {mine['level']})", amount
 
 
 def upgrade(tg_id: int, spirit: int) -> tuple[bool, str, int]:
-    m = _mines.get(tg_id)
-    if not m:
+    m = _map()
+    sk = str(int(tg_id))
+    mine = m.get(sk)
+    if not mine:
         return False, "معدن نداری. /buymine", spirit
     today = date.today().isoformat()
-    if m.get("last_upgrade") == today:
+    if mine.get("last_upgrade") == today:
         return False, "امروز یک‌بار ارتقا دادی. فردا دوباره.", spirit
-    lvl = int(m.get("level", 1))
+    lvl = int(mine.get("level", 1))
     cost = 20 + lvl * 15
     if spirit < cost:
         return False, f"نیاز به {cost} سنگ روحی برای ارتقا به سطح {lvl+1}.", spirit
-    m["level"] = lvl + 1
-    m["last_upgrade"] = today
-    y = BASE_YIELD * m["level"]
+    mine["level"] = lvl + 1
+    mine["last_upgrade"] = today
+    _psave("spirit_mine")
+    y = BASE_YIELD * mine["level"]
     msg = (
-        f"⬆ معدن به سطح {m['level']} ارتقا یافت (−{cost} سنگ)."
+        f"⬆ معدن به سطح {mine['level']} ارتقا یافت (−{cost} سنگ)."
         + chr(10) + f"برداشت روزانه: {y}"
     )
     return True, msg, spirit - cost
 
 
 def status(tg_id: int) -> str:
-    m = _mines.get(tg_id)
-    if not m:
+    mine = get_mine(tg_id)
+    if not mine:
         return "⛏ معدن نداری." + chr(10) + f"خرید: /buymine ({BUY_COST} سنگ روحی)"
-    y = BASE_YIELD * int(m["level"])
-    cost = 20 + int(m["level"]) * 15
+    y = BASE_YIELD * int(mine["level"])
+    cost = 20 + int(mine["level"]) * 15
     return (
         f"⛏ <b>معدن سنگ روح</b>" + chr(10)
-        + f"سطح: {m['level']}" + chr(10)
+        + f"سطح: {mine['level']}" + chr(10)
         + f"برداشت روزانه: {y} سنگ روحی" + chr(10)
-        + f"آخرین برداشت: {m.get('last_claim') or '—'}" + chr(10)
+        + f"آخرین برداشت: {mine.get('last_claim') or '—'}" + chr(10)
         + f"هزینه ارتقا بعدی: {cost} سنگ" + chr(10)
         + "/claimmine — برداشت | /upgrademine — ارتقا"
     )

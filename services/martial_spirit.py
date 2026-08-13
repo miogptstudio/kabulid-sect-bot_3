@@ -16,30 +16,35 @@ SPIRIT_TYPES = {
 }
 
 # tg_id -> spirit state
-_spirits: dict[int, dict] = {}
-_last_train: dict[int, datetime] = {}
+from services.persist import get_dict, save as _psave
+def _sp_map():
+    return get_dict("martial_spirit")
+def _lt_map():
+    return get_dict("martial_spirit_cd")
+
 TRAIN_CD = timedelta(minutes=30)
 
 
 def get_spirit(tg_id: int) -> dict | None:
-    return _spirits.get(tg_id)
+    return _sp_map().get(str(int(tg_id)))
 
 
 def awaken(tg_id: int, preferred: str | None = None) -> tuple[bool, str]:
-    if tg_id in _spirits:
-        s = _spirits[tg_id]
+    if str(int(tg_id)) in _sp_map():
+        s = _sp_map()[str(int(tg_id))]
         return False, f"روح رزمی داری: <b>{s['type']}</b> Lv.{s['level']}"
     if preferred and preferred in SPIRIT_TYPES:
         st = preferred
     else:
         st = random.choice(list(SPIRIT_TYPES.keys()))
-    _spirits[tg_id] = {
+    _sp_map()[str(int(tg_id))] = {
         "type": st,
         "level": 1,
         "exp": 0,
         "exp_need": 50,
         "active": True,
     }
+    _psave("martial_spirit")
     info = SPIRIT_TYPES[st]
     return True, (
         f"👻 روح رزمی بیدار شد: <b>{st}</b>" + chr(10)
@@ -74,11 +79,11 @@ def train(tg_id: int) -> str:
     if not s:
         return "اول /awaken"
     now = datetime.utcnow()
-    last = _last_train.get(tg_id)
+    last = _lt_map().get(str(int(tg_id)))
     if last and now - last < TRAIN_CD:
         left = int((TRAIN_CD - (now - last)).total_seconds() // 60) + 1
         return f"⏳ تمرین بعدی حدود {left} دقیقه دیگر"
-    _last_train[tg_id] = now
+    _lt_map()[str(int(tg_id))] = now
     gain = random.randint(8, 20) + s["level"]
     s["exp"] += gain
     msg = f"🏋️ روح رزمی تمرین کرد: +{gain} EXP"

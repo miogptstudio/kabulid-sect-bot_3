@@ -49,6 +49,7 @@ async def calc_power(session: AsyncSession, user: User) -> dict:
 
     # فقط سلاح مجهز + زره در کیف
     weapon_p = 0
+    pen_p = 0
     result = await session.execute(
         select(UserInventory, ShopItem)
         .join(ShopItem, UserInventory.item_id == ShopItem.id)
@@ -60,10 +61,11 @@ async def calc_power(session: AsyncSession, user: User) -> dict:
         if not isinstance(effect, dict):
             continue
         dp = int(effect.get("duel_power") or 0)
-        if item.item_type in ("armor",) or effect.get("armor"):
+        if item.item_type in ("armor", "shield") or effect.get("armor"):
             weapon_p += dp + int(effect.get("armor") or 0) // 2
         elif eq_id and inv.item_id == eq_id:
             weapon_p += dp
+            pen_p += int(effect.get("penetration") or effect.get("armor_pen") or 0)
         elif not eq_id and dp and item.item_type in ("weapon", "weapon_unique"):
             # اگر چیزی مجهز نیست، قوی‌ترین سلاح را حساب کن
             weapon_p = max(weapon_p, dp)
@@ -92,6 +94,7 @@ async def calc_power(session: AsyncSession, user: User) -> dict:
         race_p = 0
     try:
         from services.body_cult import body_power_bonus
+        from services.body_spirit_realms import body_realm_power_bonus, spirit_realm_power_bonus
         body_p = body_power_bonus(user.telegram_id)
     except Exception:
         body_p = 0
@@ -145,6 +148,7 @@ async def calc_power(session: AsyncSession, user: User) -> dict:
         race_p = 0
     try:
         from services.body_cult import body_power_bonus
+        from services.body_spirit_realms import body_realm_power_bonus, spirit_realm_power_bonus
         body_p = body_power_bonus(user.telegram_id)
     except Exception:
         body_p = 0
@@ -172,6 +176,17 @@ async def calc_power(session: AsyncSession, user: User) -> dict:
     if getattr(user, "is_spirit_raiser", False):
         total += 15
 
+    try:
+        from services.cult_paths import mults
+        _m = mults(int(getattr(user, "telegram_id", 0) or 0))
+        total = int(total * float(_m.get("power", 1.0)))
+    except Exception:
+        pass
+    try:
+        from services.world_blade import penetration_bonus
+        pen_p = int(pen_p) + int(penetration_bonus(int(getattr(user, "telegram_id", 0) or 0)))
+    except Exception:
+        pass
     return {
         "total": total,
         "base": base,
@@ -186,19 +201,13 @@ async def calc_power(session: AsyncSession, user: User) -> dict:
 
 
 def win_chance(power_a: int, power_b: int) -> float:
-    """تقریباً بر اساس قدرت: اختلاف زیاد = برد قطعی قوی‌تر"""
-    if power_a + power_b <= 0:
-        return 0.5
-    # نسبت قدرت
-    ratio = power_a / max(power_b, 1)
-    if ratio >= 2.0:
-        return 0.97
-    if ratio <= 0.5:
-        return 0.03
-    # بین ۰.۵ تا ۲: نرمال‌سازی
-    chance = power_a / (power_a + power_b)
-    # کمی واریانس خیلی کم
-    return max(0.05, min(0.95, chance))
+    """بدون شانس — فقط قدرت. اگر a قوی‌تر است ۱ وگرنه ۰ (تساوی ۰.۵ فقط برای نمایش)."""
+    a, b = int(power_a or 0), int(power_b or 0)
+    if a > b:
+        return 1.0
+    if a < b:
+        return 0.0
+    return 0.5
 
 
 def win_chance_legacy_unused(power_a: int, power_b: int) -> float:
@@ -213,3 +222,15 @@ def win_chance_legacy_unused(power_a: int, power_b: int) -> float:
     # مکعب برای سخت‌تر کردن
     raw = raw ** 3
     return max(lo, min(hi, raw))
+
+
+def combat_rates_text(tg_id: int) -> str:
+    try:
+        from services.knowledge import get_power, get_speed, get_defense, dodge_rate, block_rate
+        from services.knights import protect_percent
+        return (
+            f"قدرت:{get_power(tg_id)} سرعت:{get_speed(tg_id)} دفاع:{get_defense(tg_id)} "
+            f"جاخالی:{dodge_rate(tg_id):.0f}% بلاک:{block_rate(tg_id):.0f}% شوالیه:{protect_percent(tg_id)}%"
+        )
+    except Exception:
+        return ""

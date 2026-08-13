@@ -39,6 +39,22 @@ async def request_dual(session: AsyncSession, user1: User, user2: User) -> DualC
     if not tech2:
         return f"{user2.full_name} تکنیک فعالی نداره."
     
+    # پاک کردن درخواست‌های pending قدیمی‌تر از ۱ ساعت
+    try:
+        from datetime import timedelta
+        old = datetime.utcnow() - timedelta(hours=1)
+        old_rows = await session.execute(
+            select(DualCultivation).where(
+                DualCultivation.status == "pending",
+                DualCultivation.created_at < old,
+            )
+        )
+        for row in old_rows.scalars().all():
+            row.status = "expired"
+        await session.commit()
+    except Exception:
+        pass
+
     existing = await session.execute(
         select(DualCultivation).where(
             DualCultivation.status.in_(["pending", "active"]),
@@ -51,7 +67,7 @@ async def request_dual(session: AsyncSession, user1: User, user2: User) -> DualC
         )
     )
     if existing.scalar_one_or_none():
-        return "یکی از شما الان در تذهیب دوگانه یا درخواست باز هست."
+        return "یکی از شما الان در تذهیب دوگانه یا درخواست باز هست. /canceldual برای لغو درخواست خودت."
     
     dual = DualCultivation(
         user1_id=user1.id,
@@ -72,11 +88,18 @@ async def accept_dual(session: AsyncSession, dual: DualCultivation, accepter_id:
     
     dual.status = "active"
     await session.commit()
-    
-    r1 = await add_energy(session, dual.user1_id, 40)
-    r2 = await add_energy(session, dual.user2_id, 40)
-    
-    dual.energy_shared = 80
+
+    r1, r2 = {"messages": []}, {"messages": []}
+    try:
+        r1 = await add_energy(session, dual.user1_id, 80)
+    except Exception as e:
+        r1 = {"messages": [f"خطا انرژی1: {type(e).__name__}"]}
+    try:
+        r2 = await add_energy(session, dual.user2_id, 80)
+    except Exception as e:
+        r2 = {"messages": [f"خطا انرژی2: {type(e).__name__}"]}
+
+    dual.energy_shared = 160
     # از دست دادن باکرگی
     u1 = await session.get(User, dual.user1_id)
     u2 = await session.get(User, dual.user2_id)
@@ -88,7 +111,7 @@ async def accept_dual(session: AsyncSession, dual: DualCultivation, accepter_id:
     dual.finished_at = datetime.utcnow()
     await session.commit()
     
-    msg = "☯️ تذهیب دوگانه انجام شد! هر دو +۴۰ انرژی گرفتن.\n"
+    msg = "☯️ تذهیب دوگانه انجام شد! هر دو +۸۰ انرژی گرفتند.\n"
     if r1.get("messages"):
         msg += "نفر اول: " + " | ".join(r1["messages"]) + "\n"
     if r2.get("messages"):
@@ -135,3 +158,22 @@ async def reject_dual(session: AsyncSession, dual: DualCultivation, rejecter_id:
     dual.finished_at = datetime.utcnow()
     await session.commit()
     return "تذهیب دوگانه رد شد."
+
+
+async def cancel_dual(session: AsyncSession, user_id: int) -> str:
+    result = await session.execute(
+        select(DualCultivation).where(
+            DualCultivation.status == "pending",
+            or_(
+                DualCultivation.user1_id == user_id,
+                DualCultivation.user2_id == user_id,
+            )
+        )
+    )
+    rows = list(result.scalars().all())
+    if not rows:
+        return "درخواست باز نداری."
+    for d in rows:
+        d.status = "cancelled"
+    await session.commit()
+    return f"✅ {len(rows)} درخواست تذهیب دوگانه لغو شد."

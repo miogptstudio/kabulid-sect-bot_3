@@ -119,6 +119,27 @@ async def erase_existence(session: AsyncSession, user: User) -> str:
 
     await _delete_related(session, uid, tg_id)
 
+    # برداشتن قفل مصرف ممنوعه و تکنیک مخفی (بر اساس telegram_id)
+    try:
+        from services.forbidden_lock import unlock_consume
+        unlock_consume(int(tg_id))
+    except Exception:
+        pass
+    try:
+        from services.persist import get_dict, save as _psave
+        for ns, key in (("void_owners", "ids"),):
+            d = get_dict(ns)
+            ids = [int(x) for x in d.get("ids", []) if int(x) != int(tg_id)]
+            d["ids"] = ids
+            _psave(ns)
+        d2 = get_dict("void_learned")
+        d2["ids"] = [int(x) for x in d2.get("ids", []) if int(x) != int(tg_id)]
+        _psave("void_learned")
+        get_dict("void_text").pop(str(int(tg_id)), None)
+        _psave("void_text")
+    except Exception:
+        pass
+
     # ریست کامل فیلدهای کاربر = اکانت نو
     user.is_dead = False
     user.is_spirit_raiser = False
