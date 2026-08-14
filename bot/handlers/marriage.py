@@ -16,6 +16,9 @@ router = Router()
 
 @router.message(Command("marry", "ازدواج", "عروسی", "نامزدی"))
 async def cmd_marry(message: Message):
+    from aiogram.types import FSInputFile
+    from services.portraits import panel_url
+    await message.answer_photo(FSInputFile(panel_url("marriage")), caption="💍 <b>ازدواج و خانواده</b>")
     # /marry servant N must be handled before the player-to-player marriage flow.
     parts = (message.text or "").split()
     if len(parts) >= 3 and parts[1].lower() in ("servant", "خدمتکار"):

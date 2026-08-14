@@ -2,7 +2,7 @@
 import random
 from datetime import datetime, timedelta
 from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery, URLInputFile
+from aiogram.types import Message, FSInputFile, CallbackQuery, URLInputFile
 from aiogram.filters import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
@@ -48,7 +48,7 @@ async def cmd_work(message: Message):
 @router.message(Command("jobs", "شغل‌ها", "اشغال"))
 async def cmd_jobs(message: Message):
 
-    await message.answer_photo(URLInputFile(panel_url("job", name=str(message.from_user.id))), caption=jobs_svc.list_jobs())
+    await message.answer_photo(FSInputFile(panel_url("job", name=str(message.from_user.id))), caption=jobs_svc.list_jobs())
 
 
 @router.message(Command("job", "انتخاب‌شغل"))
@@ -282,7 +282,7 @@ async def cmd_upgrade_mine(message: Message):
 
 from aiogram import Router as _R
 from aiogram.filters import Command
-from aiogram.types import Message
+from aiogram.types import Message, FSInputFile
 from database.engine import async_session
 from database.crud import get_or_create_user
 from bot.config import ADMIN_IDS

@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery, URLInputFile
+from aiogram.types import Message, FSInputFile, CallbackQuery, URLInputFile
 from aiogram.filters import Command, Filter
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy import select
@@ -56,7 +56,7 @@ async def cmd_cultivation_rules(message: Message):
         "⚠️ برای دیدن فهرست قلمروها: /realms\n"
         "⚠️ برای مسیرهای قدرت/سرعت/دفاع: /cultpath\n"
     )
-    await message.answer_photo(URLInputFile(panel_url("cultivation", name=str(message.from_user.id))), caption=text)
+    await message.answer_photo(FSInputFile(panel_url("cultivation", name=str(message.from_user.id))), caption=text)
 
 
 @router.message(Command("cultivation", "تذهیب", "cult", "tazhib"))

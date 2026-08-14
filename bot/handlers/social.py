@@ -865,6 +865,9 @@ async def cmd_solo_top(message: Message):
 
 @router.message(Command("servants", "خدمتکار", "برده", "بازارخدمتکار"))
 async def cmd_servants_v2(message: Message):
+    from aiogram.types import FSInputFile
+    from services.portraits import panel_url
+    await message.answer_photo(FSInputFile(panel_url("servants")), caption="🧑‍🤝‍🧑 <b>بازار خدمتکاران</b>")
     await message.answer(servmod.market_list())
 
 

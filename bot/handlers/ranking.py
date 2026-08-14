@@ -13,6 +13,9 @@ router = Router()
 
 @router.message(Command("ranking", "top", "leaderboard", "لیدربورد"))
 async def cmd_ranking(message: Message):
+    from aiogram.types import FSInputFile
+    from services.portraits import panel_url
+    await message.answer_photo(FSInputFile(panel_url("ranking")), caption="🏆 <b>رتبه‌بندی</b>")
     async with async_session() as session:
         result = await session.execute(
             select(User)

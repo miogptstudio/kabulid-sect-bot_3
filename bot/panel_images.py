@@ -1,10 +1,14 @@
-"""Local image catalog for the bot's major panels."""
+"""V18 local image catalog.
+
+Every major game section has its own bundled image. No remote image URLs are
+used for these panels.
+"""
 from pathlib import Path
 
 ASSET_DIR = Path(__file__).resolve().parent.parent / "assets" / "panels"
 
 PANEL_IMAGES = {
-    "help": ASSET_DIR / "help_v16.jpg",
+    "help": ASSET_DIR / "help.jpg",
     "duel": ASSET_DIR / "duel.jpg",
     "cultivation": ASSET_DIR / "cultivation.jpg",
     "servants": ASSET_DIR / "servants.jpg",
@@ -18,9 +22,10 @@ PANEL_IMAGES = {
     "jobs": ASSET_DIR / "jobs.jpg",
     "bloodline": ASSET_DIR / "bloodline.jpg",
     "settings": ASSET_DIR / "settings.jpg",
+    "commands": ASSET_DIR / "commands.jpg",
     "profile": {
         "male": ASSET_DIR / "profile_male.jpg",
-        "female": ASSET_DIR / "profile_female.jpg",
+        "female": ASSET_DIR / "servants.jpg",
         "default": ASSET_DIR / "profile_male.jpg",
     },
 }

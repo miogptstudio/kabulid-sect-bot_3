@@ -1,5 +1,5 @@
 from aiogram import Router
-from aiogram.types import Message, URLInputFile
+from aiogram.types import Message, FSInputFile, FSInputFile, URLInputFile
 from aiogram.filters import Command
 
 from database.engine import async_session
@@ -80,6 +80,6 @@ async def cmd_profile(message: Message):
             f"└ باخت متوالی: {user.loss_streak}\n"
         )
         await message.answer_photo(
-            URLInputFile(panel_url("profile_female" if user.gender == "زن" else "profile_male", user.gender, str(user.id))),
+            FSInputFile(panel_url("profile_female" if user.gender == "زن" else "profile_male", user.gender, str(user.id))),
             caption=text
         )
