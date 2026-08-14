@@ -1,0 +1,2 @@
+Each directory contains fewer than 100 files.
+Python files were kept in their original locations to preserve imports.
