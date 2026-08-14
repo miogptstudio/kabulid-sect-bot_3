@@ -1,0 +1,179 @@
+import random
+from datetime import datetime
+from sqlalchemy import select, or_
+from sqlalchemy.ext.asyncio import AsyncSession
+from database.models import User
+from database.models_v3 import DualCultivation
+from services.cultivation import get_or_create_cultivation, add_energy, get_active_technique
+
+# شانس بچه‌دار شدن در تذهیب دوگانه
+CHILD_CHANCE = 0.10  # ۱۰٪
+
+
+async def request_dual(session: AsyncSession, user1: User, user2: User) -> DualCultivation | str:
+    if user1.id == user2.id:
+        return "نمی‌تونی با خودت تذهیب دوگانه کنی."
+    
+    # جنسیت مشخص باشد — مرد/زن، زن/زن و مرد/مرد مجاز
+    g1 = user1.gender or "نامشخص"
+    g2 = user2.gender or "نامشخص"
+
+    if g1 == "نامشخص" or g2 == "نامشخص":
+        return "هر دو نفر باید جنسیت خود را با /gender مشخص کرده باشند."
+
+    if g1 not in ("مرد", "زن") or g2 not in ("مرد", "زن"):
+        return "جنسیت نامعتبر. /gender"
+    
+    cult1 = await get_or_create_cultivation(session, user1.id)
+    cult2 = await get_or_create_cultivation(session, user2.id)
+    
+    if cult1.spiritual_root == "بدون ریشه":
+        return "تو هنوز ریشه معنوی نداری."
+    if cult2.spiritual_root == "بدون ریشه":
+        return f"{user2.full_name} هنوز ریشه معنوی نداره."
+    
+    tech1 = await get_active_technique(session, user1.id)
+    tech2 = await get_active_technique(session, user2.id)
+    if not tech1:
+        return "تکنیک تذهیب فعالی نداری."
+    if not tech2:
+        return f"{user2.full_name} تکنیک فعالی نداره."
+    
+    # پاک کردن درخواست‌های pending قدیمی‌تر از ۱ ساعت
+    try:
+        from datetime import timedelta
+        old = datetime.utcnow() - timedelta(hours=1)
+        old_rows = await session.execute(
+            select(DualCultivation).where(
+                DualCultivation.status == "pending",
+                DualCultivation.created_at < old,
+            )
+        )
+        for row in old_rows.scalars().all():
+            row.status = "expired"
+        await session.commit()
+    except Exception:
+        pass
+
+    existing = await session.execute(
+        select(DualCultivation).where(
+            DualCultivation.status.in_(["pending", "active"]),
+            or_(
+                DualCultivation.user1_id == user1.id,
+                DualCultivation.user2_id == user1.id,
+                DualCultivation.user1_id == user2.id,
+                DualCultivation.user2_id == user2.id,
+            )
+        )
+    )
+    if existing.scalar_one_or_none():
+        return "یکی از شما الان در تذهیب دوگانه یا درخواست باز هست. /canceldual برای لغو درخواست خودت."
+    
+    dual = DualCultivation(
+        user1_id=user1.id,
+        user2_id=user2.id,
+        status="pending"
+    )
+    session.add(dual)
+    await session.commit()
+    await session.refresh(dual)
+    return dual
+
+
+async def accept_dual(session: AsyncSession, dual: DualCultivation, accepter_id: int) -> str:
+    if dual.user2_id != accepter_id:
+        return "فقط طرف مقابل می‌تونه قبول کنه."
+    if dual.status != "pending":
+        return "این درخواست دیگه معتبر نیست."
+    
+    dual.status = "active"
+    await session.commit()
+
+    r1, r2 = {"messages": []}, {"messages": []}
+    try:
+        r1 = await add_energy(session, dual.user1_id, 80)
+    except Exception as e:
+        r1 = {"messages": [f"خطا انرژی1: {type(e).__name__}"]}
+    try:
+        r2 = await add_energy(session, dual.user2_id, 80)
+    except Exception as e:
+        r2 = {"messages": [f"خطا انرژی2: {type(e).__name__}"]}
+
+    dual.energy_shared = 160
+    # از دست دادن باکرگی
+    u1 = await session.get(User, dual.user1_id)
+    u2 = await session.get(User, dual.user2_id)
+    if u1:
+        u1.is_virgin = False
+    if u2:
+        u2.is_virgin = False
+    dual.status = "finished"
+    dual.finished_at = datetime.utcnow()
+    await session.commit()
+    
+    msg = "☯️ تذهیب دوگانه انجام شد! هر دو +۸۰ انرژی گرفتند.\n"
+    if r1.get("messages"):
+        msg += "نفر اول: " + " | ".join(r1["messages"]) + "\n"
+    if r2.get("messages"):
+        msg += "نفر دوم: " + " | ".join(r2["messages"])
+    
+    # شانس بچه‌دار شدن — نژاد نامیرا / قادر مطلق / خدایان نازا هستند
+    try:
+        from services.cultivation import STERILE_RACES
+    except Exception:
+        STERILE_RACES = {"نامیرا", "قادر مطلق", "خدایان"}
+    u1r = getattr(u1, "race", None) if u1 else None
+    u2r = getattr(u2, "race", None) if u2 else None
+    if (u1r in STERILE_RACES) or (u2r in STERILE_RACES):
+        msg += "\n⚠️ یکی از طرفین نژاد نامیرا/قادر مطلق است — تولیدمثل ممکن نیست."
+    elif random.random() < CHILD_CHANCE:
+        from database.models import User
+        u1 = await session.get(User, dual.user1_id)
+        u2 = await session.get(User, dual.user2_id)
+        child_name = f"فرزند {u1.full_name[:8]} و {u2.full_name[:8]}"
+        
+        # ثبت یک یوزر مجازی به عنوان فرزند (telegram_id منفی برای غیرواقعی بودن)
+        child = User(
+            telegram_id=-(dual.user1_id * 100000 + dual.user2_id),  # آیدی مصنوعی یکتا
+            full_name=child_name,
+            gender=random.choice(["مرد", "زن"]),
+            rank="عضو دسته‌های پایین‌تر"
+        )
+        session.add(child)
+        await session.commit()
+        
+        msg += (
+            f"\n\n👶✨ <b>معجزه رخ داد!</b>\n"
+            f"با شانس بسیار نادر، فرزندی متولد شد: <b>{child_name}</b>\n"
+            f"جنسیت: {child.gender}"
+        )
+    
+    return msg
+
+
+async def reject_dual(session: AsyncSession, dual: DualCultivation, rejecter_id: int) -> str:
+    if dual.user2_id != rejecter_id and dual.user1_id != rejecter_id:
+        return "دسترسی نداری."
+    dual.status = "finished"
+    dual.finished_at = datetime.utcnow()
+    await session.commit()
+    return "تذهیب دوگانه رد شد."
+
+
+async def cancel_dual(session: AsyncSession, user_id: int) -> str:
+    result = await session.execute(
+        select(DualCultivation).where(
+            DualCultivation.status == "pending",
+            or_(
+                DualCultivation.user1_id == user_id,
+                DualCultivation.user2_id == user_id,
+            )
+        )
+    )
+    rows = list(result.scalars().all())
+    if not rows:
+        return "درخواست باز نداری."
+    for d in rows:
+        d.status = "cancelled"
+    await session.commit()
+    return f"✅ {len(rows)} درخواست تذهیب دوگانه لغو شد."
