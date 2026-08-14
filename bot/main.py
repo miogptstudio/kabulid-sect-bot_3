@@ -1,0 +1,130 @@
+import asyncio
+import logging
+import os
+from aiogram import Bot, Dispatcher
+from aiogram.types import ErrorEvent
+from aiogram.client.default import DefaultBotProperties
+from aiogram.enums import ParseMode
+from aiogram.fsm.storage.memory import MemoryStorage
+
+from bot.config import BOT_TOKEN
+from database.engine import engine, migrate_schema
+from database.models import Base
+import database.models_v2  # noqa: F401
+import database.models_v3  # noqa: F401
+from bot.handlers import spirit as spirit  # noqa
+from bot.handlers import characters as characters  # noqa
+from bot.handlers import retention as retention  # noqa
+from bot.handlers import (
+    start, profile, duel, guardian, ranking, admin, missions,
+    sects, cultivation, master, arena, accounts, shop, crafting, dual, marriage, pets, death, world, help_menu, combat, engagement, games, garden, social, creatures, combat_extra, race, spirit, society_extra, lang, jobs_events, codex_items, prison_market, fallback
+)
+from bot.health import start_health_server
+from bot.middlewares.service_lock import ServiceLockMiddleware
+from bot.middlewares.auto_reply import AutoReplyMiddleware
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+
+async def on_startup():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    await migrate_schema()
+    try:
+        from services.persist import preload_all, load_from_db, sync_to_db
+        preload_all()
+        n = await load_from_db()
+        logger.info("Persist loaded from DB: %s namespaces", n)
+        await sync_to_db()
+    except Exception as e:
+        logger.warning("persist init: %s", e)
+    logger.info("Database tables created + migrated (v1 + v2 + v3).")
+
+
+async def main():
+    if not BOT_TOKEN:
+        raise ValueError("BOT_TOKEN is not set in .env")
+
+    port = int(os.getenv("PORT", 8080))
+    await start_health_server(port)
+
+    bot = Bot(
+        token=BOT_TOKEN,
+        default=DefaultBotProperties(parse_mode=ParseMode.HTML)
+    )
+    dp = Dispatcher(storage=MemoryStorage())
+    dp.message.middleware(ServiceLockMiddleware())
+    dp.message.middleware(AutoReplyMiddleware())
+    dp.callback_query.middleware(ServiceLockMiddleware())
+
+    dp.include_router(start.router)
+    dp.include_router(profile.router)
+    dp.include_router(duel.router)
+    dp.include_router(guardian.router)
+    dp.include_router(ranking.router)
+    dp.include_router(missions.router)
+    dp.include_router(sects.router)
+    dp.include_router(cultivation.router)
+    dp.include_router(master.router)
+    dp.include_router(arena.router)
+    dp.include_router(accounts.router)
+    dp.include_router(shop.router)
+    dp.include_router(crafting.router)
+    dp.include_router(dual.router)
+    dp.include_router(marriage.router)
+    dp.include_router(pets.router)
+    dp.include_router(death.router)
+    dp.include_router(world.router)
+    dp.include_router(help_menu.router)
+    dp.include_router(combat.router)
+    dp.include_router(engagement.router)
+    dp.include_router(retention.router)
+    dp.include_router(games.router)
+    dp.include_router(garden.router)
+    dp.include_router(social.router)
+    dp.include_router(creatures.router)
+    dp.include_router(combat_extra.router)
+    dp.include_router(race.router)
+    dp.include_router(spirit.router)
+    dp.include_router(lang.router)
+    dp.include_router(jobs_events.router)
+    dp.include_router(characters.router)
+    dp.include_router(society_extra.router)
+    dp.include_router(codex_items.router)
+    dp.include_router(prison_market.router)
+    dp.include_router(admin.router)
+    dp.include_router(fallback.router)
+
+    @dp.errors()
+    async def _on_error(event: ErrorEvent):
+        logger.exception("Update error: %s", event.exception)
+        try:
+            upd = event.update
+            msg = None
+            if upd.message:
+                msg = upd.message
+            elif upd.callback_query and upd.callback_query.message:
+                msg = upd.callback_query.message
+            if msg:
+                err = event.exception
+                await msg.answer(
+                    "⚠️ خطا در اجرای دستور: "
+                    + type(err).__name__
+                    + "\n"
+                    + str(err)[:200]
+                    + "\n/help"
+                )
+        except Exception:
+            pass
+        return True
+
+    await on_startup()
+    logger.info("Bot starting...")
+    await bot.delete_webhook(drop_pending_updates=True)
+    logger.info("Webhook cleared; polling...")
+    await dp.start_polling(bot)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
