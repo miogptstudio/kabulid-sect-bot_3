@@ -884,3 +884,70 @@ async def cmd_dao_path(message: Message):
         )
         return
     await message.answer(set_dao(tg, parts[1].strip()))
+
+
+@router.message(Command("thousandbody", "بدن‌هزارگانه", "bodyx1000"))
+async def cmd_thousand_body(message: Message):
+    """فعال‌سازی تکنیک بدن هزارگانه — کول‌داون ۱۰ ساعت"""
+    from datetime import datetime, timedelta
+    from services.persist import get_dict, save as psave
+    from services.cultivation import ensure_default_techniques, get_or_create_cultivation
+    from database.models_v3 import CultivationTechnique, UserTechnique
+    from sqlalchemy import select as sel
+
+    tg = message.from_user.id
+    cd_map = get_dict("thousand_body_cd")
+    last = cd_map.get(str(tg))
+    now = datetime.utcnow()
+    if last:
+        try:
+            last_dt = datetime.fromisoformat(str(last))
+            if now < last_dt + timedelta(hours=10):
+                left = int((last_dt + timedelta(hours=10) - now).total_seconds() // 60)
+                await message.answer(f"⏳ بدن هزارگانه در کول‌داون است. مانده: {left} دقیقه")
+                return
+        except Exception:
+            pass
+
+    async with async_session() as session:
+        await ensure_default_techniques(session)
+        user = await get_or_create_user(
+            session, tg, message.from_user.full_name, message.from_user.username
+        )
+        # must know technique
+        r = await session.execute(sel(CultivationTechnique).where(CultivationTechnique.name == "بدن هزارگانه"))
+        tech = r.scalar_one_or_none()
+        if not tech:
+            await message.answer("تکنیک هنوز در دیتابیس نیست. /learntech را یک‌بار بزن.")
+            return
+        owned = await session.execute(
+            sel(UserTechnique).where(UserTechnique.user_id == user.id, UserTechnique.technique_id == tech.id)
+        )
+        if not owned.scalar_one_or_none():
+            # try learn if realm ok
+            from services.cultivation import learn_technique
+            msg = await learn_technique(session, user.id, tech)
+            if msg.startswith("❌") or "نیاز" in msg:
+                await message.answer("اول باید یاد بگیری:\n" + msg + "\n/learntech بدن هزارگانه")
+                return
+        # apply effects
+        from services.body_cult import add_body_power, body_power_bonus
+        cur = body_power_bonus(tg)
+        # ×1000 on total body power (at least +1000)
+        from services.persist import get_dict as gd, save as sv
+        d = gd("body_cult")
+        st = d.get(str(tg)) or {"techs": {}, "total_power": 0}
+        base = max(1, int(st.get("total_power") or 0))
+        st["total_power"] = base * 1000
+        d[str(tg)] = st
+        sv("body_cult")
+        from services.knowledge import add_combat_stat
+        add_combat_stat(tg, "power", 1000)
+        cd_map[str(tg)] = now.isoformat()
+        psave("thousand_body_cd")
+        await message.answer(
+            f"💥 <b>بدن هزارگانه</b> فعال شد!\n"
+            f"قدرت بدن: {base} → <b>{st['total_power']}</b> (×۱۰۰۰)\n"
+            f"⚔️ +۱۰۰۰ قدرت نبرد\n"
+            f"⏳ کول‌داون بعدی: ۱۰ ساعت"
+        )

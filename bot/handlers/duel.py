@@ -84,6 +84,17 @@ async def _resolve_duel(session, challenger: User, opponent: User, stake: int = 
 
     await update_user_stats(session, winner, won=True)
     try:
+        from services.achievements import check_and_award
+        msg_a = await check_and_award(session, winner, "first_win")
+        if msg_a:
+            extra.append(msg_a)
+        if int(getattr(winner, "win_streak", 0) or 0) >= 10:
+            msg_b = await check_and_award(session, winner, "win_streak_10")
+            if msg_b:
+                extra.append(msg_b)
+    except Exception:
+        pass
+    try:
         from services.retention import event_add_score
         if getattr(winner, 'telegram_id', None):
             event_add_score(int(winner.telegram_id), 5)

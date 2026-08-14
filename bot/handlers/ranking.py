@@ -99,3 +99,10 @@ async def cmd_richest(message: Message):
             lines.append(f"📍 رتبه تو: <b>#{my_rank}</b> از {len(scored)} | ≈ {total:,} سکه")
             break
     await message.answer(chr(10).join(lines))
+
+
+
+@router.message(Command("achievements", "دستاوردها", "مدال‌ها"))
+async def cmd_achievements(message: Message):
+    from services.achievements import list_user
+    await message.answer(list_user(message.from_user.id))

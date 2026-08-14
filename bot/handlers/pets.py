@@ -156,77 +156,87 @@ async def cmd_petinfo(message: Message):
     )
 
 
+
 @router.message(Command("hunt", "شکار"))
 async def cmd_hunt(message: Message):
+    """شکار حیوان وحشی — کول‌داون ۱ ساعت"""
     now = datetime.utcnow()
     async with async_session() as session:
         user = await get_or_create_user(
             session, message.from_user.id,
             message.from_user.full_name, message.from_user.username
         )
-        if user.is_dead:
+        if getattr(user, "is_dead", False):
             await message.answer(tr(message.from_user.id, "مرده‌ای. /afterdeath"))
             return
 
         last = getattr(user, "last_hunt_at", None)
+        try:
+            if last is not None and getattr(last, "tzinfo", None) is not None:
+                last = last.replace(tzinfo=None)
+        except Exception:
+            pass
         if last and now < last + timedelta(hours=HUNT_COOLDOWN_HOURS):
-            left = int((last + timedelta(hours=HUNT_COOLDOWN_HOURS) - now).total_seconds())
-            m, s = left // 60, left % 60
-            await message.answer(
-                f"⏳ هر ساعت فقط یک شکار.\nمانده: {m} دقیقه و {s} ثانیه"
-            )
+            left = max(0, int((last + timedelta(hours=HUNT_COOLDOWN_HOURS) - now).total_seconds()))
+            mnt, sec = left // 60, left % 60
+            await message.answer("⏳ هر ساعت فقط یک شکار." + chr(10) + f"مانده: {mnt} دقیقه و {sec} ثانیه")
             return
 
-        roll = random.random()
         world = getattr(user, "world", "فانی") or "فانی"
-        risk = 0.45 if world != "زیرین" else 0.85
+        risk = 0.35 if world != "زیرین" else 0.7
         try:
             from bot.config import HUNT_RISK_NORMAL, HUNT_RISK_UNDERWORLD
             risk = HUNT_RISK_NORMAL if world != "زیرین" else HUNT_RISK_UNDERWORLD
         except Exception:
             pass
 
-        # ثبت کول‌داون حتی اگر زخمی شد (شکار انجام شده)
         user.last_hunt_at = now
+        roll = random.random()
 
-        if roll < risk * 0.25:
-            user.is_dead = True
-            user.world = "زیرین"
-            await session.commit()
-            await message.answer(tr(message.from_user.id, "💀 در شکار کشته شدی. /afterdeath"))
-            return
-        if roll < risk:
-            dmg = random.randint(5, 15)
-            if hasattr(user, "lifespan"):
-                user.lifespan = max(0, (user.lifespan or 100) - dmg)
-                if user.lifespan <= 0:
-                    user.is_dead = True
+        if roll < risk * 0.15:
+            if getattr(user, "race", None) not in ("نامیرا", "خدایان", "قادر مطلق"):
+                user.is_dead = True
+                user.world = "زیرین"
+                await session.commit()
+                await message.answer("💀 در شکار کشته شدی. /afterdeath")
+                return
+        if roll < risk * 0.5:
+            dmg = random.randint(3, 12)
             if hasattr(user, "blood"):
-                user.blood = max(1, (user.blood or 100) - dmg)
+                user.blood = max(1, int(user.blood or 100) - dmg)
             await session.commit()
-            await message.answer(f"🩸 زخمی شدی! -{dmg}. شکار فرار کرد.")
+            await message.answer(f"🩸 زخمی شدی (−{dmg} خون). شکار فرار کرد." + chr(10) + "/pets")
             return
+
+        try:
+            pet = await spawn_wild(session)
+        except Exception as e:
+            await session.commit()
+            await message.answer(f"❌ خطا در اسپان شکار: {type(e).__name__}")
+            return
+
+        msg_a = None
+        try:
+            from services.achievements import check_and_award
+            msg_a = await check_and_award(session, user, "first_hunt")
+        except Exception:
+            pass
 
         await session.commit()
-        pet = await spawn_wild(session)
         builder = InlineKeyboardBuilder()
-        builder.button(
-            text="رام کردن 🐺",
-            callback_data=f"tame:{message.from_user.id}:{pet.id}",
-        )
-        builder.button(
-            text="رها کردن",
-            callback_data=f"release:{message.from_user.id}:{pet.id}",
-        )
+        builder.button(text="رام کردن 🐺", callback_data=f"tame:{message.from_user.id}:{pet.id}")
+        builder.button(text="رها کردن", callback_data=f"release:{message.from_user.id}:{pet.id}")
         builder.adjust(2)
-        await message.answer(
-            f"🌲 حیوان وحشی پیدا شد!\n\n"
-            f"<b>{pet.species}</b>\n"
-            f"حمله: {pet.attack} | دفاع: {pet.defense}\n\n"
-            f"می‌خوای رامش کنی؟\n"
-            f"(کاخ رام‌شدگان ظرفیت دارد؟ /petpalace)",
-            reply_markup=builder.as_markup(),
+        text_out = (
+            "🌲 حیوان وحشی پیدا شد!" + chr(10) + chr(10)
+            + f"<b>{pet.species}</b>" + chr(10)
+            + f"حمله: {pet.attack} | دفاع: {pet.defense}" + chr(10)
+            + "رام کن یا رها کن."
         )
+        if msg_a:
+            text_out += chr(10) + msg_a
+        await message.answer(text_out, reply_markup=builder.as_markup())
+
 
 
 @router.callback_query(F.data.startswith("tame:"))
@@ -249,6 +259,14 @@ async def cb_tame(callback: CallbackQuery):
             await callback.answer(tr(callback.from_user.id, "دیگر اینجا نیست."), show_alert=True)
             return
         msg = await tame_pet(session, user, pet)
+        try:
+            if msg.startswith("✅"):
+                from services.achievements import check_and_award
+                a = await check_and_award(session, user, "first_tame")
+                if a:
+                    msg = msg + chr(10) + a
+        except Exception:
+            pass
     try:
         await callback.message.edit_text(msg)
     except Exception:

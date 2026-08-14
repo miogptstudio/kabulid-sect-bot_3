@@ -481,3 +481,55 @@ async def cmd_unlock_consume(message: Message):
         await message.answer(f"قفل حافظه برداشته شد؛ DB: {type(e).__name__}")
         return
     await message.answer(f"✅ قفل مصرف برای {tg} برداشته شد (حافظه + تکنیک ممنوعه DB).")
+
+
+
+@router.message(Command("givepower", "قدرت‌بده", "setpower"))
+async def cmd_give_power(message: Message):
+    """ادمین: /givepower telegram_id مقدار [power|speed|defense|body]"""
+    if not is_config_admin(message.from_user.id):
+        await message.answer("فقط سازنده.")
+        return
+    parts = (message.text or "").split()
+    if len(parts) < 3:
+        await message.answer(
+            "فرمت: /givepower TELEGRAM_ID مقدار [power|speed|defense|body]\n"
+            "مثال: /givepower 6227792513 1000 power\n"
+            "یا ریپلای + /givepower 500 body"
+        )
+        return
+    kind = "power"
+    try:
+        if message.reply_to_message and message.reply_to_message.from_user:
+            tid = message.reply_to_message.from_user.id
+            amount = int(parts[1])
+            if len(parts) >= 3:
+                kind = parts[2]
+        else:
+            tid = int(parts[1])
+            amount = int(parts[2])
+            if len(parts) >= 4:
+                kind = parts[3]
+    except ValueError:
+        await message.answer("آیدی و مقدار باید عدد باشند.")
+        return
+    kind = kind.lower()
+    if kind in ("body", "بدن"):
+        try:
+            from services.body_cult import add_body_power
+            msg = add_body_power(tid, amount)
+        except Exception:
+            from services.persist import get_dict, save
+            d = get_dict("body_cult")
+            sk = str(tid)
+            row = d.get(sk) or {"techs": {}, "total_power": 0}
+            row["total_power"] = int(row.get("total_power") or 0) + amount
+            d[sk] = row
+            save("body_cult")
+            msg = f"✅ قدرت بدن +{amount} برای `{tid}` (کل: {row['total_power']})"
+    else:
+        from services.knowledge import add_combat_stat
+        mapk = {"power": "power", "قدرت": "power", "speed": "speed", "defense": "defense", "دفاع": "defense", "سرعت": "speed"}
+        k = mapk.get(kind, "power")
+        msg = add_combat_stat(tid, k, amount) + f"\nهدف: `{tid}`"
+    await message.answer(msg)
