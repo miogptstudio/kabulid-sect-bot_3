@@ -12,7 +12,7 @@ from services.economy import get_or_create_wallet
 from services import jobs as jobs_svc
 from services import tribe_war as tw
 from services import cyrus_sale as cs
-from services.i18n import get_lang
+from services.i18n import get_lang, tr
 
 router = Router()
 _last_luck: dict[int, datetime] = {}
@@ -21,22 +21,27 @@ _last_daily: dict[int, datetime] = {}
 
 @router.message(Command("work", "کار", "کارشغل"))
 async def cmd_work(message: Message):
-    res = jobs_svc.work(message.from_user.id)
-    if isinstance(res, str):
-        await message.answer(res)
-        return
-    async with async_session() as session:
-        user = await get_or_create_user(
-            session, message.from_user.id,
-            message.from_user.full_name, message.from_user.username
-        )
-        from services.economy import get_or_create_wallet
-        w = await get_or_create_wallet(session, user.id)
-        w.coins = int(w.coins or 0) + int(res.get("coins") or 0)
-        if res.get("spirit_stones"):
-            w.spirit_stones = int(w.spirit_stones or 0) + int(res["spirit_stones"])
-        await session.commit()
-    await message.answer(res["msg"])
+    try:
+        res = jobs_svc.work(message.from_user.id)
+        if isinstance(res, str):
+            await message.answer(res)
+            return
+        if not isinstance(res, dict):
+            await message.answer("⚠️ نتیجه شغل نامعتبر بود. دوباره /work را بزن.")
+            return
+        async with async_session() as session:
+            user = await get_or_create_user(
+                session, message.from_user.id,
+                message.from_user.full_name, message.from_user.username
+            )
+            w = await get_or_create_wallet(session, user.id)
+            w.coins = int(w.coins or 0) + int(res.get("coins") or 0)
+            if res.get("spirit_stones"):
+                w.spirit_stones = int(w.spirit_stones or 0) + int(res["spirit_stones"])
+            await session.commit()
+        await message.answer(str(res.get("msg") or "✅ کار انجام شد."))
+    except Exception as e:
+        await message.answer(f"⚠️ خطا در شغل: {type(e).__name__}: {str(e)[:180]}")
 
 
 @router.message(Command("jobs", "شغل‌ها", "اشغال"))
@@ -60,8 +65,15 @@ async def cmd_job(message: Message):
 
 @router.callback_query(F.data.startswith("setjob:"))
 async def cb_set_job(callback: CallbackQuery):
-    parts = callback.data.split(":")
-    owner, job = int(parts[1]), parts[2]
+    parts = callback.data.split(":", 2)
+    if len(parts) < 3:
+        await callback.answer("دادهٔ شغل نامعتبره.", show_alert=True)
+        return
+    try:
+        owner, job = int(parts[1]), parts[2]
+    except (ValueError, TypeError):
+        await callback.answer("دادهٔ شغل نامعتبره.", show_alert=True)
+        return
     if callback.from_user.id != owner:
         await callback.answer()
         return

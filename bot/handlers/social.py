@@ -21,34 +21,12 @@ router = Router()
 
 # بازار آزاد حافظه
 _market: list[dict] = []
-# خدمتکارها (NPC)
-SERVANTS = [
-    {"id": 1, "name": "آلیس", "gender": "زن", "price": 500, "desc": "خدمتکار وفادار"},
-    {"id": 2, "name": "لیان", "gender": "زن", "price": 800, "desc": "خدمتکار جنگی"},
-    {"id": 3, "name": "مینگ", "gender": "مرد", "price": 600, "desc": "نگهبان خانه"},
-    {"id": 4, "name": "سارا", "gender": "زن", "price": 1200, "desc": "خدمتکار نجیب"},
-    {"id": 5, "name": "کای", "gender": "مرد", "price": 900, "desc": "نگهبان دروازه"},
-    {"id": 6, "name": "یوکی", "gender": "زن", "price": 1500, "desc": "خدمتکار شرقی"},
-    {"id": 7, "name": "رستم‌یار", "gender": "مرد", "price": 2000, "desc": "برده جنگی ایرانی"},
-    {"id": 8, "name": "شیرین", "gender": "زن", "price": 1800, "desc": "خدمتکار دربار"},
-    {"id": 9, "name": "بهرام", "gender": "مرد", "price": 2200, "desc": "برده شکارچی"},
-    {"id": 10, "name": "نرگس", "gender": "زن", "price": 1600, "desc": "خدمتکار باغ"},
-    {"id": 11, "name": "آرش", "gender": "مرد", "price": 2500, "desc": "برده کماندار"},
-    {"id": 12, "name": "لاله", "gender": "زن", "price": 1400, "desc": "خدمتکار آشپزخانه"},
-    {"id": 13, "name": "کاوه", "gender": "مرد", "price": 3000, "desc": "برده آهنگر"},
-    {"id": 14, "name": "مهتاب", "gender": "زن", "price": 2800, "desc": "خدمتکار روحانی"},
-    {"id": 15, "name": "سهراب", "gender": "مرد", "price": 3500, "desc": "برده پهلوان"},
-    {"id": 16, "name": "پریسا", "gender": "زن", "price": 3200, "desc": "خدمتکار جادویی"},
-    {"id": 17, "name": "توران", "gender": "مرد", "price": 4000, "desc": "برده نگهبان فرقه"},
-    {"id": 18, "name": "آناهیتا", "gender": "زن", "price": 5000, "desc": "خدمتکار مقدس"},
-    {"id": 19, "name": "دیو‌بنده", "gender": "مرد", "price": 6000, "desc": "برده تاریک"},
-    {"id": 20, "name": "فرشته‌یار", "gender": "زن", "price": 6000, "desc": "خدمتکار نورانی"},
-]
+# خدمتکارها — منبع واحد
+SERVANTS = servmod.MARKET
 from services.persist import get_dict as _sg, save as _ss
 def _servants_map():
     return _sg("servants")
 
-_user_married_servants: dict = {}  # telegram_id -> married servant ids
 _servant_children: dict = {}  # telegram_id -> list of child dicts
 _dual_servant_cd: dict = {}  # telegram_id -> last dual datetime
 _rps_challenges: dict[int, dict] = {}
@@ -268,8 +246,22 @@ async def cmd_payall(message: Message):
 @router.message(Command("market", "بازار"))
 async def cmd_market(message: Message):
     parts = (message.text or "").split(maxsplit=3)
-    if len(parts) >= 4 and parts[1] == "sell":
-        item, price = parts[2], int(parts[3])
+    if len(parts) >= 2 and parts[1].lower() in ("sell", "فروش"):
+        if len(parts) < 4:
+            await message.answer("فرمت: /market sell نام_آیتم قیمت\nمثال: /market sell سنگ_روحی 500")
+            return
+        item = parts[2].strip()
+        try:
+            price = int(parts[3].strip())
+        except ValueError:
+            await message.answer("❌ قیمت باید عدد باشه.")
+            return
+        if not item:
+            await message.answer("❌ اسم آیتم خالیه.")
+            return
+        if price <= 0:
+            await message.answer("❌ قیمت باید بیشتر از صفر باشه.")
+            return
         _market.append({
             "seller": message.from_user.id,
             "seller_name": message.from_user.full_name,
@@ -321,14 +313,24 @@ async def cmd_market_buy(message: Message):
             sw = await get_or_create_wallet(session, seller.id)
             sw.coins += listing["price"]
         await session.commit()
+    fee = 0
     try:
         from services.retention import market_fee
-        fee = market_fee(int(listing.get("price") or 0))
-        w.coins = max(0, int(w.coins or 0) - fee)  # کارمزد از خریدار
+        fee = int(market_fee(int(listing.get("price") or 0)) or 0)
+        if fee:
+            async with async_session() as session:
+                buyer = await get_or_create_user(
+                    session, message.from_user.id,
+                    message.from_user.full_name, message.from_user.username
+                )
+                bw = await get_or_create_wallet(session, buyer.id)
+                bw.coins = max(0, int(bw.coins or 0) - fee)
+                await session.commit()
     except Exception:
         fee = 0
     _market.pop(idx)
-    await message.answer(f"✅ «{listing['item']}» خریداری شد.")
+    suffix = f"\n💸 کارمزد: {fee} سکه" if fee else ""
+    await message.answer(f"✅ «{listing['item']}» خریداری شد.{suffix}")
 
 
 # LEGACY disabled
@@ -379,12 +381,12 @@ async def cmd_my_servants_legacy(message: Message):
             + "/buyservant شماره — خرید"
         )
         return
-    married = _user_married_servants.get(message.from_user.id, [])
+    married = set(servmod.married_uids(message.from_user.id))
     text = "👤 <b>خدمتکارهای تو</b>" + chr(10) + chr(10)
     for i in ids:
         s = next((x for x in SERVANTS if x["id"] == i), None)
         if s:
-            tag = " 💍 همسر" if i in married else ""
+            tag = " 💍 همسر" if any(str(x.get("base_id")) == str(i) and str(x.get("uid")) in married for x in servmod.list_owned(message.from_user.id)) else ""
             text += f"• #{s['id']} {s['name']} ({s['gender']}){tag}" + chr(10)
     text += (
         chr(10) + "/marryservant شماره — ازدواج با خدمتکار زن"
@@ -395,50 +397,32 @@ async def cmd_my_servants_legacy(message: Message):
 
 @router.message(Command("marryservant", "ازدواج‌خدمتکار"))
 async def cmd_marry_servant(message: Message):
-    """ازدواج با خدمتکار زن: /marryservant شماره  یا  /marry servant شماره"""
+    """ازدواج با خدمتکار؛ شمارهٔ /myservants یا شمارهٔ بازار را می‌پذیرد."""
     parts = (message.text or "").split()
-    # پشتیبانی: /marryservant 1  |  /marry servant 1
-    sid = None
-    if len(parts) >= 2 and parts[0].replace("/", "").startswith("marry") and parts[1].lower() in ("servant", "خدمتکار"):
-        if len(parts) >= 3:
-            try:
-                sid = int(parts[2])
-            except ValueError:
-                sid = None
+    selector = None
+
+    if len(parts) >= 3 and parts[1].lower() in ("servant", "خدمتکار"):
+        try:
+            selector = int(parts[2])
+        except ValueError:
+            pass
     elif len(parts) >= 2:
         try:
-            sid = int(parts[1])
+            selector = int(parts[1])
         except ValueError:
-            sid = None
-    if sid is None:
+            pass
+
+    if selector is None:
         await message.answer(
-            "ازدواج با خدمتکار زن:" + chr(10)
-            + "/marryservant شماره" + chr(10)
-            + "یا: /marry servant شماره" + chr(10)
-            + "اول /myservants ببین کدام را داری."
+            "💍 فرمت ازدواج با خدمتکار:\n"
+            "/marryservant شماره\n"
+            "یا /marry servant شماره\n\n"
+            "شماره را از /myservants بردار."
         )
         return
-    s = next((x for x in SERVANTS if x["id"] == sid), None)
-    if not s:
-        await message.answer(tr(message.from_user.id, "خدمتکار پیدا نشد. /servants"))
-        return
-    # ازدواج با خدمتکار هر جنسیتی — برای تذهیب دوگانه باید مخالف باشد
-    bag = servmod.list_owned(message.from_user.id)
-    owned_ids = [x.get("base_id") for x in bag]
-    if sid not in owned_ids and not any(True for x in bag if x.get("base_id")==sid):
-        await message.answer("اول باید این خدمتکار را بخری. /buyservant " + str(sid))
-        return
-    married = _user_married_servants.setdefault(message.from_user.id, [])
-    if sid in married:
-        await message.answer(f"قبلاً با {s['name']} ازدواج کرده‌ای.")
-        return
-    married.append(sid)
-    await message.answer(
-        f"💍 با خدمتکار «{s['name']}» ازدواج کردی." + chr(10)
-        + "آسیب به او = حذف اکانت تو." + chr(10)
-        + "/myservants — لیست"
-    )
 
+    ok, msg, servant = servmod.marry_servant(message.from_user.id, selector)
+    await message.answer(msg)
 
 
 
@@ -448,8 +432,13 @@ async def cmd_marry_servant(message: Message):
 async def cmd_marry_servant_text(message: Message):
     parts = (message.text or "").split()
     if len(parts) >= 3:
-        message.text = f"/marryservant {parts[2]}"
-        await cmd_marry_servant(message)
+        try:
+            selector = int(parts[2])
+        except ValueError:
+            await message.answer("شمارهٔ خدمتکار نامعتبره.")
+            return
+        ok, msg, servant = servmod.marry_servant(message.from_user.id, selector)
+        await message.answer(msg)
 
 
 @router.message(Command("dualservant", "تذهیب‌خدمتکار", "دوگانه‌خدمتکار"))
@@ -473,13 +462,15 @@ async def cmd_dual_servant(message: Message):
     if not s:
         await message.answer(tr(message.from_user.id, "خدمتکار پیدا نشد. /servants"))
         return
-    owned_ids = [x.get("base_id") for x in servmod.list_owned(message.from_user.id)]
-    owned = owned_ids
-    married = _user_married_servants.get(message.from_user.id, [])
-    if sid not in owned:
+    servant = next(
+        (x for x in servmod.list_owned(message.from_user.id)
+         if int(x.get("base_id") or -1) == sid),
+        None,
+    )
+    if not servant:
         await message.answer("اول بخر: /buyservant " + str(sid))
         return
-    if sid not in married:
+    if not servmod.is_married(message.from_user.id, servant):
         await message.answer("اول ازدواج: /marryservant " + str(sid))
         return
     last = _dual_servant_cd.get(message.from_user.id)
@@ -556,8 +547,8 @@ async def cmd_child_servant(message: Message):
         return
     owned_ids = [x.get("base_id") for x in servmod.list_owned(message.from_user.id)]
     owned = owned_ids
-    married = _user_married_servants.get(message.from_user.id, [])
-    if sid not in owned or sid not in married:
+    servant = next((x for x in servmod.list_owned(message.from_user.id) if int(x.get("base_id") or -1) == sid), None)
+    if not servant or not servmod.is_married(message.from_user.id, servant):
         await message.answer(tr(message.from_user.id, "باید /buyservant و /marryservant کرده باشی."))
         return
     key = f"child_{message.from_user.id}"

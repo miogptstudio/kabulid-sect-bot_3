@@ -336,10 +336,10 @@ async def kb_sect(message: Message):
 @router.message(F.text.in_({"🏪 بازار", "بازار"}))
 async def kb_market(message: Message):
     try:
-        from bot.handlers.shop import cmd_buildings
-        await cmd_buildings(message)
+        from bot.handlers.social import cmd_market
+        await cmd_market(message)
     except Exception as e:
-        await message.answer(f"خطا بازار: {e}")
+        await message.answer(f"خطا بازار: {type(e).__name__}: {e}")
 
 
 @router.message(F.text.in_({"🎁 گنجینه", "گنجینه"}))

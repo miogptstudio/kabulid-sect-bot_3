@@ -16,6 +16,19 @@ router = Router()
 
 @router.message(Command("marry", "ازدواج", "عروسی", "نامزدی"))
 async def cmd_marry(message: Message):
+    # /marry servant N must be handled before the player-to-player marriage flow.
+    parts = (message.text or "").split()
+    if len(parts) >= 3 and parts[1].lower() in ("servant", "خدمتکار"):
+        from services import servants as servmod
+        try:
+            selector = int(parts[2])
+        except ValueError:
+            await message.answer("شمارهٔ خدمتکار نامعتبره.")
+            return
+        ok, msg, servant = servmod.marry_servant(message.from_user.id, selector)
+        await message.answer(msg)
+        return
+
     if not message.reply_to_message:
         await message.answer(
             "💍 <b>ازدواج و نامزدی</b>\n\n"
