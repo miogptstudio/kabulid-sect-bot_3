@@ -124,15 +124,20 @@ def block_rate(tg: int) -> float:
 
 
 def add_combat_stat(tg: int, kind: str, amount: int) -> str:
+    """افزایش پایدار قدرت/سرعت/دفاع در persist"""
     amount = int(amount)
+    tg = int(tg)
     if kind in ("power", "قدرت"):
-        _power[tg] = int(_power.get(tg, 0)) + amount
+        cur = int(_pget("know_pow", tg, 0) or 0)
+        _pset("know_pow", tg, cur + amount)
         return f"⚔️ قدرت نبرد +{amount} (کل مؤثر: {get_power(tg)})"
     if kind in ("speed", "سرعت"):
-        _speed[tg] = int(_speed.get(tg, 0)) + amount
+        cur = int(_pget("know_spd", tg, 0) or 0)
+        _pset("know_spd", tg, cur + amount)
         return f"💨 سرعت +{amount} | جاخالی: {dodge_rate(tg):.1f}٪"
     if kind in ("defense", "دفاع"):
-        _defense[tg] = int(_defense.get(tg, 0)) + amount
+        cur = int(_pget("know_def", tg, 0) or 0)
+        _pset("know_def", tg, cur + amount)
         return f"🛡️ دفاع +{amount} | بلاک کامل: {block_rate(tg):.1f}٪"
     return "نوع نامعتبر"
 

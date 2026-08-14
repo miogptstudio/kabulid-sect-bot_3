@@ -202,3 +202,10 @@ def status(tg_id: int) -> str:
             lines.append(f"• {n}: سطح {lv}")
     lines += ["", "/bodytechs — لیست تکنیک‌ها"]
     return chr(10).join(lines)
+
+
+def add_body_power(tg_id: int, amount: int) -> str:
+    st = _state(int(tg_id))
+    st["total_power"] = int(st.get("total_power") or 0) + int(amount)
+    _body_save()
+    return f"✅ قدرت بدن +{amount} (کل: {st['total_power']})"
