@@ -16,7 +16,8 @@ router = Router()
 _streaks: dict[int, dict] = {}
 
 
-@router.message(Command("dailystreak_old")  # منتقل‌شده به retention)
+# daily به retention منتقل شد
+@router.message(Command("dailystreak_old"))
 async def cmd_daily_streak(message: Message):
     uid = message.from_user.id
     today = date.today().isoformat()
