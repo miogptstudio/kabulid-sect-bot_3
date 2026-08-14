@@ -150,7 +150,10 @@ async def migrate_schema():
         for col, td in [
             ("quantity", "INTEGER DEFAULT 1"),
         ]:
-            await add_col("user_inventories", col, td)
+            # مدل واقعی UserInventory از جدول user_inventory استفاده می‌کند.
+            # نسخه قبلی اشتباهاً user_inventories را مهاجرت می‌داد و در DB قدیمی
+            # باعث می‌شد migration هشدار بدهد و بعضی عملیات کیف/بازار خطا بخورند.
+            await add_col("user_inventory", col, td)
 
         # user_techniques
         for col, td in [

@@ -6,16 +6,16 @@ from urllib.parse import quote
 _STYLE = {
     "انسان": "lorelei",
     "نیمه‌انسان": "adventurer",
-    "گربه‌ای نیمه‌انسان": "bottts",  # حیوانی‌تر
-    "روباه‌نمای": "bottts",
-    "گرگ‌نمای": "bottts",
-    "اژدها‌تبار": "shapes",
-    "ققنوس‌تبار": "shapes",
+    "گربه‌ای نیمه‌انسان": "adventurer",
+    "روباه‌نمای": "adventurer",
+    "گرگ‌نمای": "adventurer",
+    "اژدها‌تبار": "lorelei",
+    "ققنوس‌تبار": "lorelei",
     "جن جنگلی": "adventurer",
-    "دیو‌تبار": "shapes",
+    "دیو‌تبار": "personas",
     "فرشته‌تبار": "lorelei",
-    "اهریمنی": "shapes",
-    "سیمرغ‌زاده": "shapes",
+    "اهریمنی": "personas",
+    "سیمرغ‌زاده": "lorelei",
     "روح‌پیما": "notionists",
     "خون‌آشام کهن": "personas",
     "مه‌پیما": "notionists",
@@ -48,7 +48,7 @@ def portrait_url(name: str, gender: str = "زن", race: str = "انسان", size
     bg = _RACE_BG.get(race) or _BG.get(gender, "e8e8e8")
     # DiceBear 7.x PNG
     return (
-        f"https://api.dicebear.com/7.x/{style}/png"
+        f"https://api.dicebear.com/9.x/{style}/png"
         f"?seed={seed}&size={size}&backgroundColor={bg}"
     )
 
@@ -76,9 +76,9 @@ def character_url(name: str, rarity: str = "معمولی") -> str:
         "قادر مطلق": "shapes",
     }.get(rarity, "identicon")
     seed = quote(f"char-{rarity}-{name}", safe="")
-    return f"https://api.dicebear.com/7.x/{style}/png?seed={seed}&size=512"
+    return f"https://api.dicebear.com/9.x/{style}/png?seed={seed}&size=512"
 
 
 def pet_url(name: str) -> str:
     seed = quote(f"pet-{name}", safe="")
-    return f"https://api.dicebear.com/7.x/bottts/png?seed={seed}&size=512"
+    return f"https://api.dicebear.com/9.x/bottts/png?seed={seed}&size=512"

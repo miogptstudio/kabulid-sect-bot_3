@@ -90,6 +90,58 @@ def _hunt_cd() -> dict:
     return get_dict("servant_hunt_cd")
 
 
+def _marriages() -> dict:
+    """ازدواج خدمتکارها را جدا از حافظهٔ موقت برنامه نگه می‌دارد."""
+    return get_dict("servant_marriages")
+
+
+def _servant_by_selector(tg: int, selector: int):
+    """شمارهٔ لیست /myservants یا شمارهٔ بازار را قبول می‌کند."""
+    bag = list_owned(tg)
+    if 1 <= selector <= len(bag):
+        return bag[selector - 1], selector - 1
+    matches = [(i, x) for i, x in enumerate(bag) if int(x.get("base_id") or -1) == selector]
+    if matches:
+        i, x = matches[0]
+        return x, i
+    return None, None
+
+
+def married_uids(tg: int) -> list[str]:
+    data = _marriages()
+    return [str(x) for x in (data.get(str(int(tg))) or [])]
+
+
+def is_married(tg: int, servant: dict) -> bool:
+    return str(servant.get("uid")) in set(married_uids(tg))
+
+
+def marry_servant(tg: int, selector: int) -> tuple[bool, str, dict | None]:
+    """ازدواج پایدار با خدمتکار؛ selector هم شمارهٔ لیست و هم id بازار است."""
+    servant, _ = _servant_by_selector(tg, selector)
+    if not servant:
+        return False, "خدمتکار پیدا نشد. شمارهٔ /myservants را وارد کن.", None
+
+    uid = str(servant.get("uid"))
+    data = _marriages()
+    key = str(int(tg))
+    married = [str(x) for x in (data.get(key) or [])]
+
+    if uid in married:
+        return False, f"قبلاً با «{servant.get('name')}» ازدواج کرده‌ای.", servant
+
+    married.append(uid)
+    data[key] = married
+    _psave("servant_marriages")
+
+    return True, (
+        f"💍 با خدمتکار «{servant.get('name')}» ازدواج کردی!\n"
+        f"نژاد: {servant.get('race', '—')} | وفاداری: {servant.get('loyalty', 0)}%\n"
+        f"از این به بعد این ازدواج بعد از ری‌استارت هم باقی می‌مونه.\n"
+        f"/myservants — مشاهدهٔ خانواده"
+    ), servant
+
+
 def market_list() -> str:
     lines = ["🛒 <b>بازار خدمتکار</b>", "نژادهای خریدنی (اصیل‌ها با /huntservant)", ""]
     for s in MARKET:
@@ -189,8 +241,9 @@ def owned_text(tg: int) -> str:
     lines = [f"👤 <b>خدمتکارهای تو</b> ({len(bag)})", ""]
     for i, s in enumerate(bag, 1):
         tr = "🦋دگرگون" if s.get("transformed") else ""
+        married = " 💍 همسر" if is_married(tg, s) else ""
         lines.append(
-            f"{i}. {s['name']} | {s['gender']} | {s.get('race')} {tr}" + chr(10)
+            f"{i}. {s['name']} | {s['gender']} | {s.get('race')} {tr}{married}" + chr(10)
             + f"   ❤️وفاداری {s.get('loyalty',0)}% | 🧘تذهیب {s.get('cult',1)} | ⚔{s.get('power',0)}"
         )
     lines += [
@@ -260,10 +313,17 @@ def feed_loyalty(tg: int, idx: int, coins: int) -> tuple[str, int]:
     if coins < cost:
         return "۵۰ سکه لازم است.", coins
     s = bag[idx - 1]
-    s["loyalty"] = min(100, int(s.get("loyalty") or 50) + random.randint(3, 8))
+    old_loyalty = max(0, min(100, int(s.get("loyalty") or 50)))
+    if old_loyalty >= 100:
+        return f"❤️ وفاداری «{s['name']}» همین الان ۱۰۰٪ است.", coins
+    gain = min(8, 100 - old_loyalty)
+    s["loyalty"] = old_loyalty + gain
     bag[idx - 1] = s
     save_owned(tg, bag)
-    return f"❤️ وفاداری {s['name']}: {s['loyalty']}%", coins - cost
+    return (
+        f"❤️ وفاداری «{s['name']}»: {s['loyalty']}% "
+        f"(+{gain} | هزینه: {cost} سکه)"
+    ), coins - cost
 
 
 def check_betrayal(tg: int) -> str:

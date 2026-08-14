@@ -94,7 +94,7 @@ def job_mult(tg_id: int) -> float:
     return float(JOBS.get(j, {}).get("mult") or 1.0)
 
 
-def work(tg_id: int) -> str:
+def work(tg_id: int) -> str | dict:
     """پاداش روزانه شغل"""
     j = get_job(tg_id)
     if not j:
