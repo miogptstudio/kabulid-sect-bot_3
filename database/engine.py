@@ -64,17 +64,22 @@ CULT_COLUMNS = [
 ]
 
 WALLET_COLUMNS = [
-    ("chaos_stones", "INTEGER DEFAULT 0"),
-    ("void_stones", "INTEGER DEFAULT 0"),
-    ("origin_stones", "destiny_stones", "immortal_stones", "creation_stones", "absolute_stones", "faith_stones", "dragon_coins", "INTEGER DEFAULT 0"),
-    ("karma_points", "INTEGER DEFAULT 0"),
-
+    ("coins", "INTEGER DEFAULT 0"),
+    ("spirit_stones", "INTEGER DEFAULT 0"),
+    ("last_daily_coin", "TIMESTAMP NULL"),
     ("heavenly_stones", "INTEGER DEFAULT 0"),
     ("celestial_stones", "INTEGER DEFAULT 0"),
     ("god_stones", "INTEGER DEFAULT 0"),
-    ("last_daily_coin", "TIMESTAMP NULL"),
-    ("spirit_stones", "INTEGER DEFAULT 0"),
-    ("coins", "INTEGER DEFAULT 0"),
+    ("chaos_stones", "INTEGER DEFAULT 0"),
+    ("void_stones", "INTEGER DEFAULT 0"),
+    ("origin_stones", "INTEGER DEFAULT 0"),
+    ("karma_points", "INTEGER DEFAULT 0"),
+    ("destiny_stones", "INTEGER DEFAULT 0"),
+    ("immortal_stones", "INTEGER DEFAULT 0"),
+    ("creation_stones", "INTEGER DEFAULT 0"),
+    ("absolute_stones", "INTEGER DEFAULT 0"),
+    ("faith_stones", "INTEGER DEFAULT 0"),
+    ("dragon_coins", "INTEGER DEFAULT 0"),
 ]
 
 TECH_COLUMNS = [
@@ -128,20 +133,13 @@ async def migrate_schema():
         ]:
             await add_col("user_techniques", col, td)
 
-    # جدول کلید-مقدار پایدار
+        # جدول کلید-مقدار پایدار
         try:
-            if dialect == "postgresql":
-                await conn.execute(text(
-                    "CREATE TABLE IF NOT EXISTS persist_kv ("
-                    "ns VARCHAR(64) PRIMARY KEY, payload TEXT NOT NULL, "
-                    "updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)"
-                ))
-            else:
-                await conn.execute(text(
-                    "CREATE TABLE IF NOT EXISTS persist_kv ("
-                    "ns VARCHAR(64) PRIMARY KEY, payload TEXT NOT NULL, "
-                    "updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)"
-                ))
+            await conn.execute(text(
+                "CREATE TABLE IF NOT EXISTS persist_kv ("
+                "ns VARCHAR(64) PRIMARY KEY, payload TEXT NOT NULL, "
+                "updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)"
+            ))
             logger.info("OK table persist_kv")
         except Exception as e:
             logger.warning("persist_kv: %s", e)
