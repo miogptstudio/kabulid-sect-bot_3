@@ -153,7 +153,7 @@ async def get_user_materials(session: AsyncSession, user_id: int) -> dict:
 
 async def craft(session: AsyncSession, user: User, recipe: Recipe) -> dict:
     cult = await get_or_create_cultivation(session, user.id)
-    realms = ["پایه", "متوسط", "بالا", "پیشرفته", "خدا"]
+    realms = ["بیداری", "پایه", "میانه", "متوسط", "هسته", "بالا", "روح", "پیشرفته", "آسمان", "پوچی", "کهکشانی", "اوج", "استاد", "ازلی", "خدا"]
     try:
         if realms.index(cult.realm) < realms.index(recipe.min_cultivation_realm):
             return {"success": False, "message": f"قلمرو تذهیب کافی نیست (نیاز: {recipe.min_cultivation_realm})"}
@@ -161,11 +161,11 @@ async def craft(session: AsyncSession, user: User, recipe: Recipe) -> dict:
         pass
 
     materials = await get_user_materials(session, user.id)
-    for mat_name, needed in recipe.required_materials.items():
+    for mat_name, needed in mats.items():
         if materials.get(mat_name, 0) < needed:
             return {"success": False, "message": f"مواد کافی نداری (نیاز: {needed}× {mat_name})"}
 
-    for mat_name, needed in recipe.required_materials.items():
+    for mat_name, needed in mats.items():
         result = await session.execute(
             select(UserInventory, ShopItem)
             .join(ShopItem, UserInventory.item_id == ShopItem.id)
@@ -187,12 +187,54 @@ async def craft(session: AsyncSession, user: User, recipe: Recipe) -> dict:
         if skill.exp >= 50:
             skill.exp = 0
             skill.level += 1
+        # افزودن نتیجه به موجودی بازیکن
+        try:
+            rname = recipe.result_item_name or recipe.name
+            ri = await session.execute(select(ShopItem).where(ShopItem.name == rname))
+            item = ri.scalar_one_or_none()
+            if not item:
+                from database.models_v3 import Building
+                b = await session.execute(select(Building).where(Building.building_type == "کیمیاگری"))
+                bld = b.scalar_one_or_none()
+                if not bld:
+                    bld = Building(name="کیمیاگری", building_type="کیمیاگری", description="ساخت")
+                    session.add(bld)
+                    await session.flush()
+                item = ShopItem(
+                    building_id=bld.id,
+                    name=rname,
+                    item_type="crafted",
+                    description=f"ساخته‌شده: {recipe.name}",
+                    price=0,
+                    effect=recipe.result_effect if isinstance(recipe.result_effect, dict) else {},
+                )
+                session.add(item)
+                await session.flush()
+            inv_r = await session.execute(
+                select(UserInventory).where(
+                    UserInventory.user_id == user.id,
+                    UserInventory.item_id == item.id,
+                )
+            )
+            inv = inv_r.scalar_one_or_none()
+            if inv:
+                inv.quantity = int(inv.quantity or 0) + 1
+            else:
+                session.add(UserInventory(user_id=user.id, item_id=item.id, quantity=1))
+        except Exception:
+            pass
         await session.commit()
         return {
             "success": True,
-            "message": f"✅ ساخت «{recipe.name}» موفق!\nمهارت {recipe.recipe_type} سطح {skill.level}",
+            "message": (
+                f"✅ ساخت «{recipe.name}» موفق!"
+                + chr(10)
+                + f"مهارت {recipe.recipe_type} سطح {skill.level}"
+                + chr(10)
+                + f"آیتم «{recipe.result_item_name}» به کیف اضافه شد. /inventory"
+            ),
             "result_name": recipe.result_item_name,
-            "effect": recipe.result_effect
+            "effect": recipe.result_effect,
         }
     else:
         await session.commit()

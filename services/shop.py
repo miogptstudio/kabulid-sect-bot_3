@@ -452,10 +452,17 @@ async def ensure_default_buildings_and_items(session: AsyncSession):
     buildings = dict(existing)
     for btype in types:
         if btype not in buildings:
-            b = Building(name=btype, building_type=btype, description=f"ساختمان {btype}")
+            b = Building(name=btype, building_type=btype, description=f"ساختمان {btype}", is_active=True)
             session.add(b)
             await session.flush()
             buildings[btype] = b
+        else:
+            try:
+                buildings[btype].is_active = True
+                if not buildings[btype].name:
+                    buildings[btype].name = btype
+            except Exception:
+                pass
 
     # آیتم‌های موجود
     result = await session.execute(select(ShopItem))
@@ -500,14 +507,39 @@ async def ensure_default_buildings_and_items(session: AsyncSession):
 
 async def get_buildings(session: AsyncSession):
     result = await session.execute(select(Building).where(Building.is_active == True))
-    return result.scalars().all()
+    rows = list(result.scalars().all())
+    if not rows:
+        result = await session.execute(select(Building))
+        rows = list(result.scalars().all())
+        for b in rows:
+            try:
+                b.is_active = True
+            except Exception:
+                pass
+        if rows:
+            await session.commit()
+    return rows
 
 
 async def get_items_of_building(session: AsyncSession, building_id: int):
     result = await session.execute(
         select(ShopItem).where(ShopItem.building_id == building_id, ShopItem.is_active == True)
     )
-    return result.scalars().all()
+    rows = list(result.scalars().all())
+    if not rows:
+        # آیتم‌های غیرفعال یا بدون فلگ
+        result = await session.execute(
+            select(ShopItem).where(ShopItem.building_id == building_id)
+        )
+        rows = list(result.scalars().all())
+        for it in rows:
+            try:
+                it.is_active = True
+            except Exception:
+                pass
+        if rows:
+            await session.commit()
+    return rows
 
 
 async def buy_item(session: AsyncSession, user: User, item: ShopItem, qty: int = 1) -> str:
