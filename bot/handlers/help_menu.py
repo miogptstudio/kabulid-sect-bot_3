@@ -189,3 +189,7 @@ async def cmd_help_admin(message: Message):
 @router.message(Command("version", "نسخه"))
 async def cmd_version(message: Message):
     await message.answer(f"🤖 نسخه ربات: <b>{BOT_VERSION}</b>")
+
+
+# سازگاری با start.py و فراخوانی‌های قدیمی
+cmd_help_menu = cmd_help

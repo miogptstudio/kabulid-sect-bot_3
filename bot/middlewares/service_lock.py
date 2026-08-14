@@ -10,6 +10,9 @@ ALLOWED_PREFIXES = (
     "/prison", "/زندان", "/bail", "/وثیقه", "/آزادی‌زندان",
     "/version", "/نسخه", "/ping", "/تست", "/profile", "/me", "/پروفایل",
     "/rules", "/قوانین",
+    "/wallet", "/کیف", "/gather", "/qi", "/cultivation", "/تذهیب",
+    "/duel", "/hunt", "/buildings", "/inventory", "/missions",
+    "/daily", "/dailycoin", "/achievements", "/ranking",
 )
 
 

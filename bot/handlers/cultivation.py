@@ -22,6 +22,7 @@ COOLDOWN_SECONDS = 60
 
 GATHER_PHRASES = [
     "تزکیه",
+    "🧘 تزکیه",
 
     'Cultivate', 'Gather Qi', 'Kültive et', 'Qi topla', 'Культивировать', 'Собрать Ци', 'تأمل', 'تذهیب کردن', 'جمع آوری چی', 'جمع الطاقة', 'جمع\u200cآوری چی', 'مدیتیت', '修炼', '聚气',
     "جمع چی", "جذب چی", "کشت چی",
@@ -188,7 +189,7 @@ async def cmd_give_tech(message: Message):
         )
 
 
-@router.message(Command("meditate", "مدیتیت"))
+@router.message(Command("meditate", "مدیتیت", "gather", "qi", "جمع", "جمع‌آوری"))
 async def cmd_meditate(message: Message):
     await do_gather(message, amount=5000)
 

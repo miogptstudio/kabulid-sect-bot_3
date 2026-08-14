@@ -1,7 +1,7 @@
-BOT_VERSION = "4.7.0"
-WEBAPP_VERSION = "4.7.0"
+BOT_VERSION = "4.7.1"
+WEBAPP_VERSION = "4.7.1"
 # پیام عمومی سازنده
-CREATOR_NOTICE = """📢 پیام جهانی — نسخه 4.7.0
+CREATOR_NOTICE = """📢 پیام جهانی — نسخه 4.7.1
 
 • راهنما و دانشنامه به‌روز شد: /help /commands /codex /codexguide
 • قلمرو بدن و روح: /bodyrealms /spiritrealms

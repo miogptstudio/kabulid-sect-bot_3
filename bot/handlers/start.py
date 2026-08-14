@@ -280,17 +280,25 @@ async def kb_profile(message: Message):
     await cmd_profile(message)
 
 
-@router.message(F.text.in_({"🧘 تزکیه", "تزکیه", "تذهیب کردن"}))
+@router.message(F.text.in_({"🧘 تزکیه", "تزکیه", "تذهیب کردن", "جمع آوری چی", "جمع‌آوری چی"}))
 async def kb_cult(message: Message):
-    from bot.handlers.cultivation import cmd_cultivation
-    await cmd_cultivation(message)
+    # وضعیت + جمع چی
+    try:
+        from bot.handlers.cultivation import cmd_cultivation, do_gather
+        await cmd_cultivation(message)
+        await do_gather(message, amount=5000)
+    except Exception as e:
+        await message.answer(f"خطا تزکیه: {type(e).__name__}: {e}")
 
 
 @router.message(F.text.in_({"⚔️ نبرد", "نبرد", "دوئل"}))
 async def kb_battle(message: Message):
     await message.answer(
-        "⚔️ نبرد:" + chr(10)
-        + "/duel /arena /kill /guardian /tribewarfight"
+        "⚔️ <b>نبرد</b>" + chr(10)
+        + "• ریپلای روی حریف + /duel" + chr(10)
+        + "• /randomduel — صف رندوم" + chr(10)
+        + "• /arena — آرنا" + chr(10)
+        + "• /guardian — نگهبان"
     )
 
 
@@ -305,22 +313,38 @@ async def kb_inv(message: Message):
 
 @router.message(F.text.in_({"⚗ کیمیاگری", "کیمیاگری"}))
 async def kb_craft(message: Message):
-    await message.answer("⚗ /craft /buildings")
+    try:
+        from bot.handlers.shop import cmd_buildings
+        await cmd_buildings(message)
+    except Exception as e:
+        await message.answer(f"خطا: {e}")
 
 
 @router.message(F.text.in_({"🏛 فرقه", "فرقه"}))
 async def kb_sect(message: Message):
-    await message.answer("🏛 /sects /mysect /createtribe /declarewar")
+    try:
+        from bot.handlers.sects import cmd_sects
+        await cmd_sects(message)
+    except Exception:
+        await message.answer("🏛 /sects | /mysect | /createsect نام نوع")
 
 
 @router.message(F.text.in_({"🏪 بازار", "بازار"}))
 async def kb_market(message: Message):
-    await message.answer("🏪 /buildings /blackmarket /market /tradeguild")
+    try:
+        from bot.handlers.shop import cmd_buildings
+        await cmd_buildings(message)
+    except Exception as e:
+        await message.answer(f"خطا بازار: {e}")
 
 
 @router.message(F.text.in_({"🎁 گنجینه", "گنجینه"}))
 async def kb_treasure(message: Message):
-    await message.answer("🎁 /wallet /inventory /cyrussale /cave")
+    try:
+        from bot.handlers.pets import cmd_wallet
+        await cmd_wallet(message)
+    except Exception as e:
+        await message.answer(f"خطا: {e}")
 
 
 @router.message(F.text.in_({"📜 مأموریت‌ها", "مأموریت‌ها"}))
@@ -334,7 +358,11 @@ async def kb_missions(message: Message):
 
 @router.message(F.text.in_({"🏆 دستاوردها", "دستاوردها"}))
 async def kb_ach(message: Message):
-    await message.answer("🏆 /ranking /achievements")
+    try:
+        from services.achievements import list_user
+        await message.answer(list_user(message.from_user.id))
+    except Exception as e:
+        await message.answer(f"خطا دستاورد: {e}")
 
 
 @router.message(F.text.in_({"📊 رتبه‌بندی", "رتبه‌بندی"}))
@@ -354,7 +382,15 @@ async def kb_events(message: Message):
 
 @router.message(F.text.in_({"🎁 پاداش روزانه", "پاداش روزانه"}))
 async def kb_daily(message: Message):
-    await message.answer("/dailycoin")
+    try:
+        from bot.handlers.retention import cmd_daily
+        await cmd_daily(message)
+    except Exception:
+        try:
+            from bot.handlers.pets import cmd_daily_coin
+            await cmd_daily_coin(message)
+        except Exception as e:
+            await message.answer(f"خطا روزانه: {e}")
 
 
 @router.message(F.text.in_({"🎲 تاس شانس", "تاس شانس"}))

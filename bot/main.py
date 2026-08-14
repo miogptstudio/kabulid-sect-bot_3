@@ -99,6 +99,24 @@ async def main():
     @dp.errors()
     async def _on_error(event: ErrorEvent):
         logger.exception("Update error: %s", event.exception)
+        try:
+            upd = event.update
+            msg = None
+            if upd.message:
+                msg = upd.message
+            elif upd.callback_query and upd.callback_query.message:
+                msg = upd.callback_query.message
+            if msg:
+                err = event.exception
+                await msg.answer(
+                    "⚠️ خطا در اجرای دستور: "
+                    + type(err).__name__
+                    + "\n"
+                    + str(err)[:200]
+                    + "\n/help"
+                )
+        except Exception:
+            pass
         return True
 
     await on_startup()
