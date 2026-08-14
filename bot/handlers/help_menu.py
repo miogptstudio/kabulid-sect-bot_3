@@ -1,11 +1,12 @@
 """راهنما و فهرست دستورات"""
 from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import Message, CallbackQuery, URLInputFile
 from aiogram.filters import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from bot.config import ADMIN_IDS, BOT_VERSION
 from services.i18n import tr
+from services.portraits import panel_url
 
 router = Router()
 
@@ -31,6 +32,7 @@ SECTIONS = {
         "🧘 تذهیب و قلمرو",
         "بنویس «تذهیب کردن» یا /gather\n"
         " /cultivation | /تذهیب — وضعیت\n"
+        " /cultivationrules | /قوانین‌تذهیب — قوانین پایه تذهیب\n"
         " /realms | /قلمروها — قلمروها\n"
         " /learntech نام — یادگیری تکنیک\n"
         " /techniques — لیست و فعال‌سازی\n"
@@ -63,7 +65,8 @@ SECTIONS = {
         " /inventory | /کیف — موجودی\n"
         " /use شماره [تعداد] — مصرف دسته‌ای\n"
         " /exchangeup | /exchangedown — تبدیل ارز\n"
-        " /pay — انتقال ارز\n"
+        " /pay — انتقال هر نوع ارز\n"
+        " /payall — انتقال چند ارز با هم\n"
         " /market — بازار\n"
         " /marketoffer — پیشنهاد قیمت\n"
         " /repair — تعمیر (غرق سکه)"
@@ -83,7 +86,8 @@ SECTIONS = {
         "🛡 ادمین (سازنده)",
         " /admin — پنل\n"
         " /helpforadmin — راهنمای ادمین\n"
-        " /givepower آیدی مقدار — دادن قدرت بدن/نبرد\n"
+        " /givepower آیدی مقدار [total|power|speed|defense|body] — اعطای قدرت\n"
+        " /transfercult مبدأ مقصد — انتقال کامل تذهیب\n"
         " /setrealm | /givemoney — تنظیمات\n"
         "فقط سازنده ربات"
     ),
@@ -106,7 +110,7 @@ async def cmd_help(message: Message):
         f"📖 <b>راهنمای ربات</b> — نسخه {BOT_VERSION}\n\n"
         "یک بخش را انتخاب کن:"
     )
-    await message.answer(text, reply_markup=_kb(uid))
+    await message.answer_photo(URLInputFile(panel_url("help", name=str(uid))), caption=text, reply_markup=_kb(uid))
 
 
 @router.callback_query(F.data.startswith("helpsec:"))

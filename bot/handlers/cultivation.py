@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import Message, CallbackQuery, URLInputFile
 from aiogram.filters import Command, Filter
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy import select
@@ -9,6 +9,7 @@ from database.engine import async_session
 from database.crud import get_or_create_user, get_user_by_telegram_id
 from database.models_v3 import CultivationTechnique, UserTechnique
 from services.i18n import t_user, tr
+from services.portraits import panel_url
 from services.cultivation import (
     get_or_create_cultivation, add_energy, energy_needed_for_stage,
     ensure_default_techniques, get_active_technique,
@@ -35,6 +36,27 @@ class GatherQiFilter(Filter):
             return False
         text = message.text.strip()
         return text in GATHER_PHRASES or text.lower() in [p.lower() for p in GATHER_PHRASES]
+
+
+@router.message(Command("cultivationrules", "قوانین‌تذهیب", "قوانین_تذهیب", "basiccult", "قوانینتذهیب"))
+async def cmd_cultivation_rules(message: Message):
+    text = (
+        "📜 <b>پایه‌ای‌ترین قوانین تذهیب</b>\n\n"
+        "1️⃣ قبل از شروع، جنسیت را با /gender مشخص کن.\n"
+        "2️⃣ با /cultivation وضعیت قلمرو، مرحله، انرژی و ریشه را ببین.\n"
+        "3️⃣ با /learntech تکنیک پایه را یاد بگیر؛ با /techniques تکنیک‌ها را مدیریت کن.\n"
+        "4️⃣ /gather یا /meditate برای جمع‌کردن انرژی استفاده می‌شود و محدودیت زمانی دارد.\n"
+        "5️⃣ وقتی انرژی لازم مرحله کامل شود، سیستم در صورت رسیدن به شرط لازم، مرحله/قلمرو را ارتقا می‌دهد.\n"
+        "6️⃣ هر قلمرو ۱۰ مرحله دارد؛ بعد از مرحله ۱۰، در صورت کافی‌بودن شرایط، به قلمرو بعدی می‌روی.\n"
+        "7️⃣ ریشه معنوی، تکنیک، نژاد، مسیر تذهیب، بدن، ساختمان‌ها و بعضی تجهیزات می‌توانند بازده تذهیب را تغییر دهند.\n"
+        "8️⃣ قلمروهای بالاتر به انرژی بسیار بیشتری نیاز دارند؛ در مراحل بسیار بالا عدد انرژی می‌تواند خیلی بزرگ شود.\n"
+        "9️⃣ /afk و /afkclaim برای تذهیب خودکار هستند؛ قبل از استفاده شرایط و زمان را بررسی کن.\n"
+        "🔟 /learnforbidden یک مسیر ممنوعه است و ممکن است پیامدهای دائمی داشته باشد.\n\n"
+        "⚠️ انتقال مستقیم قلمرو و مرحله فقط توسط سازنده ربات انجام می‌شود: /transfercult\n"
+        "⚠️ برای دیدن فهرست قلمروها: /realms\n"
+        "⚠️ برای مسیرهای قدرت/سرعت/دفاع: /cultpath\n"
+    )
+    await message.answer_photo(URLInputFile(panel_url("cultivation", name=str(message.from_user.id))), caption=text)
 
 
 @router.message(Command("cultivation", "تذهیب", "cult", "tazhib"))

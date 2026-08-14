@@ -1,5 +1,5 @@
 from aiogram import Router
-from aiogram.types import Message
+from aiogram.types import Message, URLInputFile
 from aiogram.filters import Command
 
 from database.engine import async_session
@@ -9,6 +9,7 @@ from services.cities import get_city
 from services.economy import get_or_create_wallet
 from services.cultivation import get_or_create_cultivation
 from services.i18n import tr
+from services.portraits import panel_url
 
 router = Router()
 
@@ -78,4 +79,7 @@ async def cmd_profile(message: Message):
             f"├ برد متوالی: {user.win_streak}\n"
             f"└ باخت متوالی: {user.loss_streak}\n"
         )
-        await message.answer(text)
+        await message.answer_photo(
+            URLInputFile(panel_url("profile_female" if user.gender == "زن" else "profile_male", user.gender, str(user.id))),
+            caption=text
+        )

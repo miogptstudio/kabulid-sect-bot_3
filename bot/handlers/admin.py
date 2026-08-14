@@ -244,7 +244,10 @@ async def cmd_demote(message: Message):
 
 @router.message(Command("setcult", "تنظیم‌تذهیب"))
 async def cmd_set_cult(message: Message):
-    """ادمین: /setcult قلمرو مرحله [انرژی] با ریپلای یا /setcult id قلمرو مرحله"""
+    """سازنده: تنظیم تذهیب در هر قلمرو، از ابتدایی تا بالاترین قلمروهای تعریف‌شده.
+    فرمت: /setcult ID قلمرو مرحله [انرژی] یا ریپلای + /setcult قلمرو مرحله [انرژی]
+    قلمرو می‌تواند نام کامل یا شماره آن در فهرست قلمروها باشد؛ مرحله تا ۱۵ است.
+    """
     if not is_config_admin(message.from_user.id):
         await message.answer(tr(message.from_user.id, "فقط سازنده."))
         return
@@ -271,21 +274,58 @@ async def cmd_set_cult(message: Message):
             await message.answer(
                 "فرمت:\nریپلای + /setcult قلمرو مرحله [انرژی]\n"
                 "یا /setcult telegram_id قلمرو مرحله [انرژی]\n"
-                f"قلمروها: {', '.join(CULTIVATION_REALMS)}"
+                f"قلمروها: 1 تا {len(CULTIVATION_REALMS)} (نام کامل یا شماره)"
             )
             return
         if len(args) < 2:
             await message.answer(tr(message.from_user.id, "قلمرو و مرحله لازم است."))
             return
-        realm, stage = args[0], int(args[1])
-        energy = int(args[2]) if len(args) > 2 else 0
-        if realm not in CULTIVATION_REALMS:
-            await message.answer(tr(message.from_user.id, "قلمرو نامعتبر."))
+
+        # برای قلمروهای خیلی بالا، نام می‌تواند چندکلمه‌ای باشد.
+        # قالب را از انتها می‌خوانیم: آخرین عدد = مرحله و عدد بعدی = انرژی.
+        try:
+            stage = int(args[-1])
+            energy = 0
+            realm_parts = args[:-1]
+            if realm_parts and realm_parts[-1].lstrip("+-").isdigit():
+                energy = int(realm_parts[-1])
+                realm_parts = realm_parts[:-1]
+            realm_raw = " ".join(realm_parts).strip()
+        except ValueError:
+            await message.answer(tr(message.from_user.id, "مرحله باید عدد باشد. مثال: /setcult آسمانی‌اعظم 15 1000000000000"))
             return
+
+        # شماره قلمرو نیز پشتیبانی می‌شود؛ برای دادن سریع قلمروهای بسیار بالا.
+        realm = None
+        if realm_raw.lstrip("+-").isdigit():
+            idx = int(realm_raw) - 1
+            if 0 <= idx < len(CULTIVATION_REALMS):
+                realm = CULTIVATION_REALMS[idx]
+        else:
+            realm = next((r for r in CULTIVATION_REALMS if r == realm_raw), None)
+            if realm is None:
+                # تطبیق منعطف برای فاصله/نیم‌فاصله
+                norm = realm_raw.replace(" ", "").replace("‌", "")
+                realm = next((r for r in CULTIVATION_REALMS if r.replace(" ", "").replace("‌", "") == norm), None)
+
+        if realm is None:
+            await message.answer(
+                "❌ قلمرو نامعتبر.\n"
+                f"شماره قلمرو را هم می‌توانی بدهی: 1 تا {len(CULTIVATION_REALMS)}\n"
+                "مثال: /setcult 60 15 1000000000000"
+            )
+            return
+        if not 1 <= stage <= 15:
+            await message.answer("❌ مرحله باید بین 1 تا 15 باشد.")
+            return
+        if energy < 0:
+            await message.answer("❌ انرژی نمی‌تواند منفی باشد.")
+            return
+
         cult = await get_or_create_cultivation(session, target.id)
         cult.realm = realm
-        cult.stage = max(1, min(10, stage))
-        cult.energy = max(0, energy)
+        cult.stage = stage
+        cult.energy = energy
         await session.commit()
     await message.answer(
         f"✅ تذهیب {target.full_name}:\nقلمرو {realm} | مرحله {stage} | انرژی {energy}"
@@ -323,19 +363,32 @@ async def cmd_give_money(message: Message):
             return
         kind, amount = args[0], int(args[1])
         w = await get_or_create_wallet(session, target.id)
-        if kind in ("coins", "سکه"):
-            w.coins += amount
-        elif kind in ("spirit", "روحی"):
-            w.spirit_stones += amount
-        elif kind in ("heavenly", "بهشتی"):
-            w.heavenly_stones = (w.heavenly_stones or 0) + amount
-        elif kind in ("celestial", "آسمانی"):
-            w.celestial_stones = (w.celestial_stones or 0) + amount
-        elif kind in ("god", "خدا"):
-            w.god_stones = (w.god_stones or 0) + amount
-        else:
+        money_fields = {
+            "coins": "coins", "سکه": "coins",
+            "spirit": "spirit_stones", "روحی": "spirit_stones",
+            "heavenly": "heavenly_stones", "بهشتی": "heavenly_stones",
+            "celestial": "celestial_stones", "آسمانی": "celestial_stones",
+            "god": "god_stones", "خدا": "god_stones",
+            "chaos": "chaos_stones", "هرج‌ومرج": "chaos_stones",
+            "void": "void_stones", "پوچی": "void_stones",
+            "origin": "origin_stones", "ازلی": "origin_stones",
+            "destiny": "destiny_stones", "تقدیر": "destiny_stones",
+            "immortal": "immortal_stones", "جاودان": "immortal_stones",
+            "creation": "creation_stones", "خلقت": "creation_stones",
+            "absolute": "absolute_stones", "مطلق": "absolute_stones",
+            "faith": "faith_stones", "ایمان": "faith_stones",
+            "dragon": "dragon_coins", "اژدها": "dragon_coins",
+            "karma": "karma_points", "کارما": "karma_points",
+        }
+        field = money_fields.get(kind)
+        if not field:
             await message.answer(tr(message.from_user.id, "نوع نامعتبر"))
             return
+        setattr(w, field, int(getattr(w, field, 0) or 0) + amount)
+        if field == "coins":
+            pass
+        else:
+            pass
         await session.commit()
     await message.answer(f"✅ به {target.full_name}: +{amount} {kind}")
 
@@ -486,19 +539,19 @@ async def cmd_unlock_consume(message: Message):
 
 @router.message(Command("givepower", "قدرت‌بده", "setpower"))
 async def cmd_give_power(message: Message):
-    """ادمین: /givepower telegram_id مقدار [power|speed|defense|body]"""
+    """ادمین: /givepower telegram_id مقدار [total|power|speed|defense|body]"""
     if not is_config_admin(message.from_user.id):
         await message.answer("فقط سازنده.")
         return
     parts = (message.text or "").split()
     if len(parts) < 3:
         await message.answer(
-            "فرمت: /givepower TELEGRAM_ID مقدار [power|speed|defense|body]\n"
+            "فرمت: /givepower TELEGRAM_ID مقدار [total|power|speed|defense|body]\n"
             "مثال: /givepower 6227792513 1000 power\n"
             "یا ریپلای + /givepower 500 body"
         )
         return
-    kind = "power"
+    kind = "total"
     try:
         if message.reply_to_message and message.reply_to_message.from_user:
             tid = message.reply_to_message.from_user.id
@@ -528,11 +581,69 @@ async def cmd_give_power(message: Message):
             save("body_cult")
             msg = f"✅ قدرت بدن +{amount} برای `{tid}` (کل: {row['total_power']})"
     else:
-        from services.knowledge import add_combat_stat
-        mapk = {"power": "power", "قدرت": "power", "speed": "speed", "defense": "defense", "دفاع": "defense", "سرعت": "speed"}
-        k = mapk.get(kind, "power")
-        msg = add_combat_stat(tid, k, amount) + f"\nهدف: `{tid}`"
+        if kind in ("total", "کل", "profile", "قدرت_پروفایل"):
+            from services.knowledge import add_admin_power_bonus
+            new_total = add_admin_power_bonus(tid, amount)
+            msg = f"✅ قدرت مستقیم پروفایل {tid}: +{amount}\nقدرت اعطایی فعلی: {new_total}"
+        else:
+            from services.knowledge import add_combat_stat
+            mapk = {"power": "power", "قدرت": "power", "speed": "speed", "defense": "defense", "دفاع": "defense", "سرعت": "speed"}
+            k = mapk.get(kind, "power")
+            msg = add_combat_stat(tid, k, amount) + f"\nهدف: `{tid}`"
     await message.answer(msg)
+
+
+@router.message(Command("transfercult", "انتقال‌تذهیب", "کپی‌تذهیب"))
+async def cmd_transfer_cult(message: Message):
+    """سازنده: انتقال کامل تذهیب یک کاربر به کاربر دیگر؛ مناسب قلمروهای بسیار بالا."""
+    if not is_config_admin(message.from_user.id):
+        await message.answer("⛔️ فقط سازنده ربات.")
+        return
+    parts = (message.text or "").split()
+    try:
+        if message.reply_to_message:
+            # /transfercult SOURCE_ID روی پیام مقصد ریپلای
+            if len(parts) < 2:
+                await message.answer("فرمت: روی مقصد ریپلای کن و /transfercult SOURCE_TELEGRAM_ID بزن.")
+                return
+            source_tg = int(parts[1])
+            target_tg = message.reply_to_message.from_user.id
+        elif len(parts) >= 3:
+            source_tg = int(parts[1]); target_tg = int(parts[2])
+        else:
+            await message.answer("فرمت: /transfercult SOURCE_TELEGRAM_ID TARGET_TELEGRAM_ID\nیا روی مقصد ریپلای + /transfercult SOURCE_TELEGRAM_ID")
+            return
+    except ValueError:
+        await message.answer("هر دو آیدی باید عدد باشند.")
+        return
+    if source_tg == target_tg:
+        await message.answer("مبدأ و مقصد نمی‌توانند یکی باشند.")
+        return
+    from database.models_v2 import Cultivation
+    from services.cultivation import get_or_create_cultivation
+    async with async_session() as session:
+        source = await get_user_by_telegram_id(session, source_tg)
+        target = await get_user_by_telegram_id(session, target_tg)
+        if not source or not target:
+            await message.answer("مبدأ یا مقصد پیدا نشد.")
+            return
+        sc = await get_or_create_cultivation(session, source.id)
+        tc = await get_or_create_cultivation(session, target.id)
+        tc.realm = sc.realm
+        tc.stage = sc.stage
+        tc.energy = sc.energy
+        tc.talent = sc.talent
+        tc.spiritual_root = sc.spiritual_root
+        tc.body_type = sc.body_type
+        await session.commit()
+    await message.answer(
+        f"✅ تذهیب منتقل شد.\n\n"
+        f"مبدأ: {source.full_name}\n"
+        f"مقصد: {target.full_name}\n"
+        f"🧘 {tc.realm} — مرحله {tc.stage}\n"
+        f"⚡ انرژی: {tc.energy}\n"
+        f"🌱 ریشه: {tc.spiritual_root or 'بدون ریشه'}"
+    )
 
 
 @router.message(Command("diag", "تشخیص", "debugbot"))

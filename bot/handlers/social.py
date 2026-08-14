@@ -4,7 +4,7 @@ from services import servants as servmod
 import random
 from datetime import datetime
 from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import Message, CallbackQuery, URLInputFile
 from aiogram.filters import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy import select, func, desc
@@ -17,7 +17,54 @@ from database.models_v2 import Sect, SectMember, Cultivation
 from database.models_v3 import Marriage
 from services.i18n import tr
 
+from services.portraits import panel_url
+
 router = Router()
+
+
+BIGINT_MAX = 9_223_372_036_854_775_807
+
+
+def _parse_transfer_amount(tokens, start=0):
+    """Parse large transfer amounts: 1000000000000, 1,000,000,000, 1B, 1T, 1 میلیارد, 1 تریلیون."""
+    if start >= len(tokens):
+        raise ValueError("missing amount")
+    raw = str(tokens[start]).strip().replace(",", "").replace("٬", "").replace(" ", "")
+    persian = str.maketrans("۰۱۲۳۴۵۶۷۸۹", "0123456789")
+    raw = raw.translate(persian)
+    multipliers = {
+        "k": 10**3, "m": 10**6, "b": 10**9, "t": 10**12,
+        "هزار": 10**3, "میلیون": 10**6, "میلیارد": 10**9,
+        "تریلیون": 10**12, "کوادریلیون": 10**15,
+    }
+    low = raw.lower()
+    if low in multipliers:
+        raise ValueError("amount needs a number")
+    for suffix, mult in sorted(multipliers.items(), key=lambda x: -len(x[0])):
+        if low.endswith(suffix) and low[:-len(suffix)]:
+            num = float(low[:-len(suffix)])
+            if not num.is_integer():
+                # allow e.g. 1.5T without floating-point rounding in normal ranges
+                value = int(round(num * mult))
+            else:
+                value = int(num) * mult
+            if value <= 0 or value > BIGINT_MAX:
+                raise ValueError("amount out of range")
+            return value, 1
+    # Support the two-token Persian form: 1 میلیارد / 1 تریلیون
+    if start + 1 < len(tokens):
+        unit = str(tokens[start + 1]).strip().translate(persian)
+        unit = unit.replace("٬", "")
+        if unit in multipliers:
+            num = int(raw)
+            value = num * multipliers[unit]
+            if value <= 0 or value > BIGINT_MAX:
+                raise ValueError("amount out of range")
+            return value, 2
+    value = int(raw)
+    if value <= 0 or value > BIGINT_MAX:
+        raise ValueError("amount out of range")
+    return value, 1
 
 # بازار آزاد حافظه
 _market: list[dict] = []
@@ -36,47 +83,21 @@ _rps_challenges: dict[int, dict] = {}
 async def cmd_pay(message: Message):
     """انتقال همه ارزها به دیگران"""
     CURRENCY = {
-        "coins": ("coins", "سکه"),
-        "سکه": ("coins", "سکه"),
-        "coin": ("coins", "سکه"),
-        "spirit": ("spirit_stones", "سنگ روحی"),
-        "روحی": ("spirit_stones", "سنگ روحی"),
-        "spirit_stones": ("spirit_stones", "سنگ روحی"),
-        "سنگ‌روحی": ("spirit_stones", "سنگ روحی"),
-        "heavenly": ("heavenly_stones", "سنگ بهشتی"),
-        "بهشتی": ("heavenly_stones", "سنگ بهشتی"),
-        "heavenly_stones": ("heavenly_stones", "سنگ بهشتی"),
-        "celestial": ("celestial_stones", "سنگ آسمانی"),
-        "آسمانی": ("celestial_stones", "سنگ آسمانی"),
-        "celestial_stones": ("celestial_stones", "سنگ آسمانی"),
-        "destiny": ("destiny_stones", "سنگ تقدیر"),
-        "تقدیر": ("destiny_stones", "سنگ تقدیر"),
-        "immortal": ("immortal_stones", "سنگ جاودان"),
-        "جاودان": ("immortal_stones", "سنگ جاودان"),
-        "creation": ("creation_stones", "سنگ خلقت"),
-        "خلقت": ("creation_stones", "سنگ خلقت"),
-        "absolute": ("absolute_stones", "سنگ مطلق"),
-        "مطلق": ("absolute_stones", "سنگ مطلق"),
-        "faith": ("faith_stones", "سنگ ایمان"),
-        "ایمان": ("faith_stones", "سنگ ایمان"),
-        "dragon": ("dragon_coins", "سکه اژدها"),
-        "اژدها": ("dragon_coins", "سکه اژدها"),
-        "god": ("god_stones", "سنگ خدا"),
-        "خدا": ("god_stones", "سنگ خدا"),
-        "god_stones": ("god_stones", "سنگ خدا"),
-        "chaos": ("chaos_stones", "سنگ هرج‌ومرج"),
-        "هرج": ("chaos_stones", "سنگ هرج‌ومرج"),
-        "chaos_stones": ("chaos_stones", "سنگ هرج‌ومرج"),
-        "void": ("void_stones", "سنگ پوچی"),
-        "پوچی": ("void_stones", "سنگ پوچی"),
-        "void_stones": ("void_stones", "سنگ پوچی"),
-        "origin": ("origin_stones", "سنگ ازلی"),
-        "ازلی": ("origin_stones", "سنگ ازلی"),
-        "origin_stones": ("origin_stones", "سنگ ازلی"),
-        "karma": ("karma_points", "کارما"),
-        "کارما": ("karma_points", "کارما"),
-        "karma_points": ("karma_points", "کارما"),
-
+        "coins": ("coins", "سکه"), "سکه": ("coins", "سکه"), "coin": ("coins", "سکه"),
+        "spirit": ("spirit_stones", "سنگ روحی"), "روحی": ("spirit_stones", "سنگ روحی"),
+        "heavenly": ("heavenly_stones", "سنگ بهشتی"), "بهشتی": ("heavenly_stones", "سنگ بهشتی"),
+        "celestial": ("celestial_stones", "سنگ آسمانی"), "آسمانی": ("celestial_stones", "سنگ آسمانی"),
+        "god": ("god_stones", "سنگ خدا"), "خدا": ("god_stones", "سنگ خدا"),
+        "chaos": ("chaos_stones", "سنگ هرج‌ومرج"), "هرج‌ومرج": ("chaos_stones", "سنگ هرج‌ومرج"),
+        "void": ("void_stones", "سنگ پوچی"), "پوچی": ("void_stones", "سنگ پوچی"),
+        "origin": ("origin_stones", "سنگ ازلی"), "ازلی": ("origin_stones", "سنگ ازلی"),
+        "destiny": ("destiny_stones", "سنگ تقدیر"), "تقدیر": ("destiny_stones", "سنگ تقدیر"),
+        "immortal": ("immortal_stones", "سنگ جاودان"), "جاودان": ("immortal_stones", "سنگ جاودان"),
+        "creation": ("creation_stones", "سنگ خلقت"), "خلقت": ("creation_stones", "سنگ خلقت"),
+        "absolute": ("absolute_stones", "سنگ مطلق"), "مطلق": ("absolute_stones", "سنگ مطلق"),
+        "faith": ("faith_stones", "سنگ ایمان"), "ایمان": ("faith_stones", "سنگ ایمان"),
+        "dragon": ("dragon_coins", "سکه اژدها"), "اژدها": ("dragon_coins", "سکه اژدها"),
+        "karma": ("karma_points", "کارما"), "کارما": ("karma_points", "کارما"),
     }
     HELP = (
         "💸 <b>انتقال ارز</b>" + chr(10) + chr(10)
@@ -88,10 +109,13 @@ async def cmd_pay(message: Message):
         + "• heavenly / بهشتی" + chr(10)
         + "• celestial / آسمانی" + chr(10)
         + "• god / خدا" + chr(10) + chr(10)
+        + "مقادیر خیلی بزرگ هم مجازند:" + chr(10)
+        + "مثال: /pay بهشتی 1000000000000" + chr(10)
+        + "یا /pay بهشتی 1 تریلیون" + chr(10)
+        + "یا /pay بهشتی 1T" + chr(10) + chr(10)
         + "چند ارز با هم:" + chr(10)
-        + "/payall ریپلای‌شده → /payall coins 10 spirit 2" + chr(10)
-        + "یا /payall 123456 coins 10 heavenly 1" + chr(10) + chr(10)
-        + "مثال: /pay بهشتی 5"
+        + "/payall coins 10 spirit 2" + chr(10)
+        + "/payall coins 1 تریلیون god 5 میلیارد" + chr(10)
     )
     parts = (message.text or "").split()
     async with async_session() as session:
@@ -122,15 +146,9 @@ async def cmd_pay(message: Message):
             return
         kind_raw = args[0]
         try:
-            amount = int(args[1])
-        except ValueError:
-            await message.answer("مقدار باید عدد باشد.")
-            return
-        if amount <= 0:
-            await message.answer(tr(message.from_user.id, "مقدار باید مثبت باشد."))
-            return
-        if amount > 10**15:
-            await message.answer("مقدار خیلی بزرگ است.")
+            amount, consumed = _parse_transfer_amount(args, 1)
+        except (ValueError, OverflowError):
+            await message.answer("مقدار نامعتبر است. مثال: 1000000000000 یا 1,000,000,000,000 یا 1 تریلیون")
             return
         # جلوگیری از ارسال به اکانت ربات
         try:
@@ -167,13 +185,23 @@ async def cmd_pay(message: Message):
 
 @router.message(Command("payall", "انتقال‌چندارز", "بفرست‌همه"))
 async def cmd_payall(message: Message):
-    """چند ارز در یک دستور: /payall coins 10 spirit 2 heavenly 1"""
+    """چند ارز در یک دستور: /payall coins 10 spirit 2 heavenly 1 god 1 chaos 1 void 1 origin 1"""
     CURRENCY = {
-        "coins": ("coins", "سکه"), "سکه": ("coins", "سکه"), "coin": ("coins", "سکه"),
+        "coins": ("coins", "سکه"), "سکه": ("coins", "سکه"),
         "spirit": ("spirit_stones", "سنگ روحی"), "روحی": ("spirit_stones", "سنگ روحی"),
         "heavenly": ("heavenly_stones", "سنگ بهشتی"), "بهشتی": ("heavenly_stones", "سنگ بهشتی"),
         "celestial": ("celestial_stones", "سنگ آسمانی"), "آسمانی": ("celestial_stones", "سنگ آسمانی"),
         "god": ("god_stones", "سنگ خدا"), "خدا": ("god_stones", "سنگ خدا"),
+        "chaos": ("chaos_stones", "سنگ هرج‌ومرج"), "هرج‌ومرج": ("chaos_stones", "سنگ هرج‌ومرج"),
+        "void": ("void_stones", "سنگ پوچی"), "پوچی": ("void_stones", "سنگ پوچی"),
+        "origin": ("origin_stones", "سنگ ازلی"), "ازلی": ("origin_stones", "سنگ ازلی"),
+        "destiny": ("destiny_stones", "سنگ تقدیر"), "تقدیر": ("destiny_stones", "سنگ تقدیر"),
+        "immortal": ("immortal_stones", "سنگ جاودان"), "جاودان": ("immortal_stones", "سنگ جاودان"),
+        "creation": ("creation_stones", "سنگ خلقت"), "خلقت": ("creation_stones", "سنگ خلقت"),
+        "absolute": ("absolute_stones", "سنگ مطلق"), "مطلق": ("absolute_stones", "سنگ مطلق"),
+        "faith": ("faith_stones", "سنگ ایمان"), "ایمان": ("faith_stones", "سنگ ایمان"),
+        "dragon": ("dragon_coins", "سکه اژدها"), "اژدها": ("dragon_coins", "سکه اژدها"),
+        "karma": ("karma_points", "کارما"), "کارما": ("karma_points", "کارما"),
     }
     parts = (message.text or "").split()
     async with async_session() as session:
@@ -209,20 +237,19 @@ async def cmd_payall(message: Message):
             await message.answer("جفت نوع+مقدار لازم است. مثال: coins 10 spirit 2")
             return
         pairs = []
-        for i in range(0, len(args), 2):
-            k, a = args[i], args[i + 1]
-            if k not in CURRENCY:
-                await message.answer(f"نوع نامعتبر: {k}")
+        i = 0
+        while i < len(args):
+            k = args[i]
+            if k not in CURRENCY or i + 1 >= len(args):
+                await message.answer(f"نوع/فرمت نامعتبر: {k}")
                 return
             try:
-                amt = int(a)
-            except ValueError:
-                await message.answer(f"مقدار نامعتبر: {a}")
-                return
-            if amt <= 0:
-                await message.answer("مقدار باید مثبت باشد.")
+                amt, consumed = _parse_transfer_amount(args, i + 1)
+            except (ValueError, OverflowError):
+                await message.answer(f"مقدار نامعتبر برای {k}. مثال: 1000000000000 یا 1 تریلیون")
                 return
             pairs.append((CURRENCY[k][0], CURRENCY[k][1], amt))
+            i += 1 + consumed
         sw = await get_or_create_wallet(session, sender.id)
         tw = await get_or_create_wallet(session, target.id)
         for field, label, amt in pairs:

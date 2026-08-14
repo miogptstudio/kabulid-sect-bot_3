@@ -2,7 +2,7 @@
 import random
 from datetime import datetime, timedelta
 from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import Message, CallbackQuery, URLInputFile
 from aiogram.filters import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
@@ -13,6 +13,7 @@ from services import jobs as jobs_svc
 from services import tribe_war as tw
 from services import cyrus_sale as cs
 from services.i18n import get_lang, tr
+from services.portraits import panel_url
 
 router = Router()
 _last_luck: dict[int, datetime] = {}
@@ -47,7 +48,7 @@ async def cmd_work(message: Message):
 @router.message(Command("jobs", "شغل‌ها", "اشغال"))
 async def cmd_jobs(message: Message):
 
-    await message.answer(jobs_svc.list_jobs())
+    await message.answer_photo(URLInputFile(panel_url("job", name=str(message.from_user.id))), caption=jobs_svc.list_jobs())
 
 
 @router.message(Command("job", "انتخاب‌شغل"))

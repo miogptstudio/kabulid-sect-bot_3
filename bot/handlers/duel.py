@@ -1,6 +1,6 @@
 import random
 from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import Message, CallbackQuery, URLInputFile
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
@@ -15,6 +15,7 @@ from services.power import calc_power, win_chance
 from services.economy import get_or_create_wallet
 from services.sects import add_contribution
 from services.i18n import tr
+from services.portraits import panel_url
 import random as _rnd_dodge
 
 router = Router()
@@ -225,8 +226,9 @@ async def cmd_duel(message: Message, state: FSMContext):
 
         chance = win_chance(p1["total"], p2["total"]) * 100
         stake_line = f"\n🎰 شرط: <b>{stake}</b> سکه از هر طرف" if stake else "\nبدون شرط — برای شرط: /duel مبلغ"
-        await message.answer(
-            f"⚔️ <b>درخواست دوئل</b>\n\n"
+        await message.answer_photo(
+            URLInputFile(panel_url("duel", getattr(challenger, "gender", "مرد"), f"{challenger.id}-{opponent.id}")),
+            caption=f"⚔️ <b>درخواست دوئل</b>\n\n"
             f"از: {challenger.full_name} — قدرت {p1['total']}\n"
             f"به: {opponent.full_name} — قدرت {p2['total']}\n"
             f"برتری قدرت: {'چالش‌گر' if p1['total']>=p2['total'] else 'حریف'} (بدون شانس){stake_line}\n\n"
@@ -262,7 +264,14 @@ async def cb_duel_accept(callback: CallbackQuery, state: FSMContext):
             ow.coins -= stake
             await session.commit()
         text = await _resolve_duel(session, challenger, opponent, stake=stake)
-        await callback.message.edit_text(text)
+        try:
+            await callback.message.delete()
+        except Exception:
+            pass
+        await callback.message.answer_photo(
+            URLInputFile(panel_url("duel", getattr(winner if "winner" in locals() else opponent, "gender", "مرد"), f"result-{challenger.id}-{opponent.id}")),
+            caption=text
+        )
     await state.clear()
     await callback.answer()
 

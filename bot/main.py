@@ -16,7 +16,7 @@ from bot.handlers import spirit as spirit  # noqa
 from bot.handlers import characters as characters  # noqa
 from bot.handlers import retention as retention  # noqa
 from bot.handlers import (
-    start, profile, duel, guardian, ranking, admin, missions,
+    start, profile, duel, guardian, ranking, admin, missions, advanced_systems,
     sects, cultivation, master, arena, accounts, shop, crafting, dual, marriage, pets, death, world, help_menu, combat, engagement, games, garden, social, creatures, combat_extra, race, spirit, society_extra, lang, jobs_events, codex_items, prison_market, fallback
 )
 from bot.health import start_health_server
@@ -59,6 +59,7 @@ async def main():
     dp.callback_query.middleware(ServiceLockMiddleware())
 
     dp.include_router(start.router)
+    dp.include_router(advanced_systems.router)
     dp.include_router(profile.router)
     dp.include_router(duel.router)
     dp.include_router(guardian.router)

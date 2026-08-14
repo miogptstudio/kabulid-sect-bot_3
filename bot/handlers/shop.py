@@ -1,5 +1,5 @@
 from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import Message, CallbackQuery, URLInputFile
 from aiogram.filters import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from html import escape
@@ -15,6 +15,7 @@ from services.shop import (
 from database.models_v3 import ShopItem, Building
 from bot.utils.panels import ensure_owner, parse_owner_data
 from services.i18n import tr
+from services.portraits import panel_url
 
 router = Router()
 
@@ -58,7 +59,7 @@ async def cmd_buildings(message: Message):
             builder.button(text=label, callback_data=f"building:{uid}:{b.id}")
         builder.adjust(1)
         text += chr(10) + "روی ساختمان بزن. خرید با همه ارزها. /wallet"
-        await message.answer(text, reply_markup=builder.as_markup())
+        await message.answer_photo(URLInputFile(panel_url("shop", name=str(uid))), caption=text, reply_markup=builder.as_markup())
     except Exception as e:
         await message.answer(f"❌ خطای مغازه: {escape(type(e).__name__)}: {escape(str(e))}")
 
