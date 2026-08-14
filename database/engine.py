@@ -82,6 +82,24 @@ WALLET_COLUMNS = [
     ("dragon_coins", "INTEGER DEFAULT 0"),
 ]
 
+BUILDING_COLUMNS = [
+    ("is_active", "BOOLEAN DEFAULT TRUE"),
+    ("description", "TEXT NULL"),
+    ("building_type", "VARCHAR(32)"),
+    ("name", "VARCHAR(64)"),
+]
+
+SHOP_ITEM_COLUMNS = [
+    ("is_active", "BOOLEAN DEFAULT TRUE"),
+    ("stock", "INTEGER DEFAULT -1"),
+    ("effect", "JSON"),
+    ("price", "INTEGER DEFAULT 0"),
+    ("description", "TEXT NULL"),
+    ("item_type", "VARCHAR(32)"),
+    ("name", "VARCHAR(64)"),
+    ("building_id", "INTEGER"),
+]
+
 TECH_COLUMNS = [
     ("is_starter", "BOOLEAN DEFAULT FALSE"),
     ("energy_bonus", "INTEGER DEFAULT 0"),
@@ -125,6 +143,14 @@ async def migrate_schema():
             await add_col("user_wallets", col, td)
         for col, td in TECH_COLUMNS:
             await add_col("cultivation_techniques", col, td)
+        for col, td in BUILDING_COLUMNS:
+            await add_col("buildings", col, td)
+        for col, td in SHOP_ITEM_COLUMNS:
+            await add_col("shop_items", col, td)
+        for col, td in [
+            ("quantity", "INTEGER DEFAULT 1"),
+        ]:
+            await add_col("user_inventories", col, td)
 
         # user_techniques
         for col, td in [

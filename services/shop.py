@@ -445,7 +445,7 @@ PRICE_INFLATION = 5  # ضریب قیمت‌ها نسبت به نسخه اولی�
 
 
 async def ensure_default_buildings_and_items(session: AsyncSession):
-    """ساختمان‌ها و آیتم‌های پیش‌فرض را در صورت نبودن اضافه می‌کند"""
+    """ساختمان‌ها و آیتم‌های پیش‌فرض را در صورت نبودن اضافه می‌کند — مقاوم"""
     types = ["داروخانه", "کیمیاگری", "طلسم‌خانه", "باغ گیاهان", "آهنگری", "سالن تکنیک", "چای‌خانه"]
     result = await session.execute(select(Building))
     existing = {b.building_type: b for b in result.scalars().all()}
@@ -473,29 +473,31 @@ async def ensure_default_buildings_and_items(session: AsyncSession):
         b = buildings.get(item_data["building_type"])
         if not b:
             continue
-        item = ShopItem(
-            building_id=b.id,
-            name=item_data["name"],
-            item_type=item_data["item_type"],
-            description=item_data["description"],
-            price=item_data["price"],
-            effect=item_data["effect"],
-        )
-        session.add(item)
+        try:
+            eff = item_data.get("effect") if isinstance(item_data.get("effect"), dict) else {}
+            item = ShopItem(
+                building_id=b.id,
+                name=str(item_data["name"])[:64],
+                item_type=str(item_data.get("item_type") or "misc")[:32],
+                description=(item_data.get("description") or "")[:500],
+                price=int(item_data.get("price") or 0),
+                effect=eff,
+                is_active=True,
+            )
+            session.add(item)
+        except Exception:
+            continue
     await session.commit()
     # افزایش قیمت آیتم‌های ارزان قدیمی
     try:
         r = await session.execute(select(ShopItem))
         for it in r.scalars().all():
             if it.price is not None and 0 < int(it.price) < 50000:
-                # فقط یک‌بار با فلگ
-                eff = it.effect if isinstance(it.effect, dict) else {}
+                eff = dict(it.effect) if isinstance(it.effect, dict) else {}
                 if not eff.get("_inflated_v46"):
                     it.price = int(it.price) * PRICE_INFLATION
-                    if isinstance(it.effect, dict):
-                        eff = dict(it.effect)
-                        eff["_inflated_v46"] = True
-                        it.effect = eff
+                    eff["_inflated_v46"] = True
+                    it.effect = eff
         await session.commit()
     except Exception:
         pass
@@ -506,40 +508,61 @@ async def ensure_default_buildings_and_items(session: AsyncSession):
 
 
 async def get_buildings(session: AsyncSession):
-    result = await session.execute(select(Building).where(Building.is_active == True))
-    rows = list(result.scalars().all())
-    if not rows:
+    """لیست ساختمان‌ها — مقاوم به نبود ستون is_active"""
+    try:
+        result = await session.execute(select(Building).where(Building.is_active == True))
+        rows = list(result.scalars().all())
+    except Exception:
+        await session.rollback()
         result = await session.execute(select(Building))
         rows = list(result.scalars().all())
-        for b in rows:
-            try:
+    if not rows:
+        try:
+            result = await session.execute(select(Building))
+            rows = list(result.scalars().all())
+        except Exception:
+            await session.rollback()
+            rows = []
+    for b in rows:
+        try:
+            if getattr(b, "is_active", None) is False:
                 b.is_active = True
-            except Exception:
-                pass
-        if rows:
-            await session.commit()
+        except Exception:
+            pass
+    try:
+        await session.commit()
+    except Exception:
+        try:
+            await session.rollback()
+        except Exception:
+            pass
     return rows
 
 
 async def get_items_of_building(session: AsyncSession, building_id: int):
-    result = await session.execute(
-        select(ShopItem).where(ShopItem.building_id == building_id, ShopItem.is_active == True)
-    )
-    rows = list(result.scalars().all())
-    if not rows:
-        # آیتم‌های غیرفعال یا بدون فلگ
+    """آیتم‌های یک ساختمان — مقاوم به خطا"""
+    rows = []
+    try:
         result = await session.execute(
             select(ShopItem).where(ShopItem.building_id == building_id)
         )
         rows = list(result.scalars().all())
-        for it in rows:
-            try:
-                it.is_active = True
-            except Exception:
-                pass
-        if rows:
-            await session.commit()
-    return rows
+    except Exception:
+        try:
+            await session.rollback()
+        except Exception:
+            pass
+        return []
+    # فقط فعال‌ها؛ اگر فلگ نبود همه
+    active = []
+    for it in rows:
+        try:
+            if getattr(it, "is_active", True) is False:
+                continue
+        except Exception:
+            pass
+        active.append(it)
+    return active if active else rows
 
 
 async def buy_item(session: AsyncSession, user: User, item: ShopItem, qty: int = 1) -> str:
