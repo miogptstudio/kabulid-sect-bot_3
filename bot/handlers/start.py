@@ -314,10 +314,14 @@ async def kb_inv(message: Message):
 @router.message(F.text.in_({"⚗ کیمیاگری", "کیمیاگری"}))
 async def kb_craft(message: Message):
     try:
-        from bot.handlers.shop import cmd_buildings
-        await cmd_buildings(message)
+        from bot.handlers.crafting import cmd_craft
+        await cmd_craft(message)
     except Exception as e:
-        await message.answer(f"خطا: {e}")
+        try:
+            from bot.handlers.shop import cmd_buildings
+            await cmd_buildings(message)
+        except Exception as e2:
+            await message.answer(f"خطا کیمیاگری: {e} | {e2}")
 
 
 @router.message(F.text.in_({"🏛 فرقه", "فرقه"}))
@@ -401,8 +405,11 @@ async def kb_luck(message: Message):
 
 @router.message(F.text.in_({"💼 شغل", "شغل"}))
 async def kb_job(message: Message):
-    from bot.handlers.jobs_events import cmd_jobs
-    await cmd_jobs(message)
+    try:
+        from bot.handlers.jobs_events import cmd_jobs
+        await cmd_jobs(message)
+    except Exception as e:
+        await message.answer(f"خطا شغل: {e}\n/jobs /job /work /myjob")
 
 
 @router.message(F.text.in_({"📖 راهنما", "راهنما"}))

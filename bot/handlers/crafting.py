@@ -30,7 +30,7 @@ async def cmd_craft(message: Message):
         return
     
     builder = InlineKeyboardBuilder()
-    text = "⚗️ <b>ساخت معجون و طلسم</b>\n\n"
+    text = "⚗️ <b>ساخت معجون و طلسم</b>\nمواد را از /buildings (باغ، آهنگری، کیمیاگری) بخر.\n/inventory برای موجودی\n\n"
     
     for r in recipes:
         mats = ", ".join([f"{k}×{v}" for k, v in r.required_materials.items()])

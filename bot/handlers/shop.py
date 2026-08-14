@@ -26,7 +26,10 @@ async def cmd_buildings(message: Message):
         buildings = await get_buildings(session)
 
     if not buildings:
-        await message.answer(tr(message.from_user.id, "هنوز ساختمونی وجود نداره."))
+        await message.answer(
+            "هنوز ساختمونی نیست. یک‌بار دیگر /buildings را بزن.\n"
+            "اگر باز خالی بود، لاگ Render را بفرست."
+        )
         return
 
     builder = InlineKeyboardBuilder()
@@ -124,7 +127,7 @@ async def _render_building(callback: CallbackQuery, owner_id: int, building_id: 
         building = await session.get(Building, building_id)
 
     if not items:
-        await callback.answer(tr(callback.from_user.id, "آیتمی در این ساختمان نیست."), show_alert=True)
+        await callback.answer("آیتمی نیست — /buildings را دوباره بزن تا پر شود.", show_alert=True)
         return
 
     bname = building.name if building else "ساختمان"

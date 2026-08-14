@@ -19,8 +19,29 @@ _last_luck: dict[int, datetime] = {}
 _last_daily: dict[int, datetime] = {}
 
 
+@router.message(Command("work", "کار", "کارشغل"))
+async def cmd_work(message: Message):
+    res = jobs_svc.work(message.from_user.id)
+    if isinstance(res, str):
+        await message.answer(res)
+        return
+    async with async_session() as session:
+        user = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
+        from services.economy import get_or_create_wallet
+        w = await get_or_create_wallet(session, user.id)
+        w.coins = int(w.coins or 0) + int(res.get("coins") or 0)
+        if res.get("spirit_stones"):
+            w.spirit_stones = int(w.spirit_stones or 0) + int(res["spirit_stones"])
+        await session.commit()
+    await message.answer(res["msg"])
+
+
 @router.message(Command("jobs", "شغل‌ها", "اشغال"))
 async def cmd_jobs(message: Message):
+
     await message.answer(jobs_svc.list_jobs())
 
 
