@@ -58,28 +58,28 @@ CULT_COLUMNS = [
     ("afk_until", "TIMESTAMP NULL"),
     ("spiritual_root", "VARCHAR(64) NULL"),
     ("talent", "VARCHAR(64) NULL"),
-    ("energy", "INTEGER DEFAULT 0"),
+    ("energy", "BIGINT DEFAULT 0"),
     ("stage", "INTEGER DEFAULT 1"),
     ("realm", "VARCHAR(32) DEFAULT 'بیداری'"),
 ]
 
 WALLET_COLUMNS = [
-    ("coins", "INTEGER DEFAULT 0"),
-    ("spirit_stones", "INTEGER DEFAULT 0"),
+    ("coins", "BIGINT DEFAULT 0"),
+    ("spirit_stones", "BIGINT DEFAULT 0"),
     ("last_daily_coin", "TIMESTAMP NULL"),
-    ("heavenly_stones", "INTEGER DEFAULT 0"),
-    ("celestial_stones", "INTEGER DEFAULT 0"),
-    ("god_stones", "INTEGER DEFAULT 0"),
-    ("chaos_stones", "INTEGER DEFAULT 0"),
-    ("void_stones", "INTEGER DEFAULT 0"),
-    ("origin_stones", "INTEGER DEFAULT 0"),
-    ("karma_points", "INTEGER DEFAULT 0"),
-    ("destiny_stones", "INTEGER DEFAULT 0"),
-    ("immortal_stones", "INTEGER DEFAULT 0"),
-    ("creation_stones", "INTEGER DEFAULT 0"),
-    ("absolute_stones", "INTEGER DEFAULT 0"),
-    ("faith_stones", "INTEGER DEFAULT 0"),
-    ("dragon_coins", "INTEGER DEFAULT 0"),
+    ("heavenly_stones", "BIGINT DEFAULT 0"),
+    ("celestial_stones", "BIGINT DEFAULT 0"),
+    ("god_stones", "BIGINT DEFAULT 0"),
+    ("chaos_stones", "BIGINT DEFAULT 0"),
+    ("void_stones", "BIGINT DEFAULT 0"),
+    ("origin_stones", "BIGINT DEFAULT 0"),
+    ("karma_points", "BIGINT DEFAULT 0"),
+    ("destiny_stones", "BIGINT DEFAULT 0"),
+    ("immortal_stones", "BIGINT DEFAULT 0"),
+    ("creation_stones", "BIGINT DEFAULT 0"),
+    ("absolute_stones", "BIGINT DEFAULT 0"),
+    ("faith_stones", "BIGINT DEFAULT 0"),
+    ("dragon_coins", "BIGINT DEFAULT 0"),
 ]
 
 BUILDING_COLUMNS = [
@@ -159,6 +159,20 @@ async def migrate_schema():
                 logger.info("OK migrated shop_items.price -> BIGINT")
             except Exception as e:
                 logger.warning("skip shop_items.price BIGINT migration: %s", e)
+        if dialect == "postgresql":
+            for col in (
+                "coins", "spirit_stones", "heavenly_stones", "celestial_stones",
+                "god_stones", "chaos_stones", "void_stones", "origin_stones",
+                "karma_points", "destiny_stones", "immortal_stones",
+                "creation_stones", "absolute_stones", "faith_stones", "dragon_coins"
+            ):
+                try:
+                    await conn.execute(text(
+                        f'ALTER TABLE "user_wallets" ALTER COLUMN "{col}" TYPE BIGINT USING "{col}"::BIGINT'
+                    ))
+                except Exception as e:
+                    logger.warning("skip user_wallets.%s BIGINT migration: %s", col, e)
+
         for col, td in [
             ("quantity", "INTEGER DEFAULT 1"),
         ]:
@@ -166,6 +180,12 @@ async def migrate_schema():
             # نسخه قبلی اشتباهاً user_inventories را مهاجرت می‌داد و در DB قدیمی
             # باعث می‌شد migration هشدار بدهد و بعضی عملیات کیف/بازار خطا بخورند.
             await add_col("user_inventory", col, td)
+
+        if dialect == "postgresql":
+            try:
+                await conn.execute(text('ALTER TABLE "cultivations" ALTER COLUMN "energy" TYPE BIGINT USING "energy"::BIGINT'))
+            except Exception as e:
+                logger.warning("skip cultivations.energy BIGINT migration: %s", e)
 
         # user_techniques
         for col, td in [

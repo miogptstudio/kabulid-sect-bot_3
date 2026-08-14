@@ -83,7 +83,7 @@ class Cultivation(Base):
     
     realm: Mapped[str] = mapped_column(String(32), default="بیداری")
     stage: Mapped[int] = mapped_column(Integer, default=1)  # ۱ تا ۱۰
-    energy: Mapped[int] = mapped_column(Integer, default=0)
+    energy: Mapped[int] = mapped_column(BigInteger, default=0)
     
     talent: Mapped[str | None] = mapped_column(String(64), nullable=True)
     spiritual_root: Mapped[str | None] = mapped_column(String(64), nullable=True)

@@ -82,3 +82,29 @@ def character_url(name: str, rarity: str = "معمولی") -> str:
 def pet_url(name: str) -> str:
     seed = quote(f"pet-{name}", safe="")
     return f"https://api.dicebear.com/9.x/bottts/png?seed={seed}&size=512"
+
+
+# تصاویر پنل‌های ربات؛ بر اساس seed ثابت، برای هر بخش تصویر ثابت و قابل‌تکرار است.
+def panel_url(kind: str, gender: str = "مرد", name: str = "Kabulid", size: int = 768) -> str:
+    styles = {
+        "help": "lorelei",
+        "duel": "adventurer",
+        "profile_male": "lorelei",
+        "profile_female": "lorelei",
+        "cultivation": "notionists",
+        "shop": "notionists",
+        "market": "notionists",
+        "job": "adventurer",
+        "servants": "lorelei",
+        "marriage": "lorelei",
+        "kingdom": "notionists",
+        "sect": "notionists",
+        "pet": "bottts",
+        "ranking": "adventurer",
+        "arena": "adventurer",
+    }
+    style = styles.get(kind, "notionists")
+    g = "female" if gender == "زن" else "male"
+    seed = quote(f"kabulid-panel-{kind}-{g}-{name}", safe="")
+    bg = "ffd1dc" if gender == "زن" else "b8d4e8"
+    return f"https://api.dicebear.com/9.x/{style}/png?seed={seed}&size={size}&backgroundColor={bg}"

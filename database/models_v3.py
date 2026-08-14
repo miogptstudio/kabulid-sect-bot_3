@@ -238,22 +238,22 @@ class UserWallet(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), unique=True)
     
-    coins: Mapped[int] = mapped_column(Integer, default=0)           # سکه
-    spirit_stones: Mapped[int] = mapped_column(Integer, default=0)  # سنگ روحی
+    coins: Mapped[int] = mapped_column(BigInteger, default=0)           # سکه
+    spirit_stones: Mapped[int] = mapped_column(BigInteger, default=0)  # سنگ روحی
     last_daily_coin: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    heavenly_stones: Mapped[int] = mapped_column(Integer, default=0)  # سنگ بهشتی
-    celestial_stones: Mapped[int] = mapped_column(Integer, default=0)  # سنگ آسمانی
-    god_stones: Mapped[int] = mapped_column(Integer, default=0)  # سنگ خدا
-    chaos_stones: Mapped[int] = mapped_column(Integer, default=0)  # سنگ هرج‌ومرج
-    void_stones: Mapped[int] = mapped_column(Integer, default=0)  # سنگ پوچی
-    origin_stones: Mapped[int] = mapped_column(Integer, default=0)  # سنگ ازلی
-    karma_points: Mapped[int] = mapped_column(Integer, default=0)  # کارما
-    destiny_stones: Mapped[int] = mapped_column(Integer, default=0)  # سنگ تقدیر
-    immortal_stones: Mapped[int] = mapped_column(Integer, default=0)  # سنگ جاودان
-    creation_stones: Mapped[int] = mapped_column(Integer, default=0)  # سنگ خلقت
-    absolute_stones: Mapped[int] = mapped_column(Integer, default=0)  # سنگ مطلق
-    faith_stones: Mapped[int] = mapped_column(Integer, default=0)  # سنگ ایمان
-    dragon_coins: Mapped[int] = mapped_column(Integer, default=0)  # سکه اژدها
+    heavenly_stones: Mapped[int] = mapped_column(BigInteger, default=0)  # سنگ بهشتی
+    celestial_stones: Mapped[int] = mapped_column(BigInteger, default=0)  # سنگ آسمانی
+    god_stones: Mapped[int] = mapped_column(BigInteger, default=0)  # سنگ خدا
+    chaos_stones: Mapped[int] = mapped_column(BigInteger, default=0)  # سنگ هرج‌ومرج
+    void_stones: Mapped[int] = mapped_column(BigInteger, default=0)  # سنگ پوچی
+    origin_stones: Mapped[int] = mapped_column(BigInteger, default=0)  # سنگ ازلی
+    karma_points: Mapped[int] = mapped_column(BigInteger, default=0)  # کارما
+    destiny_stones: Mapped[int] = mapped_column(BigInteger, default=0)  # سنگ تقدیر
+    immortal_stones: Mapped[int] = mapped_column(BigInteger, default=0)  # سنگ جاودان
+    creation_stones: Mapped[int] = mapped_column(BigInteger, default=0)  # سنگ خلقت
+    absolute_stones: Mapped[int] = mapped_column(BigInteger, default=0)  # سنگ مطلق
+    faith_stones: Mapped[int] = mapped_column(BigInteger, default=0)  # سنگ ایمان
+    dragon_coins: Mapped[int] = mapped_column(BigInteger, default=0)  # سکه اژدها
     
     # نرخ: ۱۰۰۰ سکه = ۱ سنگ روحی
 

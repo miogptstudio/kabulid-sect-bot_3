@@ -103,6 +103,18 @@ def get_power(tg: int) -> int:
     return 10 + int(_pget("know_pow", tg, 0) or 0) + body_level(tg) * 2
 
 
+def get_admin_power_bonus(tg: int) -> int:
+    """قدرت رزمی مستقیم اعطا شده توسط ادمین؛ در پروفایل و محاسبه نبرد لحاظ می‌شود."""
+    return int(_pget("admin_power", tg, 0) or 0)
+
+
+def add_admin_power_bonus(tg: int, amount: int) -> int:
+    cur = get_admin_power_bonus(tg)
+    nv = cur + int(amount)
+    _pset("admin_power", tg, nv)
+    return nv
+
+
 def get_speed(tg: int) -> int:
     return 10 + int(_pget("know_spd", tg, 0) or 0) + spirit_level(tg)
 

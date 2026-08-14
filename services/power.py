@@ -172,7 +172,18 @@ async def calc_power(session: AsyncSession, user: User) -> dict:
         race_p = int(50 * (float(RACE_CULT.get(rn, {}).get('bonus', 1.0)) - 1.0))
     except Exception:
         race_p = 0
-    total = base + rank_bonus + realm_p + root_p + weapon_p + spirit_p + job_p + body_p + char_p + race_p
+    admin_p = 0
+    try:
+        from services.knowledge import get_admin_power_bonus
+        admin_p = get_admin_power_bonus(int(getattr(user, "telegram_id", 0) or 0))
+    except Exception:
+        admin_p = 0
+    total = base + rank_bonus + realm_p + root_p + weapon_p + spirit_p + job_p + body_p + char_p + race_p + admin_p
+    try:
+        from services.advanced_systems import bloodline_bonus
+        total = int(total * float(bloodline_bonus(int(getattr(user, "telegram_id", 0) or 0))))
+    except Exception:
+        pass
     if getattr(user, "is_spirit_raiser", False):
         total += 15
 
@@ -194,6 +205,7 @@ async def calc_power(session: AsyncSession, user: User) -> dict:
         "realm": realm_p,
         "root": root_p,
         "weapon": weapon_p,
+        "admin": admin_p,
         "spirit": spirit_p,
         "root_name": cult.spiritual_root,
         "realm_name": cult.realm,

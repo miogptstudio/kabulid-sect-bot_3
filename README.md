@@ -97,3 +97,7 @@ python run.py
 
 ## 📖 راهنمای کامل
 راهنمای فارسی و توضیح سیستم‌ها در `GUIDE_FA.md` قرار دارد.
+
+
+## Realm Progression
+`bot/realm_progression.py` derives power, speed, lifespan, remaining life, recovery and perception from cultivation realm/stage.
