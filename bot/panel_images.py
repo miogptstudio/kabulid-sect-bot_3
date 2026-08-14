@@ -4,7 +4,7 @@ from pathlib import Path
 ASSET_DIR = Path(__file__).resolve().parent.parent / "assets" / "panels"
 
 PANEL_IMAGES = {
-    "help": ASSET_DIR / "help.jpg",
+    "help": ASSET_DIR / "help_v16.jpg",
     "duel": ASSET_DIR / "duel.jpg",
     "cultivation": ASSET_DIR / "cultivation.jpg",
     "servants": ASSET_DIR / "servants.jpg",

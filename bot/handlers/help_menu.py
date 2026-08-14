@@ -1,12 +1,12 @@
 """راهنما و فهرست دستورات"""
 from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery, URLInputFile
+from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from bot.config import ADMIN_IDS, BOT_VERSION
 from services.i18n import tr
-from services.portraits import panel_url
+from bot.panel_sender import send_panel
 
 router = Router()
 
@@ -107,10 +107,10 @@ def _kb(uid: int = 0):
 async def cmd_help(message: Message):
     uid = message.from_user.id
     text = (
-        f"📖 <b>راهنمای ربات</b> — نسخه {BOT_VERSION}\n\n"
+        f"📖 <b>راهنمای بازی</b> — نسخه {BOT_VERSION}\n\n"
         "یک بخش را انتخاب کن:"
     )
-    await message.answer_photo(URLInputFile(panel_url("help", name=str(uid))), caption=text, reply_markup=_kb(uid))
+    await send_panel(message, "help", caption=text, reply_markup=_kb(uid))
 
 
 @router.callback_query(F.data.startswith("helpsec:"))
@@ -136,17 +136,38 @@ async def cb_help_section(callback: CallbackQuery):
         text = "\n".join(lines)
         if len(text) > 4000:
             text = text[:3900] + "\n…"
-        await callback.message.edit_text(text, reply_markup=_kb(owner))
+        # /help initially sends a PHOTO message, so edit_text() fails with
+        # "there is no text in the message to edit". Keep the image and edit
+        # its caption when possible; send the full long list separately.
+        kb = _kb(owner)
+        if len(text) <= 1000:
+            await callback.message.edit_caption(caption=text, reply_markup=kb)
+        else:
+            short = f"📋 <b>همه دستورات</b> — v{BOT_VERSION}\n\nفهرست کامل در پیام بعدی 👇"
+            await callback.message.edit_caption(caption=short, reply_markup=kb)
+            for i in range(0, len(text), 3900):
+                await callback.message.answer(text[i:i+3900])
         await callback.answer()
         return
     if key not in SECTIONS:
         await callback.answer("بخش نامعتبر", show_alert=True)
         return
     title, body = SECTIONS[key]
-    await callback.message.edit_text(
-        f"<b>{title}</b>\n\n{body}",
-        reply_markup=_kb(owner),
-    )
+    section_text = f"<b>{title}</b>\n\n{body}"
+    # The help menu is a photo message, therefore the visible text is its
+    # caption rather than message.text.
+    if len(section_text) <= 1000:
+        await callback.message.edit_caption(
+            caption=section_text,
+            reply_markup=_kb(owner),
+        )
+    else:
+        await callback.message.edit_caption(
+            caption=f"<b>{title}</b>\n\nبرای دیدن جزئیات کامل، پیام بعدی را ببین 👇",
+            reply_markup=_kb(owner),
+        )
+        for i in range(0, len(section_text), 3900):
+            await callback.message.answer(section_text[i:i+3900])
     await callback.answer()
 
 
