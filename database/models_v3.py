@@ -35,7 +35,7 @@ class ShopItem(Base):
     item_type: Mapped[str] = mapped_column(String(32))  # pill, talisman, technique, material, ...
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     
-    price: Mapped[int] = mapped_column(Integer, default=0)  # قیمت با XP یا امتیاز
+    price: Mapped[int] = mapped_column(BigInteger, default=0)  # قیمت؛ برای مقادیر بسیار بزرگ
     effect: Mapped[dict | None] = mapped_column(JSON, nullable=True)  # {"xp": 50, "energy": 30, ...}
     
     stock: Mapped[int] = mapped_column(Integer, default=-1)  # -1 = نامحدود

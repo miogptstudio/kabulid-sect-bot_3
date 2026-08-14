@@ -93,7 +93,7 @@ SHOP_ITEM_COLUMNS = [
     ("is_active", "BOOLEAN DEFAULT TRUE"),
     ("stock", "INTEGER DEFAULT -1"),
     ("effect", "JSON"),
-    ("price", "INTEGER DEFAULT 0"),
+    ("price", "BIGINT DEFAULT 0"),
     ("description", "TEXT NULL"),
     ("item_type", "VARCHAR(32)"),
     ("name", "VARCHAR(64)"),
@@ -147,6 +147,18 @@ async def migrate_schema():
             await add_col("buildings", col, td)
         for col, td in SHOP_ITEM_COLUMNS:
             await add_col("shop_items", col, td)
+
+        # قیمت بعضی آیتم‌های رده‌بالا (مثلاً شمشیر نابودکننده جهان)
+        # از محدوده INTEGER/INT32 بیشتر است. create_all روی جدول موجود
+        # نوع ستون را تغییر نمی‌دهد، پس PostgreSQL را صریحاً به BIGINT تبدیل می‌کنیم.
+        if dialect == "postgresql":
+            try:
+                await conn.execute(text(
+                    'ALTER TABLE "shop_items" ALTER COLUMN "price" TYPE BIGINT USING "price"::BIGINT'
+                ))
+                logger.info("OK migrated shop_items.price -> BIGINT")
+            except Exception as e:
+                logger.warning("skip shop_items.price BIGINT migration: %s", e)
         for col, td in [
             ("quantity", "INTEGER DEFAULT 1"),
         ]:
