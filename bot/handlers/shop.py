@@ -214,7 +214,7 @@ async def shop_back(callback: CallbackQuery):
     builder = InlineKeyboardBuilder()
     text = "🏘️ <b>مغازه / ساختمان‌ها</b>\n\n"
     for b in buildings:
-        text += f"• {escape(str(b.name or ""))}\n"
+        text += f"• {escape(str(b.name or ''))}\n"
         builder.button(text=b.name, callback_data=f"building:{owner_id}:{b.id}")
     builder.adjust(1)
 
@@ -796,11 +796,11 @@ async def text_open_building(message: Message):
     total_pages = max(1, (len(items) + PER - 1) // PER)
     chunk = items[:PER]
     builder = InlineKeyboardBuilder()
-    text = f"🏪 <b>{escape(str(b.name or ""))}</b>" + chr(10) + f"صفحه 1/{total_pages}" + chr(10) + chr(10)
+    text = f"🏪 <b>{escape(str(b.name or ''))}</b>" + chr(10) + f"صفحه 1/{total_pages}" + chr(10) + chr(10)
     text += "خرید با دکمه یا بنویس: <code>خرید نام‌آیتم</code>" + chr(10) + chr(10)
     for item in chunk:
         desc = (item.description or "")[:50]
-        text += f"• <b>{escape(str(item.name or ""))}</b> — {escape(str(item.price or 0))} سکه" + chr(10)
+        text += f"• <b>{escape(str(item.name or ''))}</b> — {escape(str(item.price or 0))} سکه" + chr(10)
         if desc:
             text += f"  {escape(str(desc))}" + chr(10)
         btn = item.name if len(item.name) <= 28 else item.name[:26] + "…"
