@@ -86,25 +86,16 @@ def pet_url(name: str) -> str:
 
 # تصاویر پنل‌های ربات؛ بر اساس seed ثابت، برای هر بخش تصویر ثابت و قابل‌تکرار است.
 def panel_url(kind: str, gender: str = "مرد", name: str = "Kabulid", size: int = 768) -> str:
-    styles = {
-        "help": "lorelei",
-        "duel": "adventurer",
-        "profile_male": "lorelei",
-        "profile_female": "lorelei",
-        "cultivation": "notionists",
-        "shop": "notionists",
-        "market": "notionists",
-        "job": "adventurer",
-        "servants": "lorelei",
-        "marriage": "lorelei",
-        "kingdom": "notionists",
-        "sect": "notionists",
-        "pet": "bottts",
-        "ranking": "adventurer",
-        "arena": "adventurer",
+    """Return the exact bundled image for a game panel."""
+    from pathlib import Path
+    root = Path(__file__).resolve().parent.parent / "assets" / "panels"
+    aliases = {
+        "job": "jobs",
+        "jobs": "jobs",
+        "profile": "profile_female" if gender == "زن" else "profile_male",
     }
-    style = styles.get(kind, "notionists")
-    g = "female" if gender == "زن" else "male"
-    seed = quote(f"kabulid-panel-{kind}-{g}-{name}", safe="")
-    bg = "ffd1dc" if gender == "زن" else "b8d4e8"
-    return f"https://api.dicebear.com/9.x/{style}/png?seed={seed}&size={size}&backgroundColor={bg}"
+    path = root / (aliases.get(kind, kind) + ".jpg")
+    if not path.exists():
+        path = root / "settings.jpg"
+    return str(path)
+
