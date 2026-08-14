@@ -21,29 +21,45 @@ router = Router()
 @router.message(Command("buildings", "ساختمون", "shop", "فروشگاه", "مغازه"))
 async def cmd_buildings(message: Message):
     uid = message.from_user.id
-    async with async_session() as session:
-        await ensure_default_buildings_and_items(session)
-        buildings = await get_buildings(session)
+    try:
+        async with async_session() as session:
+            try:
+                await ensure_default_buildings_and_items(session)
+            except Exception as e1:
+                try:
+                    await session.rollback()
+                except Exception:
+                    pass
+                await message.answer(f"⚠️ خطا در پر کردن مغازه: {type(e1).__name__}: {e1}")
+            try:
+                buildings = await get_buildings(session)
+            except Exception as e2:
+                try:
+                    await session.rollback()
+                except Exception:
+                    pass
+                await message.answer(f"⚠️ خطا در خواندن ساختمان‌ها: {type(e2).__name__}: {e2}")
+                return
 
-    if not buildings:
-        await message.answer(
-            "هنوز ساختمونی نیست. یک‌بار دیگر /buildings را بزن.\n"
-            "اگر باز خالی بود، لاگ Render را بفرست."
-        )
-        return
+        if not buildings:
+            await message.answer(
+                "هنوز ساختمونی نیست.\n"
+                "دوباره /buildings را بزن. اگر خالی ماند لاگ را بفرست."
+            )
+            return
 
-    builder = InlineKeyboardBuilder()
-    text = (
-        "🏘️ <b>مغازه / ساختمان‌ها</b>\n"
-        f"(این پنل فقط برای تو کار می‌کند)\n\n"
-    )
-    for b in buildings:
-        text += f"• {b.name}\n"
-        builder.button(text=b.name, callback_data=f"building:{uid}:{b.id}")
-    builder.adjust(1)
-
-    text += "\nروی ساختمان کلیک کن. خرید با <b>همه ارزها</b> ممکن است (سکه، روحی، بهشتی، آسمانی، خدا).\nاگر سکه کم باشد از ارز بالاتر کسر می‌شود.\n/wallet"
-    await message.answer(text, reply_markup=builder.as_markup())
+        builder = InlineKeyboardBuilder()
+        text = "🏘️ <b>مغازه / ساختمان‌ها</b>" + chr(10) + "(فقط برای تو)" + chr(10) + chr(10)
+        for b in buildings:
+            name = getattr(b, "name", None) or getattr(b, "building_type", None) or f"#{b.id}"
+            text += f"• {name}" + chr(10)
+            label = str(name)[:40]
+            builder.button(text=label, callback_data=f"building:{uid}:{b.id}")
+        builder.adjust(1)
+        text += chr(10) + "روی ساختمان بزن. خرید با همه ارزها. /wallet"
+        await message.answer(text, reply_markup=builder.as_markup())
+    except Exception as e:
+        await message.answer(f"❌ خطای مغازه: {type(e).__name__}: {e}")
 
 
 
@@ -122,12 +138,29 @@ async def building_page(callback: CallbackQuery):
 
 async def _render_building(callback: CallbackQuery, owner_id: int, building_id: int, page: int = 0):
     PER = 8
-    async with async_session() as session:
-        items = list(await get_items_of_building(session, building_id))
-        building = await session.get(Building, building_id)
+    try:
+        async with async_session() as session:
+            try:
+                await ensure_default_buildings_and_items(session)
+            except Exception:
+                try:
+                    await session.rollback()
+                except Exception:
+                    pass
+            items = list(await get_items_of_building(session, building_id))
+            building = await session.get(Building, building_id)
+    except Exception as e:
+        await callback.answer(f"خطا: {type(e).__name__}", show_alert=True)
+        return
 
     if not items:
-        await callback.answer("آیتمی نیست — /buildings را دوباره بزن تا پر شود.", show_alert=True)
+        await callback.answer("آیتمی نیست — دوباره /buildings را بزن.", show_alert=True)
+        try:
+            await callback.message.answer(
+                "این ساختمان خالی است. /buildings را بزن تا آیتم‌ها ساخته شوند."
+            )
+        except Exception:
+            pass
         return
 
     bname = building.name if building else "ساختمان"

@@ -533,3 +533,62 @@ async def cmd_give_power(message: Message):
         k = mapk.get(kind, "power")
         msg = add_combat_stat(tid, k, amount) + f"\nهدف: `{tid}`"
     await message.answer(msg)
+
+
+@router.message(Command("diag", "تشخیص", "debugbot"))
+async def cmd_diag(message: Message):
+    """تشخیص سریع سیستم‌ها برای ادمین"""
+    if not is_config_admin(message.from_user.id):
+        await message.answer("فقط سازنده.")
+        return
+    lines = ["🔧 <b>تشخیص ربات</b>", ""]
+    checks = []
+    try:
+        from services.servants import list_owned, market_list
+        bag = list_owned(message.from_user.id)
+        checks.append(f"خدمتکار: OK (مالکیت تو: {len(bag)})")
+    except Exception as e:
+        checks.append(f"خدمتکار: ❌ {type(e).__name__}: {e}")
+    try:
+        from services.shop import ensure_default_buildings_and_items, get_buildings
+        from database.engine import async_session
+        async with async_session() as session:
+            await ensure_default_buildings_and_items(session)
+            b = await get_buildings(session)
+            checks.append(f"مغازه: OK ({len(b)} ساختمان)")
+    except Exception as e:
+        checks.append(f"مغازه: ❌ {type(e).__name__}: {e}")
+    try:
+        from services.jobs import get_job, list_jobs
+        checks.append(f"شغل: OK (فعلی: {get_job(message.from_user.id) or '—'})")
+    except Exception as e:
+        checks.append(f"شغل: ❌ {type(e).__name__}: {e}")
+    try:
+        from services.crafting import ensure_default_recipes
+        from database.engine import async_session
+        from database.models_v3 import Recipe
+        from sqlalchemy import select
+        async with async_session() as session:
+            await ensure_default_recipes(session)
+            r = await session.execute(select(Recipe))
+            checks.append(f"کیمیاگری: OK ({len(list(r.scalars().all()))} دستور)")
+    except Exception as e:
+        checks.append(f"کیمیاگری: ❌ {type(e).__name__}: {e}")
+    try:
+        from services.economy import get_or_create_wallet
+        from database.engine import async_session
+        from database.crud import get_or_create_user
+        async with async_session() as session:
+            u = await get_or_create_user(session, message.from_user.id, message.from_user.full_name, message.from_user.username)
+            w = await get_or_create_wallet(session, u.id)
+            checks.append(f"کیف: OK سکه={w.coins}")
+    except Exception as e:
+        checks.append(f"کیف: ❌ {type(e).__name__}: {e}")
+    try:
+        from services.achievements import list_user
+        checks.append("دستاورد: OK")
+    except Exception as e:
+        checks.append(f"دستاورد: ❌ {type(e).__name__}: {e}")
+    lines.extend(checks)
+    lines.append("\n/version /help /buildings /servants /jobs /craft")
+    await message.answer(chr(10).join(lines))

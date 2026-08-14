@@ -331,8 +331,8 @@ async def cmd_market_buy(message: Message):
     await message.answer(f"✅ «{listing['item']}» خریداری شد.")
 
 
-@router.message(Command("servants_legacy_disabled"))
-async def cmd_servants(message: Message):
+# LEGACY disabled
+async def cmd_servants_legacy(message: Message):
     text = "👤 <b>بازار خدمتکار</b>\n\n"
     text += "⚠️ آسیب به خدمتکار = مرگ و حذف اکانت تو\n\n"
     for s in SERVANTS:
@@ -341,8 +341,8 @@ async def cmd_servants(message: Message):
     await message.answer(text)
 
 
-@router.message(Command("buyservant", "خرید‌خدمتکار"))
-async def cmd_buy_servant(message: Message):
+# LEGACY - shadowed buy removed
+async def cmd_buy_servant_legacy(message: Message):
     parts = (message.text or "").split()
     if len(parts) < 2:
         await message.answer(tr(message.from_user.id, "/buyservant شماره"))
@@ -370,8 +370,7 @@ async def cmd_buy_servant(message: Message):
     )
 
 
-@router.message(Command("myservants_old", "خدمتکار‌من"))
-async def cmd_my_servants(message: Message):
+async def cmd_my_servants_legacy(message: Message):
     ids = _servants_map().get(str(message.from_user.id), [])
     if not ids:
         await message.answer(
@@ -424,8 +423,9 @@ async def cmd_marry_servant(message: Message):
         await message.answer(tr(message.from_user.id, "خدمتکار پیدا نشد. /servants"))
         return
     # ازدواج با خدمتکار هر جنسیتی — برای تذهیب دوگانه باید مخالف باشد
-    owned = _servants_map().get(str(message.from_user.id), [])
-    if sid not in owned:
+    bag = servmod.list_owned(message.from_user.id)
+    owned_ids = [x.get("base_id") for x in bag]
+    if sid not in owned_ids and not any(True for x in bag if x.get("base_id")==sid):
         await message.answer("اول باید این خدمتکار را بخری. /buyservant " + str(sid))
         return
     married = _user_married_servants.setdefault(message.from_user.id, [])
@@ -473,7 +473,8 @@ async def cmd_dual_servant(message: Message):
     if not s:
         await message.answer(tr(message.from_user.id, "خدمتکار پیدا نشد. /servants"))
         return
-    owned = _servants_map().get(str(message.from_user.id), [])
+    owned_ids = [x.get("base_id") for x in servmod.list_owned(message.from_user.id)]
+    owned = owned_ids
     married = _user_married_servants.get(message.from_user.id, [])
     if sid not in owned:
         await message.answer("اول بخر: /buyservant " + str(sid))
@@ -553,7 +554,8 @@ async def cmd_child_servant(message: Message):
     if not s:
         await message.answer(tr(message.from_user.id, "پیدا نشد."))
         return
-    owned = _servants_map().get(str(message.from_user.id), [])
+    owned_ids = [x.get("base_id") for x in servmod.list_owned(message.from_user.id)]
+    owned = owned_ids
     married = _user_married_servants.get(message.from_user.id, [])
     if sid not in owned or sid not in married:
         await message.answer(tr(message.from_user.id, "باید /buyservant و /marryservant کرده باشی."))
@@ -848,7 +850,7 @@ async def cmd_servants_v2(message: Message):
     await message.answer(servmod.market_list())
 
 
-@router.message(Command("buyservant", "خریدخدمتکار"))
+@router.message(Command("buyservant", "خریدخدمتکار", "خرید‌خدمتکار"))
 async def cmd_buy_servant_v2(message: Message):
     parts = (message.text or "").split()
     if len(parts) < 2 or not parts[1].isdigit():
@@ -859,6 +861,8 @@ async def cmd_buy_servant_v2(message: Message):
         from services.economy import get_or_create_wallet
         w = await get_or_create_wallet(session, user.id)
         ok, msg, left = servmod.buy(message.from_user.id, int(parts[1]), int(w.coins or 0))
+        if ok:
+            msg = msg + chr(10) + "/myservants — لیست خدمتکارها"
         if ok:
             w.coins = left
             await session.commit()
@@ -878,7 +882,7 @@ async def cmd_buy_servant_v2(message: Message):
             await message.answer(msg)
 
 
-@router.message(Command("myservants", "خدمتکارها‌ی‌من", "لیست‌خدمتکار"))
+@router.message(Command("myservants", "خدمتکارها‌ی‌من", "لیست‌خدمتکار", "خدمتکار‌من"))
 async def cmd_my_servants_v2(message: Message):
     from services.portraits import portrait_url, servant_caption
     bag = servmod.list_owned(message.from_user.id)
