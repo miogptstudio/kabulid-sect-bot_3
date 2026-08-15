@@ -8,11 +8,11 @@ JOBS = {
     "آهنگر": {"desc": "ساخت سلاح؛ بونوس آهنگری", "mult": 1.2},
     "کیمیاگر": {"desc": "معجون و قرص؛ بونوس ساخت", "mult": 1.25},
     "تاجر": {"desc": "خرید/فروش بهتر؛ کارمزد کمتر", "mult": 1.1},
-    "شکارچی": {"desc": "شکار و پت قوی‌تر", "mult": 1.2},
+    "شکارچی": {"desc": "شکار و پت قویتر", "mult": 1.2},
     "سرباز": {"desc": "قدرت دوئل بیشتر", "mult": 1.3},
-    "روحانی": {"desc": "تذهیب سریع‌تر", "mult": 1.2},
+    "روحانی": {"desc": "تذهیب سریعتر", "mult": 1.2},
     "ماجراجو": {"desc": "غنیمت غار و شهر", "mult": 1.15},
-    "معدن‌چی": {"desc": "برداشت معدن بیشتر", "mult": 1.25},
+    "معدنچی": {"desc": "برداشت معدن بیشتر", "mult": 1.25},
     "استاد": {"desc": "دانش و شاگردی", "mult": 1.15},
 }
 
@@ -68,7 +68,7 @@ def change_job(tg_id: int, job: str) -> str:
             last_dt = datetime.fromisoformat(str(last))
             if now - last_dt < timedelta(hours=24):
                 left = int((timedelta(hours=24) - (now - last_dt)).total_seconds() // 3600) + 1
-                return f"⏳ هر ۲۴ ساعت یک‌بار می‌توانی شغل عوض کنی. مانده ≈{left} ساعت"
+                return f"⏳ هر ۲۴ ساعت یکبار میتوانی شغل عوض کنی. مانده ≈{left} ساعت"
         except Exception:
             pass
     m = _jobs()
@@ -80,7 +80,7 @@ def change_job(tg_id: int, job: str) -> str:
 
 
 def list_jobs() -> str:
-    lines = ["💼 <b>شغل‌ها</b>", ""]
+    lines = ["💼 <b>شغلها</b>", ""]
     for n, i in JOBS.items():
         lines.append(f"• <b>{n}</b> — {i['desc']} (×{i['mult']})")
     lines += ["", "/job — انتخاب با دکمه", "/job نام", "/myjob", "/changejob نام", "/work — کار روزانه شغل"]
@@ -119,5 +119,5 @@ def work(tg_id: int) -> str | dict:
         "job": j,
         "coins": coins,
         "spirit_stones": stones,
-        "msg": f"💼 کار به‌عنوان <b>{j}</b> تمام شد!\n🪙 +{coins} سکه" + (f"\n💎 +{stones} سنگ روحی" if stones else ""),
+        "msg": f"💼 کار بهعنوان <b>{j}</b> تمام شد!\n🪙 +{coins} سکه" + (f"\n💎 +{stones} سنگ روحی" if stones else ""),
     }

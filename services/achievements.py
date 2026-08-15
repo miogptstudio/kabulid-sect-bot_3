@@ -11,9 +11,9 @@ ACHIEVEMENTS = {
     "beat_arjomand": {"title": "شکست ارجمند", "description": "یک ارجمند را شکست دادی", "icon": "👑", "reward_xp": 30},
     "season_champion": {"title": "قهرمان فصل", "description": "قهرمان یک فصل", "icon": "🏆", "reward_xp": 100},
     "guardian_master": {"title": "فاتح نگهبان", "description": "پیروزی در نگهبان", "icon": "🛡️", "reward_xp": 20},
-    "first_hunt": {"title": "شکارچی تازه‌کار", "description": "اولین شکار موفق", "icon": "🌲", "reward_xp": 15},
-    "first_tame": {"title": "رام‌کننده", "description": "اولین حیوان رام‌شده", "icon": "🐺", "reward_xp": 20},
-    "gather_100": {"title": "تذهیب‌گر", "description": "۱۰۰ بار جمع چی", "icon": "🌀", "reward_xp": 25},
+    "first_hunt": {"title": "شکارچی تازهکار", "description": "اولین شکار موفق", "icon": "🌲", "reward_xp": 15},
+    "first_tame": {"title": "رامکننده", "description": "اولین حیوان رامشده", "icon": "🐺", "reward_xp": 20},
+    "gather_100": {"title": "تذهیبگر", "description": "۱۰۰ بار جمع چی", "icon": "🌀", "reward_xp": 25},
 }
 
 

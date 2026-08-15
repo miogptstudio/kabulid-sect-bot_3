@@ -1,4 +1,4 @@
-"""سیستم خانه‌سازی"""
+"""سیستم خانهسازی"""
 from __future__ import annotations
 
 # tg_id -> home dict
@@ -8,7 +8,7 @@ def _homes_map():
 
 
 LEVELS = {
-    0: {"name": "بی‌خانمان", "slots": 0, "bonus": 0},
+    0: {"name": "بیخانمان", "slots": 0, "bonus": 0},
     1: {"name": "کلبه چوبی", "slots": 2, "bonus": 0.02},
     2: {"name": "خانه سنگی", "slots": 4, "bonus": 0.05},
     3: {"name": "ویلای فرقه", "slots": 6, "bonus": 0.08},

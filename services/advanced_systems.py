@@ -1,4 +1,4 @@
-"""سیستم‌های توسعه‌یافته: تبار، قدرت رزمی، خاندان و حکومت."""
+"""سیستمهای توسعهیافته: تبار، قدرت رزمی، خاندان و حکومت."""
 from __future__ import annotations
 from services.persist import get_dict, save
 
@@ -8,7 +8,7 @@ BLOODLINES = {
     "آسمانی": (1.35, "تبار آسمانی"),
     "الهی": (1.7, "تبار الهی"),
     "باستانی": (2.0, "تبار باستانی"),
-    "هرج‌ومرج": (2.3, "تبار هرج‌ومرج"),
+    "هرجومرج": (2.3, "تبار هرجومرج"),
     "خلقت": (2.7, "تبار خلقت"),
     "ازلی": (3.2, "تبار ازلی"),
     "مطلق": (4.0, "تبار مطلق"),
@@ -47,7 +47,7 @@ def family_note(tg, text):
     row, d = _row("family", tg); row["note"] = text; d[str(int(tg))] = row; save("family"); return row
 
 def get_kingdom(tg):
-    d=get_dict("kingdoms"); return d.get(str(int(tg)), {"name":"قلمرو بی‌نام","capital":"پایتخت","treasury":0,"tax":0,"army":0,"population":0,"cities":[]})
+    d=get_dict("kingdoms"); return d.get(str(int(tg)), {"name":"قلمرو بینام","capital":"پایتخت","treasury":0,"tax":0,"army":0,"population":0,"cities":[]})
 
 def set_kingdom(tg, **kwargs):
     d=get_dict("kingdoms"); k=str(int(tg)); row=d.get(k) or get_kingdom(tg); row.update(kwargs); d[k]=row; save("kingdoms"); return row
@@ -57,11 +57,11 @@ def kingdom_add_city(tg, city):
     if city not in cities: cities.append(city)
     return set_kingdom(tg, cities=cities)
 
-# ==================== سیستم‌های جدید V32 ====================
+# ==================== سیستمهای جدید V32 ====================
 from datetime import datetime, timedelta
 import random
 
-CURRENCY_CHAIN = ["سکه", "روحی", "بهشتی", "آسمانی", "خدا", "هرج‌ومرج", "پوچی", "خلقت", "ازلی", "مطلق"]
+CURRENCY_CHAIN = ["سکه", "روحی", "بهشتی", "آسمانی", "خدا", "هرجومرج", "پوچی", "خلقت", "ازلی", "مطلق"]
 
 def _ns_row(ns, tg, default=None):
     d = get_dict(ns); k = str(int(tg))
@@ -128,7 +128,7 @@ def hit_world_boss(tg, damage):
     p=d.setdefault("participants",{}); p[str(int(tg))]=int(p.get(str(int(tg)),0))+dmg; save("world_boss"); return d,dmg
 
 def open_chest(tg, grade="معمولی"):
-    rewards={"معمولی":(100,1000),"نادر":(1000,10000),"افسانه‌ای":(10000,100000),"الهی":(100000,1000000),"مطلق":(1000000,10000000)}
+    rewards={"معمولی":(100,1000),"نادر":(1000,10000),"افسانهای":(10000,100000),"الهی":(100000,1000000),"مطلق":(1000000,10000000)}
     lo,hi=rewards.get(grade,rewards["معمولی"]); amount=random.randint(lo,hi)
     d=get_dict("chests"); row=d.setdefault(str(int(tg)),{"opened":0,"coins":0}); row["opened"]+=1; row["coins"]+=amount; save("chests"); return amount
 

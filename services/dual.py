@@ -6,13 +6,13 @@ from database.models import User
 from database.models_v3 import DualCultivation
 from services.cultivation import get_or_create_cultivation, add_energy, get_active_technique
 
-# شانس بچه‌دار شدن در تذهیب دوگانه
+# شانس بچهدار شدن در تذهیب دوگانه
 CHILD_CHANCE = 0.10  # ۱۰٪
 
 
 async def request_dual(session: AsyncSession, user1: User, user2: User) -> DualCultivation | str:
     if user1.id == user2.id:
-        return "نمی‌تونی با خودت تذهیب دوگانه کنی."
+        return "نمیتونی با خودت تذهیب دوگانه کنی."
     
     # جنسیت مشخص باشد — مرد/زن، زن/زن و مرد/مرد مجاز
     g1 = user1.gender or "نامشخص"
@@ -39,7 +39,7 @@ async def request_dual(session: AsyncSession, user1: User, user2: User) -> DualC
     if not tech2:
         return f"{user2.full_name} تکنیک فعالی نداره."
     
-    # پاک کردن درخواست‌های pending قدیمی‌تر از ۱ ساعت
+    # پاک کردن درخواستهای pending قدیمیتر از ۱ ساعت
     try:
         from datetime import timedelta
         old = datetime.utcnow() - timedelta(hours=1)
@@ -82,7 +82,7 @@ async def request_dual(session: AsyncSession, user1: User, user2: User) -> DualC
 
 async def accept_dual(session: AsyncSession, dual: DualCultivation, accepter_id: int) -> str:
     if dual.user2_id != accepter_id:
-        return "فقط طرف مقابل می‌تونه قبول کنه."
+        return "فقط طرف مقابل میتونه قبول کنه."
     if dual.status != "pending":
         return "این درخواست دیگه معتبر نیست."
     
@@ -117,7 +117,7 @@ async def accept_dual(session: AsyncSession, dual: DualCultivation, accepter_id:
     if r2.get("messages"):
         msg += "نفر دوم: " + " | ".join(r2["messages"])
     
-    # شانس بچه‌دار شدن — نژاد نامیرا / قادر مطلق / خدایان نازا هستند
+    # شانس بچهدار شدن — نژاد نامیرا / قادر مطلق / خدایان نازا هستند
     try:
         from services.cultivation import STERILE_RACES
     except Exception:
@@ -137,7 +137,7 @@ async def accept_dual(session: AsyncSession, dual: DualCultivation, accepter_id:
             telegram_id=-(dual.user1_id * 100000 + dual.user2_id),  # آیدی مصنوعی یکتا
             full_name=child_name,
             gender=random.choice(["مرد", "زن"]),
-            rank="عضو دسته‌های پایین‌تر"
+            rank="عضو دستههای پایینتر"
         )
         session.add(child)
         await session.commit()

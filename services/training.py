@@ -17,7 +17,7 @@ async def start_training(session: AsyncSession, user: User, minutes: int) -> str
     try:
         from services.prison import is_imprisoned
         if is_imprisoned(user):
-            return "در زندانی؛ نمی‌توانی تمرین کنی. /prison"
+            return "در زندانی؛ نمیتوانی تمرین کنی. /prison"
     except Exception:
         pass
     if getattr(user, "restriction_reason", None) == "تمرین":
@@ -40,7 +40,7 @@ async def start_training(session: AsyncSession, user: User, minutes: int) -> str
         + "تا پایان، خدمات ربات قطع است." + chr(10)
         + f"نرخ: هر دقیقه {ENERGY_PER_MINUTE} انرژی" + chr(10)
         + "/trainstatus — وضعیت" + chr(10)
-        + "/trainstop — انصراف وسط تمرین (پاداش دقیقه‌های رفته)" + chr(10)
+        + "/trainstop — انصراف وسط تمرین (پاداش دقیقههای رفته)" + chr(10)
         + "/trainclaim — بعد از اتمام کامل"
     )
 
@@ -76,7 +76,7 @@ async def training_block_message(session: AsyncSession, user: User) -> str | Non
         done = _elapsed_minutes(user)
         return (
             f"🏟 در زمین تمرین هستی ({m}د {s}ث مانده)." + chr(10)
-            + f"تمرین‌شده تا الان: ~{done} دقیقه → حدود {done * ENERGY_PER_MINUTE} انرژی" + chr(10)
+            + f"تمرینشده تا الان: ~{done} دقیقه → حدود {done * ENERGY_PER_MINUTE} انرژی" + chr(10)
             + "خدمات قطع است. /trainstatus | /trainstop"
         )
     return None
@@ -125,7 +125,7 @@ async def claim_training(session: AsyncSession, user: User) -> str:
         m = int(left.total_seconds() // 60) + 1
         return (
             f"هنوز تمرین تمام نشده ({m} دقیقه)." + chr(10)
-            + "اگر می‌خواهی الان خارج شوی: /trainstop"
+            + "اگر میخواهی الان خارج شوی: /trainstop"
         )
     planned = _train_minutes.get(user.id)
     started = _train_start.get(user.id)
@@ -139,7 +139,7 @@ async def claim_training(session: AsyncSession, user: User) -> str:
 
 
 async def stop_training(session: AsyncSession, user: User) -> str:
-    """انصراف وسط تمرین — پاداش دقیقه‌های واقعی گذشته"""
+    """انصراف وسط تمرین — پاداش دقیقههای واقعی گذشته"""
     if getattr(user, "restriction_reason", None) != "تمرین":
         return "تمرین فعالی نداری. /train"
     done = _elapsed_minutes(user)

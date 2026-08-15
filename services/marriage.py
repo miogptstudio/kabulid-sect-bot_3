@@ -54,12 +54,12 @@ async def _sect_info(session: AsyncSession, user_id: int):
 
 async def propose(session: AsyncSession, proposer: User, target: User) -> tuple[Marriage | None, str, list[str]]:
     """
-    برمی‌گرداند: (marriage یا None, پیام خطا یا خالی, لیست هشدارها)
+    برمیگرداند: (marriage یا None, پیام خطا یا خالی, لیست هشدارها)
     """
     warnings: list[str] = []
 
     if proposer.id == target.id:
-        return None, "نمی‌تونی با خودت ازدواج کنی.", []
+        return None, "نمیتونی با خودت ازدواج کنی.", []
 
     g1 = proposer.gender or "نامشخص"
     g2 = target.gender or "نامشخص"
@@ -78,15 +78,15 @@ async def propose(session: AsyncSession, proposer: User, target: User) -> tuple[
     if g1 == "زن" and g2 == "زن":
         warnings.append("💕 ازدواج دختر با دختر — چندهمسری برای طرف خواستگار فعال است.")
 
-    # طرف مقابل (همسر) نباید قبلاً به‌عنوان همسرِ شخص دیگری ثبت شده باشد
+    # طرف مقابل (همسر) نباید قبلاً بهعنوان همسرِ شخص دیگری ثبت شده باشد
     existing_as_wife = await get_husband(session, wife.id)
     if existing_as_wife:
         return None, f"{wife.full_name} قبلاً همسر شخص دیگری است.", []
 
-    # اگر طرف مقابل خودش حرم دارد (چند همسر)، باز هم می‌تواند همسر شود؟ خیر — یک نقش همسر کافی است
+    # اگر طرف مقابل خودش حرم دارد (چند همسر)، باز هم میتواند همسر شود؟ خیر — یک نقش همسر کافی است
     existing_as_primary = await get_wives(session, wife.id)
     if existing_as_primary:
-        return None, f"{wife.full_name} خودش چند همسر دارد و نمی‌تواند به‌عنوان همسر جدید قبول شود.", []
+        return None, f"{wife.full_name} خودش چند همسر دارد و نمیتواند بهعنوان همسر جدید قبول شود.", []
 
     pending = await session.execute(
         select(Marriage).where(
@@ -98,7 +98,7 @@ async def propose(session: AsyncSession, proposer: User, target: User) -> tuple[
     if pending.scalar_one_or_none():
         return None, "درخواست یا نامزدی باز بین شما وجود داره.", []
 
-    # هشدار اختلاف سطح (بدون اجبار) — هرچه اختلاف بیشتر، هشدار جدی‌تر
+    # هشدار اختلاف سطح (بدون اجبار) — هرچه اختلاف بیشتر، هشدار جدیتر
     level_diff = abs((proposer.level or 1) - (target.level or 1))
     level_warn = level_diff >= LEVEL_DIFF_WARN
     if level_diff >= 5:
@@ -123,7 +123,7 @@ async def propose(session: AsyncSession, proposer: User, target: User) -> tuple[
             f"ازدواج همچنان فقط با رضایت دو طرف است."
         )
 
-    # محدودیت / هشدار فرقه‌ای
+    # محدودیت / هشدار فرقهای
     cross_sect = False
     m1, s1 = await _sect_info(session, proposer.id)
     m2, s2 = await _sect_info(session, target.id)
@@ -131,16 +131,16 @@ async def propose(session: AsyncSession, proposer: User, target: User) -> tuple[
         if s1.id != s2.id:
             cross_sect = True
             warnings.append(
-                f"⚠️ ازدواج بین‌فرقه‌ای: «{s1.name}» ({s1.sect_type}) و «{s2.name}» ({s2.sect_type})."
+                f"⚠️ ازدواج بینفرقهای: «{s1.name}» ({s1.sect_type}) و «{s2.name}» ({s2.sect_type})."
             )
             if s1.sect_type == "شیطانی" and s2.sect_type == "ارتدوکس":
-                warnings.append("⚠️ تضاد شدید نوعی فرقه‌ها (شیطانی / ارتدوکس). بزرگان ممکن است مخالفت کنند — باز هم فقط با رضایت ممکن است.")
+                warnings.append("⚠️ تضاد شدید نوعی فرقهها (شیطانی / ارتدوکس). بزرگان ممکن است مخالفت کنند — باز هم فقط با رضایت ممکن است.")
             elif s1.sect_type == "ارتدوکس" and s2.sect_type == "شیطانی":
-                warnings.append("⚠️ تضاد شدید نوعی فرقه‌ها (ارتدوکس / شیطانی). باز هم فقط با رضایت ممکن است.")
+                warnings.append("⚠️ تضاد شدید نوعی فرقهها (ارتدوکس / شیطانی). باز هم فقط با رضایت ممکن است.")
         else:
             warnings.append(f"✅ هر دو عضو فرقه «{s1.name}» هستید.")
     elif not s1 and not s2:
-        warnings.append("هر دو بدون فرقه (تذهیب‌کننده دوره‌گرد) هستید.")
+        warnings.append("هر دو بدون فرقه (تذهیبکننده دورهگرد) هستید.")
     else:
         cross_sect = True
         warnings.append("⚠️ یکی عضو فرقه است و دیگری نیست.")
@@ -162,7 +162,7 @@ async def propose(session: AsyncSession, proposer: User, target: User) -> tuple[
 
 
 async def accept_marriage(session: AsyncSession, marriage: Marriage, accepter_id: int) -> str:
-    # قبول‌کننده باید یکی از دو طرف باشد که هنوز "درخواست‌دهنده" نیست در status engaged هر دو می‌توانند از نظر UI اما منطقاً طرف مقابل
+    # قبولکننده باید یکی از دو طرف باشد که هنوز "درخواستدهنده" نیست در status engaged هر دو میتوانند از نظر UI اما منطقاً طرف مقابل
     if accepter_id not in (marriage.husband_id, marriage.wife_id):
         return "دسترسی نداری."
 
@@ -175,7 +175,7 @@ async def accept_marriage(session: AsyncSession, marriage: Marriage, accepter_id
         await session.commit()
         return "⏰ مهلت نامزدی تمام شده. درخواست منقضی شد."
 
-    # اگر قبول‌کننده نقش همسر (wife) است و قبلاً همسر کس دیگری است
+    # اگر قبولکننده نقش همسر (wife) است و قبلاً همسر کس دیگری است
     if accepter_id == marriage.wife_id:
         existing = await get_husband(session, accepter_id)
         if existing and existing.id != marriage.id:
@@ -211,14 +211,14 @@ async def reject_marriage(session: AsyncSession, marriage: Marriage, rejecter_id
 
 async def add_guest(session: AsyncSession, marriage: Marriage, guest_telegram_id: int) -> str:
     if marriage.status not in ("engaged", "married"):
-        return "فقط برای نامزدی یا ازدواج فعال می‌توان مهمان دعوت کرد."
+        return "فقط برای نامزدی یا ازدواج فعال میتوان مهمان دعوت کرد."
     guests = list(marriage.invited_guests or [])
     if guest_telegram_id in guests:
         return "این نفر قبلاً دعوت شده."
     guests.append(guest_telegram_id)
     marriage.invited_guests = guests
     await session.commit()
-    return "✅ به لیست مهمان‌ها اضافه شد."
+    return "✅ به لیست مهمانها اضافه شد."
 
 
 async def divorce(session: AsyncSession, user: User, partner_id: int) -> str:
@@ -241,7 +241,7 @@ async def divorce(session: AsyncSession, user: User, partner_id: int) -> str:
 
 
 async def expire_old_engagements(session: AsyncSession) -> int:
-    """منقضی کردن نامزدی‌های تمام‌شده"""
+    """منقضی کردن نامزدیهای تمامشده"""
     now = datetime.utcnow()
     result = await session.execute(
         select(Marriage).where(

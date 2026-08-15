@@ -4,25 +4,25 @@ from database.models import User
 
 # ۲۰ کشور — برای هر کشور چند شهر با مرحله خاص
 CITIES = [
-    # ایران — از هر استان نمونه‌های مهم (۳تایی)
+    # ایران — از هر استان نمونههای مهم (۳تایی)
     {"id": "tehran", "name": "تهران", "country": "ایران", "province": "تهران", "stage": "مرکز قدرت", "bonus": "xp", "desc": "پایتخت — +۵٪ XP دوئل"},
-    {"id": "ray", "name": "ری", "country": "ایران", "province": "تهران", "stage": "کهن‌شهر", "bonus": "cult", "desc": "تذهیب کهن"},
+    {"id": "ray", "name": "ری", "country": "ایران", "province": "تهران", "stage": "کهنشهر", "bonus": "cult", "desc": "تذهیب کهن"},
     {"id": "shahrerey", "name": "شهریار", "country": "ایران", "province": "تهران", "stage": "حومه", "bonus": "coin", "desc": "سکه روزانه بیشتر"},
     {"id": "mashhad", "name": "مشهد", "country": "ایران", "province": "خراسان رضوی", "stage": "زیارت", "bonus": "lifespan", "desc": "+عمر خفیف"},
     {"id": "neyshabur", "name": "نیشابور", "country": "ایران", "province": "خراسان رضوی", "stage": "شعر", "bonus": "cult", "desc": "تذهیب ادبی"},
     {"id": "sabzevar", "name": "سبزوار", "country": "ایران", "province": "خراسان رضوی", "stage": "مرز شرق", "bonus": "power", "desc": "قدرت رزمی"},
     {"id": "isfahan", "name": "اصفهان", "country": "ایران", "province": "اصفهان", "stage": "هنر و طلسم", "bonus": "craft", "desc": "ساخت طلسم بهتر"},
     {"id": "kashan", "name": "کاشان", "country": "ایران", "province": "اصفهان", "stage": "کویر گل", "bonus": "herb", "desc": "گیاه معنوی"},
-    {"id": "najafabad", "name": "نجف‌آباد", "country": "ایران", "province": "اصفهان", "stage": "صنعت", "bonus": "coin", "desc": "سکه"},
+    {"id": "najafabad", "name": "نجفآباد", "country": "ایران", "province": "اصفهان", "stage": "صنعت", "bonus": "coin", "desc": "سکه"},
     {"id": "shiraz", "name": "شیراز", "country": "ایران", "province": "فارس", "stage": "ادبیات", "bonus": "cult", "desc": "تذهیب شعر"},
-    {"id": "marvdasht", "name": "مرودشت", "country": "ایران", "province": "فارس", "stage": "تخت‌جمشید", "bonus": "power", "desc": "قدرت باستانی"},
+    {"id": "marvdasht", "name": "مرودشت", "country": "ایران", "province": "فارس", "stage": "تختجمشید", "bonus": "power", "desc": "قدرت باستانی"},
     {"id": "lar", "name": "لار", "country": "ایران", "province": "فارس", "stage": "جنوب", "bonus": "trade", "desc": "تجارت"},
     {"id": "bandarabbas", "name": "بندرعباس", "country": "ایران", "province": "هرمزگان", "stage": "بندر بزرگ", "bonus": "trade", "desc": "تجارت دریایی"},
     {"id": "khamir", "name": "خمیر", "country": "ایران", "province": "هرمزگان", "stage": "ساحل آرام", "bonus": "cult", "desc": "تذهیب ساحلی"},
     {"id": "lengeh", "name": "بندر لنگه", "country": "ایران", "province": "هرمزگان", "stage": "مروارید", "bonus": "coin", "desc": "سکه دریایی"},
     {"id": "tabriz", "name": "تبریز", "country": "ایران", "province": "آذربایجان شرقی", "stage": "بازار بزرگ", "bonus": "trade", "desc": "تجارت"},
     {"id": "maragheh", "name": "مراغه", "country": "ایران", "province": "آذربایجان شرقی", "stage": "رصدخانه", "bonus": "cult", "desc": "دانش"},
-    {"id": "marand", "name": "مرند", "country": "ایران", "province": "آذربایجان شرقی", "stage": "شمال‌غرب", "bonus": "power", "desc": "قدرت"},
+    {"id": "marand", "name": "مرند", "country": "ایران", "province": "آذربایجان شرقی", "stage": "شمالغرب", "bonus": "power", "desc": "قدرت"},
     {"id": "urmia", "name": "ارومیه", "country": "ایران", "province": "آذربایجان غربی", "stage": "دریاچه", "bonus": "lifespan", "desc": "عمر"},
     {"id": "khoy", "name": "خوی", "country": "ایران", "province": "آذربایجان غربی", "stage": "مرز", "bonus": "power", "desc": "مرزبانی"},
     {"id": "mahabad", "name": "مهاباد", "country": "ایران", "province": "آذربایجان غربی", "stage": "کوهستان", "bonus": "hunt", "desc": "شکار بهتر"},
@@ -49,7 +49,7 @@ CITIES = [
     {"id": "nahavand", "name": "نهاوند", "country": "ایران", "province": "همدان", "stage": "تاریخ", "bonus": "power", "desc": "قدرت"},
     {"id": "kermanshah", "name": "کرمانشاه", "country": "ایران", "province": "کرمانشاه", "stage": "بیستون", "bonus": "power", "desc": "سنگ و قدرت"},
     {"id": "paveh", "name": "پاوه", "country": "ایران", "province": "کرمانشاه", "stage": "اورامان", "bonus": "cult", "desc": "تذهیب کوه"},
-    {"id": "islamabad", "name": "اسلام‌آباد غرب", "country": "ایران", "province": "کرمانشاه", "stage": "مرز غرب", "bonus": "hunt", "desc": "شکار"},
+    {"id": "islamabad", "name": "اسلامآباد غرب", "country": "ایران", "province": "کرمانشاه", "stage": "مرز غرب", "bonus": "hunt", "desc": "شکار"},
     {"id": "sanandaj", "name": "سنندج", "country": "ایران", "province": "کردستان", "stage": "کوهستان", "bonus": "power", "desc": "قدرت"},
     {"id": "marivan", "name": "مریوان", "country": "ایران", "province": "کردستان", "stage": "دریاچه زریوار", "bonus": "lifespan", "desc": "عمر"},
     {"id": "baneh", "name": "بانه", "country": "ایران", "province": "کردستان", "stage": "بازار مرز", "bonus": "trade", "desc": "تجارت"},
@@ -61,7 +61,7 @@ CITIES = [
     {"id": "kangaan", "name": "کنگان", "country": "ایران", "province": "بوشهر", "stage": "گاز", "bonus": "craft", "desc": "صنعت"},
     {"id": "ardabil", "name": "اردبیل", "country": "ایران", "province": "اردبیل", "stage": "سبلان", "bonus": "cult", "desc": "کوه مقدس"},
     {"id": "khalkhal", "name": "خلخال", "country": "ایران", "province": "اردبیل", "stage": "سردسیر", "bonus": "power", "desc": "قدرت"},
-    {"id": "meshginshahr", "name": "مشگین‌شهر", "country": "ایران", "province": "اردبیل", "stage": "چشمه", "bonus": "lifespan", "desc": "عمر"},
+    {"id": "meshginshahr", "name": "مشگینشهر", "country": "ایران", "province": "اردبیل", "stage": "چشمه", "bonus": "lifespan", "desc": "عمر"},
     {"id": "gorgan", "name": "گرگان", "country": "ایران", "province": "گلستان", "stage": "جنگل ابر", "bonus": "herb", "desc": "گیاه"},
     {"id": "gonbad", "name": "گنبد کاووس", "country": "ایران", "province": "گلستان", "stage": "برج", "bonus": "power", "desc": "قدرت"},
     {"id": "bandartorkman", "name": "بندر ترکمن", "country": "ایران", "province": "گلستان", "stage": "ساحل", "bonus": "trade", "desc": "تجارت"},
@@ -83,7 +83,7 @@ CITIES = [
     {"id": "yasuj", "name": "یاسوج", "country": "ایران", "province": "کهگیلویه و بویراحمد", "stage": "زاگرس", "bonus": "cult", "desc": "تذهیب کوه"},
     {"id": "dehdasht", "name": "دهدشت", "country": "ایران", "province": "کهگیلویه و بویراحمد", "stage": "تاریخی", "bonus": "power", "desc": "قدرت"},
     {"id": "gachsaran", "name": "گچساران", "country": "ایران", "province": "کهگیلویه و بویراحمد", "stage": "نفت", "bonus": "coin", "desc": "ثروت"},
-    {"id": "khorramabad", "name": "خرم‌آباد", "country": "ایران", "province": "لرستان", "stage": "فلک‌الافلاک", "bonus": "power", "desc": "قلعه"},
+    {"id": "khorramabad", "name": "خرمآباد", "country": "ایران", "province": "لرستان", "stage": "فلکالافلاک", "bonus": "power", "desc": "قلعه"},
     {"id": "borujerd", "name": "بروجرد", "country": "ایران", "province": "لرستان", "stage": "دشت", "bonus": "coin", "desc": "سکه"},
     {"id": "dorud", "name": "دورود", "country": "ایران", "province": "لرستان", "stage": "آبشار", "bonus": "lifespan", "desc": "عمر"},
     {"id": "shahrkord", "name": "شهرکرد", "country": "ایران", "province": "چهارمحال و بختیاری", "stage": "بام ایران", "bonus": "cult", "desc": "تذهیب ارتفاع"},
@@ -95,9 +95,9 @@ CITIES = [
     {"id": "arak", "name": "اراک", "country": "ایران", "province": "مرکزی", "stage": "صنعت", "bonus": "craft", "desc": "ساخت"},
     {"id": "saveh", "name": "ساوه", "country": "ایران", "province": "مرکزی", "stage": "انار", "bonus": "coin", "desc": "سکه"},
     {"id": "khomein", "name": "خمین", "country": "ایران", "province": "مرکزی", "stage": "مرکز", "bonus": "cult", "desc": "تذهیب"},
-    {"id": "golestan_ali", "name": "علی‌آباد", "country": "ایران", "province": "گلستان", "stage": "جنگل", "bonus": "herb", "desc": "گیاه"},
+    {"id": "golestan_ali", "name": "علیآباد", "country": "ایران", "province": "گلستان", "stage": "جنگل", "bonus": "herb", "desc": "گیاه"},
     # ۲۰ کشور همسایه و منطقه
-    {"id": "kabul", "name": "کابل", "country": "افغانستان", "province": "کابل", "stage": "مرکز فرقه‌ها", "bonus": "power", "desc": "قدرت فرقه"},
+    {"id": "kabul", "name": "کابل", "country": "افغانستان", "province": "کابل", "stage": "مرکز فرقهها", "bonus": "power", "desc": "قدرت فرقه"},
     {"id": "herat", "name": "هرات", "country": "افغانستان", "province": "هرات", "stage": "هنر", "bonus": "craft", "desc": "طلسم"},
     {"id": "balkh", "name": "بلخ", "country": "افغانستان", "province": "بلخ", "stage": "تذهیب کهن", "bonus": "cult", "desc": "تذهیب"},
     {"id": "baghdad", "name": "بغداد", "country": "عراق", "province": "بغداد", "stage": "دانش", "bonus": "cult", "desc": "علم"},
@@ -108,7 +108,7 @@ CITIES = [
     {"id": "istanbul", "name": "استانبول", "country": "ترکیه", "province": "استانبول", "stage": "دو قاره", "bonus": "trade", "desc": "تجارت بزرگ"},
     {"id": "ankara", "name": "آنکارا", "country": "ترکیه", "province": "آنکارا", "stage": "سیاست", "bonus": "xp", "desc": "XP"},
     {"id": "konya", "name": "قونیه", "country": "ترکیه", "province": "قونیه", "stage": "مولوی", "bonus": "cult", "desc": "تذهیب"},
-    {"id": "samarkand", "name": "سمرقند", "country": "ازبکستان", "province": "سمرقند", "stage": "جاده‌ابریشم", "bonus": "trade", "desc": "تجارت"},
+    {"id": "samarkand", "name": "سمرقند", "country": "ازبکستان", "province": "سمرقند", "stage": "جادهابریشم", "bonus": "trade", "desc": "تجارت"},
     {"id": "bukhara", "name": "بخارا", "country": "ازبکستان", "province": "بخارا", "stage": "علم", "bonus": "cult", "desc": "دانش"},
     {"id": "tashkent", "name": "تاشکند", "country": "ازبکستان", "province": "تاشکند", "stage": "پایتخت", "bonus": "coin", "desc": "سکه"},
     {"id": "delhi", "name": "دهلی", "country": "هند", "province": "دهلی", "stage": "بازار شرق", "bonus": "trade", "desc": "بازار"},
@@ -116,17 +116,17 @@ CITIES = [
     {"id": "varanasi", "name": "وارانسی", "country": "هند", "province": "اوتار پرادش", "stage": "مقدس", "bonus": "cult", "desc": "تذهیب"},
     {"id": "beijing", "name": "پکن", "country": "چین", "province": "پکن", "stage": "امپراتوری", "bonus": "power", "desc": "قدرت"},
     {"id": "shanghai", "name": "شانگهای", "country": "چین", "province": "شانگهای", "stage": "بندر شرق", "bonus": "trade", "desc": "تجارت"},
-    {"id": "xian", "name": "شی‌آن", "country": "چین", "province": "شاآنشی", "stage": "جاده‌ابریشم", "bonus": "cult", "desc": "تذهیب"},
+    {"id": "xian", "name": "شیآن", "country": "چین", "province": "شاآنشی", "stage": "جادهابریشم", "bonus": "cult", "desc": "تذهیب"},
     {"id": "moscow", "name": "مسکو", "country": "روسیه", "province": "مسکو", "stage": "شمال سرد", "bonus": "power", "desc": "قدرت"},
     {"id": "dubai", "name": "دبی", "country": "امارات", "province": "دبی", "stage": "ثروت", "bonus": "coin", "desc": "سکه زیاد"},
     {"id": "riyadh", "name": "ریاض", "country": "عربستان", "province": "ریاض", "stage": "صحرا", "bonus": "cult", "desc": "تذهیب خشک"},
     {"id": "cairo", "name": "قاهره", "country": "مصر", "province": "قاهره", "stage": "اهرام", "bonus": "power", "desc": "قدرت باستانی"},
-    {"id": "islamabad_pk", "name": "اسلام‌آباد", "country": "پاکستان", "province": "اسلام‌آباد", "stage": "پایتخت", "bonus": "xp", "desc": "XP"},
+    {"id": "islamabad_pk", "name": "اسلامآباد", "country": "پاکستان", "province": "اسلامآباد", "stage": "پایتخت", "bonus": "xp", "desc": "XP"},
     {"id": "lahore", "name": "لاهور", "country": "پاکستان", "province": "پنجاب", "stage": "فرهنگ", "bonus": "cult", "desc": "تذهیب"},
     {"id": "karachi", "name": "کراچی", "country": "پاکستان", "province": "سند", "stage": "بندر", "bonus": "trade", "desc": "تجارت"},
     {"id": "dushanbe", "name": "دوشنبه", "country": "تاجیکستان", "province": "دوشنبه", "stage": "پامیر", "bonus": "cult", "desc": "تذهیب کوه"},
     {"id": "bishkek", "name": "بیشکک", "country": "قرقیزستان", "province": "بیشکک", "stage": "استپ", "bonus": "hunt", "desc": "شکار"},
-    {"id": "ashgabat", "name": "عشق‌آباد", "country": "ترکمنستان", "province": "عشق‌آباد", "stage": "صحرا", "bonus": "coin", "desc": "سکه"},
+    {"id": "ashgabat", "name": "عشقآباد", "country": "ترکمنستان", "province": "عشقآباد", "stage": "صحرا", "bonus": "coin", "desc": "سکه"},
     {"id": "baku", "name": "باکو", "country": "آذربایجان", "province": "باکو", "stage": "نفت خزر", "bonus": "coin", "desc": "ثروت"},
     {"id": "yerevan", "name": "ایروان", "country": "ارمنستان", "province": "ایروان", "stage": "کوهستان", "bonus": "cult", "desc": "تذهیب"},
     {"id": "tbilisi", "name": "تفلیس", "country": "گرجستان", "province": "تفلیس", "stage": "قفقاز", "bonus": "power", "desc": "قدرت"},
@@ -136,7 +136,7 @@ CITIES = [
 
     # ===== اروپا =====
     {"id": "london", "name": "لندن", "country": "انگلستان", "province": "انگلستان", "stage": "مه و تاج", "bonus": "trade", "desc": "تجارت جهانی"},
-    {"id": "paris", "name": "پاریس", "country": "فرانسه", "province": "ایل‌دو‌فرانس", "stage": "هنر", "bonus": "cult", "desc": "تذهیب هنری"},
+    {"id": "paris", "name": "پاریس", "country": "فرانسه", "province": "ایلدوفرانس", "stage": "هنر", "bonus": "cult", "desc": "تذهیب هنری"},
     {"id": "berlin", "name": "برلین", "country": "آلمان", "province": "برلین", "stage": "صنعت", "bonus": "craft", "desc": "ساخت"},
     {"id": "rome", "name": "رم", "country": "ایتالیا", "province": "لاتزیو", "stage": "امپراتوری", "bonus": "power", "desc": "قدرت باستانی"},
     {"id": "madrid", "name": "مادرید", "country": "اسپانیا", "province": "مادرید", "stage": "آفتاب", "bonus": "coin", "desc": "سکه"},
@@ -149,15 +149,15 @@ CITIES = [
     {"id": "cairo2", "name": "اسکندریه", "country": "مصر", "province": "اسکندریه", "stage": "کتابخانه کهن", "bonus": "cult", "desc": "دانش"},
     {"id": "lagos", "name": "لاگوس", "country": "نیجریه", "province": "لاگوس", "stage": "آفریقای غرب", "bonus": "coin", "desc": "ثروت"},
     {"id": "nairobi", "name": "نایروبی", "country": "کنیا", "province": "نایروبی", "stage": "ساوانا", "bonus": "hunt", "desc": "شکار"},
-    {"id": "cape_town", "name": "کیپ‌تاون", "country": "آفریقای جنوبی", "province": "کیپ غربی", "stage": "دماغه", "bonus": "trade", "desc": "بندر"},
+    {"id": "cape_town", "name": "کیپتاون", "country": "آفریقای جنوبی", "province": "کیپ غربی", "stage": "دماغه", "bonus": "trade", "desc": "بندر"},
     {"id": "casablanca", "name": "کازابلانکا", "country": "مراکش", "province": "کازابلانکا", "stage": "مغرب", "bonus": "trade", "desc": "تجارت"},
-    {"id": "addis", "name": "آدیس‌آبابا", "country": "اتیوپی", "province": "آدیس", "stage": "بلندای آفریقا", "bonus": "cult", "desc": "تذهیب"},
+    {"id": "addis", "name": "آدیسآبابا", "country": "اتیوپی", "province": "آدیس", "stage": "بلندای آفریقا", "bonus": "cult", "desc": "تذهیب"},
     {"id": "accra", "name": "آکرا", "country": "غنا", "province": "آکرا", "stage": "طلای غرب", "bonus": "coin", "desc": "سکه"},
     {"id": "tunis", "name": "تونس", "country": "تونس", "province": "تونس", "stage": "مدیترانه", "bonus": "trade", "desc": "بندر"},
     # ===== آمریکای شمالی =====
     {"id": "newyork", "name": "نیویورک", "country": "آمریکا", "province": "نیویورک", "stage": "ابرشهر", "bonus": "trade", "desc": "تجارت بزرگ"},
-    {"id": "losangeles", "name": "لس‌آنجلس", "country": "آمریکا", "province": "کالیفرنیا", "stage": "غرب", "bonus": "coin", "desc": "سکه"},
-    {"id": "chicago", "name": "شیکاگو", "country": "آمریکا", "province": "ایلی‌نوی", "stage": "بادها", "bonus": "power", "desc": "قدرت"},
+    {"id": "losangeles", "name": "لسآنجلس", "country": "آمریکا", "province": "کالیفرنیا", "stage": "غرب", "bonus": "coin", "desc": "سکه"},
+    {"id": "chicago", "name": "شیکاگو", "country": "آمریکا", "province": "ایلینوی", "stage": "بادها", "bonus": "power", "desc": "قدرت"},
     {"id": "toronto", "name": "تورنتو", "country": "کانادا", "province": "انتاریو", "stage": "شمال", "bonus": "xp", "desc": "XP"},
     {"id": "vancouver", "name": "ونکوور", "country": "کانادا", "province": "بریتیش کلمبیا", "stage": "اقیانوس آرام", "bonus": "trade", "desc": "بندر"},
     {"id": "mexico_city", "name": "مکزیکوسیتی", "country": "مکزیک", "province": "مکزیکو", "stage": "آزتک", "bonus": "power", "desc": "قدرت باستانی"},
@@ -165,26 +165,26 @@ CITIES = [
     # ===== آمریکای جنوبی =====
     {"id": "saopaulo", "name": "سائوپائولو", "country": "برزیل", "province": "سائوپائولو", "stage": "جنوب بزرگ", "bonus": "coin", "desc": "ثروت"},
     {"id": "riodejaneiro", "name": "ریودوژانیرو", "country": "برزیل", "province": "ریو", "stage": "ساحل طلایی", "bonus": "cult", "desc": "تذهیب"},
-    {"id": "buenosaires", "name": "بوئنوس‌آیرس", "country": "آرژانتین", "province": "بوئنوس‌آیرس", "stage": "پامپا", "bonus": "trade", "desc": "تجارت"},
+    {"id": "buenosaires", "name": "بوئنوسآیرس", "country": "آرژانتین", "province": "بوئنوسآیرس", "stage": "پامپا", "bonus": "trade", "desc": "تجارت"},
     {"id": "lima", "name": "لیما", "country": "پرو", "province": "لیما", "stage": "اینکا", "bonus": "power", "desc": "قدرت کهن"},
     {"id": "bogota", "name": "بوگوتا", "country": "کلمبیا", "province": "بوگوتا", "stage": "آند", "bonus": "cult", "desc": "تذهیب ارتفاع"},
-    {"id": "santiago", "name": "سانتیاگو", "country": "شیلی", "province": "سانتیاگو", "stage": "رشته‌کوه", "bonus": "power", "desc": "قدرت"},
+    {"id": "santiago", "name": "سانتیاگو", "country": "شیلی", "province": "سانتیاگو", "stage": "رشتهکوه", "bonus": "power", "desc": "قدرت"},
     # ===== اقیانوسیه =====
-    {"id": "sydney", "name": "سیدنی", "country": "استرالیا", "province": "نیوساوت‌ولز", "stage": "اپرا و بندر", "bonus": "trade", "desc": "بندر"},
+    {"id": "sydney", "name": "سیدنی", "country": "استرالیا", "province": "نیوساوتولز", "stage": "اپرا و بندر", "bonus": "trade", "desc": "بندر"},
     {"id": "melbourne", "name": "ملبورن", "country": "استرالیا", "province": "ویکتوریا", "stage": "فرهنگ", "bonus": "cult", "desc": "تذهیب"},
     {"id": "auckland", "name": "اوکلند", "country": "نیوزیلند", "province": "اوکلند", "stage": "جزایر", "bonus": "lifespan", "desc": "عمر"},
     {"id": "wellington", "name": "ولینگتون", "country": "نیوزیلند", "province": "ولینگتون", "stage": "پایتخت باد", "bonus": "power", "desc": "قدرت"},
     {"id": "suva", "name": "سووا", "country": "فیجی", "province": "سووا", "stage": "اقیانوس آرام", "bonus": "herb", "desc": "گیاه"},
-    # ===== آسیای شرق و جنوب‌شرق =====
+    # ===== آسیای شرق و جنوبشرق =====
     {"id": "bangkok", "name": "بانکوک", "country": "تایلند", "province": "بانکوک", "stage": "معابد", "bonus": "cult", "desc": "تذهیب"},
-    {"id": "jakarta", "name": "جاکارتا", "country": "اندونزی", "province": "جاکارتا", "stage": " مجمع‌الجزایر", "bonus": "trade", "desc": "تجارت"},
+    {"id": "jakarta", "name": "جاکارتا", "country": "اندونزی", "province": "جاکارتا", "stage": " مجمعالجزایر", "bonus": "trade", "desc": "تجارت"},
     {"id": "manila", "name": "مانیل", "country": "فیلیپین", "province": "مانیل", "stage": "جزایر", "bonus": "coin", "desc": "سکه"},
-    {"id": "hanoi", "name": "هانوی", "country": "ویتنام", "province": "هانوی", "stage": "شرق‌هندوچین", "bonus": "cult", "desc": "تذهیب"},
+    {"id": "hanoi", "name": "هانوی", "country": "ویتنام", "province": "هانوی", "stage": "شرقهندوچین", "bonus": "cult", "desc": "تذهیب"},
     {"id": "singapore", "name": "سنگاپور", "country": "سنگاپور", "province": "سنگاپور", "stage": "بندر جهانی", "bonus": "trade", "desc": "تجارت بزرگ"},
-    {"id": "kualalumpur", "name": "کوالالامپور", "country": "مالزی", "province": "کوالالامپور", "stage": "برج‌ها", "bonus": "coin", "desc": "ثروت"},
+    {"id": "kualalumpur", "name": "کوالالامپور", "country": "مالزی", "province": "کوالالامپور", "stage": "برجها", "bonus": "coin", "desc": "ثروت"},
     # ===== آسیای مرکزی و قفقاز بیشتر =====
-    {"id": "ulaanbaatar", "name": "اولان‌باتور", "country": "مغولستان", "province": "اولان‌باتور", "stage": "استپ مغول", "bonus": "hunt", "desc": "شکار"},
-    {"id": "colombo", "name": "کلمبو", "country": "سری‌لانکا", "province": "کلمبو", "stage": "جزیره چای", "bonus": "herb", "desc": "گیاه"},
+    {"id": "ulaanbaatar", "name": "اولانباتور", "country": "مغولستان", "province": "اولانباتور", "stage": "استپ مغول", "bonus": "hunt", "desc": "شکار"},
+    {"id": "colombo", "name": "کلمبو", "country": "سریلانکا", "province": "کلمبو", "stage": "جزیره چای", "bonus": "herb", "desc": "گیاه"},
     {"id": "kathmandu", "name": "کاتماندو", "country": "نپال", "province": "کاتماندو", "stage": "هیمالیا", "bonus": "cult", "desc": "تذهیب کوه"},
     {"id": "dhaka", "name": "داکا", "country": "بنگلادش", "province": "داکا", "stage": "دلتا", "bonus": "coin", "desc": "سکه"},
 
@@ -213,7 +213,7 @@ HEAVEN_CITIES = [
     {"id": "heaven_18", "name": "دره زمزم", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-18", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
     {"id": "heaven_19", "name": "شهر همهمه", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-19", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
     {"id": "heaven_20", "name": "صومعه سپید", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-20", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
-    {"id": "heaven_21", "name": "آسمان‌آباد", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-21", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
+    {"id": "heaven_21", "name": "آسمانآباد", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-21", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
     {"id": "heaven_22", "name": "فردوس کوچک", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-22", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
     {"id": "heaven_23", "name": "گلدسته اعلی", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-23", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
     {"id": "heaven_24", "name": "کوی فرشته", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-24", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
@@ -238,7 +238,7 @@ HEAVEN_CITIES = [
     {"id": "heaven_43", "name": "معبد آرامش", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-43", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
     {"id": "heaven_44", "name": "قلعه سپهر", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-44", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
     {"id": "heaven_45", "name": "رودخانه نور", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-45", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
-    {"id": "heaven_46", "name": "کاخ هشت‌بهشت", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-46", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
+    {"id": "heaven_46", "name": "کاخ هشتبهشت", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-46", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
     {"id": "heaven_47", "name": "شهر صفا", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-47", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
     {"id": "heaven_48", "name": "تپه نقره", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-48", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
     {"id": "heaven_49", "name": "بندر فردوس", "country": "دنیای بهشتی", "province": "آسمان", "stage": "بهشتی-49", "bonus": "cult", "desc": "شهر بهشتی", "world": "بهشتی"},
@@ -261,9 +261,9 @@ UNDER_CITIES = [
     {"id": "under_12", "name": "زندان ابدی", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-12", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
     {"id": "under_13", "name": "معبد اهریمن", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-13", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
     {"id": "under_14", "name": "باتلاق زهر", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-14", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
-    {"id": "under_15", "name": "شهر نفرین‌شده", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-15", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
+    {"id": "under_15", "name": "شهر نفرینشده", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-15", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
     {"id": "under_16", "name": "قصر تاریکی", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-16", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
-    {"id": "under_17", "name": "غار خون‌آشام", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-17", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
+    {"id": "under_17", "name": "غار خونآشام", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-17", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
     {"id": "under_18", "name": "دشت اسکلت", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-18", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
     {"id": "under_19", "name": "برج عذاب", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-19", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
     {"id": "under_20", "name": "بندر دوزخ", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-20", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
@@ -276,7 +276,7 @@ UNDER_CITIES = [
     {"id": "under_27", "name": "قلعه سایه", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-27", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
     {"id": "under_28", "name": "معبد خون", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-28", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
     {"id": "under_29", "name": "گودال فراموشی", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-29", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
-    {"id": "under_30", "name": "شهر بی‌نام", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-30", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
+    {"id": "under_30", "name": "شهر بینام", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-30", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
     {"id": "under_31", "name": "دروازه دوزخ", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-31", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
     {"id": "under_32", "name": "کاخ اهریمن", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-32", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
     {"id": "under_33", "name": "رودخانه آتش", "country": "دنیای زیرین", "province": "مغاک", "stage": "زیرین-33", "bonus": "hunt", "desc": "شهر زیرین", "world": "زیرین"},
@@ -335,7 +335,7 @@ SPIRIT_CITIES = _gen_world_cities("spirit", "روحی", "دنیای روحی", "
 ], "cult")
 
 ICE_CITIES = _gen_world_cities("ice", "یخی", "دنیای یخی", "قطب", [
-    "قلعه یخ", "شهر برف", "غار یخ‌بندان", "دریاچه منجمد", "دشت سپید",
+    "قلعه یخ", "شهر برف", "غار یخبندان", "دریاچه منجمد", "دشت سپید",
     "برج بلور یخ", "بندر شمال", "معبد سرما", "کوه یخچال", "سرای قطبی",
     "جزیره منجمد", "رود یخ", "کاخ ملکه برف", "دره کولاک", "چشمه یخ",
 ], "power")
@@ -343,37 +343,37 @@ ICE_CITIES = _gen_world_cities("ice", "یخی", "دنیای یخی", "قطب", [
 FIRE_CITIES = _gen_world_cities("fire", "آتشین", "دنیای آتشین", "ماگما", [
     "شهر گدازه", "قلعه آتش", "دهانه آتشفشان", "رود ماگما", "دشت خاکستر",
     "معبد شعله", "برج آتش", "غار گدازه", "جزیره سوزان", "سرای آذر",
-    "بازار زغال", "کوه دود", "چشمه جوشان", "کاخ شعله‌ور", "دره آتش",
+    "بازار زغال", "کوه دود", "چشمه جوشان", "کاخ شعلهور", "دره آتش",
 ], "power")
 
 VOID_CITIES = _gen_world_cities("void", "پوچی", "دنیای پوچی", "خلا", [
     "شهر هیچ", "دروازه پوچی", "دشت خاموش مطلق", "برج خلأ", "غار عدم",
     "جزیره محو", "سرای نیستی", "رود ناپیدا", "معبد خالی", "کوه سایه",
-    "بازار فراموشی", "قصر بی‌شکل", "چاه پوچی", "کوی محو", "آرامگاه خلأ",
+    "بازار فراموشی", "قصر بیشکل", "چاه پوچی", "کوی محو", "آرامگاه خلأ",
 ], "cult")
 
-ETHEREAL_CITIES = _gen_world_cities("eth", "ای‌تری", "دنیای ای‌تری", "اتر", [
-    "شهر اتر", "قصر شفاف", "دریاچه نور رقیق", "برج ای‌تری", "دشت مه نور",
+ETHEREAL_CITIES = _gen_world_cities("eth", "ایتری", "دنیای ایتری", "اتر", [
+    "شهر اتر", "قصر شفاف", "دریاچه نور رقیق", "برج ایتری", "دشت مه نور",
     "معبد اتر", "غار بلور اتر", "جزیره شناور", "سرای رقیق", "رود اتر",
-    "کوه مهتاب", "بازار انرژی", "چشمه اتر", "کاخ شناور", "دروازه ای‌تری",
+    "کوه مهتاب", "بازار انرژی", "چشمه اتر", "کاخ شناور", "دروازه ایتری",
 ], "cult")
 
 FOREST_CITIES = _gen_world_cities("forest", "جنگلی", "دنیای جنگلی", "بیشه", [
     "شهر درخت", "قلعه ریشه", "دهکده برگ", "دریاچه سبز", "دشت گل وحشی",
-    "معبد درخت کهن", "غار خزه‌ای", "جزیره بیشه", "سرای دروید", "رود جنگل",
+    "معبد درخت کهن", "غار خزهای", "جزیره بیشه", "سرای دروید", "رود جنگل",
     "کوه سبز", "بازار گیاه", "چشمه حیات سبز", "کاخ شاخه", "دره مه جنگل",
 ], "herb")
 
-STAR_CITIES = _gen_world_cities("star", "ستاره‌ای", "دنیای ستاره‌ای", "کهکشان", [
-    "شهر ستاره", "قلعه کهکشان", "بندر شهاب", "دریاچه کیهان", "دشت شهاب‌بار",
-    "معبد صورت‌فلکی", "غار شهاب", "جزیره نپتون", "سرای کیهان", "رود کهکشان",
+STAR_CITIES = _gen_world_cities("star", "ستارهای", "دنیای ستارهای", "کهکشان", [
+    "شهر ستاره", "قلعه کهکشان", "بندر شهاب", "دریاچه کیهان", "دشت شهاببار",
+    "معبد صورتفلکی", "غار شهاب", "جزیره نپتون", "سرای کیهان", "رود کهکشان",
     "کوه ستاره", "بازار شهاب", "چشمه نور ستاره", "کاخ اوریون", "دروازه کهکشان",
 ], "xp")
 
-DRAGON_CITIES = _gen_world_cities("dragon", "اژدهایی", "دنیای اژدها", "دره‌اژدها", [
-    "لانه اژدها", "شهر فلس", "قلعه بال", "دریاچه آتش‌دم", "دشت اژدها",
+DRAGON_CITIES = _gen_world_cities("dragon", "اژدهایی", "دنیای اژدها", "درهاژدها", [
+    "لانه اژدها", "شهر فلس", "قلعه بال", "دریاچه آتشدم", "دشت اژدها",
     "معبد اژدهای کهن", "غار گنج اژدها", "جزیره بال", "سرای اژدهاشاه", "رود طلا",
-    "کوه اژدها", "بازار فلس", "چشمه خون اژدها", "کاخ بال‌زرین", "دره غرش",
+    "کوه اژدها", "بازار فلس", "چشمه خون اژدها", "کاخ بالزرین", "دره غرش",
 ], "power")
 
 EXTRA_WORLD_CITIES = (
@@ -391,9 +391,9 @@ WORLD_DEFAULT_CITY = {
     "یخی": "ice_1",
     "آتشین": "fire_1",
     "پوچی": "void_1",
-    "ای‌تری": "eth_1",
+    "ایتری": "eth_1",
     "جنگلی": "forest_1",
-    "ستاره‌ای": "star_1",
+    "ستارهای": "star_1",
     "اژدهایی": "dragon_1",
 }
 
@@ -465,11 +465,11 @@ def cities_for_world(world: str) -> list:
         return FIRE_CITIES
     if w == "پوچی":
         return VOID_CITIES
-    if w == "ای‌تری":
+    if w == "ایتری":
         return ETHEREAL_CITIES
     if w == "جنگلی":
         return FOREST_CITIES
-    if w == "ستاره‌ای":
+    if w == "ستارهای":
         return STAR_CITIES
     if w == "اژدهایی":
         return DRAGON_CITIES
@@ -489,7 +489,7 @@ def list_cities_text(current_id: str, limit_per_country: int = 6, world: str = "
             lines.append(f"• {c['name']}{mark} — مرحله: {c['stage']}")
         if len(cities) > limit_per_country:
             lines.append(f"  … و {len(cities) - limit_per_country} شهر دیگر")
-    lines.append("\nسفر: /travel نام‌شهر | کاوش: /explorecity | شهر من: /mycity")
+    lines.append("\nسفر: /travel نامشهر | کاوش: /explorecity | شهر من: /mycity")
     return "\n".join(lines)
 
 

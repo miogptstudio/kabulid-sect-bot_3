@@ -58,7 +58,7 @@ def awaken(tg_id: int, preferred: str | None = None) -> tuple[bool, str]:
 def status_text(tg_id: int) -> str:
     s = get_spirit(tg_id)
     if not s:
-        return "روح رزمی نداری. /awaken یا /بیدار‌روح"
+        return "روح رزمی نداری. /awaken یا /بیدارروح"
     info = SPIRIT_TYPES.get(s["type"], {})
     on = "فعال ✅" if s.get("active", True) else "خاموش ⏸"
     return (

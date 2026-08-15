@@ -7,21 +7,21 @@ from services.persist import get_dict, save as _psave
 DEFAULT_RULES = [
     "به رهبر و ارجمندان احترام بگذار.",
     "خیانت به فرقه جرم سنگین است.",
-    "مأموریت‌های فرقه را جدی بگیر.",
+    "مأموریتهای فرقه را جدی بگیر.",
     "منابع فرقه را هدر نده.",
     "در دفاع از قلمرو شرکت کن.",
 ]
 
-# سوالات آزمون عمومی (رهبر می‌تواند سوال اختصاصی هم بگذارد)
+# سوالات آزمون عمومی (رهبر میتواند سوال اختصاصی هم بگذارد)
 DEFAULT_QUESTIONS = [
-    {"q": "اولویت عضو فرقه چیست؟", "options": ["منافع شخصی", "منافع فرقه", "بی‌تفاوتی"], "answer": 1},
-    {"q": "در صورت حمله به قلمرو چه باید کرد؟", "options": ["فرار", "اطلاع و دفاع", "بی‌خیال"], "answer": 1},
-    {"q": "خزانه فرقه مال کیست؟", "options": ["فقط رهبر", "همه اعضا به‌صورت جمعی", "غریبه‌ها"], "answer": 1},
+    {"q": "اولویت عضو فرقه چیست؟", "options": ["منافع شخصی", "منافع فرقه", "بیتفاوتی"], "answer": 1},
+    {"q": "در صورت حمله به قلمرو چه باید کرد؟", "options": ["فرار", "اطلاع و دفاع", "بیخیال"], "answer": 1},
+    {"q": "خزانه فرقه مال کیست؟", "options": ["فقط رهبر", "همه اعضا بهصورت جمعی", "غریبهها"], "answer": 1},
     {"q": "خیانت به فرقه چه پیامدی دارد؟", "options": ["پاداش", "مجازات و اخراج", "هیچی"], "answer": 1},
     {"q": "ارتقای مقام چگونه است؟", "options": ["با پول فقط", "با مشارکت و مسابقه داخلی", "شانسی"], "answer": 1},
-    {"q": "مأموریت فرقه را چه کسی صادر می‌کند؟", "options": ["هر کسی", "رهبر یا ارجمند", "ربات"], "answer": 1},
+    {"q": "مأموریت فرقه را چه کسی صادر میکند؟", "options": ["هر کسی", "رهبر یا ارجمند", "ربات"], "answer": 1},
     {"q": "برج تهذیب برای چیست؟", "options": ["دکوراسیون", "بونوس تذهیب اعضا", "زندان"], "answer": 1},
-    {"q": "کتابخانه فرقه چه می‌دهد؟", "options": ["سکه", "تکنیک فرقه‌ای", "پت"], "answer": 1},
+    {"q": "کتابخانه فرقه چه میدهد؟", "options": ["سکه", "تکنیک فرقهای", "پت"], "answer": 1},
 ]
 
 
@@ -69,7 +69,7 @@ def rules_text(sect_id: int, sect_name: str = "") -> str:
         lines.append(f"{i}. {r}")
     lines += [
         "",
-        "عضویت: اول قوانین را بخوان، بعد /sectexam نام‌فرقه",
+        "عضویت: اول قوانین را بخوان، بعد /sectexam نامفرقه",
         "رهبر: /setsectrules قانون1 | قانون2 | ...",
     ]
     return chr(10).join(lines)
@@ -109,7 +109,7 @@ _sessions: dict[int, dict] = {}
 
 def start_exam(tg_id: int, sect_id: int, sect_name: str) -> str:
     if has_passed(tg_id, sect_id):
-        return f"قبلاً آزمون «{sect_name}» را پاس کرده‌ای. /joinsect {sect_name}"
+        return f"قبلاً آزمون «{sect_name}» را پاس کردهای. /joinsect {sect_name}"
     qs = get_questions(sect_id)
     pick = random.sample(qs, k=min(5, len(qs)))
     # shuffle options but track answer index
@@ -136,7 +136,7 @@ def start_exam(tg_id: int, sect_id: int, sect_name: str) -> str:
 def _ask(tg_id: int) -> str:
     s = _sessions.get(int(tg_id))
     if not s:
-        return "آزمونی فعال نیست. /sectexam نام‌فرقه"
+        return "آزمونی فعال نیست. /sectexam نامفرقه"
     i = s["idx"]
     if i >= len(s["qs"]):
         return finish_exam(tg_id)
@@ -178,7 +178,7 @@ def answer_exam(tg_id: int, choice: int) -> str:
 def finish_exam(tg_id: int) -> str:
     s = _sessions.pop(int(tg_id), None)
     if not s:
-        return "جلسه‌ای نبود."
+        return "جلسهای نبود."
     total = len(s["qs"])
     ok = s["correct"]
     need = max(3, (total + 1) // 2)  # حداقل نصف (گرد بالا) و حداقل ۳ اگر ۵ سوال
@@ -197,9 +197,9 @@ def finish_exam(tg_id: int) -> str:
 
 
 # ---------- مسابقه ارتقا ----------
-# وضعیت‌های فرقه از پایین به بالا (باید با SECT_STATUS هم‌خوان باشد)
+# وضعیتهای فرقه از پایین به بالا (باید با SECT_STATUS همخوان باشد)
 PROMO_ORDER = [
-    "عضو دسته‌های پایین‌تر",
+    "عضو دستههای پایینتر",
     "عضو بیرونی",
     "عضو داخلی",
     "ارشد",
@@ -222,7 +222,7 @@ def start_promo_comp(sect_id: int, target_status: str, hours: int = 24) -> str:
     return (
         f"🏆 مسابقه ارتقا به <b>{target_status}</b> شروع شد." + chr(10)
         + f"مدت: {hours} ساعت" + chr(10)
-        + "اعضا با /promocompete امتیاز می‌گیرند (مأموریت/مشارکت)." + chr(10)
+        + "اعضا با /promocompete امتیاز میگیرند (مأموریت/مشارکت)." + chr(10)
         + "پایان: /endpromocomp (رهبر) یا خودکار"
     )
 
@@ -257,7 +257,7 @@ def promo_status(sect_id: int) -> str:
     ranked = sorted(scores.items(), key=lambda x: -int(x[1]))
     lines = [
         f"🏆 مسابقه ارتقا → <b>{data.get('target')}</b>",
-        f"{'🟢 فعال' if data.get('active') else '🔴 تمام‌شده'}",
+        f"{'🟢 فعال' if data.get('active') else '🔴 تمامشده'}",
         f"پایان: {data.get('ends', '')[:16]}",
         "",
     ]
@@ -271,12 +271,12 @@ def promo_status(sect_id: int) -> str:
 
 
 def end_promo_comp(sect_id: int) -> tuple[str | None, str]:
-    """برمی‌گرداند (برنده_tg یا None, پیام)"""
+    """برمیگرداند (برنده_tg یا None, پیام)"""
     m = _promo()
     sk = str(int(sect_id))
     data = m.get(sk)
     if not data:
-        return None, "مسابقه‌ای نیست."
+        return None, "مسابقهای نیست."
     scores = data.get("scores") or {}
     data["active"] = False
     m[sk] = data
@@ -288,5 +288,5 @@ def end_promo_comp(sect_id: int) -> tuple[str | None, str]:
         f"🏁 مسابقه تمام شد." + chr(10)
         + f"برنده: `{winner_tg}` با {sc} امتیاز" + chr(10)
         + f"مقصد ارتقا: <b>{data.get('target')}</b>" + chr(10)
-        + "رهبر می‌تواند با /promotewinner وضعیت برنده را اعمال کند."
+        + "رهبر میتواند با /promotewinner وضعیت برنده را اعمال کند."
     )

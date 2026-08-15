@@ -1,4 +1,4 @@
-"""سیستم چندقبیله‌ای — بنیانگذار، بزرگ، جد"""
+"""سیستم چندقبیلهای — بنیانگذار، بزرگ، جد"""
 from datetime import datetime
 
 # tribe_id -> data
@@ -10,7 +10,7 @@ _counter = 1000
 def create_tribe(tg_id: int, name: str, founder_name: str) -> str:
     global _counter
     if tg_id in _member:
-        return "قبلاً عضو قبیله‌ای."
+        return "قبلاً عضو قبیلهای."
     name = name.strip()[:32]
     if not name:
         return "نام قبیله را بنویس."
@@ -105,7 +105,7 @@ def info(tg_id: int) -> str:
 
 def list_tribes() -> str:
     if not _tribes:
-        return "قبیله‌ای نیست. /createtribe نام"
+        return "قبیلهای نیست. /createtribe نام"
     lines = ["🏛 <b>قبایل</b>", ""]
     for t in sorted(_tribes.values(), key=lambda x: -x["points"]):
         lines.append(f"• {t['name']} — {len(t['members'])} نفر | {t['points']} امتیاز")

@@ -64,7 +64,7 @@ async def release_spirit(session: AsyncSession, user: User) -> str:
     )
     s = result.scalar_one_or_none()
     if not s:
-        return "روح انتقام‌جوی فعالی نداری."
+        return "روح انتقامجوی فعالی نداری."
     s.is_active = False
     user.world = "فانی"
     await session.commit()

@@ -1,9 +1,9 @@
-"""هشت جهان اولیه — مناطق نام‌دار و مجازات نام اشتباه"""
+"""هشت جهان اولیه — مناطق نامدار و مجازات نام اشتباه"""
 from __future__ import annotations
 
 WORLD_NAME = "هشت جهان اولیه"
 
-# ترتیب مناطق: عددها + اسلات «ای‌تری» بین ۷ و ۸
+# ترتیب مناطق: عددها + اسلات «ایتری» بین ۷ و ۸
 # id برای پیشرفت داخلی؛ label برای نمایش شماره
 REGION_ORDER = [
     {"id": 1, "label": "1", "name": "نیک"},
@@ -13,7 +13,7 @@ REGION_ORDER = [
     {"id": 5, "label": "5", "name": None},
     {"id": 6, "label": "6", "name": None},
     {"id": 7, "label": "7", "name": None},
-    {"id": 8, "label": "ای‌تری", "name": None},  # عدد/اسلات بین ۷ و ۸ — نام منطقه نیست
+    {"id": 8, "label": "ایتری", "name": None},  # عدد/اسلات بین ۷ و ۸ — نام منطقه نیست
     {"id": 9, "label": "8", "name": None},
 ]
 
@@ -42,9 +42,9 @@ def status_text(tg_id: int) -> str:
     lines = [
         f"🌌 <b>{WORLD_NAME}</b>",
         "",
-        "شماره‌ها: ۱…۷ · <b>ای‌تری</b> · ۸",
-        "نام مناطق: نیک، مین، والا مقام، بلند مرتبه — بقیه بی‌نام",
-        "«ای‌تری» عدد/اسلات بین ۷ و ۸ است، نه نام منطقه.",
+        "شمارهها: ۱…۷ · <b>ایتری</b> · ۸",
+        "نام مناطق: نیک، مین، والا مقام، بلند مرتبه — بقیه بینام",
+        "«ایتری» عدد/اسلات بین ۷ و ۸ است، نه نام منطقه.",
         "نام اشتباه برای رفتن به بعد = حذف دائمی اکانت.",
         "",
     ]
@@ -54,22 +54,22 @@ def status_text(tg_id: int) -> str:
         if reg["name"]:
             lines.append(f"{label}. {reg['name']}{mark}")
         else:
-            lines.append(f"{label}. (بی‌نام){mark}")
+            lines.append(f"{label}. (بینام){mark}")
     if i < 0:
-        lines += ["", "هنوز وارد نشده‌ای. /enter8 — ورود به منطقه ۱ (نیک)"]
+        lines += ["", "هنوز وارد نشدهای. /enter8 — ورود به منطقه ۱ (نیک)"]
     elif i >= MAX_INDEX:
-        lines += ["", "به آخرین منطقه رسیده‌ای."]
+        lines += ["", "به آخرین منطقه رسیدهای."]
     else:
         nxt = REGION_ORDER[i + 1]
         if nxt["name"]:
-            lines += ["", f"منطقه بعد ({nxt['label']}) نام دارد. /goregion نام‌دقیق"]
+            lines += ["", f"منطقه بعد ({nxt['label']}) نام دارد. /goregion نامدقیق"]
         else:
-            # برای اسلات ای‌تری و بی‌نام‌ها
-            if nxt["label"] == "ای‌تری":
-                lines += ["", "منطقه بعد اسلات <b>ای‌تری</b> است. /goregion ای‌تری"]
+            # برای اسلات ایتری و بینامها
+            if nxt["label"] == "ایتری":
+                lines += ["", "منطقه بعد اسلات <b>ایتری</b> است. /goregion ایتری"]
             else:
-                lines += ["", f"منطقه بعد ({nxt['label']}) بی‌نام است. /goregion بی‌نام"]
-    lines += ["", "/enter8 — ورود", "/goregion نام‌یا‌عدد", "/region8 — وضعیت"]
+                lines += ["", f"منطقه بعد ({nxt['label']}) بینام است. /goregion بینام"]
+    lines += ["", "/enter8 — ورود", "/goregion نامیاعدد", "/region8 — وضعیت"]
     return chr(10).join(lines)
 
 
@@ -78,7 +78,7 @@ def enter(tg_id: int) -> str:
     return (
         f"وارد {WORLD_NAME} شدی." + chr(10)
         + "منطقه ۱: <b>نیک</b>" + chr(10)
-        + "ترتیب اعداد: ۱…۷ → ای‌تری → ۸" + chr(10)
+        + "ترتیب اعداد: ۱…۷ → ایتری → ۸" + chr(10)
         + "برای منطقه بعد: /goregion …"
     )
 
@@ -90,28 +90,28 @@ def try_advance(tg_id: int, name_attempt: str) -> tuple[str, bool]:
     if i < 0:
         return "اول /enter8 بزن.", False
     if i >= MAX_INDEX:
-        return "دیگر منطقه‌ای جلوتر نیست.", False
+        return "دیگر منطقهای جلوتر نیست.", False
     nxt = REGION_ORDER[i + 1]
     ok = False
 
-    # نرمال‌سازی
-    raw = name_attempt.replace(" ", "").replace("‌", "").replace("-", "")
+    # نرمالسازی
+    raw = name_attempt.replace(" ", "").replace("", "").replace("-", "")
     low = name_attempt.lower().strip()
 
     if nxt["name"]:
-        # منطقه نام‌دار: فقط نام درست
-        cnorm = nxt["name"].replace(" ", "").replace("‌", "")
+        # منطقه نامدار: فقط نام درست
+        cnorm = nxt["name"].replace(" ", "").replace("", "")
         if raw == cnorm or name_attempt == nxt["name"]:
             ok = True
     else:
-        # بی‌نام یا اسلات ای‌تری
-        if nxt["label"] == "ای‌تری":
-            # باید خود عدد/اسلات ای‌تری را بنویسد
-            if raw in ("ایتری", "ای‌تری") or low in ("etree", "e tree", "e-tree", "etri"):
+        # بینام یا اسلات ایتری
+        if nxt["label"] == "ایتری":
+            # باید خود عدد/اسلات ایتری را بنویسد
+            if raw in ("ایتری", "ایتری") or low in ("etree", "e tree", "e-tree", "etri"):
                 ok = True
         else:
-            # مناطق بی‌نام با شماره معمولی
-            if name_attempt in ("بی‌نام", "بينام", "بدون نام", "هیچ", "none", "-"):
+            # مناطق بینام با شماره معمولی
+            if name_attempt in ("بینام", "بينام", "بدون نام", "هیچ", "none", "-"):
                 ok = True
             # قبول شماره label هم
             if name_attempt == nxt["label"] or raw == nxt["label"]:
@@ -120,14 +120,14 @@ def try_advance(tg_id: int, name_attempt: str) -> tuple[str, bool]:
     if not ok:
         return (
             f"ورودی اشتباه برای منطقه بعد ({nxt['label']})." + chr(10)
-            + "اکانت برای همیشه پاک می‌شود.",
+            + "اکانت برای همیشه پاک میشود.",
             True,
         )
     _idx_map()[str(int(tg_id))] = i + 1; _psave("eight_worlds")
     if nxt["name"]:
         shown = nxt["name"]
-    elif nxt["label"] == "ای‌تری":
-        shown = "اسلات ای‌تری (بین ۷ و ۸)"
+    elif nxt["label"] == "ایتری":
+        shown = "اسلات ایتری (بین ۷ و ۸)"
     else:
-        shown = f"(بی‌نام — شماره {nxt['label']})"
+        shown = f"(بینام — شماره {nxt['label']})"
     return f"✅ وارد منطقه <b>{nxt['label']}</b> شدی: {shown}", False

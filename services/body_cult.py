@@ -1,20 +1,20 @@
-"""تکنیک‌های پرورش بدن — با اجبار تعادل"""
+"""تکنیکهای پرورش بدن — با اجبار تعادل"""
 from datetime import datetime, timedelta
 import random
 
 BODY_TECHS = {
-    "پرورش پوست": {"power": 8, "energy_cost": 500, "desc": "پوست سخت‌تر — دفاع سبک"},
-    "پرورش استخوان": {"power": 12, "energy_cost": 800, "desc": "استخوان‌های فولادی"},
+    "پرورش پوست": {"power": 8, "energy_cost": 500, "desc": "پوست سختتر — دفاع سبک"},
+    "پرورش استخوان": {"power": 12, "energy_cost": 800, "desc": "استخوانهای فولادی"},
     "پرورش عضله": {"power": 15, "energy_cost": 1000, "desc": "قدرت ضربه بیشتر"},
     "پرورش خون": {"power": 10, "energy_cost": 700, "desc": "خون و حیات پایدارتر"},
     "پرورش تاندون": {"power": 14, "energy_cost": 900, "desc": "سرعت و انعطاف"},
     "پرورش مغز استخوان": {"power": 18, "energy_cost": 1500, "desc": "ریشه بدن عمیق"},
     "پرورش اندام درونی": {"power": 20, "energy_cost": 2000, "desc": "قلب و ریه قوی"},
-    "پرورش بدن اژدها": {"power": 35, "energy_cost": 5000, "desc": "بدن افسانه‌ای"},
+    "پرورش بدن اژدها": {"power": 35, "energy_cost": 5000, "desc": "بدن افسانهای"},
     "پرورش بدن خدا": {"power": 50, "energy_cost": 12000, "desc": "حد نهایی بدن فانی"},
 }
 
-# حداکثر اختلاف سطح بین تکنیک‌ها (اجبار تعادل)
+# حداکثر اختلاف سطح بین تکنیکها (اجبار تعادل)
 MAX_LEVEL_GAP = 2
 # سقف قدرت مؤثر بدن (جلوگیری از اسپم یک تکنیک)
 MAX_EFFECTIVE_POWER = 2500
@@ -50,13 +50,13 @@ CD = timedelta(minutes=3)
 
 
 def list_techs() -> str:
-    lines = ["💪 <b>تکنیک‌های پرورش بدن</b>", ""]
+    lines = ["💪 <b>تکنیکهای پرورش بدن</b>", ""]
     for n, i in BODY_TECHS.items():
         lines.append(f"• <b>{n}</b> — {i['desc']}")
         lines.append(f"  قدرت+{i['power']} | هزینه {i['energy_cost']} انرژی")
     lines += [
         "",
-        "⚠️ باید تکنیک‌ها را <b>متعادل</b> پرورش دهی.",
+        "⚠️ باید تکنیکها را <b>متعادل</b> پرورش دهی.",
         f"اختلاف سطح بیشتر از {MAX_LEVEL_GAP} مجاز نیست.",
         "",
         "/bodycult نام — پرورش",
@@ -77,14 +77,14 @@ def get_body(tg_id: int) -> dict:
 
 
 def effective_power(tg_id: int) -> int:
-    """قدرت مؤثر: حداقل سطح‌ها × تعداد + جریمه عدم تعادل"""
+    """قدرت مؤثر: حداقل سطحها × تعداد + جریمه عدم تعادل"""
     d = get_body(tg_id)
     techs = d.get("techs") or {}
     if not techs:
         return 0
     levels = list(techs.values())
     mn, mx = min(levels), max(levels)
-    # فقط سطوحی که از min بیش از MAX_LEVEL_GAP بالاترند در محاسبه کامل حساب نمی‌شوند
+    # فقط سطوحی که از min بیش از MAX_LEVEL_GAP بالاترند در محاسبه کامل حساب نمیشوند
     effective_sum = 0
     for name, lv in techs.items():
         base = BODY_TECHS.get(name, {}).get("power", 10)
@@ -107,7 +107,7 @@ def _can_train(techs: dict, tech_name: str) -> tuple[bool, str]:
     levels = list(techs.values())
     mn = min(levels) if levels else 0
     cur = techs.get(tech_name, 0)
-    # نمی‌توانی یک تکنیک را خیلی جلو ببری
+    # نمیتوانی یک تکنیک را خیلی جلو ببری
     if cur >= mn + MAX_LEVEL_GAP and len(techs) >= 1:
         # باید اول بقیه را بالا بیاوری
         lagging = [n for n, lv in techs.items() if lv < cur]
@@ -120,7 +120,7 @@ def _can_train(techs: dict, tech_name: str) -> tuple[bool, str]:
                 return False, (
                     f"⚠️ تعادل بدن لازم است." + chr(10)
                     + f"«{tech_name}» سطح {cur} است؛ حداقل بقیه {mn}." + chr(10)
-                    + f"اول این‌ها را پرورش بده: " + "، ".join(need[:5]) + chr(10)
+                    + f"اول اینها را پرورش بده: " + "، ".join(need[:5]) + chr(10)
                     + f"حداکثر اختلاف سطح: {MAX_LEVEL_GAP}"
                 )
     return True, ""
@@ -136,7 +136,7 @@ def train_body(tg_id: int, tech_name: str | None = None) -> tuple[bool, str, int
 
     techs = data.get("techs") or {}
     if not tech_name or tech_name not in BODY_TECHS:
-        # انتخاب تصادفی از تکنیک‌هایی که مجازند
+        # انتخاب تصادفی از تکنیکهایی که مجازند
         candidates = []
         for n in BODY_TECHS:
             ok, _ = _can_train(techs, n)
@@ -167,7 +167,7 @@ def train_body(tg_id: int, tech_name: str | None = None) -> tuple[bool, str, int
     # هشدار تعادل
     levels = list(data["techs"].values())
     if levels and max(levels) - min(levels) >= MAX_LEVEL_GAP:
-        tip += chr(10) + "⚖️ نزدیک سقف اختلاف سطح — بقیه تکنیک‌ها را هم پرورش بده."
+        tip += chr(10) + "⚖️ نزدیک سقف اختلاف سطح — بقیه تکنیکها را هم پرورش بده."
     try:
         from services.body_spirit_realms import add_body_realm_xp
         realm_line = add_body_realm_xp(tg_id, 12 + lvl)
@@ -200,7 +200,7 @@ def status(tg_id: int) -> str:
     else:
         for n, lv in sorted(techs.items(), key=lambda x: -x[1]):
             lines.append(f"• {n}: سطح {lv}")
-    lines += ["", "/bodytechs — لیست تکنیک‌ها"]
+    lines += ["", "/bodytechs — لیست تکنیکها"]
     return chr(10).join(lines)
 
 

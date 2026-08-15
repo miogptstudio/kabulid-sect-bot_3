@@ -1,4 +1,4 @@
-"""محدودیت مصرف قرص بر اساس قلمرو — زیاده‌روی = انفجار"""
+"""محدودیت مصرف قرص بر اساس قلمرو — زیادهروی = انفجار"""
 from __future__ import annotations
 from datetime import datetime
 from services.persist import get_dict, save as _psave
@@ -10,7 +10,7 @@ PER_REALM_BONUS = 3  # هر قلمرو بالاتر +۳
 
 REALM_ORDER = [
     "بیداری", "پایه", "متوسط", "بالا", "پیشرفته", "هسته", "روح",
-    "نیمه‌خدا", "خدا", "آسمان", "ای‌تری", "جاودان", "ابدی",
+    "نیمهخدا", "خدا", "آسمان", "ایتری", "جاودان", "ابدی",
     "خلقت", "پوچی", "فراپوچی", "مطلق",
 ]
 
@@ -55,7 +55,7 @@ def used_today(tg: int) -> int:
 def register_pill(tg: int, realm: str, quantity: int = 1) -> tuple[bool, str, bool]:
     """
     returns (allowed_effect, message, died)
-    اگر بیش از سقف: اثر قرص اعمال می‌شود ولی ۶۰٪ مرگ
+    اگر بیش از سقف: اثر قرص اعمال میشود ولی ۶۰٪ مرگ
     """
     import random
     quantity = max(1, int(quantity or 1))
@@ -72,17 +72,17 @@ def register_pill(tg: int, realm: str, quantity: int = 1) -> tuple[bool, str, bo
     _psave("pill_daily")
 
     if count <= limit:
-        return True, f"💊 مصرف دسته‌ای ×{quantity} — قرص امروز: {count}/{limit}", False
+        return True, f"💊 مصرف دستهای ×{quantity} — قرص امروز: {count}/{limit}", False
 
     # overdose
     if random.random() < OVERDOSE_DEATH_CHANCE:
         return True, (
-            f"💥 زیاده‌روی قرص! (مصرف ×{quantity} | {count}/{limit})" + chr(10)
+            f"💥 زیادهروی قرص! (مصرف ×{quantity} | {count}/{limit})" + chr(10)
             + "بدن تحمل نکرد و منفجر شدی." + chr(10)
             + "برای سقف بالاتر، قلمرو تذهیب را ارتقا بده."
         ), True
     return True, (
-        f"⚠️ زیاده‌روی قرص ({count}/{limit}) — این بار زنده ماندی (۴۰٪)." + chr(10)
+        f"⚠️ زیادهروی قرص ({count}/{limit}) — این بار زنده ماندی (۴۰٪)." + chr(10)
         + f"سقف فعلی قلمرو «{realm}»: {limit} عدد در روز." + chr(10)
         + "ارتقای قلمرو = ظرفیت بیشتر."
     ), False

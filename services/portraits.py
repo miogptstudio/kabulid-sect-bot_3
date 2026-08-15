@@ -2,23 +2,23 @@
 from __future__ import annotations
 from urllib.parse import quote
 
-# استایل‌های DiceBear بر اساس نژاد
+# استایلهای DiceBear بر اساس نژاد
 _STYLE = {
     "انسان": "lorelei",
-    "نیمه‌انسان": "adventurer",
-    "گربه‌ای نیمه‌انسان": "adventurer",
-    "روباه‌نمای": "adventurer",
-    "گرگ‌نمای": "adventurer",
-    "اژدها‌تبار": "lorelei",
-    "ققنوس‌تبار": "lorelei",
+    "نیمهانسان": "adventurer",
+    "گربهای نیمهانسان": "adventurer",
+    "روباهنمای": "adventurer",
+    "گرگنمای": "adventurer",
+    "اژدهاتبار": "lorelei",
+    "ققنوستبار": "lorelei",
     "جن جنگلی": "adventurer",
-    "دیو‌تبار": "personas",
-    "فرشته‌تبار": "lorelei",
+    "دیوتبار": "personas",
+    "فرشتهتبار": "lorelei",
     "اهریمنی": "personas",
-    "سیمرغ‌زاده": "lorelei",
-    "روح‌پیما": "notionists",
-    "خون‌آشام کهن": "personas",
-    "مه‌پیما": "notionists",
+    "سیمرغزاده": "lorelei",
+    "روحپیما": "notionists",
+    "خونآشام کهن": "personas",
+    "مهپیما": "notionists",
 }
 
 _BG = {
@@ -28,22 +28,22 @@ _BG = {
 
 # رنگ کمکی نژاد
 _RACE_BG = {
-    "گربه‌ای نیمه‌انسان": "ffe4b5",
-    "روباه‌نمای": "ffcc99",
-    "گرگ‌نمای": "c0c0c0",
-    "اژدها‌تبار": "ff6347",
-    "ققنوس‌تبار": "ff8c00",
-    "دیو‌تبار": "4b0082",
-    "فرشته‌تبار": "fffaf0",
+    "گربهای نیمهانسان": "ffe4b5",
+    "روباهنمای": "ffcc99",
+    "گرگنمای": "c0c0c0",
+    "اژدهاتبار": "ff6347",
+    "ققنوستبار": "ff8c00",
+    "دیوتبار": "4b0082",
+    "فرشتهتبار": "fffaf0",
     "اهریمنی": "2f0000",
-    "سیمرغ‌زاده": "ffd700",
+    "سیمرغزاده": "ffd700",
 }
 
 
 def portrait_url(name: str, gender: str = "زن", race: str = "انسان", size: int = 512) -> str:
     """URL پرتره پایدار بر اساس نام (همیشه یک شکل برای یک نام)"""
     style = _STYLE.get(race, "lorelei")
-    # bottts برای گربه‌ای با seed خاص
+    # bottts برای گربهای با seed خاص
     seed = quote(f"{race}-{gender}-{name}", safe="")
     bg = _RACE_BG.get(race) or _BG.get(gender, "e8e8e8")
     # DiceBear 7.x PNG
@@ -54,7 +54,7 @@ def portrait_url(name: str, gender: str = "زن", race: str = "انسان", size
 
 
 def servant_caption(s: dict) -> str:
-    tr = "🦋 دگرگون‌شده" if s.get("transformed") else ""
+    tr = "🦋 دگرگونشده" if s.get("transformed") else ""
     return (
         f"👤 <b>{s.get('name')}</b> {tr}" + chr(10)
         + f"نژاد: {s.get('race', '—')} | {s.get('gender', '—')}" + chr(10)
@@ -69,8 +69,8 @@ def character_url(name: str, rarity: str = "معمولی") -> str:
         "غیرمعمولی": "bottts",
         "نادر": "adventurer",
         "حماسی": "avataaars",
-        "افسانه‌ای": "lorelei",
-        "اسطوره‌ای": "personas",
+        "افسانهای": "lorelei",
+        "اسطورهای": "personas",
         "خدایی": "shapes",
         "ازلی": "shapes",
         "قادر مطلق": "shapes",
@@ -84,7 +84,7 @@ def pet_url(name: str) -> str:
     return f"https://api.dicebear.com/9.x/bottts/png?seed={seed}&size=512"
 
 
-# تصاویر پنل‌های ربات؛ بر اساس seed ثابت، برای هر بخش تصویر ثابت و قابل‌تکرار است.
+# تصاویر پنلهای ربات؛ بر اساس seed ثابت، برای هر بخش تصویر ثابت و قابلتکرار است.
 def panel_url(kind: str, gender: str = "مرد", name: str = "Kabulid", size: int = 768) -> str:
     from pathlib import Path
     root = Path(__file__).resolve().parent.parent / "assets" / "panels"

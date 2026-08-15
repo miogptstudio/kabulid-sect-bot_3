@@ -13,9 +13,9 @@ async def become_spirit_raiser(session: AsyncSession, user: User) -> str:
     if is_immortal_race(getattr(user, 'race', None)):
         return "نژاد خدایان نامیراست."
     if not user.is_dead:
-        return "تو نمرده‌ای."
+        return "تو نمردهای."
     if user.is_spirit_raiser:
-        return "قبلاً پرورش‌دهنده روح شده‌ای."
+        return "قبلاً پرورشدهنده روح شدهای."
 
     user.is_dead = False
     user.is_spirit_raiser = True
@@ -36,14 +36,14 @@ async def become_spirit_raiser(session: AsyncSession, user: User) -> str:
 
     await session.commit()
     return (
-        "👻 به عنوان <b>پرورش‌دهنده روح</b> دوباره به وجود آمدی.\n"
-        "بدن فیزیکی از بین رفته؛ حالا مسیر روح را طی می‌کنی.\n"
+        "👻 به عنوان <b>پرورشدهنده روح</b> دوباره به وجود آمدی.\n"
+        "بدن فیزیکی از بین رفته؛ حالا مسیر روح را طی میکنی.\n"
         "ریشه: ریشه روح | تذهیب از پایه از نو."
     )
 
 
 async def _delete_related(session: AsyncSession, uid: int, tg_id: int):
-    """حذف همه وابستگی‌های کاربر"""
+    """حذف همه وابستگیهای کاربر"""
     models_uid = [
         Medal, UserAchievement, UserInventory, UserTechnique,
         CraftingSkill, UserWallet, Pet, BetrayalLog, SectMember,
@@ -105,12 +105,12 @@ async def _delete_related(session: AsyncSession, uid: int, tg_id: int):
 
 async def erase_existence(session: AsyncSession, user: User) -> str:
     """
-    پاک‌سازی کامل و شروع از صفر.
-    حذف ردیف User گاهی به خاطر FK شکست می‌خورد؛
-    پس همیشه داده‌ها را پاک و فیلدها را ریست می‌کنیم.
+    پاکسازی کامل و شروع از صفر.
+    حذف ردیف User گاهی به خاطر FK شکست میخورد؛
+    پس همیشه دادهها را پاک و فیلدها را ریست میکنیم.
     """
     if not user.is_dead:
-        return "فقط بعد از مرگ می‌توانی وجودت را محو کنی."
+        return "فقط بعد از مرگ میتوانی وجودت را محو کنی."
 
     uid = user.id
     tg_id = user.telegram_id
@@ -143,7 +143,7 @@ async def erase_existence(session: AsyncSession, user: User) -> str:
     # ریست کامل فیلدهای کاربر = اکانت نو
     user.is_dead = False
     user.is_spirit_raiser = False
-    user.rank = "عضو دسته‌های پایین‌تر"
+    user.rank = "عضو دستههای پایینتر"
     user.level = 1
     user.xp = 0
     user.wins = 0
@@ -171,7 +171,7 @@ async def erase_existence(session: AsyncSession, user: User) -> str:
     user.restriction_reason = None
     if hasattr(user, "race"):
         user.race = "انسان"
-    # role را برای ادمین نگه نمی‌داریم مگر ADMIN — ساده: عضو
+    # role را برای ادمین نگه نمیداریم مگر ADMIN — ساده: عضو
     from bot.config import ADMIN_IDS
     from database.models import ROLE_LEADER, ROLE_MEMBER
     if tg_id in ADMIN_IDS:

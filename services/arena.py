@@ -7,7 +7,7 @@ from database.models import User
 from services.power import calc_power, win_chance
 from services.economy import get_or_create_wallet
 
-# درجه‌ها از پایین به بالا
+# درجهها از پایین به بالا
 ARENA_TIERS_FULL = ["برنز", "نقره", "طلا", "الماس", "بهشتی", "آسمانی", "خدایان"]
 
 # امتیاز لازم برای نگه داشتن/رسیدن به درجه
@@ -138,7 +138,7 @@ def _update_tier(profile: ArenaProfile) -> str | None:
 
 
 def match_tier(tier_a: str, tier_b: str) -> str:
-    """درجه مسابقه = بالاترین درجه بین دو نفر (سخت‌گیرتر)"""
+    """درجه مسابقه = بالاترین درجه بین دو نفر (سختگیرتر)"""
     try:
         ia = ARENA_TIERS_FULL.index(tier_a if tier_a in ARENA_TIERS_FULL else "برنز")
         ib = ARENA_TIERS_FULL.index(tier_b if tier_b in ARENA_TIERS_FULL else "برنز")
@@ -267,7 +267,7 @@ def join_open_room(room_id: int, user_id: int, name: str) -> str:
 def list_open_rooms() -> str:
     if not _open_rooms:
         return "اتاق بازی بازی نیست. /arenaopen برای ساخت."
-    text = "🏟️ <b>اتاق‌های آرنای چندنفره</b>\n\n"
+    text = "🏟️ <b>اتاقهای آرنای چندنفره</b>\n\n"
     for rid, r in _open_rooms.items():
         if r["started"]:
             continue
@@ -284,7 +284,7 @@ async def start_open_arena(session: AsyncSession, room_id: int, starter_id: int)
     if not room:
         return "اتاق نیست."
     if room["host"] != starter_id:
-        return "فقط میزبان می‌تواند شروع کند."
+        return "فقط میزبان میتواند شروع کند."
     if len(room["players"]) < 3:
         return f"حداقل ۳ نفر لازم است (الان {len(room['players'])})."
     if len(room["players"]) > 10:
@@ -301,7 +301,7 @@ async def start_open_arena(session: AsyncSession, room_id: int, starter_id: int)
         fees.append(await charge_entry(session, uid, tier))
     await session.commit()
 
-    # شبیه‌سازی مسابقه: بر اساس قدرت، یک برنده
+    # شبیهسازی مسابقه: بر اساس قدرت، یک برنده
     from database.models import User
     fighters = []
     for uid in room["players"]:

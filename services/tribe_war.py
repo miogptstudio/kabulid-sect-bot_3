@@ -13,11 +13,11 @@ def declare(attacker_tg: int, target_tribe_name: str) -> str:
         return "اول عضو قبیله شو. /createtribe یا /jointribe"
     me = T._tribes[tid]
     if attacker_tg not in (me["chief_id"], me["founder_id"]):
-        return "فقط بزرگ یا بنیانگذار می‌تواند جنگ اعلام کند."
+        return "فقط بزرگ یا بنیانگذار میتواند جنگ اعلام کند."
     now = datetime.utcnow()
     last = _last_declare.get(attacker_tg)
     if last and now - last < timedelta(hours=6):
-        return "هر ۶ ساعت یک‌بار اعلام جنگ."
+        return "هر ۶ ساعت یکبار اعلام جنگ."
     target = None
     for k, v in T._tribes.items():
         if v["name"] == target_tribe_name.strip() and k != tid:
@@ -43,8 +43,8 @@ def status(tg_id: int) -> str:
     tid = T._member.get(tg_id)
     active = [w for w in _wars.values() if tid in (w["a"], w["b"])]
     if not active:
-        return "جنگ فعالی نیست. /declarewar نام‌قبیله"
-    lines = ["⚔️ <b>جنگ‌های فعال</b>", ""]
+        return "جنگ فعالی نیست. /declarewar نامقبیله"
+    lines = ["⚔️ <b>جنگهای فعال</b>", ""]
     for w in active:
         na = T._tribes.get(w["a"], {}).get("name", "?")
         nb = T._tribes.get(w["b"], {}).get("name", "?")
@@ -65,11 +65,11 @@ def fight(tg_id: int) -> str:
         if roll > 40:
             war["score_a"] += 1
             T._tribes[tid]["points"] = T._tribes[tid].get("points", 0) + 2
-            return f"✅ ضربه قبیله‌ات +۱ | امتیاز {war['score_a']}—{war['score_b']}"
+            return f"✅ ضربه قبیلهات +۱ | امتیاز {war['score_a']}—{war['score_b']}"
         return f"❌ این نبرد را باختید | {war['score_a']}—{war['score_b']}"
     else:
         if roll > 40:
             war["score_b"] += 1
             T._tribes[tid]["points"] = T._tribes[tid].get("points", 0) + 2
-            return f"✅ ضربه قبیله‌ات +۱ | {war['score_a']}—{war['score_b']}"
+            return f"✅ ضربه قبیلهات +۱ | {war['score_a']}—{war['score_b']}"
         return f"❌ باخت | {war['score_a']}—{war['score_b']}"

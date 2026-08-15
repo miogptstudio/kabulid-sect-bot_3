@@ -1,4 +1,4 @@
-"""مسیر تذهیب: قدرت / سرعت / دفاع و ترکیب‌ها"""
+"""مسیر تذهیب: قدرت / سرعت / دفاع و ترکیبها"""
 from __future__ import annotations
 from services.persist import get_dict, save as _psave
 
@@ -6,10 +6,10 @@ PATHS = {
     "قدرت": {"power": 1.25, "speed": 0.9, "defense": 0.9, "desc": "حمله خام بیشتر"},
     "سرعت": {"power": 0.9, "speed": 1.3, "defense": 0.9, "desc": "جاخالی و نوبت بیشتر"},
     "دفاع": {"power": 0.9, "speed": 0.9, "defense": 1.3, "desc": "کاهش آسیب دریافتی"},
-    "قدرت‌سرعت": {"power": 1.12, "speed": 1.12, "defense": 0.85, "desc": "حمله و جاخالی"},
-    "قدرت‌دفاع": {"power": 1.12, "speed": 0.85, "defense": 1.12, "desc": "ضربه و سپر"},
-    "سرعت‌دفاع": {"power": 0.85, "speed": 1.12, "defense": 1.12, "desc": "جاخالی و مقاومت"},
-    "سه‌گانه": {"power": 1.08, "speed": 1.08, "defense": 1.08, "desc": "متعادل هر سه"},
+    "قدرتسرعت": {"power": 1.12, "speed": 1.12, "defense": 0.85, "desc": "حمله و جاخالی"},
+    "قدرتدفاع": {"power": 1.12, "speed": 0.85, "defense": 1.12, "desc": "ضربه و سپر"},
+    "سرعتدفاع": {"power": 0.85, "speed": 1.12, "defense": 1.12, "desc": "جاخالی و مقاومت"},
+    "سهگانه": {"power": 1.08, "speed": 1.08, "defense": 1.08, "desc": "متعادل هر سه"},
     "خالص": {"power": 1.0, "speed": 1.0, "defense": 1.0, "desc": "بدون گرایش خاص"},
 }
 
@@ -28,10 +28,10 @@ def set_path(tg: int, name: str) -> str:
         "power": "قدرت", "atk": "قدرت", "attack": "قدرت",
         "speed": "سرعت", "spd": "سرعت", "dodge": "سرعت",
         "def": "دفاع", "defense": "دفاع", "tank": "دفاع",
-        "ps": "قدرت‌سرعت", "قدرت سرعت": "قدرت‌سرعت",
-        "pd": "قدرت‌دفاع", "قدرت دفاع": "قدرت‌دفاع",
-        "sd": "سرعت‌دفاع", "سرعت دفاع": "سرعت‌دفاع",
-        "all": "سه‌گانه", "triple": "سه‌گانه", "3": "سه‌گانه",
+        "ps": "قدرتسرعت", "قدرت سرعت": "قدرتسرعت",
+        "pd": "قدرتدفاع", "قدرت دفاع": "قدرتدفاع",
+        "sd": "سرعتدفاع", "سرعت دفاع": "سرعتدفاع",
+        "all": "سهگانه", "triple": "سهگانه", "3": "سهگانه",
         "none": "خالص", "normal": "خالص",
     }
     name = aliases.get(name, name)
@@ -64,5 +64,5 @@ def list_paths() -> str:
     for k, v in PATHS.items():
         lines.append(f"• <b>{k}</b> — {v['desc']}")
         lines.append(f"  قدرت×{v['power']} سرعت×{v['speed']} دفاع×{v['defense']}")
-    lines += ["", "/cultpath نام — انتخاب", "مثال: /cultpath قدرت | /cultpath سه‌گانه"]
+    lines += ["", "/cultpath نام — انتخاب", "مثال: /cultpath قدرت | /cultpath سهگانه"]
     return chr(10).join(lines)

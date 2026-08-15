@@ -33,7 +33,7 @@ def status(tg: int) -> str:
     k = kills(tg)
     return (
         f"🗡 <b>{ITEM_NAME}</b>" + chr(10)
-        + f"قتل‌های ثبت‌شده: {k}" + chr(10)
+        + f"قتلهای ثبتشده: {k}" + chr(10)
         + f"نفوذ فعلی: +{penetration_bonus(tg)}" + chr(10)
         + f"هر قتل +{PEN_PER_KILL} نفوذ (سقف {MAX_PEN})"
     )

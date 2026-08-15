@@ -1,4 +1,4 @@
-"""رویداد هفتگی، استریک پایدار، جنگ قلمرو زمان‌دار، سینک ضدتورم، بازار پیشنهاد"""
+"""رویداد هفتگی، استریک پایدار، جنگ قلمرو زماندار، سینک ضدتورم، بازار پیشنهاد"""
 from __future__ import annotations
 from datetime import datetime, date, timedelta, timezone
 from services.persist import get_dict, save as _psave
@@ -37,7 +37,7 @@ def claim_streak(tg: int) -> dict:
 
 
 # ---------- رویداد هفتگی ----------
-# جمعه = تهاجم شیاطین | یکشنبه‌شبی تا دوشنبه = حراج آسمانی (یا جمعه نوبتی)
+# جمعه = تهاجم شیاطین | یکشنبهشبی تا دوشنبه = حراج آسمانی (یا جمعه نوبتی)
 def weekly_event_now() -> dict:
     """نوع رویداد فعال بر اساس روز هفته"""
     # Monday=0 ... Friday=4 Sunday=6
@@ -48,7 +48,7 @@ def weekly_event_now() -> dict:
             "active": True,
             "kind": "demon_invasion",
             "title": "⚔️ تهاجم شیاطین",
-            "desc": "امروز جمعه است! شیاطین به قلمروها حمله‌ور شده‌اند. با /eventjoin بپیوند و /eventscore امتیاز بگیر.",
+            "desc": "امروز جمعه است! شیاطین به قلمروها حملهور شدهاند. با /eventjoin بپیوند و /eventscore امتیاز بگیر.",
             "ends": "تا پایان جمعه (UTC)",
         }
     if wd == 6:  # یکشنبه
@@ -56,10 +56,10 @@ def weekly_event_now() -> dict:
             "active": True,
             "kind": "heavenly_auction",
             "title": "🏛️ حراج آسمانی",
-            "desc": "حراج هفتگی! آیتم‌های کمیاب با پیشنهاد. /eventauction و /eventbid",
+            "desc": "حراج هفتگی! آیتمهای کمیاب با پیشنهاد. /eventauction و /eventbid",
             "ends": "تا پایان یکشنبه (UTC)",
         }
-    # پیش‌نمایش
+    # پیشنمایش
     days_to_fri = (4 - wd) % 7
     days_to_sun = (6 - wd) % 7
     return {
@@ -113,7 +113,7 @@ def event_top(limit: int = 10) -> str:
     ranked = sorted(bucket.items(), key=lambda x: -int(x[1]))[:limit]
     if not ranked:
         return "هنوز امتیازی ثبت نشده. /eventjoin"
-    lines = [f"🏆 {ev.get('title') or 'رویداد'} — برترین‌ها", ""]
+    lines = [f"🏆 {ev.get('title') or 'رویداد'} — برترینها", ""]
     medals = ["🥇", "🥈", "🥉"]
     for i, (uid, sc) in enumerate(ranked):
         med = medals[i] if i < 3 else f"{i+1}."
@@ -121,7 +121,7 @@ def event_top(limit: int = 10) -> str:
     return "\n".join(lines)
 
 
-# ---------- جنگ قلمرو زمان‌دار ----------
+# ---------- جنگ قلمرو زماندار ----------
 # هر ۳ روز یک پنجره ۲ ساعته از ساعت ۱۸:۰۰ UTC
 WAR_EPOCH = date(2026, 1, 2)  # پنجشنبه مبنا
 WAR_DURATION_HOURS = 2
@@ -152,7 +152,7 @@ def territory_war_window() -> dict:
         "open": False,
         "msg": (
             f"🏰 جنگ قلمرو بسته است.\n"
-            f"پنجره بعدی: هر ۳ روز، ساعت {WAR_HOUR_UTC}:00 UTC به‌مدت {WAR_DURATION_HOURS} ساعت.\n"
+            f"پنجره بعدی: هر ۳ روز، ساعت {WAR_HOUR_UTC}:00 UTC بهمدت {WAR_DURATION_HOURS} ساعت.\n"
             f"تقریباً {days_to} روز تا روز جنگ | امروز روز سیکل: {cycle_day}/3"
         ),
     }

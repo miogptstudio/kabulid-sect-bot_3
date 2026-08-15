@@ -5,16 +5,16 @@ from datetime import datetime, timedelta
 CAVE_TYPES = [
     ("غار تاریک", "معمولی"),
     ("غار بلور", "نادر"),
-    ("غار اژدها", "افسانه‌ای"),
-    ("غار سیمرغ", "افسانه‌ای"),
+    ("غار اژدها", "افسانهای"),
+    ("غار سیمرغ", "افسانهای"),
     ("غار متروکه", "معمولی"),
     ("غار رعد", "نادر"),
     ("غار گنج", "نادر"),
-    ("غار باستانی", "افسانه‌ای"),
+    ("غار باستانی", "افسانهای"),
     ("غار زیرآبی", "نادر"),
     ("غار یخی", "نادر"),
     ("غار آتشین", "نادر"),
-    ("غار روح", "افسانه‌ای"),
+    ("غار روح", "افسانهای"),
 ]
 
 # هر شهر حداقل یک غار اختصاصی دارد
@@ -22,7 +22,7 @@ def city_cave_name(city_name: str) -> str:
     return f"غار {city_name}"
 
 _last_cave: dict[int, datetime] = {}
-CD = timedelta(minutes=30)  # کمی سریع‌تر
+CD = timedelta(minutes=30)  # کمی سریعتر
 
 
 def explore(tg_id: int, city_name: str):
@@ -47,11 +47,11 @@ def explore(tg_id: int, city_name: str):
     # سکه تقریباً همیشه
     coins = random.randint(80, 350)
     rewards.append(("coins", coins))
-    if roll < 0.55 or rarity in ("نادر", "افسانه‌ای", "شهری"):
+    if roll < 0.55 or rarity in ("نادر", "افسانهای", "شهری"):
         rewards.append(("spirit", random.randint(1, 3)))
     if roll < 0.7:
         rewards.append(("energy", random.randint(400, 1500)))
-    if rarity == "افسانه‌ای" and random.random() < 0.4:
+    if rarity == "افسانهای" and random.random() < 0.4:
         rewards.append(("spirit", random.randint(2, 5)))
         rewards.append(("coins", random.randint(200, 600)))
     if random.random() < 0.12:

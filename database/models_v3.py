@@ -1,5 +1,5 @@
 """
-مدل‌های نسخه ۳ - کیمیاگری، طلسم، تکنیک، مهر، ساختمون و آیتم
+مدلهای نسخه ۳ - کیمیاگری، طلسم، تکنیک، مهر، ساختمون و آیتم
 """
 
 from datetime import datetime
@@ -10,9 +10,9 @@ from sqlalchemy.sql import func
 from database.models import Base
 
 
-# ==================== ساختمون‌ها ====================
+# ==================== ساختمونها ====================
 
-BUILDING_TYPES = ["داروخانه", "کیمیاگری", "طلسم‌خانه", "آهنگری", "کتابخانه"]
+BUILDING_TYPES = ["داروخانه", "کیمیاگری", "طلسمخانه", "آهنگری", "کتابخانه"]
 
 
 class Building(Base):
@@ -71,7 +71,7 @@ class Recipe(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
 
-# ==================== مهارت‌های ساخت ====================
+# ==================== مهارتهای ساخت ====================
 
 class CraftingSkill(Base):
     __tablename__ = "crafting_skills"
@@ -88,14 +88,14 @@ class CraftingSkill(Base):
 
 SPIRITUAL_ROOTS = [
     "بدون ریشه",
-    "ریشه پنج‌عنصر",
+    "ریشه پنجعنصر",
     "ریشه آتش",
     "ریشه آب",
     "ریشه چوب",
     "ریشه فلز",
     "ریشه خاک",
     "ریشه دوگانه",
-    "ریشه تک‌عنصر خالص",
+    "ریشه تکعنصر خالص",
 ]
 
 
@@ -108,9 +108,9 @@ class CultivationTechnique(Base):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     
     # سطح تکنیک
-    grade: Mapped[str] = mapped_column(String(32), default="پایه")  # پایه، متوسط، بالا، افسانه‌ای
+    grade: Mapped[str] = mapped_column(String(32), default="پایه")  # پایه، متوسط، بالا، افسانهای
     
-    # انرژی بیشتر در هر جمع‌آوری
+    # انرژی بیشتر در هر جمعآوری
     energy_bonus: Mapped[int] = mapped_column(Integer, default=0)
     
     # ریشه مورد نیاز (اختیاری)
@@ -121,7 +121,7 @@ class CultivationTechnique(Base):
 
 
 class UserTechnique(Base):
-    """تکنیک‌هایی که کاربر بلده / داره"""
+    """تکنیکهایی که کاربر بلده / داره"""
     __tablename__ = "user_techniques"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -244,7 +244,7 @@ class UserWallet(Base):
     heavenly_stones: Mapped[int] = mapped_column(BigInteger, default=0)  # سنگ بهشتی
     celestial_stones: Mapped[int] = mapped_column(BigInteger, default=0)  # سنگ آسمانی
     god_stones: Mapped[int] = mapped_column(BigInteger, default=0)  # سنگ خدا
-    chaos_stones: Mapped[int] = mapped_column(BigInteger, default=0)  # سنگ هرج‌ومرج
+    chaos_stones: Mapped[int] = mapped_column(BigInteger, default=0)  # سنگ هرجومرج
     void_stones: Mapped[int] = mapped_column(BigInteger, default=0)  # سنگ پوچی
     origin_stones: Mapped[int] = mapped_column(BigInteger, default=0)  # سنگ ازلی
     karma_points: Mapped[int] = mapped_column(BigInteger, default=0)  # کارما
@@ -258,7 +258,7 @@ class UserWallet(Base):
     # نرخ: ۱۰۰۰ سکه = ۱ سنگ روحی
 
 
-# ==================== بُعد گروه و روح انتقام‌جو ====================
+# ==================== بُعد گروه و روح انتقامجو ====================
 
 class GroupDimension(Base):
     __tablename__ = "group_dimensions"

@@ -26,7 +26,7 @@ async def get_session() -> AsyncSession:
         yield session
 
 
-# ستون‌هایی که ممکن است در دیتابیس قدیمی نباشند
+# ستونهایی که ممکن است در دیتابیس قدیمی نباشند
 USER_COLUMNS = [
     ("solo_count", "INTEGER DEFAULT 0"),
     ("blood", "INTEGER DEFAULT 100"),
@@ -110,7 +110,7 @@ TECH_COLUMNS = [
 
 
 async def migrate_schema():
-    """اجباری: اضافه کردن ستون‌های گمشده به PostgreSQL / SQLite"""
+    """اجباری: اضافه کردن ستونهای گمشده به PostgreSQL / SQLite"""
     added = 0
     async with engine.begin() as conn:
         dialect = conn.dialect.name
@@ -148,9 +148,9 @@ async def migrate_schema():
         for col, td in SHOP_ITEM_COLUMNS:
             await add_col("shop_items", col, td)
 
-        # قیمت بعضی آیتم‌های رده‌بالا (مثلاً شمشیر نابودکننده جهان)
+        # قیمت بعضی آیتمهای ردهبالا (مثلاً شمشیر نابودکننده جهان)
         # از محدوده INTEGER/INT32 بیشتر است. create_all روی جدول موجود
-        # نوع ستون را تغییر نمی‌دهد، پس PostgreSQL را صریحاً به BIGINT تبدیل می‌کنیم.
+        # نوع ستون را تغییر نمیدهد، پس PostgreSQL را صریحاً به BIGINT تبدیل میکنیم.
         if dialect == "postgresql":
             try:
                 await conn.execute(text(
@@ -176,9 +176,9 @@ async def migrate_schema():
         for col, td in [
             ("quantity", "INTEGER DEFAULT 1"),
         ]:
-            # مدل واقعی UserInventory از جدول user_inventory استفاده می‌کند.
-            # نسخه قبلی اشتباهاً user_inventories را مهاجرت می‌داد و در DB قدیمی
-            # باعث می‌شد migration هشدار بدهد و بعضی عملیات کیف/بازار خطا بخورند.
+            # مدل واقعی UserInventory از جدول user_inventory استفاده میکند.
+            # نسخه قبلی اشتباهاً user_inventories را مهاجرت میداد و در DB قدیمی
+            # باعث میشد migration هشدار بدهد و بعضی عملیات کیف/بازار خطا بخورند.
             await add_col("user_inventory", col, td)
 
         if dialect == "postgresql":

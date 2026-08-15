@@ -1,4 +1,4 @@
-"""مصیبت فرقه‌ها هر ۱۰ ساعت"""
+"""مصیبت فرقهها هر ۱۰ ساعت"""
 from __future__ import annotations
 from datetime import datetime, timedelta
 
@@ -19,7 +19,7 @@ def unprotect_sect(sect_id: int) -> str:
 
 
 async def tick_calamity(session) -> list[str]:
-    """اگر ۱۰ ساعت گذشته، فرقه‌های بدون محافظت را نابود کن"""
+    """اگر ۱۰ ساعت گذشته، فرقههای بدون محافظت را نابود کن"""
     global _last_tick
     now = datetime.utcnow()
     if _last_tick and (now - _last_tick) < timedelta(hours=CALAMITY_INTERVAL_H):
@@ -27,7 +27,7 @@ async def tick_calamity(session) -> list[str]:
     # فقط وقتی واقعاً از آخرین تیک ۱۰س گذشته — در اولین فراخوانی فقط زمان را ست کن
     if _last_tick is None:
         _last_tick = now
-        return ["⏳ زمان‌سنج مصیبت فرقه‌ها شروع شد (هر ۱۰ ساعت)."]
+        return ["⏳ زمانسنج مصیبت فرقهها شروع شد (هر ۱۰ ساعت)."]
     _last_tick = now
     msgs = []
     try:
@@ -52,7 +52,7 @@ async def tick_calamity(session) -> list[str]:
     except Exception as e:
         msgs.append(f"مصیبت با خطا: {type(e).__name__}")
     if not msgs:
-        msgs.append("🌌 مصیبت گذشت؛ فرقه‌ای نبود.")
+        msgs.append("🌌 مصیبت گذشت؛ فرقهای نبود.")
     return msgs
 
 
@@ -67,9 +67,9 @@ def status_text() -> str:
         else:
             left = f"{int(sec//3600)}س {int((sec%3600)//60)}د"
     return (
-        f"🌪 <b>مصیبت فرقه‌ها</b>" + chr(10)
+        f"🌪 <b>مصیبت فرقهها</b>" + chr(10)
         + f"فاصله: هر {CALAMITY_INTERVAL_H} ساعت" + chr(10)
         + f"تا مصیبت بعد: {left}" + chr(10)
-        + f"محافظت‌شده‌ها: {len(_protected)}" + chr(10)
+        + f"محافظتشدهها: {len(_protected)}" + chr(10)
         + "ادمین: /protectsect آیدی | /calamitystatus"
     )

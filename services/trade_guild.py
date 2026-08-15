@@ -77,7 +77,7 @@ def info(tg_id: int) -> str:
 def list_all() -> str:
     if not _guilds:
         return "گروهی نیست. /tradeguild نام"
-    lines = ["🛒 <b>گروه‌های بازرگانی</b>", ""]
+    lines = ["🛒 <b>گروههای بازرگانی</b>", ""]
     for g in _guilds.values():
         lines.append(f"• {g['name']} — {len(g['members'])} نفر | صندوق {g['vault_coins']}")
     return chr(10).join(lines)
@@ -103,7 +103,7 @@ def withdraw(tg_id: int, amount: int) -> tuple[bool, str]:
         return False, "عضو نیستی."
     g = _guilds[gid]
     if tg_id != g["leader"]:
-        return False, "فقط رهبر برداشت می‌کند."
+        return False, "فقط رهبر برداشت میکند."
     if amount <= 0 or amount > g["vault_coins"]:
         return False, "موجودی کافی نیست."
     g["vault_coins"] -= amount

@@ -23,7 +23,7 @@ async def take_disciple(session: AsyncSession, master: User, disciple: User) -> 
         )
     )
     if as_disciple.scalar_one_or_none():
-        raise ValueError("تو خودت شاگرد هستی و نمی‌تونی استاد بشی")
+        raise ValueError("تو خودت شاگرد هستی و نمیتونی استاد بشی")
     
     relation = MasterDisciple(
         master_id=master.id,

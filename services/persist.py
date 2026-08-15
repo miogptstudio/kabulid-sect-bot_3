@@ -1,4 +1,4 @@
-"""ذخیره‌سازی پایدار داده‌های حافظه‌ای روی دیسک + دیتابیس"""
+"""ذخیرهسازی پایدار دادههای حافظهای روی دیسک + دیتابیس"""
 from __future__ import annotations
 import json
 import os
@@ -188,7 +188,7 @@ async def sync_to_db() -> int:
 
 
 async def load_from_db() -> int:
-    """DB منبع اصلی داده‌های پایدار است؛ داده‌های بازیکن با آپدیت ربات پاک نمی‌شوند."""
+    """DB منبع اصلی دادههای پایدار است؛ دادههای بازیکن با آپدیت ربات پاک نمیشوند."""
     try:
         from database.engine import async_session
         from sqlalchemy import text
@@ -202,8 +202,8 @@ async def load_from_db() -> int:
             rows = r.fetchall()
             n = 0
             for ns, payload in rows:
-                # اگر DB داده دارد، همان داده مرجع است. این کار جلوی جایگزین‌شدن
-                # دیتای جدید بازیکنان با فایل قدیمی هنگام deploy/update را می‌گیرد.
+                # اگر DB داده دارد، همان داده مرجع است. این کار جلوی جایگزینشدن
+                # دیتای جدید بازیکنان با فایل قدیمی هنگام deploy/update را میگیرد.
                 try:
                     data = _revive(json.loads(payload))
                     with _lock:
@@ -219,7 +219,7 @@ async def load_from_db() -> int:
 
 
 def preload_all() -> None:
-    """همه فایل‌های persist را در کش بیاور"""
+    """همه فایلهای persist را در کش بیاور"""
     for p in _dir.glob("*.json"):
         try:
             load(p.stem)

@@ -1,9 +1,9 @@
-"""شوالیه‌ها — محافظت از بازیکن/فرقه"""
+"""شوالیهها — محافظت از بازیکن/فرقه"""
 from __future__ import annotations
 
 KNIGHTS = [
     {"id": 1, "name": "شوالیه آهنی", "price": 2000, "protect": 15},
-    {"id": 2, "name": "شوالیه نقره‌ای", "price": 8000, "protect": 30},
+    {"id": 2, "name": "شوالیه نقرهای", "price": 8000, "protect": 30},
     {"id": 3, "name": "شوالیه طلایی", "price": 25000, "protect": 50},
     {"id": 4, "name": "شوالیه اژدها", "price": 80000, "protect": 75},
     {"id": 5, "name": "شوالیه بهشتی", "price": 200000, "protect": 90},
@@ -14,7 +14,7 @@ _owned: dict[int, list[int]] = {}
 
 
 def list_text() -> str:
-    lines = ["⚔️ <b>شوالیه‌ها (محافظت)</b>", ""]
+    lines = ["⚔️ <b>شوالیهها (محافظت)</b>", ""]
     for k in KNIGHTS:
         lines.append(f"{k['id']}. {k['name']} — {k['price']} سکه | محافظت {k['protect']}٪")
     lines += ["", "/buyknight شماره", "/myknights"]
@@ -45,8 +45,8 @@ def buy(tg: int, kid: int, coins: int) -> tuple[bool, str, int]:
 def my_knights(tg: int) -> str:
     ids = _owned_map().get(str(int(tg)), [])
     if not ids:
-        return "شوالیه‌ای نداری. /knights"
-    lines = ["⚔️ <b>شوالیه‌های تو</b>", ""]
+        return "شوالیهای نداری. /knights"
+    lines = ["⚔️ <b>شوالیههای تو</b>", ""]
     for k in KNIGHTS:
         if k["id"] in ids:
             lines.append(f"• {k['name']} ({k['protect']}٪)")

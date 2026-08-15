@@ -7,14 +7,14 @@ from services.cultivation import get_or_create_cultivation
 
 REALM_POWER = {
     "بیداری": 5, "پایه": 10, "متوسط": 25, "بالا": 45, "پیشرفته": 70,
-    "هسته": 85, "روح": 95, "نیمه‌خدا": 110, "خدا": 130, "آسمان": 150,
-    "ای‌تری": 180, "جاودان": 210, "ابدی": 240, "خلقت": 280, "پوچی": 320,
+    "هسته": 85, "روح": 95, "نیمهخدا": 110, "خدا": 130, "آسمان": 150,
+    "ایتری": 180, "جاودان": 210, "ابدی": 240, "خلقت": 280, "پوچی": 320,
     "فراپوچی": 360, "مطلق": 400,
 }
 
 ROOT_BONUS = {
     "بدون ریشه": 0,
-    "ریشه پنج‌عنصر": 5,
+    "ریشه پنجعنصر": 5,
     "ریشه آتش": 8,
     "ریشه آب": 8,
     "ریشه چوب": 7,
@@ -28,7 +28,7 @@ ROOT_BONUS = {
     "ریشه آسمانی": 28,
     "ریشه الهی": 40,
     "ریشه پوچی": 35,
-    "ریشه ای‌تری": 30,
+    "ریشه ایتری": 30,
     "ریشه دوگانه": 20,
 }
 
@@ -41,7 +41,7 @@ async def calc_power(session: AsyncSession, user: User) -> dict:
         spirit_p = power_bonus(user.telegram_id)
     except Exception:
         spirit_p = 0
-    rank_bonus = {"عضو دسته‌های پایین‌تر": 0, "عضو بیرونی": 5, "عضو داخلی": 12, "ارشد": 25, "ارجمند": 40}.get(user.rank, 0)
+    rank_bonus = {"عضو دستههای پایینتر": 0, "عضو بیرونی": 5, "عضو داخلی": 12, "ارشد": 25, "ارجمند": 40}.get(user.rank, 0)
 
     cult = await get_or_create_cultivation(session, user.id)
     realm_p = REALM_POWER.get(cult.realm, 10) + (cult.stage or 1) * 8 + min(int(cult.energy or 0) // 10000, 50)
@@ -67,7 +67,7 @@ async def calc_power(session: AsyncSession, user: User) -> dict:
             weapon_p += dp
             pen_p += int(effect.get("penetration") or effect.get("armor_pen") or 0)
         elif not eq_id and dp and item.item_type in ("weapon", "weapon_unique"):
-            # اگر چیزی مجهز نیست، قوی‌ترین سلاح را حساب کن
+            # اگر چیزی مجهز نیست، قویترین سلاح را حساب کن
             weapon_p = max(weapon_p, dp)
 
     job_p = 0
@@ -231,7 +231,7 @@ async def calc_power(session: AsyncSession, user: User) -> dict:
 
 
 def win_chance(power_a: int, power_b: int) -> float:
-    """بدون شانس — فقط قدرت. اگر a قوی‌تر است ۱ وگرنه ۰ (تساوی ۰.۵ فقط برای نمایش)."""
+    """بدون شانس — فقط قدرت. اگر a قویتر است ۱ وگرنه ۰ (تساوی ۰.۵ فقط برای نمایش)."""
     a, b = int(power_a or 0), int(power_b or 0)
     if a > b:
         return 1.0
@@ -249,7 +249,7 @@ def win_chance_legacy_unused(power_a: int, power_b: int) -> float:
     if power_a + power_b <= 0:
         return 0.5
     raw = power_a / (power_a + power_b)
-    # مکعب برای سخت‌تر کردن
+    # مکعب برای سختتر کردن
     raw = raw ** 3
     return max(lo, min(hi, raw))
 

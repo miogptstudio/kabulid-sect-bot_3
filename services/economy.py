@@ -15,7 +15,7 @@ DESTINY_PER_IMMORTAL = 1000     # ۱ جاودان = ۱۰۰۰ تقدیر
 IMMORTAL_PER_CREATION = 1000    # ۱ خلقت = ۱۰۰۰ جاودان
 CREATION_PER_ABSOLUTE = 1000    # ۱ مطلق = ۱۰۰۰ خلقت
 FAITH_PER_DRAGON = 100          # ۱ سکه اژدها = ۱۰۰ ایمان (ارز موازی)
-GOD_PER_CHAOS = 1000  # ۱ هرج‌ومرج = ۱۰۰۰ خدا
+GOD_PER_CHAOS = 1000  # ۱ هرجومرج = ۱۰۰۰ خدا
 CHAOS_PER_VOID = 1000
 VOID_PER_ORIGIN = 1000
 
@@ -100,11 +100,11 @@ async def exchange_up(session: AsyncSession, user_id: int, kind: str, amount: in
         w.god_stones = int(w.god_stones or 0) - cost
         w.chaos_stones = int(getattr(w, "chaos_stones", 0) or 0) + amount
         await session.commit()
-        return f"✅ +{amount} سنگ هرج‌ومرج"
+        return f"✅ +{amount} سنگ هرجومرج"
     if kind == "void":
         cost = amount * CHAOS_PER_VOID
         if int(getattr(w, "chaos_stones", 0) or 0) < cost:
-            return f"نیاز {cost} سنگ هرج‌ومرج"
+            return f"نیاز {cost} سنگ هرجومرج"
         w.chaos_stones = int(w.chaos_stones or 0) - cost
         w.void_stones = int(getattr(w, "void_stones", 0) or 0) + amount
         await session.commit()
@@ -173,14 +173,14 @@ async def exchange_up(session: AsyncSession, user_id: int, kind: str, amount: in
 
 
 async def exchange_down(session: AsyncSession, user_id: int, kind: str, amount: int = 1) -> str:
-    """تبدیل ارز بالاتر به پایین‌تر
+    """تبدیل ارز بالاتر به پایینتر
     kind: spirit (روحی→سکه) | heavenly (بهشتی→روحی) | celestial (آسمانی→بهشتی) | god (خدا→آسمانی)
     """
     amount = max(1, int(amount))
     w = await get_or_create_wallet(session, user_id)
     kind = (kind or "").strip().lower()
     aliases = {
-        "spirit": "spirit", "روحی": "spirit", "سنگ‌روحی": "spirit", "stone": "spirit",
+        "spirit": "spirit", "روحی": "spirit", "سنگروحی": "spirit", "stone": "spirit",
         "heavenly": "heavenly", "بهشتی": "heavenly", "heaven": "heavenly",
         "celestial": "celestial", "آسمانی": "celestial", "sky": "celestial",
         "god": "god", "خدا": "god", "godstone": "god",
@@ -231,12 +231,12 @@ async def exchange_down(session: AsyncSession, user_id: int, kind: str, amount: 
     if kind == "chaos":
         have = int(getattr(w, "chaos_stones", 0) or 0)
         if have < amount:
-            return f"❌ هرج‌ومرج کافی نیست (داری: {have})"
+            return f"❌ هرجومرج کافی نیست (داری: {have})"
         w.chaos_stones = have - amount
         gain = amount * GOD_PER_CHAOS
         w.god_stones = int(getattr(w, "god_stones", 0) or 0) + gain
         await session.commit()
-        return f"⬇️ +{gain:,} سنگ خدا (از {amount} هرج‌ومرج)"
+        return f"⬇️ +{gain:,} سنگ خدا (از {amount} هرجومرج)"
     if kind == "void":
         have = int(getattr(w, "void_stones", 0) or 0)
         if have < amount:
@@ -245,7 +245,7 @@ async def exchange_down(session: AsyncSession, user_id: int, kind: str, amount: 
         gain = amount * CHAOS_PER_VOID
         w.chaos_stones = int(getattr(w, "chaos_stones", 0) or 0) + gain
         await session.commit()
-        return f"⬇️ +{gain:,} هرج‌ومرج (از {amount} پوچی)"
+        return f"⬇️ +{gain:,} هرجومرج (از {amount} پوچی)"
     if kind == "origin":
         have = int(getattr(w, "origin_stones", 0) or 0)
         if have < amount:
@@ -268,7 +268,7 @@ def wallet_text(w: UserWallet) -> str:
         f"💎 سنگ روحی: <b>{w.spirit_stones}</b>\n"
         f"✨ سنگ بهشتی: <b>{getattr(w, 'heavenly_stones', 0) or 0}</b>\n"
         f"🌌 سنگ آسمانی: <b>{getattr(w, 'celestial_stones', 0) or 0}</b>\n"
-        f"👑 سنگ خدا: <b>{getattr(w, 'god_stones', 0) or 0}</b>\n"        f"🌪 سنگ هرج‌ومرج: <b>{getattr(w, 'chaos_stones', 0) or 0}</b>\n"        f"🕳 سنگ پوچی: <b>{getattr(w, 'void_stones', 0) or 0}</b>\n"        f"🌌 سنگ ازلی: <b>{getattr(w, 'origin_stones', 0) or 0}</b>\n"        f"☯️ کارما: <b>{getattr(w, 'karma_points', 0) or 0}</b>\n"
+        f"👑 سنگ خدا: <b>{getattr(w, 'god_stones', 0) or 0}</b>\n"        f"🌪 سنگ هرجومرج: <b>{getattr(w, 'chaos_stones', 0) or 0}</b>\n"        f"🕳 سنگ پوچی: <b>{getattr(w, 'void_stones', 0) or 0}</b>\n"        f"🌌 سنگ ازلی: <b>{getattr(w, 'origin_stones', 0) or 0}</b>\n"        f"☯️ کارما: <b>{getattr(w, 'karma_points', 0) or 0}</b>\n"
         f"🔮 سنگ تقدیر: <b>{getattr(w, 'destiny_stones', 0) or 0}</b>\n"
         f"♾️ سنگ جاودان: <b>{getattr(w, 'immortal_stones', 0) or 0}</b>\n"
         f"🌀 سنگ خلقت: <b>{getattr(w, 'creation_stones', 0) or 0}</b>\n"
@@ -317,7 +317,7 @@ CURRENCY_ALIASES = {
     "heavenly": "heavenly_stones", "heaven": "heavenly_stones", "بهشتی": "heavenly_stones", "سنگ بهشتی": "heavenly_stones",
     "celestial": "celestial_stones", "sky": "celestial_stones", "آسمانی": "celestial_stones", "سنگ آسمانی": "celestial_stones",
     "god": "god_stones", "godstone": "god_stones", "خدا": "god_stones", "سنگ خدا": "god_stones",
-    "chaos": "chaos_stones", "هرج و مرج": "chaos_stones", "هرج‌ومرج": "chaos_stones", "سنگ هرج و مرج": "chaos_stones",
+    "chaos": "chaos_stones", "هرج و مرج": "chaos_stones", "هرجومرج": "chaos_stones", "سنگ هرج و مرج": "chaos_stones",
     "void": "void_stones", "پوچی": "void_stones", "سنگ پوچی": "void_stones",
     "origin": "origin_stones", "ازلی": "origin_stones", "سنگ ازلی": "origin_stones",
     "destiny": "destiny_stones", "تقدیر": "destiny_stones", "سنگ تقدیر": "destiny_stones",
@@ -332,12 +332,12 @@ CURRENCY_ALIASES = {
 def normalize_currency(value: str | None) -> str | None:
     if not value:
         return None
-    v = str(value).strip().lower().replace("‌", " ")
+    v = str(value).strip().lower().replace("", " ")
     return CURRENCY_ALIASES.get(v, v)
 
 
 def pay_specific_currency(w: UserWallet, amount: int, currency: str) -> tuple[bool, str]:
-    """پرداخت دقیق با یک ارز؛ برای آیتم‌هایی که قیمتشان ارز خاص دارد."""
+    """پرداخت دقیق با یک ارز؛ برای آیتمهایی که قیمتشان ارز خاص دارد."""
     amount = int(amount or 0)
     key = normalize_currency(currency)
     if amount <= 0:
@@ -353,8 +353,8 @@ def pay_specific_currency(w: UserWallet, amount: int, currency: str) -> tuple[bo
 
 def pay_any_currency(w: UserWallet, price_coins: int) -> tuple[bool, str]:
     """پرداخت قیمت بر حسب سکه با امکان استفاده از ارزهای بالاتر.
-    ارزهای زنجیره‌ای از سکه تا مطلق قابل خرد شدن‌اند؛ ارزهای موازی نیز
-    (ایمان/اژدها) با نرخ مستقل به سکه تبدیل می‌شوند تا باعث خطای خرید نشوند.
+    ارزهای زنجیرهای از سکه تا مطلق قابل خرد شدناند؛ ارزهای موازی نیز
+    (ایمان/اژدها) با نرخ مستقل به سکه تبدیل میشوند تا باعث خطای خرید نشوند.
     """
     price_coins = int(price_coins or 0)
     if price_coins <= 0:
@@ -366,7 +366,7 @@ def pay_any_currency(w: UserWallet, price_coins: int) -> tuple[bool, str]:
         ("heavenly_stones", COINS_PER_STONE * STONE_PER_HEAVENLY, "سنگ بهشتی"),
         ("celestial_stones", COINS_PER_STONE * STONE_PER_HEAVENLY * HEAVENLY_PER_CELESTIAL, "سنگ آسمانی"),
         ("god_stones", COINS_PER_STONE * STONE_PER_HEAVENLY * HEAVENLY_PER_CELESTIAL * CELESTIAL_PER_GOD, "سنگ خدا"),
-        ("chaos_stones", COINS_PER_STONE * STONE_PER_HEAVENLY * HEAVENLY_PER_CELESTIAL * CELESTIAL_PER_GOD * GOD_PER_CHAOS, "سنگ هرج‌ومرج"),
+        ("chaos_stones", COINS_PER_STONE * STONE_PER_HEAVENLY * HEAVENLY_PER_CELESTIAL * CELESTIAL_PER_GOD * GOD_PER_CHAOS, "سنگ هرجومرج"),
         ("void_stones", COINS_PER_STONE * STONE_PER_HEAVENLY * HEAVENLY_PER_CELESTIAL * CELESTIAL_PER_GOD * GOD_PER_CHAOS * CHAOS_PER_VOID, "سنگ پوچی"),
         ("origin_stones", COINS_PER_STONE * STONE_PER_HEAVENLY * HEAVENLY_PER_CELESTIAL * CELESTIAL_PER_GOD * GOD_PER_CHAOS * CHAOS_PER_VOID * VOID_PER_ORIGIN, "سنگ ازلی"),
         ("destiny_stones", COINS_PER_STONE * STONE_PER_HEAVENLY * HEAVENLY_PER_CELESTIAL * CELESTIAL_PER_GOD * GOD_PER_CHAOS * CHAOS_PER_VOID * VOID_PER_ORIGIN * ORIGIN_PER_DESTINY, "سنگ تقدیر"),

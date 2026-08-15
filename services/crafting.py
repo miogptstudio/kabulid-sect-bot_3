@@ -47,7 +47,7 @@ DEFAULT_RECIPES = [
         "min_cultivation_realm": "بالا",
         "success_rate": 55
     },
-    # طلسم‌سازی
+    # طلسمسازی
     {
         "name": "طلسم محافظ پایه",
         "recipe_type": "talisman",
@@ -89,7 +89,7 @@ DEFAULT_RECIPES = [
         "name": "ساخت نیزه فولادی",
         "recipe_type": "smithing",
         "required_materials": {
-            "فولاد تصفیه‌شده": 2,
+            "فولاد تصفیهشده": 2,
             "آهن خام": 1
         },
         "result_item_name": "نیزه فولادی",
@@ -98,14 +98,14 @@ DEFAULT_RECIPES = [
         "success_rate": 70
     },
     {
-        "name": "ساخت شمشیر روح‌دار",
+        "name": "ساخت شمشیر روحدار",
         "recipe_type": "smithing",
         "required_materials": {
-            "فولاد تصفیه‌شده": 1,
+            "فولاد تصفیهشده": 1,
             "سنگ روح": 1,
             "کریستال خالص": 1
         },
-        "result_item_name": "شمشیر روح‌دار",
+        "result_item_name": "شمشیر روحدار",
         "result_effect": {"duel_power": 25},
         "min_cultivation_realm": "بالا",
         "success_rate": 50
@@ -204,7 +204,7 @@ async def craft(session: AsyncSession, user: User, recipe: Recipe) -> dict:
                     building_id=bld.id,
                     name=rname,
                     item_type="crafted",
-                    description=f"ساخته‌شده: {recipe.name}",
+                    description=f"ساختهشده: {recipe.name}",
                     price=0,
                     effect=recipe.result_effect if isinstance(recipe.result_effect, dict) else {},
                 )

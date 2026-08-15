@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from bot.config import SEASON_DURATION_DAYS
 
 SEASON_NUMBER = 1
-SEASON_NAME = "فصل اول — طلوع فرقه‌ها"
+SEASON_NAME = "فصل اول — طلوع فرقهها"
 
 
 def get_current_season_info():
@@ -25,7 +25,7 @@ def season_text() -> str:
         f"شماره فصل: {info['number']}\n"
         f"شروع: {info['start'].date()}\n"
         f"پایان: {info['end'].date()}\n"
-        f"وضعیت: {'فعال ✅' if info['active'] else 'پایان‌یافته'}\n\n"
-        "مدال‌ها در پایان فصل حفظ می‌شوند.\n"
-        "جدول رتبه در فصل بعد ریست می‌شود."
+        f"وضعیت: {'فعال ✅' if info['active'] else 'پایانیافته'}\n\n"
+        "مدالها در پایان فصل حفظ میشوند.\n"
+        "جدول رتبه در فصل بعد ریست میشود."
     )

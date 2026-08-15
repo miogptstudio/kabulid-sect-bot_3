@@ -9,7 +9,7 @@ POISON_HOURS = 3
 
 
 def max_blood_for_user(user: User, power_total: int | None = None, realm: str | None = None, stage: int | None = None) -> int:
-    """جان با سطح/قلمرو رشد می‌کند — سطح پایین به بالا آسیب جدی نمی‌زند"""
+    """جان با سطح/قلمرو رشد میکند — سطح پایین به بالا آسیب جدی نمیزند"""
     base = 100
     lvl = int(getattr(user, "level", 1) or 1)
     # اگر realm/stage داده شد از آن استفاده کن
@@ -36,7 +36,7 @@ async def ensure_blood(user: User, session: AsyncSession | None = None) -> int:
     if getattr(user, "blood", None) is None:
         user.blood = mx
     else:
-        # اگر سقف جدید بزرگ‌تر است، خون را به نسبت بالا نبر مگر خالی باشد
+        # اگر سقف جدید بزرگتر است، خون را به نسبت بالا نبر مگر خالی باشد
         if int(user.blood or 0) > mx:
             user.blood = mx
         if int(user.blood or 0) <= 0 and not getattr(user, "is_dead", False):
@@ -100,7 +100,7 @@ async def apply_damage(
     is_cyrus_strike: bool = False,
     is_death_duel: bool = False,
 ) -> dict:
-    """آسیب با دفاع، نفوذ، جاخالی — سطح پایین به بالا کم آسیب می‌زند"""
+    """آسیب با دفاع، نفوذ، جاخالی — سطح پایین به بالا کم آسیب میزند"""
     await ensure_blood(defender)
     atk_s = await get_defense_stats(session, attacker)
     def_s = await get_defense_stats(session, defender)
@@ -125,7 +125,7 @@ async def apply_damage(
                     "killed": False,
                     "dodged": False,
                     "immune": True,
-                    "msg": f"🛡 سپر پوچی {defender.full_name}: هیچ حمله‌ای اثر نکرد!",
+                    "msg": f"🛡 سپر پوچی {defender.full_name}: هیچ حملهای اثر نکرد!",
                 }
             # ضد نفوذ
             if eff.get("anti_pen"):
@@ -151,7 +151,7 @@ async def apply_damage(
             "msg": f"💨 {defender.full_name} با سرعت بالاتر جاخالی داد (قطعی).",
         }
 
-    # تفاوت قدرت — سطح پایین تقریباً به سطح بالا آسیب نمی‌زند
+    # تفاوت قدرت — سطح پایین تقریباً به سطح بالا آسیب نمیزند
     ratio = (atk_s["total"] + 1) / (def_s["total"] + 1)
     if ratio < 0.25:
         level_mult = 0.02   # تقریباً صفر

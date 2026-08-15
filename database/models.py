@@ -10,7 +10,7 @@ class Base(DeclarativeBase):
     pass
 
 
-# ==================== نقش‌ها ====================
+# ==================== نقشها ====================
 # رهبر > معاون رهبر > ارجمند > ارشد > بقیه
 
 ROLE_LEADER = "رهبر"
@@ -41,16 +41,16 @@ class User(Base):
     city: Mapped[str] = mapped_column(String(32), default="tehran")
     world: Mapped[str] = mapped_column(String(32), default="فانی")  # فانی / بهشتی / زیرین
     lifespan: Mapped[int] = mapped_column(Integer, default=100)  # عمر ۰-۱۰۰
-    is_spirit_raiser: Mapped[bool] = mapped_column(Boolean, default=False)  # پرورش‌دهنده روح بعد از مرگ
+    is_spirit_raiser: Mapped[bool] = mapped_column(Boolean, default=False)  # پرورشدهنده روح بعد از مرگ
     race: Mapped[str] = mapped_column(String(32), default="انسان")  # نژاد
     language: Mapped[str] = mapped_column(String(8), default="fa")  # fa en ar zh ru tr
     garden_slots: Mapped[int] = mapped_column(Integer, default=10)  # ظرفیت زمین
     last_plant_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    pet_slots: Mapped[int] = mapped_column(Integer, default=10)  # ظرفیت کاخ رام‌شدگان
+    pet_slots: Mapped[int] = mapped_column(Integer, default=10)  # ظرفیت کاخ رامشدگان
     last_hunt_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     # Rank system
-    rank: Mapped[str] = mapped_column(String(32), default="عضو دسته‌های پایین‌تر")
+    rank: Mapped[str] = mapped_column(String(32), default="عضو دستههای پایینتر")
     level: Mapped[int] = mapped_column(Integer, default=1)
     xp: Mapped[int] = mapped_column(Integer, default=0)
 
@@ -102,7 +102,7 @@ class User(Base):
 
 
 class Account(Base):
-    """سیستم چندحسابه - هر کاربر می‌تونه چند اکانت با رمز داشته باشه"""
+    """سیستم چندحسابه - هر کاربر میتونه چند اکانت با رمز داشته باشه"""
     __tablename__ = "accounts"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -211,7 +211,7 @@ class Mission(Base):
     target_type: Mapped[str] = mapped_column(String(32))  # wins, duels, guardian_wins, streak, ...
     target_value: Mapped[int] = mapped_column(Integer)  # مثلاً ۱۰ برد
     
-    # جایزه (توسط رهبر تنظیم می‌شه)
+    # جایزه (توسط رهبر تنظیم میشه)
     reward_xp: Mapped[int] = mapped_column(Integer, default=0)
     reward_medal: Mapped[str | None] = mapped_column(String(64), nullable=True)
     reward_description: Mapped[str | None] = mapped_column(String(256), nullable=True)

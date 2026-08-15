@@ -6,9 +6,9 @@ from bot.config import (
     GUARDIAN_LOSS_DEMOTE
 )
 
-# ترتیب رتبه‌ها از پایین به بالا
+# ترتیب رتبهها از پایین به بالا
 RANKS = [
-    "عضو دسته‌های پایین‌تر",
+    "عضو دستههای پایینتر",
     "عضو بیرونی",
     "عضو داخلی",
     "ارشد",
@@ -58,7 +58,7 @@ def demote(user: User) -> str | None:
 def process_duel_result(winner: User, loser: User, is_guardian: bool = False) -> dict:
     """
     پردازش نتیجه دوئل و اعمال تغییرات رتبه.
-    برمی‌گرداند: {"winner_promoted": bool, "loser_demoted": bool, "messages": list}
+    برمیگرداند: {"winner_promoted": bool, "loser_demoted": bool, "messages": list}
     """
     result = {
         "winner_promoted": False,
@@ -93,14 +93,14 @@ def process_duel_result(winner: User, loser: User, is_guardian: bool = False) ->
                 result["winner_promoted"] = True
                 result["messages"].append(f"🎉 {winner.full_name} با شکست دادن رتبه بالاتر به «{new_rank}» ارتقا یافت!")
         
-        # برد مقابل هم‌رتبه
+        # برد مقابل همرتبه
         elif loser_idx == winner_idx:
             winner.same_rank_wins += 1
             if winner.same_rank_wins >= WINS_FOR_SAME_RANK_PROMOTE:
                 if can_promote(winner):
                     new_rank = promote(winner)
                     result["winner_promoted"] = True
-                    result["messages"].append(f"🎉 {winner.full_name} با {WINS_FOR_SAME_RANK_PROMOTE} برد هم‌رتبه به «{new_rank}» ارتقا یافت!")
+                    result["messages"].append(f"🎉 {winner.full_name} با {WINS_FOR_SAME_RANK_PROMOTE} برد همرتبه به «{new_rank}» ارتقا یافت!")
         
         # ۳ باخت متوالی
         if loser.loss_streak >= CONSECUTIVE_LOSSES_FOR_DEMOTE:

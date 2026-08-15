@@ -58,7 +58,7 @@ def upgrade(tg_id: int, spirit: int) -> tuple[bool, str, int]:
         return False, "معدن نداری. /buymine", spirit
     today = date.today().isoformat()
     if mine.get("last_upgrade") == today:
-        return False, "امروز یک‌بار ارتقا دادی. فردا دوباره.", spirit
+        return False, "امروز یکبار ارتقا دادی. فردا دوباره.", spirit
     lvl = int(mine.get("level", 1))
     cost = 20 + lvl * 15
     if spirit < cost:

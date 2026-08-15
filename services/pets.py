@@ -34,10 +34,10 @@ DOMESTIC_SPECIES = [
     ("گربه روح", 6, 6),
     ("سگ نگهبان", 9, 10),
     ("خرگوش ماه", 4, 5),
-    ("پرنده خوش‌خوان", 5, 4),
+    ("پرنده خوشخوان", 5, 4),
     ("آهو بهشتی", 15, 12),
     ("اسب باد", 18, 14),
-    ("لاک‌پشت زرین", 7, 15),
+    ("لاکپشت زرین", 7, 15),
     ("جغد دانش", 8, 9),
 ]
 
@@ -77,7 +77,7 @@ async def can_own_more(session: AsyncSession, user: User):
     cap = pet_capacity(user)
     if len(pets) >= cap:
         return False, (
-            f"🏰 کاخ رام‌شدگان پر است ({len(pets)}/{cap})."
+            f"🏰 کاخ رامشدگان پر است ({len(pets)}/{cap})."
             + chr(10)
             + f"با /petpalace ارتقا بده (سقف {MAX_PET_SLOTS})."
         )
@@ -128,7 +128,7 @@ async def buy_domestic(session: AsyncSession, user: User, cost_coins: int = 100)
         name=species,
         pet_type="domestic",
         species=species,
-        description="حیوان خونگی خریداری‌شده",
+        description="حیوان خونگی خریداریشده",
         attack=atk,
         defense=deff,
         loyalty=70,

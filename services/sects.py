@@ -6,11 +6,11 @@ from database.models_v3 import Territory, LeadershipChallenge, BetrayalLog
 from database.models import User
 from services.cultivation import get_or_create_cultivation
 
-# فقط از قلمرو «بالا» به بعد می‌تونه فرقه بسازه
+# فقط از قلمرو «بالا» به بعد میتونه فرقه بسازه
 MIN_REALM_TO_CREATE_SECT = "پیشرفته"  # بالاتر از «بالا»
 REALM_ORDER = [
     "بیداری", "پایه", "متوسط", "بالا", "پیشرفته", "هسته", "روح",
-    "نیمه‌خدا", "خدا", "آسمان", "ای‌تری", "جاودان", "ابدی",
+    "نیمهخدا", "خدا", "آسمان", "ایتری", "جاودان", "ابدی",
     "خلقت", "پوچی", "فراپوچی", "مطلق",
 ]
 
@@ -18,7 +18,7 @@ REALM_ORDER = [
 RANK_SWORDS = {
     "ارجمند": "شمشیر پوچی و خلقت",
     "ارشد": "شمشیر آذرخش",
-    "عضو داخلی": "شمشیر ریشه",  # بعداً با ریشه شخصی‌سازی می‌شه
+    "عضو داخلی": "شمشیر ریشه",  # بعداً با ریشه شخصیسازی میشه
 }
 
 # فاصله چالش رهبری: ۳۰ روز
@@ -69,7 +69,7 @@ async def create_sect(
         leader_id=leader.id,
         member_count=1
     )
-    # اگر فیلد symbol در مدل نبود، در description نگه می‌داریم
+    # اگر فیلد symbol در مدل نبود، در description نگه میداریم
     session.add(sect)
     await session.flush()
     
@@ -116,7 +116,7 @@ async def join_sect(session: AsyncSession, user: User, sect: Sect, tg_id: int | 
     member = SectMember(
         user_id=user.id,
         sect_id=sect.id,
-        status="عضو دسته‌های پایین‌تر"
+        status="عضو دستههای پایینتر"
     )
     session.add(member)
     sect.member_count += 1
@@ -173,7 +173,7 @@ async def challenge_leader(session: AsyncSession, challenger: User, sect: Sect) 
     
     membership = await get_user_sect(session, challenger.id)
     if not membership or membership.sect_id != sect.id:
-        return "فقط اعضای همین فرقه می‌تونن چالش بدن."
+        return "فقط اعضای همین فرقه میتونن چالش بدن."
     
     # فقط یک چالش در ماه
     hour_ago = datetime.utcnow() - timedelta(hours=LEADER_CHALLENGE_COOLDOWN_HOURS)
@@ -185,7 +185,7 @@ async def challenge_leader(session: AsyncSession, challenger: User, sect: Sect) 
         )
     )
     if recent.scalar_one_or_none():
-        return f"هر {LEADER_CHALLENGE_COOLDOWN_HOURS} ساعت فقط یک‌بار می‌تونی چالش رهبری بدی."
+        return f"هر {LEADER_CHALLENGE_COOLDOWN_HOURS} ساعت فقط یکبار میتونی چالش رهبری بدی."
     
     challenge = LeadershipChallenge(
         sect_id=sect.id,
@@ -214,7 +214,7 @@ async def resolve_challenge(session: AsyncSession, challenge: LeadershipChalleng
     else:
         challenge.status = "lost"
         await session.commit()
-        # اگر چالش‌گر از نظر قلمرو ضعیف‌تر باشد → مرگ معلق تا بخشش رهبر
+        # اگر چالشگر از نظر قلمرو ضعیفتر باشد → مرگ معلق تا بخشش رهبر
         from database.models_v3 import Territory
         from sqlalchemy import select, func
         sect = await session.get(Sect, challenge.sect_id)
@@ -228,11 +228,11 @@ async def resolve_challenge(session: AsyncSession, challenge: LeadershipChalleng
 async def betray_sect(session: AsyncSession, user: User, reason: str = None) -> str:
     membership = await get_user_sect(session, user.id)
     if not membership:
-        return "عضو هیچ فرقه‌ای نیستی."
+        return "عضو هیچ فرقهای نیستی."
     
     sect = await session.get(Sect, membership.sect_id)
     if sect and sect.leader_id == user.id:
-        return "رهبر نمی‌تونه خیانت کنه. اول رهبری رو واگذار کن."
+        return "رهبر نمیتونه خیانت کنه. اول رهبری رو واگذار کن."
     
     log = BetrayalLog(
         user_id=user.id,
@@ -246,21 +246,21 @@ async def betray_sect(session: AsyncSession, user: User, reason: str = None) -> 
     
     await session.delete(membership)
     await session.commit()
-    return f"🗡️ به فرقه خیانت کردی و خارج شدی. حالا تذهیب‌کننده دوره‌گرد هستی."
+    return f"🗡️ به فرقه خیانت کردی و خارج شدی. حالا تذهیبکننده دورهگرد هستی."
 
 
 async def conquer_territory(session: AsyncSession, attacker_sect: Sect, territory: Territory) -> str:
     if territory.owner_sect_id == attacker_sect.id:
         return "این قلمرو مال خودته."
     
-    # ساده: اگر امتیاز فرقه مهاجم بیشتر باشه، تصاحب می‌شه
+    # ساده: اگر امتیاز فرقه مهاجم بیشتر باشه، تصاحب میشه
     if attacker_sect.total_points >= territory.defense_points:
         old = territory.owner_sect_id
         territory.owner_sect_id = attacker_sect.id
         territory.defense_points += 20
         await session.commit()
         return f"🏰 قلمرو «{territory.name}» تصاحب شد!"
-    return f"دفاع قلمرو قوی‌تر از امتیاز فرقه توست (نیاز: {territory.defense_points} امتیاز)."
+    return f"دفاع قلمرو قویتر از امتیاز فرقه توست (نیاز: {territory.defense_points} امتیاز)."
 
 
 async def transfer_leadership(session: AsyncSession, leader: User, new_leader: User) -> str:
@@ -270,7 +270,7 @@ async def transfer_leadership(session: AsyncSession, leader: User, new_leader: U
         return "عضو فرقه نیستی."
     sect = await session.get(Sect, membership_l.sect_id)
     if not sect or sect.leader_id != leader.id:
-        return "فقط رهبر فعلی می‌تواند رهبری را واگذار کند."
+        return "فقط رهبر فعلی میتواند رهبری را واگذار کند."
     if not membership_n or membership_n.sect_id != sect.id:
         return "فرد جدید باید عضو همین فرقه باشد."
     sect.leader_id = new_leader.id

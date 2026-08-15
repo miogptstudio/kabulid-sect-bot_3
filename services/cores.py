@@ -1,4 +1,4 @@
-"""هسته‌های نژادی — پیدا کردن و تبدیل نژاد"""
+"""هستههای نژادی — پیدا کردن و تبدیل نژاد"""
 import random
 from datetime import datetime, timedelta
 
@@ -6,30 +6,30 @@ from datetime import datetime, timedelta
 CORES = {
     "هسته انسان": {"race": "انسان", "rarity": "معمولی", "chance": 18},
     "هسته اژدها": {"race": "اژدهازاده", "rarity": "نادر", "chance": 6},
-    "هسته ققنوس": {"race": "ققنوس‌زاده", "rarity": "نادر", "chance": 5},
-    "هسته سیمرغ": {"race": "سیمرغ‌زاده", "rarity": "افسانه‌ای", "chance": 3},
+    "هسته ققنوس": {"race": "ققنوسزاده", "rarity": "نادر", "chance": 5},
+    "هسته سیمرغ": {"race": "سیمرغزاده", "rarity": "افسانهای", "chance": 3},
     "هسته دیو": {"race": "دیوزاد", "rarity": "نادر", "chance": 5},
-    "هسته پری": {"race": "پری‌ایرانی", "rarity": "نادر", "chance": 6},
-    "هسته آناهیتا": {"race": "آناهیتا‌پیمان", "rarity": "افسانه‌ای", "chance": 2.5},
-    "هسته رخش": {"race": "رخش‌تبار", "rarity": "نادر", "chance": 4},
-    "هسته جمشید": {"race": "جمشید‌تبار", "rarity": "افسانه‌ای", "chance": 2.5},
-    "هسته فریدون": {"race": "فریدون‌زاده", "rarity": "افسانه‌ای", "chance": 2.5},
-    "هسته زال": {"race": "زال‌تبار", "rarity": "نادر", "chance": 4},
-    "هسته رستم": {"race": "رستم‌تبار", "rarity": "افسانه‌ای", "chance": 2},
-    "هسته هما": {"race": "هما‌زاده", "rarity": "افسانه‌ای", "chance": 3},
-    "هسته کاوه": {"race": "کاوه‌تبار", "rarity": "نادر", "chance": 5},
-    "هسته ضحاک": {"race": "ضحاک‌تبار", "rarity": "نادر", "chance": 4},
+    "هسته پری": {"race": "پریایرانی", "rarity": "نادر", "chance": 6},
+    "هسته آناهیتا": {"race": "آناهیتاپیمان", "rarity": "افسانهای", "chance": 2.5},
+    "هسته رخش": {"race": "رخشتبار", "rarity": "نادر", "chance": 4},
+    "هسته جمشید": {"race": "جمشیدتبار", "rarity": "افسانهای", "chance": 2.5},
+    "هسته فریدون": {"race": "فریدونزاده", "rarity": "افسانهای", "chance": 2.5},
+    "هسته زال": {"race": "زالتبار", "rarity": "نادر", "chance": 4},
+    "هسته رستم": {"race": "رستمتبار", "rarity": "افسانهای", "chance": 2},
+    "هسته هما": {"race": "همازاده", "rarity": "افسانهای", "chance": 3},
+    "هسته کاوه": {"race": "کاوهتبار", "rarity": "نادر", "chance": 5},
+    "هسته ضحاک": {"race": "ضحاکتبار", "rarity": "نادر", "chance": 4},
     "هسته فرشته": {"race": "فرشته", "rarity": "نادر", "chance": 5},
     "هسته اهریمن": {"race": "اهریمن", "rarity": "نادر", "chance": 5},
     "هسته جن": {"race": "جن", "rarity": "معمولی", "chance": 10},
-    "هسته خون": {"race": "خون‌آشام", "rarity": "نادر", "chance": 5},
-    "هسته روح": {"race": "روح‌پیمان", "rarity": "نادر", "chance": 5},
+    "هسته خون": {"race": "خونآشام", "rarity": "نادر", "chance": 5},
+    "هسته روح": {"race": "روحپیمان", "rarity": "نادر", "chance": 5},
     "هسته غول": {"race": "غول", "rarity": "معمولی", "chance": 8},
-    "هسته سایه": {"race": "سایه‌رو", "rarity": "نادر", "chance": 5},
-    "هسته تایتان": {"race": "تایتان", "rarity": "افسانه‌ای", "chance": 2},
+    "هسته سایه": {"race": "سایهرو", "rarity": "نادر", "chance": 5},
+    "هسته تایتان": {"race": "تایتان", "rarity": "افسانهای", "chance": 2},
     "هسته رعد": {"race": "فرزند رعد", "rarity": "نادر", "chance": 4},
-    "هسته یخ": {"race": "یخ‌زاد", "rarity": "نادر", "chance": 4},
-    "هسته ستاره": {"race": "ستاره‌پیمان", "rarity": "افسانه‌ای", "chance": 2.5},
+    "هسته یخ": {"race": "یخزاد", "rarity": "نادر", "chance": 4},
+    "هسته ستاره": {"race": "ستارهپیمان", "rarity": "افسانهای", "chance": 2.5},
 }
 
 FIND_COOLDOWN = timedelta(hours=2)
@@ -42,13 +42,13 @@ def _last_map():
 
 
 def list_cores_text() -> str:
-    lines = ["💎 <b>هسته‌های نژادی</b>", ""]
+    lines = ["💎 <b>هستههای نژادی</b>", ""]
     for name, info in CORES.items():
         lines.append(f"• {name} → <b>{info['race']}</b> ({info['rarity']})")
     lines.append("")
     lines.append("/findcore — جستجوی هسته (هر ۲ ساعت)")
-    lines.append("/mycore — هسته‌های تو")
-    lines.append("/usecore نام‌هسته — تبدیل نژاد")
+    lines.append("/mycore — هستههای تو")
+    lines.append("/usecore نامهسته — تبدیل نژاد")
     return chr(10).join(lines)
 
 
@@ -73,7 +73,7 @@ def find_core(tg_id: int) -> tuple[str | None, str]:
     weights = [CORES[n]["chance"] for n in names]
     # 25% chance find nothing
     if random.random() < 0.25:
-        return None, "هیچ هسته‌ای پیدا نشد. بعداً دوباره /findcore"
+        return None, "هیچ هستهای پیدا نشد. بعداً دوباره /findcore"
     name = random.choices(names, weights=weights, k=1)[0]
     add_core(tg_id, name, 1)
     info = CORES[name]

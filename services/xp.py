@@ -25,8 +25,8 @@ def add_xp(user: User, amount: int) -> dict:
         result["new_level"] = user.level
         result["messages"].append(f"⬆️ {user.full_name} به سطح {user.level} رسید!")
 
-        # هر ۳ سطح یک بار شانس ارتقای رتبه (یا می‌تونی قانون دیگه‌ای بذاری)
-        # فعلاً فقط با قوانین اصلی رتبه ارتقا می‌دهیم
+        # هر ۳ سطح یک بار شانس ارتقای رتبه (یا میتونی قانون دیگهای بذاری)
+        # فعلاً فقط با قوانین اصلی رتبه ارتقا میدهیم
 
     return result
 
@@ -37,10 +37,10 @@ def process_xp_for_duel(winner: User, loser: User, is_guardian: bool = False) ->
     if is_guardian:
         res = add_xp(winner, XP_PER_GUARDIAN_WIN)
         messages.extend(res["messages"])
-        # بازنده XP نمی‌گیره یا کمی منفی (فعلاً صفر)
+        # بازنده XP نمیگیره یا کمی منفی (فعلاً صفر)
     else:
         res_win = add_xp(winner, XP_PER_WIN)
-        res_lose = add_xp(loser, XP_PER_LOSS)  # حتی بازنده کمی XP می‌گیره
+        res_lose = add_xp(loser, XP_PER_LOSS)  # حتی بازنده کمی XP میگیره
         messages.extend(res_win["messages"])
         messages.extend(res_lose["messages"])
 

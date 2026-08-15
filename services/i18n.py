@@ -168,7 +168,7 @@ T: dict[str, dict[str, str]] = {
         "tr": "Düello",
     },
     "kb_tech": {
-        "fa": "تکنیک‌ها",
+        "fa": "تکنیکها",
         "en": "Techniques",
         "ar": "التقنيات",
         "zh": "功法",
@@ -216,7 +216,7 @@ T: dict[str, dict[str, str]] = {
         "tr": "Bilinmeyen komut. /help",
     },
     "games_menu": {
-        "fa": "🎮 بازی‌ها — محدودیت ۲ دقیقه بعد از شروع",
+        "fa": "🎮 بازیها — محدودیت ۲ دقیقه بعد از شروع",
         "en": "🎮 Games — 2 min cooldown after play",
         "ar": "🎮 ألعاب — تبريد دقيقتان",
         "zh": "🎮 游戏 — 开始后冷却2分钟",
@@ -224,7 +224,7 @@ T: dict[str, dict[str, str]] = {
         "tr": "🎮 Oyunlar — 2 dk bekleme",
     },
     "dead": {
-        "fa": "تو مرده‌ای.",
+        "fa": "تو مردهای.",
         "en": "You are dead.",
         "ar": "أنت ميت.",
         "zh": "你已死亡。",
@@ -288,7 +288,7 @@ def t_user(tg_id: int, key: str, user_lang: str | None = None, **kwargs) -> str:
     return t(key, get_lang(tg_id, user_lang), **kwargs)
 
 
-# --- بخش‌های بیشتر ---
+# --- بخشهای بیشتر ---
 MORE = {
     "help_title": {
         "fa": "📖 راهنما — بخش را انتخاب کن",
@@ -451,7 +451,7 @@ MORE = {
         "tr": "Rakibe yanıt veya etiket + /duel",
     },
     "shop_title": {
-        "fa": "🏪 فروشگاه و ساختمان‌ها",
+        "fa": "🏪 فروشگاه و ساختمانها",
         "en": "🏪 Shop & buildings",
         "ar": "🏪 المتجر والمباني",
         "zh": "🏪 商店与建筑",
@@ -536,7 +536,7 @@ CODEX_GAMES = {
         "tr": "• Kültivasyon: Qi topla, alem yüksel\n• Kök: enerji türü\n• Damarlar: çarpan (en fazla 5)\n• Çekirdek: ırk değiştir\n• Savaş ruhu: düello gücü\n• Tarikat / kabile / ticaret\n• Mağara: şehir ganimeti\n• Düello ve arena\n• Hizmetçi ve evlilik\n\n/commands — tüm komutlar\n/itemlist — eşya ansiklopedisi",
     },
     "item_codex_title": {
-        "fa": "📚 دانشنامه آیتم‌ها — چطور به دست می‌آید:",
+        "fa": "📚 دانشنامه آیتمها — چطور به دست میآید:",
         "en": "📚 Item codex — how to get:",
         "ar": "📚 موسوعة العناصر — كيف تحصل:",
         "zh": "📚 物品百科 — 获取方式：",
@@ -552,7 +552,7 @@ CODEX_GAMES = {
         "tr": "🏛 Bina ansiklopedisi",
     },
     "games_title": {
-        "fa": "🎮 بازی‌ها",
+        "fa": "🎮 بازیها",
         "en": "🎮 Games",
         "ar": "🎮 الألعاب",
         "zh": "🎮 游戏",
@@ -560,7 +560,7 @@ CODEX_GAMES = {
         "tr": "🎮 Oyunlar",
     },
     "games_body": {
-        "fa": "محدودیت: ۲ دقیقه بعد از شروع هر بازی\nمنوی /games کول‌داون مصرف نمی‌کند.\n\n/rps — سنگ کاغذ قیچی\n/dice /nard — تاس و تخته‌نرد\n/chess — شطرنج\n/casino مبلغ — کازینو\n/hukum — حکم\n/puzzle /riddle /mathquiz /scramble /guess /coinflip\n\nوب‌اپ: صفحه Games",
+        "fa": "محدودیت: ۲ دقیقه بعد از شروع هر بازی\nمنوی /games کولداون مصرف نمیکند.\n\n/rps — سنگ کاغذ قیچی\n/dice /nard — تاس و تختهنرد\n/chess — شطرنج\n/casino مبلغ — کازینو\n/hukum — حکم\n/puzzle /riddle /mathquiz /scramble /guess /coinflip\n\nوباپ: صفحه Games",
         "en": "Cooldown: 2 minutes after starting a game\n/games menu does not consume cooldown.\n\n/rps — rock paper scissors\n/dice /nard — dice & backgammon\n/chess — chess\n/casino amount — casino\n/hukum — hukum cards\n/puzzle /riddle /mathquiz /scramble /guess /coinflip\n\nWebApp: Games page",
         "ar": "التبريد: دقيقتان بعد بدء اللعبة\nقائمة /games لا تستهلك التبريد.\n\n/rps — حجر ورقة مقص\n/dice /nard — نرد\n/chess — شطرنج\n/casino مبلغ — كازينو\n/hukum — حكم\n/puzzle /riddle /mathquiz /scramble /guess /coinflip\n\nتطبيق الويب: الألعاب",
         "zh": "冷却：开始游戏后2分钟\n/games 菜单不消耗冷却。\n\n/rps — 石头剪刀布\n/dice /nard — 骰子与双陆\n/chess — 国际象棋\n/casino 金额 — 赌场\n/hukum — 卡牌\n/puzzle /riddle /mathquiz /scramble /guess /coinflip\n\n网页应用：游戏页",
@@ -576,7 +576,7 @@ CODEX_GAMES = {
         "tr": "⏳ Sonraki oyuna {s} sn",
     },
     "webapp_label": {
-        "fa": "🌐 باز کردن وب‌اپ",
+        "fa": "🌐 باز کردن وباپ",
         "en": "🌐 Open WebApp",
         "ar": "🌐 فتح التطبيق",
         "zh": "🌐 打开网页应用",
@@ -589,7 +589,7 @@ for _k, _v in CODEX_GAMES.items():
         T[_k] = _v
 
 
-# نگاشت جملهٔ فارسی → ترجمه‌ها (برای متن‌های باقی‌مانده)
+# نگاشت جملهٔ فارسی → ترجمهها (برای متنهای باقیمانده)
 PHRASES: dict[str, dict[str, str]] = {
     'قبیله\u200cای نیست. /createtribe نام': {'en': 'No tribes. /createtribe name', 'ar': 'لا قبائل.', 'zh': '没有部落。', 'ru': 'Нет племён.', 'tr': 'Kabile yok.'},
     'گروهی نیست. /tradeguild نام': {'en': 'No guilds. /tradeguild name', 'ar': 'لا اتحادات.', 'zh': '没有商会。', 'ru': 'Нет гильдий.', 'tr': 'Lonca yok.'},
@@ -638,7 +638,7 @@ PHRASES: dict[str, dict[str, str]] = {
     "شغلی نداری. /jobs": {
         "en": "No job. /jobs", "ar": "لا مهنة. /jobs", "zh": "没有职业。/jobs", "ru": "Нет профессии. /jobs", "tr": "Mesleğin yok. /jobs"
     },
-    "هسته‌ای نداری. /findcore": {
+    "هستهای نداری. /findcore": {
         "en": "No cores. /findcore", "ar": "لا نوى. /findcore", "zh": "没有核心。/findcore", "ru": "Нет ядер. /findcore", "tr": "Çekirdeğin yok. /findcore"
     },
     "روح رزمی نداری. /awaken": {
@@ -662,7 +662,7 @@ PHRASES: dict[str, dict[str, str]] = {
     "دستور ناشناخته. /help": {
         "en": "Unknown command. /help", "ar": "أمر غير معروف. /help", "zh": "未知指令。/help", "ru": "Неизвестная команда. /help", "tr": "Bilinmeyen komut. /help"
     },
-    "تو مرده‌ای.": {
+    "تو مردهای.": {
         "en": "You are dead.", "ar": "أنت ميت.", "zh": "你已死亡。", "ru": "Ты мёртв.", "tr": "Öldün."
     },
     "🔒 در زندانی.": {
@@ -681,7 +681,7 @@ PHRASES: dict[str, dict[str, str]] = {
 
 
 def tr(tg_id: int, text: str, user_lang: str | None = None) -> str:
-    """ترجمه متن فارسی ثابت؛ اگر نبود همان متن برمی‌گردد"""
+    """ترجمه متن فارسی ثابت؛ اگر نبود همان متن برمیگردد"""
     if not text:
         return text
     lang = get_lang(tg_id, user_lang)
@@ -694,7 +694,7 @@ def tr(tg_id: int, text: str, user_lang: str | None = None) -> str:
     block = PHRASES.get(text)
     if block:
         return block.get(lang) or block.get("en") or text
-    # تطبیق جزئی: اگر متن با جملهٔ شناخته‌شده شروع شود
+    # تطبیق جزئی: اگر متن با جملهٔ شناختهشده شروع شود
     for fa, trans in PHRASES.items():
         if text.startswith(fa) or fa in text:
             rep = trans.get(lang) or trans.get("en")
@@ -705,6 +705,6 @@ def tr(tg_id: int, text: str, user_lang: str | None = None) -> str:
 
 def answer_tr(message, text: str, **kwargs):
     """برای استفاده: await answer_tr(message, \"فقط ادمین.\")"""
-    # این فقط متن را برمی‌گرداند — await را خودت بزن
+    # این فقط متن را برمیگرداند — await را خودت بزن
     return tr(message.from_user.id if message and message.from_user else 0, text)
 

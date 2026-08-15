@@ -1,4 +1,4 @@
-"""پیشرفت خودکار مأموریت‌ها بر اساس اکشن‌ها"""
+"""پیشرفت خودکار مأموریتها بر اساس اکشنها"""
 from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession

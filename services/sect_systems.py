@@ -24,7 +24,7 @@ def deposit(sect_id: int, currency: str, amount: int) -> str:
     cur = currency.lower().strip()
     alias = {
         "سکه": "coins", "coins": "coins", "coin": "coins",
-        "روحی": "spirit", "spirit": "spirit", "سنگ‌روحی": "spirit",
+        "روحی": "spirit", "spirit": "spirit", "سنگروحی": "spirit",
         "بهشتی": "heavenly", "heavenly": "heavenly",
         "مواد": "materials", "material": "materials", "resources": "materials",
     }
@@ -69,7 +69,7 @@ def treasury_text(sect_id: int, sect_name: str = "") -> str:
     )
 
 
-# ---------- ساختمان‌های فرقه ----------
+# ---------- ساختمانهای فرقه ----------
 BUILDINGS = {
     "tower": {
         "name": "برج تهذیب",
@@ -83,7 +83,7 @@ BUILDINGS = {
         "max_level": 10,
         "cost_key": "heavenly",
         "base_cost": 20,
-        "effect": "یادگیری تکنیک فرقه‌ای",
+        "effect": "یادگیری تکنیک فرقهای",
     },
     "forge": {
         "name": "آهنگری فرقه",
@@ -127,7 +127,7 @@ def upgrade_building(sect_id: int, bkey: str) -> str:
 
 def buildings_text(sect_id: int) -> str:
     b = get_buildings(sect_id)
-    lines = ["🏛 <b>ساختمان‌های فرقه</b>", ""]
+    lines = ["🏛 <b>ساختمانهای فرقه</b>", ""]
     for k, info in BUILDINGS.items():
         lvl = int(b.get(k) or 1)
         cost = info["base_cost"] * lvl * lvl
@@ -150,18 +150,18 @@ def forge_level(sect_id: int) -> int:
     return int(get_buildings(sect_id).get("forge") or 1)
 
 
-# تکنیک‌های کتابخانه بر اساس سطح
+# تکنیکهای کتابخانه بر اساس سطح
 LIBRARY_TECHS = {
-    1: [("تنفس فرقه‌ای", 5)],
+    1: [("تنفس فرقهای", 5)],
     2: [("تیغه هماهنگ", 8)],
     3: [("سپر جمعی", 10)],
     4: [("جریان چی گروهی", 12)],
     5: [("نگاه رهبر", 15)],
-    6: [("ضربه هم‌صدا", 18)],
+    6: [("ضربه همصدا", 18)],
     7: [("حفاظت ارجمند", 22)],
     8: [("عروج جمعی", 28)],
     9: [("قانون فرقه", 35)],
-    10: [("اراده بنیان‌گذار", 50)],
+    10: [("اراده بنیانگذار", 50)],
 }
 
 
@@ -196,7 +196,7 @@ def learn_sect_tech(tg_id: int, sect_id: int, tech_name: str, contribution: int)
     sk = str(int(tg_id))
     bag = list(m.get(sk) or [])
     if found[0] in bag:
-        return "قبلاً یاد گرفته‌ای."
+        return "قبلاً یاد گرفتهای."
     bag.append(found[0])
     m[sk] = bag
     _psave("sect_tech_learned")
@@ -216,7 +216,7 @@ def sect_tech_power(tg_id: int) -> int:
 # ---------- ارتقای مقام رهبری ----------
 LEADER_RANKS = [
     ("رهبر نوپا", 0),
-    ("رهبر تثبیت‌شده", 100),
+    ("رهبر تثبیتشده", 100),
     ("رهبر کهن", 300),
     ("رهبر اعظم", 700),
     ("پیر فرقه", 1500),
@@ -270,8 +270,8 @@ def leader_rank_text(sect_id: int) -> str:
 
 # ---------- مأموریت فرقه ----------
 MISSION_TEMPLATES = [
-    {"id": "gather_herb", "title": "جمع‌آوری گیاه روحی", "contrib": 8, "coins": 40, "materials": 2, "leader_xp": 3},
-    {"id": "patrol", "title": "گشت‌زنی قلمرو", "contrib": 10, "coins": 50, "materials": 1, "leader_xp": 4},
+    {"id": "gather_herb", "title": "جمعآوری گیاه روحی", "contrib": 8, "coins": 40, "materials": 2, "leader_xp": 3},
+    {"id": "patrol", "title": "گشتزنی قلمرو", "contrib": 10, "coins": 50, "materials": 1, "leader_xp": 4},
     {"id": "forge_aid", "title": "کمک در آهنگری فرقه", "contrib": 12, "coins": 30, "materials": 4, "leader_xp": 5},
     {"id": "library_copy", "title": "رونویسی کتاب تکنیک", "contrib": 15, "coins": 20, "spirit": 2, "leader_xp": 6},
     {"id": "tower_meditate", "title": "مدیتیشن گروهی در برج", "contrib": 14, "spirit": 5, "coins": 25, "leader_xp": 5},
@@ -304,7 +304,7 @@ def list_open_missions(sect_id: int) -> str:
     m = _missions()
     sk = str(int(sect_id))
     open_m = m.get(sk) or {"active": [], "done_today": {}}
-    lines = ["📜 <b>مأموریت‌های فرقه</b>", ""]
+    lines = ["📜 <b>مأموریتهای فرقه</b>", ""]
     if not open_m.get("active"):
         lines.append("مأموریت فعالی نیست. رهبر/ارجمند: /assignsectmission")
     else:
@@ -333,7 +333,7 @@ def assign_missions(sect_id: int, count: int = 3) -> str:
     data["active"] = [p["id"] for p in picks]
     m[sk] = data
     _psave("sect_missions")
-    lines = ["✅ مأموریت‌های جدید صادر شد:", ""]
+    lines = ["✅ مأموریتهای جدید صادر شد:", ""]
     for i, p in enumerate(picks, 1):
         lines.append(f"{i}. {p['title']} (+{p['contrib']} مشارکت)")
     lines.append("اعضا: /dosectmission شماره")
@@ -348,12 +348,12 @@ def do_mission(tg_id: int, sect_id: int, index: int) -> str:
     if index < 1 or index > len(active):
         return "شماره مأموریت نامعتبر. /sectmissions"
     mid = active[index - 1]
-    # روزانه یک‌بار هر مأموریت برای هر نفر
+    # روزانه یکبار هر مأموریت برای هر نفر
     day = datetime.utcnow().strftime("%Y-%m-%d")
     done = data.setdefault("done_today", {})
     ukey = f"{tg_id}:{mid}:{day}"
     if done.get(ukey):
-        return "این مأموریت را امروز انجام داده‌ای."
+        return "این مأموریت را امروز انجام دادهای."
     tpl = next((t for t in MISSION_TEMPLATES if t["id"] == mid), None)
     if not tpl:
         return "مأموریت نامعتبر."
