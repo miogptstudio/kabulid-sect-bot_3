@@ -51,12 +51,12 @@ class ChannelMembershipMiddleware(BaseMiddleware):
             logger.info("User %s not in channel: %s", user.id, member.status)
         except Exception as e:
             logger.error("Channel check failed: %s", e)
-            # اگر ربات ادمین نباشد، ادمین‌های لیست را راه بده؛ بقیه پیام خطا بگیرند
+            # اگر ربات ادمین نباشد، ادمینهای لیست را راه بده؛ بقیه پیام خطا بگیرند
             text = (
-                "⚠️ ربات فعلاً نمی‌تواند عضویت کانال را چک کند.\n"
+                "⚠️ ربات فعلاً نمیتواند عضویت کانال را چک کند.\n"
                 "مدیر باید ربات را <b>ادمین کانال</b> کند:\n"
                 f"👉 @{CHANNEL_USERNAME}\n\n"
-                "اگر عضو هستی و باز این پیام را می‌بینی، به ادمین بگو."
+                "اگر عضو هستی و باز این پیام را میبینی، به ادمین بگو."
             )
             if isinstance(event, Message):
                 await event.answer(text)

@@ -19,14 +19,14 @@ class AccountStates(StatesGroup):
     waiting_login_password = State()
 
 
-@router.message(Command("accounts", "حساب‌ها", "اکانت"))
+@router.message(Command("accounts", "حسابها", "اکانت"))
 async def cmd_accounts(message: Message):
     async with async_session() as session:
         accounts = await get_user_accounts(session, message.from_user.id)
     
     text = "👤 <b>سیستم چندحسابه</b>\n\n"
     if accounts:
-        text += "حساب‌های تو:\n"
+        text += "حسابهای تو:\n"
         for acc in accounts:
             main = " (اصلی)" if acc.is_main else ""
             text += f"• {acc.account_name}{main}\n"

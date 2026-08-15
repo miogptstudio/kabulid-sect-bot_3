@@ -13,15 +13,15 @@ router = Router()
 
 
 def main_keyboard(lang: str = "fa"):
-    """منوی اصلی شبیه ربات‌های تزکیه"""
+    """منوی اصلی شبیه رباتهای تزکیه"""
     return ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text="👤 پروفایل"), KeyboardButton(text="🧘 تزکیه")],
-            [KeyboardButton(text="⚔️ نبرد"), KeyboardButton(text="🎒 کوله‌بار")],
+            [KeyboardButton(text="⚔️ نبرد"), KeyboardButton(text="🎒 کولهبار")],
             [KeyboardButton(text="⚗ کیمیاگری"), KeyboardButton(text="🏛 فرقه")],
             [KeyboardButton(text="🏪 بازار"), KeyboardButton(text="🎁 گنجینه")],
-            [KeyboardButton(text="📜 مأموریت‌ها"), KeyboardButton(text="🏆 دستاوردها")],
-            [KeyboardButton(text="📊 رتبه‌بندی"), KeyboardButton(text="🌍 رویدادها")],
+            [KeyboardButton(text="📜 مأموریتها"), KeyboardButton(text="🏆 دستاوردها")],
+            [KeyboardButton(text="📊 رتبهبندی"), KeyboardButton(text="🌍 رویدادها")],
             [KeyboardButton(text="🎁 پاداش روزانه"), KeyboardButton(text="🎲 تاس شانس")],
             [KeyboardButton(text="💼 شغل"), KeyboardButton(text="📖 راهنما")],
         ],
@@ -77,7 +77,7 @@ async def cmd_help(message: Message):
         "⚔️ <b>دوئل و نگهبان</b>\n"
         "/duel — ریپلای یا تگ\n"
         "/guardian — حالت نگهبان\n\n"
-        "🏛️ <b>فرقه‌ها</b>\n"
+        "🏛️ <b>فرقهها</b>\n"
         "/sects — لیست\n"
         "/createsect &lt;نام&gt; &lt;نوع&gt;\n"
         "/joinsect &lt;نام&gt;\n"
@@ -88,7 +88,7 @@ async def cmd_help(message: Message):
         "🧘 <b>تذهیب</b>\n"
         "/cultivation — وضعیت\n"
         "«جمع آوری چی» یا «تذهیب کردن»\n"
-        "/techniques — تکنیک‌ها\n"
+        "/techniques — تکنیکها\n"
         "/learntech — یادگیری تکنیک پایه\n"
         "/dual — تذهیب دوگانه\n"
         "/afterdeath — بعد از مرگ\n\n"
@@ -98,7 +98,7 @@ async def cmd_help(message: Message):
         "/wives — خانواده\n"
         "/gender — جنسیت\n\n"
         "🛒 <b>فروشگاه و ساخت</b>\n"
-        "/buildings — ساختمان‌ها\n"
+        "/buildings — ساختمانها\n"
         "/craft — ساخت\n"
         "/inventory — کیف\n"
         "/pets — حیوانات\n"
@@ -111,9 +111,9 @@ async def cmd_help(message: Message):
     await message.answer(text)
 
 
-@router.message(Command("iamadmin", "مقام‌من"))
+@router.message(Command("iamadmin", "مقاممن"))
 async def cmd_iamadmin(message: Message):
-    """وضعیت ادمین بودن را نشان می‌دهد و در صورت بودن در ADMIN_IDS نقش رهبر می‌دهد"""
+    """وضعیت ادمین بودن را نشان میدهد و در صورت بودن در ADMIN_IDS نقش رهبر میدهد"""
     async with async_session() as session:
         user = await get_or_create_user(
             session,
@@ -131,7 +131,7 @@ async def cmd_iamadmin(message: Message):
         f"شناسه تلگرام تو: <code>{message.from_user.id}</code>\n"
         f"در لیست ADMIN_IDS: {'بله ✅' if in_list else 'خیر ❌'}\n"
         f"نقش فعلی: <b>{user.role}</b>\n"
-        f"تعداد ادمین‌های تنظیم‌شده: {len(ADMIN_IDS)}"
+        f"تعداد ادمینهای تنظیمشده: {len(ADMIN_IDS)}"
     )
 
 @router.message(Command("ping", "تست"))
@@ -248,12 +248,12 @@ async def cmd_gender_alias(message: Message):
     builder.button(text="زن 👩", callback_data=f"setgender:{message.from_user.id}:زن")
     builder.adjust(1)
     await message.answer(
-        "⚧ انتخاب جنسیت (فقط یک‌بار). بعد از انتخاب قابل تغییر نیست.",
+        "⚧ انتخاب جنسیت (فقط یکبار). بعد از انتخاب قابل تغییر نیست.",
         reply_markup=builder.as_markup(),
     )
 
 
-@router.message(Command("removekb", "حذف‌کیبورد", "nokb"))
+@router.message(Command("removekb", "حذفکیبورد", "nokb"))
 async def cmd_remove_kb(message: Message):
     await message.answer("کیبورد حذف شد. از /help برای دستورات استفاده کن.", reply_markup=ReplyKeyboardRemove())
 
@@ -267,7 +267,7 @@ async def cmd_version(message: Message):
         v = w = "4.4.0"
     await message.answer(
         f"🤖 ربات: <b>{v}</b>" + chr(10)
-        + f"🌐 وب‌اپ: <b>{w}</b>" + chr(10)
+        + f"🌐 وباپ: <b>{w}</b>" + chr(10)
         + "🗓️ /season"
     )
 
@@ -280,7 +280,7 @@ async def kb_profile(message: Message):
     await cmd_profile(message)
 
 
-@router.message(F.text.in_({"🧘 تزکیه", "تزکیه", "تذهیب کردن", "جمع آوری چی", "جمع‌آوری چی"}))
+@router.message(F.text.in_({"🧘 تزکیه", "تزکیه", "تذهیب کردن", "جمع آوری چی", "جمعآوری چی"}))
 async def kb_cult(message: Message):
     # وضعیت + جمع چی
     try:
@@ -302,7 +302,7 @@ async def kb_battle(message: Message):
     )
 
 
-@router.message(F.text.in_({"🎒 کوله‌بار", "کوله‌بار", "اینونتوری"}))
+@router.message(F.text.in_({"🎒 کولهبار", "کولهبار", "اینونتوری"}))
 async def kb_inv(message: Message):
     try:
         from bot.handlers.shop import cmd_inventory
@@ -351,7 +351,7 @@ async def kb_treasure(message: Message):
         await message.answer(f"خطا: {e}")
 
 
-@router.message(F.text.in_({"📜 مأموریت‌ها", "مأموریت‌ها"}))
+@router.message(F.text.in_({"📜 مأموریتها", "مأموریتها"}))
 async def kb_missions(message: Message):
     try:
         from bot.handlers.missions import cmd_missions
@@ -369,7 +369,7 @@ async def kb_ach(message: Message):
         await message.answer(f"خطا دستاورد: {e}")
 
 
-@router.message(F.text.in_({"📊 رتبه‌بندی", "رتبه‌بندی"}))
+@router.message(F.text.in_({"📊 رتبهبندی", "رتبهبندی"}))
 async def kb_rank(message: Message):
     try:
         from bot.handlers.ranking import cmd_ranking
@@ -419,7 +419,7 @@ async def kb_help(message: Message):
 
 
 
-@router.message(Command("notice", "پیام‌سازنده", "اعلامیه"))
+@router.message(Command("notice", "پیامسازنده", "اعلامیه"))
 async def cmd_notice(message: Message):
     from bot.config import CREATOR_NOTICE
     await message.answer(CREATOR_NOTICE)

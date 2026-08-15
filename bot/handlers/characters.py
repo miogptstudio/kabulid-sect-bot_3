@@ -1,4 +1,4 @@
-"""هندلر سیستم کاراکترها + پنل تصویری لیست کاراکترها."""
+"""هندلر سیستم کاراکترها."""
 from aiogram import Router, F
 from aiogram.filters import Command
 from aiogram.types import Message, FSInputFile, CallbackQuery
@@ -22,17 +22,12 @@ def character_list_keyboard(tg_id: int | None = None):
             kb.adjust(2)
     kb.button(text="🎲 کاراکتر جدید", callback_data="chars:pull")
     kb.button(text="⭐ بهترین کاراکتر", callback_data="chars:best")
-    kb.button(text="📊 رتبه‌ها", callback_data="chars:rates")
+    kb.button(text="📊 رتبهها", callback_data="chars:rates")
     kb.button(text="⚔️ دوئل کاراکتر", callback_data="chars:duelguide")
     kb.button(text="🔄 بروزرسانی لیست", callback_data="chars:list")
     kb.adjust(2)
     return kb.as_markup()
 
-
-def character_list_panel() -> str:
-    from pathlib import Path
-    p = Path(__file__).resolve().parent.parent.parent / "assets" / "panels" / "character_list.jpg"
-    return str(p)
 
 
 def character_detail_keyboard(index: int):
@@ -53,14 +48,14 @@ def character_detail_text(card: dict, index: int) -> str:
         f"🏆 رتبه: <b>{card.get('rarity','معمولی')}</b> {stars}\n"
         f"⚔️ قدرت: <b>+{card.get('power',0):,}</b>\n"
         f"📈 قدرت پایه: {card.get('base_power',0):,}\n\n"
-        f"💠 این کاراکتر از سیستم شانسی به دست آمده و با تکرار، ستاره‌هایش افزایش پیدا می‌کند.\n"
-        f"🔹 هر ستاره قدرت نهایی را افزایش می‌دهد.\n"
-        f"🔹 از قوی‌ترین ۳ کاراکتر برای محاسبه پاداش قدرت استفاده می‌شود.\n\n"
+        f"💠 این کاراکتر از سیستم شانسی به دست آمده و با تکرار، ستارههایش افزایش پیدا میکند.\n"
+        f"🔹 هر ستاره قدرت نهایی را افزایش میدهد.\n"
+        f"🔹 از قویترین ۳ کاراکتر برای محاسبه پاداش قدرت استفاده میشود.\n\n"
         f"/charduel برای دوئل کاراکتری · /tradechar برای معاوضه"
     )
 
 
-@router.message(Command("charrates", "رتبه‌کاراکتر"))
+@router.message(Command("charrates", "رتبهکاراکتر"))
 async def cmd_rates(message: Message):
     await message.answer(chars.rarity_guide())
 
@@ -102,21 +97,13 @@ async def cmd_pull(message: Message):
     await _pull_character(message)
 
 
-@router.message(Command("mychars", "کاراکترها", "لیست‌کاراکتر"))
+@router.message(Command("mychars", "کاراکترها", "لیستکاراکتر"))
 async def cmd_list(message: Message):
     text = chars.list_owned_indexed(message.from_user.id)
-    try:
-        panel = character_list_panel()
-        await message.answer_photo(
-            photo=FSInputFile(panel),
-            caption=text,
-            reply_markup=character_list_keyboard(message.from_user.id),
-        )
-    except Exception:
-        await message.answer(text, reply_markup=character_list_keyboard(message.from_user.id))
+    await message.answer(text, reply_markup=character_list_keyboard(message.from_user.id))
 
 
-@router.message(Command("charinfo", "اطلاعات‌کاراکتر", "پنل‌کاراکتر"))
+@router.message(Command("charinfo", "اطلاعاتکاراکتر", "پنلکاراکتر"))
 async def cmd_char_info(message: Message):
     parts = (message.text or "").split()
     if len(parts) < 2:
@@ -171,7 +158,7 @@ async def cb_chars_merge(callback: CallbackQuery):
     await callback.message.answer(chars.merge_duplicates(callback.from_user.id), reply_markup=character_list_keyboard())
 
 
-@router.message(Command("bestchar", "بهترین‌کاراکتر"))
+@router.message(Command("bestchar", "بهترینکاراکتر"))
 async def cmd_best(message: Message):
     await message.answer(chars.best_char(message.from_user.id), reply_markup=character_list_keyboard())
 
@@ -180,14 +167,7 @@ async def cmd_best(message: Message):
 async def cb_chars_list(callback: CallbackQuery):
     text = chars.list_owned_indexed(callback.from_user.id)
     await callback.answer("لیست بروزرسانی شد")
-    try:
-        await callback.message.answer_photo(
-            photo=FSInputFile(character_list_panel()),
-            caption=text,
-            reply_markup=character_list_keyboard(callback.from_user.id),
-        )
-    except Exception:
-        await callback.message.answer(text, reply_markup=character_list_keyboard(callback.from_user.id))
+    await callback.message.answer(text, reply_markup=character_list_keyboard(callback.from_user.id))
 
 
 @router.callback_query(F.data == "chars:pull")
@@ -208,7 +188,7 @@ async def cb_chars_rates(callback: CallbackQuery):
     await callback.message.answer(chars.rarity_guide(), reply_markup=character_list_keyboard())
 
 
-@router.message(Command("tradechar", "معاوضه‌کاراکتر"))
+@router.message(Command("tradechar", "معاوضهکاراکتر"))
 async def cmd_trade_char(message: Message):
     parts = (message.text or "").split()
     target = None
@@ -225,13 +205,13 @@ async def cmd_trade_char(message: Message):
                 return
             target, idx_a, idx_b = int(parts[1]), int(parts[2]), int(parts[3])
     except ValueError:
-        await message.answer("❌ شماره‌ها باید عدد باشند.")
+        await message.answer("❌ شمارهها باید عدد باشند.")
         return
     ok, msg, _key = chars.propose_trade(message.from_user.id, target, idx_a, idx_b)
     await message.answer(msg)
 
 
-@router.message(Command("accepttrade", "قبول‌معاوضه"))
+@router.message(Command("accepttrade", "قبولمعاوضه"))
 async def cmd_accept_trade(message: Message):
     parts = (message.text or "").split(maxsplit=1)
     if len(parts) < 2:
@@ -240,7 +220,7 @@ async def cmd_accept_trade(message: Message):
     await message.answer(chars.accept_trade(parts[1].strip(), message.from_user.id))
 
 
-@router.message(Command("charduel", "دوئل‌کاراکتر"))
+@router.message(Command("charduel", "دوئلکاراکتر"))
 async def cmd_char_duel(message: Message):
     parts = (message.text or "").split()
     try:
@@ -256,13 +236,13 @@ async def cmd_char_duel(message: Message):
                 return
             target, idx_a, idx_b = int(parts[1]), int(parts[2]), int(parts[3])
     except ValueError:
-        await message.answer("❌ شماره‌ها باید عدد باشند.")
+        await message.answer("❌ شمارهها باید عدد باشند.")
         return
     ok, msg, _key = chars.propose_char_duel(message.from_user.id, target, idx_a, idx_b)
     await message.answer(msg)
 
 
-@router.message(Command("acceptcharduel", "قبول‌دوئل‌کاراکتر"))
+@router.message(Command("acceptcharduel", "قبولدوئلکاراکتر"))
 async def cmd_accept_cduel(message: Message):
     parts = (message.text or "").split(maxsplit=1)
     if len(parts) < 2:
@@ -271,7 +251,7 @@ async def cmd_accept_cduel(message: Message):
     await message.answer(chars.accept_char_duel(parts[1].strip(), message.from_user.id))
 
 
-@router.message(Command("mergechar", "ترکیب‌کاراکتر", "ادغام‌کاراکتر"))
+@router.message(Command("mergechar", "ترکیبکاراکتر", "ادغامکاراکتر"))
 async def cmd_merge_char(message: Message):
     await message.answer(chars.merge_duplicates(message.from_user.id), reply_markup=character_list_keyboard())
 

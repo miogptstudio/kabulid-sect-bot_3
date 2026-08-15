@@ -21,11 +21,11 @@ from services.i18n import tr
 router = Router()
 
 
-@router.message(Command("sects", "فرقه‌ها", "فرقه"))
+@router.message(Command("sects", "فرقهها", "فرقه"))
 async def cmd_sects(message: Message):
     from aiogram.types import FSInputFile
     from services.portraits import panel_url
-    await message.answer_photo(FSInputFile(panel_url("sect")), caption="🏛️ <b>فرقه‌ها</b>")
+    await message.answer_photo(FSInputFile(panel_url("sect")), caption="🏛️ <b>فرقهها</b>")
     async with async_session() as session:
         result = await session.execute(select(Sect).where(Sect.is_active == True))
         sects = result.scalars().all()
@@ -37,9 +37,9 @@ async def cmd_sects(message: Message):
         cult = await get_or_create_cultivation(session, user.id)
         sword = await get_rank_sword(user, cult.spiritual_root)
 
-    text = "🏛️ <b>لیست فرقه‌ها</b>\n\n"
+    text = "🏛️ <b>لیست فرقهها</b>\n\n"
     if not sects:
-        text += "هنوز فرقه‌ای نیست.\n"
+        text += "هنوز فرقهای نیست.\n"
     else:
         for s in sects:
             text += f"• <b>{s.name}</b> ({s.sect_type}) — اعضا: {s.member_count} | امتیاز: {s.total_points}\n"
@@ -47,7 +47,7 @@ async def cmd_sects(message: Message):
     if my:
         text += f"\n📍 تو عضو فرقه هستی (وضعیت: {my.status})"
     else:
-        text += "\n📍 تذهیب‌کننده دوره‌گرد هستی (بدون فرقه — منابع خودت تامین کن)"
+        text += "\n📍 تذهیبکننده دورهگرد هستی (بدون فرقه — منابع خودت تامین کن)"
     
     if sword:
         text += f"\n⚔️ شمشیر رتبه تو: <b>{sword}</b>"
@@ -55,10 +55,10 @@ async def cmd_sects(message: Message):
     text += (
         "\n\n<b>دستورات فرقه:</b>\n"
         "/createsect نام نوع — ساخت فرقه (تذهیب بالا+)\n"
-        "  انواع: ارتدوکس / بی‌طرف / شیطانی\n"
+        "  انواع: ارتدوکس / بیطرف / شیطانی\n"
         "/joinsect نام — <b>عضو شدن</b> در فرقه\n"
         "/mysect — وضعیت فرقه و امتیاز مشارکت تو\n"
-        "/challengeleader — چالش صندلی رهبر (ماهی یک‌بار)\n"
+        "/challengeleader — چالش صندلی رهبر (ماهی یکبار)\n"
         "/betray — خیانت و ترک فرقه\n"
         "/territories — لیست قلمروها\n"
         "/conquer نام — تصاحب قلمرو\n\n"
@@ -92,7 +92,7 @@ async def cmd_create_sect(message: Message):
             sect = await create_sect(session, name, sect_type, user)
             try:
                 from services.dao_path import set_dao
-                if sect_type in ("ارتدوکس", "شیطانی", "بی‌طرف"):
+                if sect_type in ("ارتدوکس", "شیطانی", "بیطرف"):
                     set_dao(message.from_user.id, sect_type)
             except Exception:
                 pass
@@ -141,7 +141,7 @@ async def cmd_my_sect(message: Message):
         )
         membership = await get_user_sect(session, user.id)
         if not membership:
-            await message.answer(tr(message.from_user.id, "عضو فرقه‌ای نیستی. تذهیب‌کننده دوره‌گرد هستی."))
+            await message.answer(tr(message.from_user.id, "عضو فرقهای نیستی. تذهیبکننده دورهگرد هستی."))
             return
         sect = await session.get(Sect, membership.sect_id)
         is_leader = sect and sect.leader_id == user.id
@@ -157,7 +157,7 @@ async def cmd_my_sect(message: Message):
         await message.answer(text)
 
 
-@router.message(Command("challengeleader", "چالش‌رهبری"))
+@router.message(Command("challengeleader", "چالشرهبری"))
 async def cmd_challenge(message: Message):
     async with async_session() as session:
         user = await get_or_create_user(
@@ -183,18 +183,18 @@ async def cmd_challenge(message: Message):
         t1 = int(p1.get("total") or 0)
         t2 = int(p2.get("total") or 0)
         if t1 == t2:
-            won = False  # تساوی = رهبر می‌ماند
+            won = False  # تساوی = رهبر میماند
         else:
             won = t1 > t2
         msg = await resolve_challenge(session, challenge, won)
-        power_line = f"قدرت چالش‌گر: <b>{t1}</b> | قدرت رهبر: <b>{t2}</b>" + chr(10)
+        power_line = f"قدرت چالشگر: <b>{t1}</b> | قدرت رهبر: <b>{t2}</b>" + chr(10)
         if msg == "LOST_NEED_PARDON":
             user.is_dead = True
             await session.commit()
             from aiogram.utils.keyboard import InlineKeyboardBuilder
             builder = InlineKeyboardBuilder()
             builder.button(
-                text="بخشیدن چالش‌گر 🙏",
+                text="بخشیدن چالشگر 🙏",
                 callback_data=f"pardon:{sect.leader_id}:{user.id}"
             )
             builder.button(
@@ -205,7 +205,7 @@ async def cmd_challenge(message: Message):
             await message.answer(
                 power_line + f"⚔️ چالش رهبری <b>{sect.name}</b> شکست خورد.\n"
                 f"{user.full_name} در آستانه مرگ است.\n"
-                f"فقط رهبر می‌تواند ببخشد یا رها کند.",
+                f"فقط رهبر میتواند ببخشد یا رها کند.",
                 reply_markup=builder.as_markup(),
             )
         else:
@@ -279,7 +279,7 @@ async def cmd_territories(message: Message):
         territories = result.scalars().all()
     
     if not territories:
-        await message.answer(tr(message.from_user.id, "قلمرویی ثبت نشده. با ساخت فرقه، قلمرو اولیه ساخته می‌شود."))
+        await message.answer(tr(message.from_user.id, "قلمرویی ثبت نشده. با ساخت فرقه، قلمرو اولیه ساخته میشود."))
         return
     
     text = "🗺️ <b>قلمروها</b>\n\n"
@@ -321,7 +321,7 @@ async def cmd_conquer(message: Message):
         await message.answer(msg)
 
 
-@router.message(Command("transferleader", "واگذاری‌رهبری"))
+@router.message(Command("transferleader", "واگذاریرهبری"))
 async def cmd_transfer(message: Message):
     if not message.reply_to_message:
         await message.answer(tr(message.from_user.id, "روی پیام عضو فرقه ریپلای کن و /transferleader بزن."))
@@ -343,12 +343,12 @@ async def cmd_newsect_buttons(message: Message):
     """ساخت فرقه با دکمه نوع"""
     parts = (message.text or "").split(maxsplit=1)
     if len(parts) < 2:
-        await message.answer(tr(message.from_user.id, "فرمت: /newsect نام‌فرقه\nبعد نوع را با دکمه انتخاب کن."))
+        await message.answer(tr(message.from_user.id, "فرمت: /newsect نامفرقه\nبعد نوع را با دکمه انتخاب کن."))
         return
     name = parts[1].strip()[:32]
     from aiogram.utils.keyboard import InlineKeyboardBuilder
     builder = InlineKeyboardBuilder()
-    for t in ["ارتدوکس", "بی‌طرف", "شیطانی"]:
+    for t in ["ارتدوکس", "بیطرف", "شیطانی"]:
         builder.button(text=t, callback_data=f"secttype:{message.from_user.id}:{t}:{name}")
     builder.adjust(1)
     await message.answer(
@@ -384,7 +384,7 @@ async def cb_sect_type(callback: CallbackQuery):
     await callback.answer()
 
 
-@router.message(Command("sectsettings", "تنظیمات‌فرقه"))
+@router.message(Command("sectsettings", "تنظیماتفرقه"))
 async def cmd_sect_settings(message: Message):
     parts = (message.text or "").split(maxsplit=2)
     async with async_session() as session:
@@ -398,14 +398,14 @@ async def cmd_sect_settings(message: Message):
             return
         sect = await session.get(Sect, membership.sect_id)
         if not sect or sect.leader_id != user.id:
-            await message.answer(tr(message.from_user.id, "فقط رهبر فرقه می‌تواند تنظیمات را عوض کند."))
+            await message.answer(tr(message.from_user.id, "فقط رهبر فرقه میتواند تنظیمات را عوض کند."))
             return
         if len(parts) < 3:
             await message.answer(
                 f"⚙️ تنظیمات فرقه <b>{sect.name}</b>\n"
                 f"نوع: {sect.sect_type}\n"
                 f"اعضا: {sect.member_count}\n\n"
-                f"/sectsettings name نام‌جدید\n"
+                f"/sectsettings name نامجدید\n"
                 f"/sectsettings desc توضیح"
             )
             return
@@ -418,13 +418,13 @@ async def cmd_sect_settings(message: Message):
             if hasattr(sect, "description"):
                 sect.description = val[:256]
                 await session.commit()
-            await message.answer(tr(message.from_user.id, "توضیح به‌روز شد."))
+            await message.answer(tr(message.from_user.id, "توضیح بهروز شد."))
         else:
             await message.answer(tr(message.from_user.id, "کلید: name یا desc"))
 
 
 
-# ===== سیستم‌های فرقه: خزانه، برج، کتابخانه، مأموریت =====
+# ===== سیستمهای فرقه: خزانه، برج، کتابخانه، مأموریت =====
 from services import sect_systems as ssys
 
 
@@ -557,11 +557,11 @@ async def cmd_sect_library(message: Message):
         await message.answer(ssys.list_library_techs(mem.sect_id))
 
 
-@router.message(Command("learnsecttech", "یادگیری‌تکنیک‌فرقه"))
+@router.message(Command("learnsecttech", "یادگیریتکنیکفرقه"))
 async def cmd_learn_sect_tech(message: Message):
     parts = (message.text or "").split(maxsplit=1)
     if len(parts) < 2:
-        await message.answer("فرمت: /learnsecttech نام‌تکنیک")
+        await message.answer("فرمت: /learnsecttech نامتکنیک")
         return
     async with async_session() as session:
         user = await get_or_create_user(session, message.from_user.id, message.from_user.full_name, message.from_user.username)
@@ -602,7 +602,7 @@ async def cmd_assign_mission(message: Message):
         user = await get_or_create_user(session, message.from_user.id, message.from_user.full_name, message.from_user.username)
         mem = await _require_sect(session, user)
         if not mem or not _is_officer(mem.status):
-            await message.answer("فقط رهبر یا ارجمند می‌تواند مأموریت بدهد.")
+            await message.answer("فقط رهبر یا ارجمند میتواند مأموریت بدهد.")
             return
         await message.answer(ssys.assign_missions(mem.sect_id, 3))
 
@@ -630,10 +630,10 @@ async def cmd_do_sect_mission(message: Message):
         await message.answer(msg)
 
 
-@router.message(Command("mysectmission", "مشارکت‌من"))
+@router.message(Command("mysectmission", "مشارکتمن"))
 async def cmd_my_contrib(message: Message):
     c = ssys.get_contrib(message.from_user.id)
-    await message.answer(f"🏅 امتیاز مشارکت فرقه تو: <b>{c}</b>\nبا مأموریت فرقه (/sectmissions) افزایش می‌یابد.")
+    await message.answer(f"🏅 امتیاز مشارکت فرقه تو: <b>{c}</b>\nبا مأموریت فرقه (/sectmissions) افزایش مییابد.")
 
 
 
@@ -641,7 +641,7 @@ async def cmd_my_contrib(message: Message):
 from services import sect_exam as sexam
 
 
-@router.message(Command("sectrules", "قوانین‌فرقه", "قوانینفرقه"))
+@router.message(Command("sectrules", "قوانینفرقه", "قوانینفرقه"))
 async def cmd_sect_rules(message: Message):
     parts = (message.text or "").split(maxsplit=1)
     async with async_session() as session:
@@ -663,7 +663,7 @@ async def cmd_sect_rules(message: Message):
         await message.answer(sexam.rules_text(mem.sect_id, sect.name if sect else ""))
 
 
-@router.message(Command("setsectrules", "تنظیم‌قوانین"))
+@router.message(Command("setsectrules", "تنظیمقوانین"))
 async def cmd_set_rules(message: Message):
     parts = (message.text or "").split(maxsplit=1)
     if len(parts) < 2:
@@ -683,11 +683,11 @@ async def cmd_set_rules(message: Message):
         await message.answer(sexam.set_rules(mem.sect_id, rules))
 
 
-@router.message(Command("sectexam", "آزمون‌فرقه", "آزمونفرقه"))
+@router.message(Command("sectexam", "آزمونفرقه", "آزمونفرقه"))
 async def cmd_sect_exam(message: Message):
     parts = (message.text or "").split(maxsplit=1)
     if len(parts) < 2:
-        await message.answer("فرمت: /sectexam نام‌فرقه\nقبلش /sectrules نام‌فرقه")
+        await message.answer("فرمت: /sectexam نامفرقه\nقبلش /sectrules نامفرقه")
         return
     name = parts[1].strip()
     async with async_session() as session:
@@ -699,7 +699,7 @@ async def cmd_sect_exam(message: Message):
         await message.answer(sexam.start_exam(message.from_user.id, sect.id, sect.name))
 
 
-@router.message(Command("examanswer", "پاسخ‌آزمون"))
+@router.message(Command("examanswer", "پاسخآزمون"))
 async def cmd_exam_answer(message: Message):
     parts = (message.text or "").split()
     if len(parts) < 2 or not parts[1].isdigit():
@@ -733,7 +733,7 @@ async def cmd_start_promo(message: Message):
         await message.answer(sexam.start_promo_comp(mem.sect_id, target, hours=24))
 
 
-@router.message(Command("promocompete", "شرکت‌مسابقه"))
+@router.message(Command("promocompete", "شرکتمسابقه"))
 async def cmd_promo_compete(message: Message):
     async with async_session() as session:
         user = await get_or_create_user(session, message.from_user.id, message.from_user.full_name, message.from_user.username)
@@ -741,7 +741,7 @@ async def cmd_promo_compete(message: Message):
         if not mem:
             await message.answer("عضو فرقه نیستی.")
             return
-        # امتیاز بر اساس مشارکت ذخیره‌شده + امتیاز مسابقه
+        # امتیاز بر اساس مشارکت ذخیرهشده + امتیاز مسابقه
         from services.sect_systems import get_contrib
         base = max(1, get_contrib(message.from_user.id) // 10)
         sexam.add_promo_score(mem.sect_id, message.from_user.id, base)
@@ -750,7 +750,7 @@ async def cmd_promo_compete(message: Message):
         )
 
 
-@router.message(Command("promostatus", "وضعیت‌مسابقه"))
+@router.message(Command("promostatus", "وضعیتمسابقه"))
 async def cmd_promo_status(message: Message):
     async with async_session() as session:
         user = await get_or_create_user(session, message.from_user.id, message.from_user.full_name, message.from_user.username)
@@ -761,7 +761,7 @@ async def cmd_promo_status(message: Message):
         await message.answer(sexam.promo_status(mem.sect_id))
 
 
-@router.message(Command("endpromocomp", "پایان‌مسابقه"))
+@router.message(Command("endpromocomp", "پایانمسابقه"))
 async def cmd_end_promo(message: Message):
     async with async_session() as session:
         user = await get_or_create_user(session, message.from_user.id, message.from_user.full_name, message.from_user.username)
@@ -793,7 +793,7 @@ async def cmd_promote_winner(message: Message):
         data = sexam._promo().get(str(int(mem.sect_id))) or {}
         scores = data.get("scores") or {}
         if not scores:
-            await message.answer("برنده‌ای نیست.")
+            await message.answer("برندهای نیست.")
             return
         winner_tg = max(scores.items(), key=lambda x: int(x[1]))[0]
         target = data.get("target") or "عضو بیرونی"

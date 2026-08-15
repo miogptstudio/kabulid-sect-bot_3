@@ -1,4 +1,4 @@
-"""نژاد و هسته‌های نژادی"""
+"""نژاد و هستههای نژادی"""
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command
@@ -42,7 +42,7 @@ async def cmd_race(message: Message):
     choices = list(RACES) + (list(ADMIN_RACES) if is_admin else [])
     builder = InlineKeyboardBuilder()
     # فقط چند نژاد پایه در دکمه؛ بقیه با هسته
-    basic = ["انسان", "جن", "غول", "پری", "سایه‌رو", "فرشته", "اهریمن", "نامیرا"]
+    basic = ["انسان", "جن", "غول", "پری", "سایهرو", "فرشته", "اهریمن", "نامیرا"]
     if is_admin:
         basic = basic + list(ADMIN_RACES)
     for r in basic:
@@ -54,9 +54,9 @@ async def cmd_race(message: Message):
             label = "👑 " + label
         builder.button(text=label[:40], callback_data=f"setrace:{message.from_user.id}:{r}")
     builder.adjust(2)
-    text2 = "🧬 <b>نژاد پایه</b> (یک‌بار رایگان)" + chr(10)
-    text2 += "نژادهای قوی‌تر و ایرانی با <b>هسته</b>:" + chr(10)
-    text2 += "/cores · /findcore · /usecore نام‌هسته" + chr(10)
+    text2 = "🧬 <b>نژاد پایه</b> (یکبار رایگان)" + chr(10)
+    text2 += "نژادهای قویتر و ایرانی با <b>هسته</b>:" + chr(10)
+    text2 += "/cores · /findcore · /usecore نامهسته" + chr(10)
     if is_admin:
         text2 += chr(10) + "👑 خدایان و قادر مطلق فقط ادمین" + chr(10) + "⚠️ نامیرا: قدرت بالا، بدون تولیدمثل"
     await message.answer(text2, reply_markup=builder.as_markup())
@@ -92,42 +92,42 @@ async def cb_set_race(callback: CallbackQuery):
         + f"سبک: {info['style']}" + chr(10)
         + f"{info['desc']}" + chr(10)
         + f"ضریب: ×{info['bonus']}" + chr(10)
-        + (("⚠️ این نژاد نمی‌تواند تولیدمثل کند." + chr(10)) if race in ("نامیرا", "قادر مطلق", "خدایان") else "")
+        + (("⚠️ این نژاد نمیتواند تولیدمثل کند." + chr(10)) if race in ("نامیرا", "قادر مطلق", "خدایان") else "")
         + chr(10) + "برای نژادهای دیگر: /cores"
     )
     await callback.answer()
 
 
-@router.message(Command("cores", "هسته", "هسته‌ها", "core"))
+@router.message(Command("cores", "هسته", "هستهها", "core"))
 async def cmd_cores(message: Message):
     await message.answer(cores_svc.list_cores_text())
 
 
-@router.message(Command("findcore", "جستجوی‌هسته", "پیداهسته"))
+@router.message(Command("findcore", "جستجویهسته", "پیداهسته"))
 async def cmd_find_core(message: Message):
     name, msg = cores_svc.find_core(message.from_user.id)
     await message.answer(msg)
 
 
-@router.message(Command("mycore", "هسته‌من", "هسته‌ها‌من"))
+@router.message(Command("mycore", "هستهمن", "هستههامن"))
 async def cmd_my_core(message: Message):
     bag = cores_svc.get_user_cores(message.from_user.id)
     if not bag:
-        await message.answer(tr(message.from_user.id, "هسته‌ای نداری. /findcore"))
+        await message.answer(tr(message.from_user.id, "هستهای نداری. /findcore"))
         return
-    text = "💎 <b>هسته‌های تو</b>" + chr(10) + chr(10)
+    text = "💎 <b>هستههای تو</b>" + chr(10) + chr(10)
     for n, q in bag.items():
         race = cores_svc.CORES.get(n, {}).get("race", "?")
         text += f"• {n} ×{q} → {race}" + chr(10)
-    text += chr(10) + "/usecore نام‌هسته"
+    text += chr(10) + "/usecore نامهسته"
     await message.answer(text)
 
 
-@router.message(Command("usecore", "استفاده‌هسته", "جذب‌هسته"))
+@router.message(Command("usecore", "استفادههسته", "جذبهسته"))
 async def cmd_use_core(message: Message):
     parts = (message.text or "").split(maxsplit=1)
     if len(parts) < 2:
-        await message.answer("/usecore نام‌هسته" + chr(10) + "مثال: /usecore هسته سیمرغ" + chr(10) + "/mycore")
+        await message.answer("/usecore نامهسته" + chr(10) + "مثال: /usecore هسته سیمرغ" + chr(10) + "/mycore")
         return
     core_name = parts[1].strip()
     race, msg = cores_svc.use_core(message.from_user.id, core_name)

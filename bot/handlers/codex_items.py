@@ -13,19 +13,19 @@ router = Router()
 
 HOW_TO = {
     "pill": "داروخانه /buildings — خرید با سکه یا /use",
-    "tea": "داروخانه — چای تذهیب +انرژی با کول‌داون",
+    "tea": "داروخانه — چای تذهیب +انرژی با کولداون",
     "weapon": "آهنگری — خرید؛ /equip برای تجهیز",
     "weapon_unique": "آهنگری — یکتا؛ فقط یک نفر",
-    "armor": "آهنگری — زره در کیف قدرت می‌دهد",
+    "armor": "آهنگری — زره در کیف قدرت میدهد",
     "material": "کیمیاگری / شکار / باغ — مواد ساخت",
     "herb_normal": "باغ گیاهان یا /garden",
     "herb_spiritual": "باغ / مأموریت نادر",
     "tech_book": "سالن تکنیک — یادگیری مستقیم",
-    "talisman": "طلسم‌خانه — خرید یا /craft",
+    "talisman": "طلسمخانه — خرید یا /craft",
 }
 
 
-@router.message(Command("codex", "itemlist", "لیست‌آیتم", "codexitems", "دانشنامه‌آیتم", "انبارکل", "دانشنامه"))
+@router.message(Command("codex", "itemlist", "لیستآیتم", "codexitems", "دانشنامهآیتم", "انبارکل", "دانشنامه"))
 async def cmd_item_codex(message: Message):
     async with async_session() as session:
         await ensure_default_buildings_and_items(session)
@@ -41,7 +41,7 @@ async def cmd_item_codex(message: Message):
             buildings = {}
 
     if not items:
-        await message.answer("آیتمی نیست. یک‌بار /buildings بزن تا فروشگاه ساخته شود.")
+        await message.answer("آیتمی نیست. یکبار /buildings بزن تا فروشگاه ساخته شود.")
         return
 
     by_type = {}
@@ -73,19 +73,19 @@ async def cmd_item_codex(message: Message):
         await message.answer(text)
 
 
-@router.message(Command("buildingscodex", "ساختمان‌دانشنامه"))
+@router.message(Command("buildingscodex", "ساختماندانشنامه"))
 async def cmd_building_codex(message: Message):
     await message.answer(
         f"<b>{_t('building_codex_title', get_lang(message.from_user.id))}</b>" + chr(10)
-        + "/itemlist — همه آیتم‌ها و روش تهیه" + chr(10)
-        + "/buildings — خرید از ساختمان‌ها" + chr(10)
+        + "/itemlist — همه آیتمها و روش تهیه" + chr(10)
+        + "/buildings — خرید از ساختمانها" + chr(10)
         + "/craft — ساخت معجون و طلسم" + chr(10)
         + "/inventory — کیف تو"
     )
 
 
 
-@router.message(Command("realms", "قلمرو‌ها", "لیست‌قلمرو"))
+@router.message(Command("realms", "قلمروها", "لیستقلمرو"))
 async def cmd_realms(message: Message):
     from database.models_v2 import CULTIVATION_REALMS
     from bot.config import ENERGY_BASE, ENERGY_PER_LEVEL_ADD
@@ -111,7 +111,7 @@ async def cmd_realms(message: Message):
 
 
 
-@router.message(Command("codexguide", "دانشنامه‌کامل", "مفاهیم"))
+@router.message(Command("codexguide", "دانشنامهکامل", "مفاهیم"))
 async def cmd_codex_guide(message: Message):
     text = (
         "📚 <b>دانشنامه مفاهیم — 4.1.2</b>" + chr(10) + chr(10)
@@ -123,7 +123,7 @@ async def cmd_codex_guide(message: Message):
         + "<b>ارز</b>: سکه → روحی → بهشتی → آسمانی → خدا → هرج → پوچی → ازلی + کارما" + chr(10)
         + "<b>خانه</b>: /myhome بونوس تذهیب" + chr(10)
         + "<b>قفل ممنوعه</b>: بعد از تکنیک/چای ممنوعه دیگر مصرف نداری" + chr(10)
-        + "<b>ذخیره</b>: داده‌ها در DB و persist می‌مانند" + chr(10) + chr(10)
-        + "/codex — لیست آیتم‌ها | /buildings — فروشگاه | /help — راهنما"
+        + "<b>ذخیره</b>: دادهها در DB و persist میمانند" + chr(10) + chr(10)
+        + "/codex — لیست آیتمها | /buildings — فروشگاه | /help — راهنما"
     )
     await message.answer(text)

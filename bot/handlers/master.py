@@ -39,9 +39,9 @@ async def cmd_master(message: Message):
     await message.answer(text)
 
 
-@router.message(Command("takedisciple", "شاگرد‌گرفتن"))
+@router.message(Command("takedisciple", "شاگردگرفتن"))
 async def cmd_take_disciple(message: Message):
-    """فقط درخواست می‌فرستد — تا قبول نشود شاگرد نمی‌شود"""
+    """فقط درخواست میفرستد — تا قبول نشود شاگرد نمیشود"""
     if not message.reply_to_message:
         await message.answer(
             "روی پیام شخص ریپلای کن و /takedisciple بزن.\n"
@@ -59,14 +59,14 @@ async def cmd_take_disciple(message: Message):
             session, du.id, du.full_name, du.username
         )
         if master.id == disciple.id:
-            await message.answer(tr(message.from_user.id, "نمی‌توانی خودت شاگرد خودت شوی."))
+            await message.answer(tr(message.from_user.id, "نمیتوانی خودت شاگرد خودت شوی."))
             return
         # pre-check
         if await get_master(session, disciple.id):
             await message.answer(tr(message.from_user.id, "این نفر الان استاد دارد."))
             return
         if await get_master(session, master.id):
-            await message.answer(tr(message.from_user.id, "تو خودت شاگردی و نمی‌توانی استاد شوی."))
+            await message.answer(tr(message.from_user.id, "تو خودت شاگردی و نمیتوانی استاد شوی."))
             return
 
     builder = InlineKeyboardBuilder()
@@ -83,15 +83,15 @@ async def cmd_take_disciple(message: Message):
         f"🎓 <b>درخواست استاد-شاگردی</b>\n\n"
         f"استاد پیشنهادی: <b>{master.full_name}</b>\n"
         f"شاگرد پیشنهادی: <b>{disciple.full_name}</b>\n\n"
-        f"فقط <b>{disciple.full_name}</b> می‌تواند قبول یا رد کند.\n"
-        f"بدون قبول، شاگردی ثبت نمی‌شود.",
+        f"فقط <b>{disciple.full_name}</b> میتواند قبول یا رد کند.\n"
+        f"بدون قبول، شاگردی ثبت نمیشود.",
         reply_markup=builder.as_markup(),
     )
 
 
-@router.message(Command("askmaster", "درخواست‌استاد"))
+@router.message(Command("askmaster", "درخواستاستاد"))
 async def cmd_ask_master(message: Message):
-    """شخص از کسی می‌خواهد شاگردش شود — استاد باید قبول کند"""
+    """شخص از کسی میخواهد شاگردش شود — استاد باید قبول کند"""
     if not message.reply_to_message:
         await message.answer(tr(message.from_user.id, "روی پیام استاد مورد نظر ریپلای کن و /askmaster بزن."))
         return
@@ -112,7 +112,7 @@ async def cmd_ask_master(message: Message):
             await message.answer(tr(message.from_user.id, "تو الان استاد داری."))
             return
         if await get_master(session, master.id):
-            await message.answer(tr(message.from_user.id, "او خودش شاگرد است و نمی‌تواند استاد شود."))
+            await message.answer(tr(message.from_user.id, "او خودش شاگرد است و نمیتواند استاد شود."))
             return
 
     builder = InlineKeyboardBuilder()
@@ -127,8 +127,8 @@ async def cmd_ask_master(message: Message):
     builder.adjust(1)
     await message.answer(
         f"🎓 <b>درخواست شاگردی</b>\n\n"
-        f"{disciple.full_name} می‌خواهد شاگرد <b>{master.full_name}</b> شود.\n\n"
-        f"فقط <b>{master.full_name}</b> می‌تواند قبول یا رد کند.",
+        f"{disciple.full_name} میخواهد شاگرد <b>{master.full_name}</b> شود.\n\n"
+        f"فقط <b>{master.full_name}</b> میتواند قبول یا رد کند.",
         reply_markup=builder.as_markup(),
     )
 
@@ -142,12 +142,12 @@ async def cb_master_accept(callback: CallbackQuery):
             session, callback.from_user.id,
             callback.from_user.full_name, callback.from_user.username
         )
-        # یا شاگرد قبول می‌کند (takedisciple) یا استاد (askmaster)
+        # یا شاگرد قبول میکند (takedisciple) یا استاد (askmaster)
         if me.id not in (master_id, disciple_id):
             await callback.answer()
             return
         # برای takedisciple فقط شاگرد باید قبول کند
-        # برای askmaster فقط استاد — هر دو طرف مرتبط‌اند؛ امن‌تر: هر کدام از دو طرف که هنوز رابطه نیست
+        # برای askmaster فقط استاد — هر دو طرف مرتبطاند؛ امنتر: هر کدام از دو طرف که هنوز رابطه نیست
         master = await session.get(User, master_id)
         disciple = await session.get(User, disciple_id)
         if not master or not disciple:
@@ -201,7 +201,7 @@ async def cmd_my_disciples(message: Message):
         await message.answer(text)
 
 
-@router.message(Command("mymaster", "استاد‌من"))
+@router.message(Command("mymaster", "استادمن"))
 async def cmd_my_master(message: Message):
     async with async_session() as session:
         user = await get_or_create_user(
@@ -216,7 +216,7 @@ async def cmd_my_master(message: Message):
         await message.answer(f"استاد تو: <b>{m.full_name if m else rel.master_id}</b>")
 
 
-@router.message(Command("leavemaster", "ترک‌استادی", "ترک‌شاگردی"))
+@router.message(Command("leavemaster", "ترکاستادی", "ترکشاگردی"))
 async def cmd_leave_master(message: Message):
     async with async_session() as session:
         user = await get_or_create_user(

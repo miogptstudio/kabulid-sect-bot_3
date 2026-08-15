@@ -37,7 +37,7 @@ async def cmd_marry(message: Message):
             "💍 <b>ازدواج و نامزدی</b>\n\n"
             "روی پیام طرف ریپلای + /marry\n\n"
             f"• نامزدی تا {ENGAGE_HOURS} ساعت\n"
-            "• مرد یا زن می‌توانند خواستگاری کنند؛ طرف مقابل قبول/رد می‌کند\n"
+            "• مرد یا زن میتوانند خواستگاری کنند؛ طرف مقابل قبول/رد میکند\n"
             "• هر دو باید /gender زده باشند\n"
             "• /divorce · /wives · /invitewedding"
         )
@@ -75,7 +75,7 @@ async def cmd_marry(message: Message):
             f"👤 نفر دوم: <b>{target.full_name}</b> | Lv.{target.level} | {target.gender}\n"
             f"⏳ مهلت نامزدی: {expires} UTC\n"
             f"{warn_text}\n\n"
-            f"🤝 تصمیم نهایی فقط با رضایت طرف مقابل انجام می‌شود."
+            f"🤝 تصمیم نهایی فقط با رضایت طرف مقابل انجام میشود."
         )
         await message.answer_photo(FSInputFile(panel_url("marriage")),caption=caption,reply_markup=builder.as_markup())
 
@@ -176,7 +176,7 @@ async def cmd_divorce(message: Message):
         await message.answer(msg)
 
 
-@router.message(Command("invitewedding", "دعوت‌عروسی"))
+@router.message(Command("invitewedding", "دعوتعروسی"))
 async def cmd_invite(message: Message):
     if not message.reply_to_message:
         await message.answer("روی پیام مهمان ریپلای کن.")

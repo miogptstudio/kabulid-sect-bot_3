@@ -46,7 +46,7 @@ async def cmd_equip(message: Message):
         )
         rows = result.all()
         if len(parts) < 2:
-            text = "⚔️ سلاح‌های قابل تجهیز:\n"
+            text = "⚔️ سلاحهای قابل تجهیز:\n"
             for i, (inv, item) in enumerate(rows, 1):
                 if item.item_type in ("weapon", "weapon_unique") or (
                     isinstance(item.effect, dict) and item.effect.get("duel_power")
@@ -71,10 +71,10 @@ async def cmd_equip(message: Message):
         ):
             user.has_cyrus_sword = True
         await session.commit()
-        await message.answer(f"✅ «{item.name}» مجهز شد. در دوئل استفاده می‌شود.")
+        await message.answer(f"✅ «{item.name}» مجهز شد. در دوئل استفاده میشود.")
 
 
-@router.message(Command("unequip", "خلع‌سلاح", "برداشتن‌سلاح"))
+@router.message(Command("unequip", "خلعسلاح", "برداشتنسلاح"))
 async def cmd_unequip(message: Message):
     async with async_session() as session:
         user = await get_or_create_user(
@@ -108,7 +108,7 @@ async def cmd_unequip(message: Message):
         )
 
 
-@router.message(Command("heal", "درمان", "قرص‌سلامتی"))
+@router.message(Command("heal", "درمان", "قرصسلامتی"))
 async def cmd_heal(message: Message):
     async with async_session() as session:
         user = await get_or_create_user(
@@ -143,7 +143,7 @@ async def cmd_heal(message: Message):
         await message.answer(msg + f"\nخون الان: {user.blood}%")
 
 
-@router.message(Command("blood", "خون", "وضعیت‌رزمی"))
+@router.message(Command("blood", "خون", "وضعیترزمی"))
 async def cmd_blood(message: Message):
     async with async_session() as session:
         user = await get_or_create_user(
@@ -166,7 +166,7 @@ async def cmd_blood(message: Message):
         await message.answer(text)
 
 
-@router.message(Command("deathduel", "دوئل‌مرگ"))
+@router.message(Command("deathduel", "دوئلمرگ"))
 async def cmd_death_duel(message: Message):
     if not message.reply_to_message:
         await message.answer(tr(message.from_user.id, "ریپلای + /deathduel — تا مرگ یکی ادامه دارد."))
@@ -195,7 +195,7 @@ async def cmd_death_duel(message: Message):
         f"☠️ <b>دوئل تا مرگ</b>\n"
         f"{a.full_name} ({pa['total']}) vs {b.full_name} ({pb['total']})\n"
         f"فقط قدرت — تا خون یکی صفر شود.\n"
-        f"اگر شمشیر کوروش باشد، بازنده برای همیشه پاک می‌شود.",
+        f"اگر شمشیر کوروش باشد، بازنده برای همیشه پاک میشود.",
         reply_markup=builder.as_markup(),
     )
 
@@ -218,7 +218,7 @@ async def cb_death_duel(callback: CallbackQuery):
         for round_n in range(1, 30):
             pa = await calc_power(session, a)
             pb = await calc_power(session, b)
-            # نوبت بر اساس قدرت — قوی‌تر بیشتر آسیب
+            # نوبت بر اساس قدرت — قویتر بیشتر آسیب
             if pa["total"] >= pb["total"]:
                 atk, dfn = a, b
                 dmg = 10 + (pa["total"] - pb["total"]) // 20
@@ -234,7 +234,7 @@ async def cb_death_duel(callback: CallbackQuery):
             logs.append(f"راند {round_n}: {atk.full_name} → {dfn.full_name}\n" + "\n".join(res["messages"]))
             if res.get("killed") or res.get("wiped"):
                 break
-            # تازه‌سازی
+            # تازهسازی
             await session.refresh(a)
             await session.refresh(b)
             if a.is_dead or b.is_dead:

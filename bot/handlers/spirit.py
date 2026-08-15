@@ -10,12 +10,12 @@ from services.i18n import t_user, tr
 router = Router()
 
 
-@router.message(Command("spirit", "روح‌رزمی", "martialspirit"))
+@router.message(Command("spirit", "روحرزمی", "martialspirit"))
 async def cmd_spirit(message: Message):
     await message.answer(ms.status_text(message.from_user.id))
 
 
-@router.message(Command("awaken", "بیدار‌روح", "بیدارسازی"))
+@router.message(Command("awaken", "بیدارروح", "بیدارسازی"))
 async def cmd_awaken(message: Message):
     builder = InlineKeyboardBuilder()
     for name in list(ms.SPIRIT_TYPES.keys())[:8]:
@@ -45,11 +45,11 @@ async def cb_awaken(callback: CallbackQuery):
     await callback.answer()
 
 
-@router.message(Command("trainspirit", "روح‌تمرین"))
+@router.message(Command("trainspirit", "روحتمرین"))
 async def cmd_train_spirit(message: Message):
     await message.answer(ms.train(message.from_user.id))
 
 
-@router.message(Command("spiritmode", "حالت‌روح"))
+@router.message(Command("spiritmode", "حالتروح"))
 async def cmd_spirit_mode(message: Message):
     await message.answer(ms.toggle(message.from_user.id))

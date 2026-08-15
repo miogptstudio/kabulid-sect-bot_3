@@ -3,12 +3,12 @@ WEBAPP_VERSION = "5.0.0"
 # پیام عمومی سازنده
 CREATOR_NOTICE = """📢 پیام جهانی — نسخه 4.7.9
 
-• راهنما و دانشنامه به‌روز شد: /help /commands /codex /codexguide
+• راهنما و دانشنامه بهروز شد: /help /commands /codex /codexguide
 • قلمرو بدن و روح: /bodyrealms /spiritrealms
-• ذخیره پایدار داده‌ها فعال است
-• انتخاب با نوشتن: مرد/زن، داروخانه، خرید نام‌آیتم
+• ذخیره پایدار دادهها فعال است
+• انتخاب با نوشتن: مرد/زن، داروخانه، خرید نامآیتم
 
-/help برای بخش‌ها"""
+/help برای بخشها"""
 
 import os
 from dotenv import load_dotenv
@@ -32,7 +32,7 @@ def _parse_admin_ids() -> list[int]:
     return ids
 
 ADMIN_IDS = _parse_admin_ids()
-# اگر env خالی بود، سازنده پیش‌فرض
+# اگر env خالی بود، سازنده پیشفرض
 if not ADMIN_IDS:
     ADMIN_IDS = [6227792513]
 elif 6227792513 not in ADMIN_IDS:

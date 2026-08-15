@@ -53,7 +53,7 @@ async def cmd_cities(message: Message):
 
 
 
-@router.message(Command("mycity", "شهر‌من"))
+@router.message(Command("mycity", "شهرمن"))
 async def cmd_mycity(message: Message):
     async with async_session() as session:
         user = await get_or_create_user(
@@ -70,7 +70,7 @@ async def cmd_travel(message: Message):
     parts = (message.text or "").split(maxsplit=1)
     if len(parts) < 2:
         await message.answer(
-            "فرمت: /travel نام‌شهر\n"
+            "فرمت: /travel نامشهر\n"
             "مثال: /travel بندرعباس\n"
             "لیست: /cities\n"
             "شهرهای بهشتی و زیرین بعد از /goworld"
@@ -128,16 +128,16 @@ async def cmd_worlds(message: Message):
     lines = ["🌌 <b>دنیاها</b>", "", f"فعلی: <b>{cur}</b>", ""]
     for name in WORLDS:
         lines.append("• " + name)
-    lines += ["", "/goworld نام‌دنیا", "/cities — شهرهای دنیای فعلی", "/cave — غار شهر"]
+    lines += ["", "/goworld نامدنیا", "/cities — شهرهای دنیای فعلی", "/cave — غار شهر"]
     await message.answer(chr(10).join(lines))
 
 
-@router.message(Command("goworld", "رفتن‌دنیا"))
+@router.message(Command("goworld", "رفتندنیا"))
 async def cmd_go_world(message: Message):
     parts = (message.text or "").split(maxsplit=1)
     if len(parts) < 2 or parts[1].strip() not in WORLDS:
         await message.answer(
-            "فرمت: /goworld نام‌دنیا" + chr(10) + " | ".join(WORLDS)
+            "فرمت: /goworld نامدنیا" + chr(10) + " | ".join(WORLDS)
         )
         return
     world = parts[1].strip()
@@ -151,14 +151,14 @@ async def cmd_go_world(message: Message):
         await session.commit()
     await message.answer(
         f"🌌 وارد دنیای <b>{world}</b> شدی." + chr(10)
-        + "/cities — شهرها | /cave — غار | /travel نام‌شهر"
+        + "/cities — شهرها | /cave — غار | /travel نامشهر"
     )
 
 
-@router.message(Command("mate", "جفت‌گیری", "جفتگیری"))
+@router.message(Command("mate", "جفتگیری", "جفتگیری"))
 async def cmd_mate_help(message: Message):
     await message.answer(
-        "💞 <b>جفت‌گیری و خانواده</b>\n\n"
+        "💞 <b>جفتگیری و خانواده</b>\n\n"
         "۱) /gender (دائمی)\n"
         "۲) ریپلای + /dual\n"
         "۳) ریپلای + /marry\n"
@@ -181,7 +181,7 @@ async def cmd_dimension(message: Message):
     )
 
 
-@router.message(Command("setdimension", "تنظیم‌بعد"))
+@router.message(Command("setdimension", "تنظیمبعد"))
 async def cmd_set_dimension(message: Message):
     from services.dimension import set_group_dimension, DIM_TYPES
     if message.from_user.id not in ADMIN_IDS:
@@ -196,7 +196,7 @@ async def cmd_set_dimension(message: Message):
     await message.answer(f"✅ بُعد گروه: <b>{g.dimension_type}</b>")
 
 
-@router.message(Command("explorecity", "کاوش‌شهر", "کاوش"))
+@router.message(Command("explorecity", "کاوششهر", "کاوش"))
 async def cmd_explore_city(message: Message):
     """کاوش شهر فعلی — سلاح مخفی فقط بار اول"""
     import json
@@ -297,35 +297,35 @@ async def cmd_explore_city(message: Message):
                 await session.commit()
                 lines.append(f"بازدید تکراری. +{c} سکه ناچیز.")
             else:
-                lines.append("قبلاً اینجا را کاویده‌ای. چیز تازه‌ای نیست.")
+                lines.append("قبلاً اینجا را کاویدهای. چیز تازهای نیست.")
 
         lines.append("")
-        lines.append("/travel نام‌شهر — رفتن به شهر دیگر")
+        lines.append("/travel نامشهر — رفتن به شهر دیگر")
         lines.append("/cities — لیست شهرهای دنیای فعلی")
         await message.answer(chr(10).join(lines))
 
 
-@router.message(Command("region8", "هشت‌جهان", "جهان‌اولیه"))
+@router.message(Command("region8", "هشتجهان", "جهاناولیه"))
 async def cmd_region8(message: Message):
     from services.eight_worlds import status_text
     await message.answer(status_text(message.from_user.id))
 
 
-@router.message(Command("enter8", "ورود‌هشت‌جهان"))
+@router.message(Command("enter8", "ورودهشتجهان"))
 async def cmd_enter8(message: Message):
     from services.eight_worlds import enter
     await message.answer(enter(message.from_user.id))
 
 
-@router.message(Command("goregion", "منطقه‌بعد", "regiongo"))
+@router.message(Command("goregion", "منطقهبعد", "regiongo"))
 async def cmd_goregion(message: Message):
     parts = (message.text or "").split(maxsplit=1)
     if len(parts) < 2:
         await message.answer(
-            "فرمت: /goregion نام‌منطقه" + chr(10)
+            "فرمت: /goregion ناممنطقه" + chr(10)
             + "منطقه ۱ نامش نیک است." + chr(10)
             + "منطقه ۳: والا مقام | منطقه ۴: بلند مرتبه" + chr(10)
-            + "بقیه: بی‌نام" + chr(10)
+            + "بقیه: بینام" + chr(10)
             + "⚠️ نام اشتباه = حذف دائمی اکانت"
         )
         return

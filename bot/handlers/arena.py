@@ -54,7 +54,7 @@ async def cmd_arena(message: Message):
     await message.answer(text)
 
 
-@router.message(Command("arenafight", "مبارزه‌آرنا", "آرنافایت"))
+@router.message(Command("arenafight", "مبارزهآرنا", "آرنافایت"))
 async def cmd_arena_fight(message: Message):
     if not message.reply_to_message:
         await message.answer(tr(message.from_user.id, "روی حریف ریپلای کن و /arenafight بزن."))
@@ -108,7 +108,7 @@ async def cmd_arena_fight(message: Message):
         f"از: {challenger.full_name} ({cp.tier} | {p1['total']})\n"
         f"به: {opponent.full_name} ({op.tier} | {p2['total']})\n\n"
         f"💰 هزینه ورود هر نفر: <b>{cost}</b>\n"
-        f"با قبول، از هر دو کم می‌شود.\n\n"
+        f"با قبول، از هر دو کم میشود.\n\n"
         f"فقط <b>{opponent.full_name}</b> دکمه بزند.",
         reply_markup=builder.as_markup(),
     )
@@ -172,18 +172,18 @@ async def cb_arena_reject(callback: CallbackQuery):
         if me.id != o_id:
             await callback.answer()
             return
-    await callback.message.edit_text(tr(callback.from_user.id, "❌ چالش آرنا رد شد. هزینه‌ای کم نشد."))
+    await callback.message.edit_text(tr(callback.from_user.id, "❌ چالش آرنا رد شد. هزینهای کم نشد."))
     await callback.answer()
 
 
-@router.message(Command("arenatop", "آرنا‌برتر", "لیدرآرنا"))
+@router.message(Command("arenatop", "آرنابرتر", "لیدرآرنا"))
 async def cmd_arena_top(message: Message):
     async with async_session() as session:
         text = await arena_leaderboard(session)
     await message.answer(text)
 
 
-@router.message(Command("arenaopen", "آرنا‌باز"))
+@router.message(Command("arenaopen", "آرناباز"))
 async def cmd_arena_open(message: Message):
     """ساخت اتاق چندنفره — حداقل ۳ حداکثر ۱۰"""
     parts = (message.text or "").split()
@@ -210,11 +210,11 @@ async def cmd_arena_open(message: Message):
     )
 
 
-@router.message(Command("arenajoin", "ورود‌آرنا"))
+@router.message(Command("arenajoin", "ورودآرنا"))
 async def cmd_arena_join(message: Message):
     parts = (message.text or "").split()
     if len(parts) < 2:
-        await message.answer(tr(message.from_user.id, "/arenajoin شماره‌اتاق\nلیست: /arenarooms"))
+        await message.answer(tr(message.from_user.id, "/arenajoin شمارهاتاق\nلیست: /arenarooms"))
         return
     try:
         rid = int(parts[1])
@@ -237,12 +237,12 @@ async def cmd_arena_join(message: Message):
     await message.answer(msg)
 
 
-@router.message(Command("arenarooms", "اتاق‌آرنا"))
+@router.message(Command("arenarooms", "اتاقآرنا"))
 async def cmd_arena_rooms(message: Message):
     await message.answer(list_open_rooms())
 
 
-@router.message(Command("arenastart", "شروع‌آرنا"))
+@router.message(Command("arenastart", "شروعآرنا"))
 async def cmd_arena_start(message: Message):
     async with async_session() as session:
         user = await get_or_create_user(

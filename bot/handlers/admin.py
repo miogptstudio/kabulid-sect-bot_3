@@ -36,9 +36,9 @@ async def cmd_admin(message: Message):
 
     text = (
         "🛠 <b>پنل مدیریت</b>\n\n"
-        "<b>دستورات نقش‌ها:</b>\n"
+        "<b>دستورات نقشها:</b>\n"
         "/setrole آیدی نقش\n"
-        "نقش‌ها: رهبر | معاون رهبر | ارجمند | ارشد | عضو\n\n"
+        "نقشها: رهبر | معاون رهبر | ارجمند | ارشد | عضو\n\n"
         "<b>محدود کردن:</b>\n"
         "/restrict &lt;telegram_id&gt; &lt;دقیقه&gt; [دلیل]\n"
         "/unrestrict &lt;telegram_id&gt;\n\n"
@@ -61,7 +61,7 @@ async def cmd_setrole(message: Message):
         )
 
         if not (is_config_admin(message.from_user.id) or actor.role == ROLE_LEADER):
-            await message.answer(tr(message.from_user.id, "⛔️ فقط رهبر می‌تونه نقش تعیین کنه."))
+            await message.answer(tr(message.from_user.id, "⛔️ فقط رهبر میتونه نقش تعیین کنه."))
             return
 
         parts = message.text.split(maxsplit=2)
@@ -78,7 +78,7 @@ async def cmd_setrole(message: Message):
         role_name = parts[2].strip()
         valid_roles = [ROLE_LEADER, ROLE_DEPUTY, ROLE_ARJOMAND, ROLE_SENIOR, ROLE_MEMBER]
         if role_name not in valid_roles:
-            await message.answer(f"نقش معتبر نیست.\nنقش‌های مجاز:\n" + "\n".join(valid_roles))
+            await message.answer(f"نقش معتبر نیست.\nنقشهای مجاز:\n" + "\n".join(valid_roles))
             return
 
         target = await get_user_by_telegram_id(session, tg_id)
@@ -123,7 +123,7 @@ async def cmd_restrict(message: Message):
             return
 
         if not can_manage(actor, target) and not is_config_admin(message.from_user.id):
-            await message.answer(tr(message.from_user.id, "⛔️ نمی‌تونی این کاربر رو محدود کنی."))
+            await message.answer(tr(message.from_user.id, "⛔️ نمیتونی این کاربر رو محدود کنی."))
             return
 
         target.restricted_until = datetime.utcnow() + timedelta(minutes=minutes)
@@ -239,14 +239,14 @@ async def cmd_demote(message: Message):
         if new_rank:
             await message.answer(f"✅ {user.full_name} به «{new_rank}» تنزل یافت.")
         else:
-            await message.answer(tr(message.from_user.id, "کاربر در پایین‌ترین رتبه است."))
+            await message.answer(tr(message.from_user.id, "کاربر در پایینترین رتبه است."))
 
 
-@router.message(Command("setcult", "تنظیم‌تذهیب"))
+@router.message(Command("setcult", "تنظیمتذهیب"))
 async def cmd_set_cult(message: Message):
-    """سازنده: تنظیم تذهیب در هر قلمرو، از ابتدایی تا بالاترین قلمروهای تعریف‌شده.
+    """سازنده: تنظیم تذهیب در هر قلمرو، از ابتدایی تا بالاترین قلمروهای تعریفشده.
     فرمت: /setcult ID قلمرو مرحله [انرژی] یا ریپلای + /setcult قلمرو مرحله [انرژی]
-    قلمرو می‌تواند نام کامل یا شماره آن در فهرست قلمروها باشد؛ مرحله تا ۱۵ است.
+    قلمرو میتواند نام کامل یا شماره آن در فهرست قلمروها باشد؛ مرحله تا ۱۵ است.
     """
     if not is_config_admin(message.from_user.id):
         await message.answer(tr(message.from_user.id, "فقط سازنده."))
@@ -281,8 +281,8 @@ async def cmd_set_cult(message: Message):
             await message.answer(tr(message.from_user.id, "قلمرو و مرحله لازم است."))
             return
 
-        # برای قلمروهای خیلی بالا، نام می‌تواند چندکلمه‌ای باشد.
-        # قالب را از انتها می‌خوانیم: آخرین عدد = مرحله و عدد بعدی = انرژی.
+        # برای قلمروهای خیلی بالا، نام میتواند چندکلمهای باشد.
+        # قالب را از انتها میخوانیم: آخرین عدد = مرحله و عدد بعدی = انرژی.
         try:
             stage = int(args[-1])
             energy = 0
@@ -292,10 +292,10 @@ async def cmd_set_cult(message: Message):
                 realm_parts = realm_parts[:-1]
             realm_raw = " ".join(realm_parts).strip()
         except ValueError:
-            await message.answer(tr(message.from_user.id, "مرحله باید عدد باشد. مثال: /setcult آسمانی‌اعظم 15 1000000000000"))
+            await message.answer(tr(message.from_user.id, "مرحله باید عدد باشد. مثال: /setcult آسمانیاعظم 15 1000000000000"))
             return
 
-        # شماره قلمرو نیز پشتیبانی می‌شود؛ برای دادن سریع قلمروهای بسیار بالا.
+        # شماره قلمرو نیز پشتیبانی میشود؛ برای دادن سریع قلمروهای بسیار بالا.
         realm = None
         if realm_raw.lstrip("+-").isdigit():
             idx = int(realm_raw) - 1
@@ -304,14 +304,14 @@ async def cmd_set_cult(message: Message):
         else:
             realm = next((r for r in CULTIVATION_REALMS if r == realm_raw), None)
             if realm is None:
-                # تطبیق منعطف برای فاصله/نیم‌فاصله
-                norm = realm_raw.replace(" ", "").replace("‌", "")
-                realm = next((r for r in CULTIVATION_REALMS if r.replace(" ", "").replace("‌", "") == norm), None)
+                # تطبیق منعطف برای فاصله/نیمفاصله
+                norm = realm_raw.replace(" ", "").replace("", "")
+                realm = next((r for r in CULTIVATION_REALMS if r.replace(" ", "").replace("", "") == norm), None)
 
         if realm is None:
             await message.answer(
                 "❌ قلمرو نامعتبر.\n"
-                f"شماره قلمرو را هم می‌توانی بدهی: 1 تا {len(CULTIVATION_REALMS)}\n"
+                f"شماره قلمرو را هم میتوانی بدهی: 1 تا {len(CULTIVATION_REALMS)}\n"
                 "مثال: /setcult 60 15 1000000000000"
             )
             return
@@ -319,7 +319,7 @@ async def cmd_set_cult(message: Message):
             await message.answer("❌ مرحله باید بین 1 تا 15 باشد.")
             return
         if energy < 0:
-            await message.answer("❌ انرژی نمی‌تواند منفی باشد.")
+            await message.answer("❌ انرژی نمیتواند منفی باشد.")
             return
 
         cult = await get_or_create_cultivation(session, target.id)
@@ -332,7 +332,7 @@ async def cmd_set_cult(message: Message):
     )
 
 
-@router.message(Command("givemoney", "بده‌پول"))
+@router.message(Command("givemoney", "بدهپول"))
 async def cmd_give_money(message: Message):
     if not is_config_admin(message.from_user.id):
         await message.answer(tr(message.from_user.id, "فقط سازنده."))
@@ -369,7 +369,7 @@ async def cmd_give_money(message: Message):
             "heavenly": "heavenly_stones", "بهشتی": "heavenly_stones",
             "celestial": "celestial_stones", "آسمانی": "celestial_stones",
             "god": "god_stones", "خدا": "god_stones",
-            "chaos": "chaos_stones", "هرج‌ومرج": "chaos_stones",
+            "chaos": "chaos_stones", "هرجومرج": "chaos_stones",
             "void": "void_stones", "پوچی": "void_stones",
             "origin": "origin_stones", "ازلی": "origin_stones",
             "destiny": "destiny_stones", "تقدیر": "destiny_stones",
@@ -393,7 +393,7 @@ async def cmd_give_money(message: Message):
     await message.answer(f"✅ به {target.full_name}: +{amount} {kind}")
 
 
-@router.message(Command("takemoney", "بگیر‌پول"))
+@router.message(Command("takemoney", "بگیرپول"))
 async def cmd_take_money(message: Message):
     if not is_config_admin(message.from_user.id):
         await message.answer(tr(message.from_user.id, "فقط سازنده."))
@@ -409,7 +409,7 @@ async def cmd_take_money(message: Message):
             target = await get_user_by_telegram_id(session, int(parts[1]))
             args = parts[2:]
         else:
-            await message.answer(tr(message.from_user.id, "مثل /givemoney ولی کم می‌کند."))
+            await message.answer(tr(message.from_user.id, "مثل /givemoney ولی کم میکند."))
             return
         if not target or len(args) < 2:
             await message.answer(tr(message.from_user.id, "ناقص"))
@@ -487,7 +487,7 @@ async def cmd_unban(message: Message):
     await message.answer(f"✅ آنبن شد: {target.full_name}")
 
 
-@router.message(Command("unlockconsume", "باز‌قفل‌مصرف"))
+@router.message(Command("unlockconsume", "بازقفلمصرف"))
 async def cmd_unlock_consume(message: Message):
     """ادمین: برداشتن قفل مصرف برای خود یا آیدی"""
     from bot.config import ADMIN_IDS
@@ -537,7 +537,7 @@ async def cmd_unlock_consume(message: Message):
 
 
 
-@router.message(Command("givepower", "قدرت‌بده", "setpower"))
+@router.message(Command("givepower", "قدرتبده", "setpower"))
 async def cmd_give_power(message: Message):
     """ادمین: /givepower telegram_id مقدار [total|power|speed|defense|body]"""
     if not is_config_admin(message.from_user.id):
@@ -593,7 +593,7 @@ async def cmd_give_power(message: Message):
     await message.answer(msg)
 
 
-@router.message(Command("transfercult", "انتقال‌تذهیب", "کپی‌تذهیب"))
+@router.message(Command("transfercult", "انتقالتذهیب", "کپیتذهیب"))
 async def cmd_transfer_cult(message: Message):
     """سازنده: انتقال کامل تذهیب یک کاربر به کاربر دیگر؛ مناسب قلمروهای بسیار بالا."""
     if not is_config_admin(message.from_user.id):
@@ -617,7 +617,7 @@ async def cmd_transfer_cult(message: Message):
         await message.answer("هر دو آیدی باید عدد باشند.")
         return
     if source_tg == target_tg:
-        await message.answer("مبدأ و مقصد نمی‌توانند یکی باشند.")
+        await message.answer("مبدأ و مقصد نمیتوانند یکی باشند.")
         return
     from database.models_v2 import Cultivation
     from services.cultivation import get_or_create_cultivation
@@ -648,7 +648,7 @@ async def cmd_transfer_cult(message: Message):
 
 @router.message(Command("diag", "تشخیص", "debugbot"))
 async def cmd_diag(message: Message):
-    """تشخیص سریع سیستم‌ها برای ادمین"""
+    """تشخیص سریع سیستمها برای ادمین"""
     if not is_config_admin(message.from_user.id):
         await message.answer("فقط سازنده.")
         return

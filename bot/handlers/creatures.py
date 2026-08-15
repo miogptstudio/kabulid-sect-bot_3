@@ -13,20 +13,20 @@ router = Router()
 
 REALM_CREATURES = {
     "پایه": ["موش روحی", "گنجشک چی", "مار کوچک"],
-    "متوسط": ["گرگ باد", "روباه آتش", "لاک‌پشت سنگی"],
+    "متوسط": ["گرگ باد", "روباه آتش", "لاکپشت سنگی"],
     "بالا": ["ببر سفید", "عقاب رعد", "خرس کوه"],
     "پیشرفته": ["اژدهای جوان", "ققنوس خرد", "شیر طلایی"],
-    "نیمه‌خدا": ["اژدهای آسمانی", "ققنوس آتشین", "کرگدن آهنی"],
+    "نیمهخدا": ["اژدهای آسمانی", "ققنوس آتشین", "کرگدن آهنی"],
     "خدا": ["اژدهای باستانی", "فرشته نگهبان", "دیو بزرگ"],
     "آسمان": ["اژدهای نه آسمان", "عنقا", "کرم چاله"],
-    "ای‌تری": ["موجود ای‌تری", "سایه اتر", "پرتو خالص"],
-    "جاودان": ["روح جاودان", "نگهبان ابد", "اژدهای بی‌زمان"],
+    "ایتری": ["موجود ایتری", "سایه اتر", "پرتو خالص"],
+    "جاودان": ["روح جاودان", "نگهبان ابد", "اژدهای بیزمان"],
     "ابدی": ["هیولای ابدی", "خدای کهن", "نهنگ خلا"],
     "خلقت": ["آفریدگار خرد", "پرتو خلقت", "بذر جهان"],
-    "پوچی": ["هیچ‌چیز", "سایه پوچ", "بلعنده‌ی وجود"],
+    "پوچی": ["هیچچیز", "سایه پوچ", "بلعندهی وجود"],
 }
 
-PATHS = ["ارتدوکس", "بی‌طرف", "شیطانی", "بودایی", "شیطانی‌خون", "طبیعت", "شمشیر تنها"]
+PATHS = ["ارتدوکس", "بیطرف", "شیطانی", "بودایی", "شیطانیخون", "طبیعت", "شمشیر تنها"]
 
 WORLDS_EXTRA = [f"جهان-{i}" for i in range(1, 101)] + [
     "جهان آیینه", "جهان سایه", "جهان خون", "جهان یخ", "جهان آتش ابدی",
@@ -51,7 +51,7 @@ async def cmd_creatures(message: Message):
     await message.answer(text)
 
 
-@router.message(Command("huntcreature", "شکار‌موجود"))
+@router.message(Command("huntcreature", "شکارموجود"))
 async def cmd_hunt_creature(message: Message):
     async with async_session() as session:
         user = await get_or_create_user(
@@ -72,7 +72,7 @@ async def cmd_hunt_creature(message: Message):
             await session.commit()
             await message.answer(f"💀 {c} تو را کشت. /afterdeath")
         else:
-            await message.answer(f"🩸 {c} فرار کرد یا زخمی‌ات کرد.")
+            await message.answer(f"🩸 {c} فرار کرد یا زخمیات کرد.")
 
 
 @router.message(Command("path", "مسیر"))
@@ -86,7 +86,7 @@ async def cmd_path(message: Message):
         if len(parts) < 2:
             await message.answer(
                 "مسیرهای تذهیب:\n" + "\n".join(f"• {p}" for p in PATHS) +
-                "\n\n/path نام‌مسیر"
+                "\n\n/path ناممسیر"
             )
             return
         path = parts[1].strip()
@@ -104,17 +104,17 @@ async def cmd_path(message: Message):
     await message.answer(f"مسیر تذهیب: <b>{path}</b>")
 
 
-@router.message(Command("worldlist", "لیست‌جهان"))
+@router.message(Command("worldlist", "لیستجهان"))
 async def cmd_worldlist(message: Message):
     sample = WORLDS_EXTRA[:15]
     await message.answer(
-        "🌌 نمونه‌ای از جهان‌ها:\n" +
+        "🌌 نمونهای از جهانها:\n" +
         "\n".join(f"• {w}" for w in sample) +
         f"\n… و {len(WORLDS_EXTRA)-15} جهان دیگر\n/goworld نام"
     )
 
 
-@router.message(Command("attackdim", "حمله‌بعد"))
+@router.message(Command("attackdim", "حملهبعد"))
 async def cmd_attack_dim(message: Message):
     async with async_session() as session:
         user = await get_or_create_user(
@@ -122,7 +122,7 @@ async def cmd_attack_dim(message: Message):
             message.from_user.full_name, message.from_user.username
         )
         if user.is_dead:
-            await message.answer(tr(message.from_user.id, "مرده‌ای."))
+            await message.answer(tr(message.from_user.id, "مردهای."))
             return
         w = await get_or_create_wallet(session, user.id)
         if random.random() < 0.5:

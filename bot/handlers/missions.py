@@ -17,14 +17,14 @@ router = Router()
 EXTRA_MISSIONS = [
     {"title": "مأموریت شهری: گشت بازار", "description": "در شهر فعلی /explorecity بزن.", "mission_type": "city", "target_type": "explore", "target_value": 1, "reward_xp": 2, "reward_medal": None},
     {"title": "مأموریت شهری: سفر", "description": "با /travel به شهر دیگر برو.", "mission_type": "city", "target_type": "travel", "target_value": 1, "reward_xp": 2, "reward_medal": None},
-    {"title": "مأموریت جهانی: جنگ فرقه", "description": "در حمله/دفاع فرقه‌ای شرکت کن یا /sectwar.", "mission_type": "global", "target_type": "sectwar", "target_value": 1, "reward_xp": 5, "reward_medal": "فاتح جهانی"},
+    {"title": "مأموریت جهانی: جنگ فرقه", "description": "در حمله/دفاع فرقهای شرکت کن یا /sectwar.", "mission_type": "global", "target_type": "sectwar", "target_value": 1, "reward_xp": 5, "reward_medal": "فاتح جهانی"},
     {"title": "مأموریت جهانی: لیدربورد", "description": "در /ranking بین ۱۰ نفر اول باش یا ۲ دوئل ببر.", "mission_type": "global", "target_type": "wins", "target_value": 2, "reward_xp": 4, "reward_medal": None},
     {"title": "مأموریت فرعی: تکنیک", "description": "/learntech بزن یا تکنیک فعال کن.", "mission_type": "side", "target_type": "tech", "target_value": 1, "reward_xp": 1, "reward_medal": None},
     {"title": "مأموریت فرعی: ساخت", "description": "۱ بار /craft یا استفاده از مواد.", "mission_type": "side", "target_type": "craft", "target_value": 1, "reward_xp": 1, "reward_medal": None},
     {"title": "مأموریت چندنفره: دوئل گروهی", "description": "در /lootarena یا آرنای باز شرکت کن.", "mission_type": "multi", "target_type": "arena", "target_value": 1, "reward_xp": 3, "reward_medal": None},
     {"title": "مأموریت چندنفره: دوئل دو نفره", "description": "با یک نفر /duel کن.", "mission_type": "multi", "target_type": "duels", "target_value": 1, "reward_xp": 2, "reward_medal": None},
-    {"title": "مأموریت فرقه‌ای: عضوگیری", "description": "عضو فرقه شو یا دعوت کن /sects.", "mission_type": "sect", "target_type": "sect", "target_value": 1, "reward_xp": 2, "reward_medal": None},
-    {"title": "مأموریت فرقه‌ای: مشارکت", "description": "امتیاز مشارکت فرقه بگیر (دوئل/تذهیب).", "mission_type": "sect", "target_type": "contrib", "target_value": 1, "reward_xp": 2, "reward_medal": None},
+    {"title": "مأموریت فرقهای: عضوگیری", "description": "عضو فرقه شو یا دعوت کن /sects.", "mission_type": "sect", "target_type": "sect", "target_value": 1, "reward_xp": 2, "reward_medal": None},
+    {"title": "مأموریت فرقهای: مشارکت", "description": "امتیاز مشارکت فرقه بگیر (دوئل/تذهیب).", "mission_type": "sect", "target_type": "contrib", "target_value": 1, "reward_xp": 2, "reward_medal": None},
     {"title": "حمله به فرقه دشمن", "description": "هدف جهانی: در جنگ قلمرو فرقه شرکت کن.", "mission_type": "global", "target_type": "sectwar", "target_value": 1, "reward_xp": 6, "reward_medal": "تهاجم"},
 ]
 
@@ -40,7 +40,7 @@ DAILY_MISSIONS = [
         "reward_medal": None,
     },
     {
-        "title": "جمع‌آوری چی",
+        "title": "جمعآوری چی",
         "description": "۳ بار «تذهیب کردن» یا «جمع آوری چی» بگو.",
         "mission_type": "daily",
         "target_type": "gather",
@@ -88,8 +88,8 @@ DAILY_MISSIONS = [
 
 
 async def ensure_daily_missions(session):
-    # حذف مأموریت‌های منسوخ
-    for bad in ("نابودی نوادگان ضحاک", "عکس‌های سیاه‌وسفید منظره"):
+    # حذف مأموریتهای منسوخ
+    for bad in ("نابودی نوادگان ضحاک", "عکسهای سیاهوسفید منظره"):
         try:
             r = await session.execute(select(Mission).where(Mission.title == bad))
             for row in r.scalars().all():
@@ -118,7 +118,7 @@ async def ensure_daily_missions(session):
 
 
 async def auto_accept_dailies(session, user: User) -> list[str]:
-    """مأموریت‌های روزانه را خودکار فعال کن"""
+    """مأموریتهای روزانه را خودکار فعال کن"""
     msgs = []
     await ensure_daily_missions(session)
     result = await session.execute(
@@ -140,7 +140,7 @@ async def auto_accept_dailies(session, user: User) -> list[str]:
 
 
 async def auto_finish_ready(session, user: User) -> list[str]:
-    """مأموریت‌هایی که پیشرفت‌شان کامل است را خودکار تمام کن و پاداش بده"""
+    """مأموریتهایی که پیشرفتشان کامل است را خودکار تمام کن و پاداش بده"""
     msgs = []
     result = await session.execute(
         select(UserMission).where(
@@ -171,7 +171,7 @@ async def auto_finish_ready(session, user: User) -> list[str]:
 
 
 async def count_completed_today(session, user_id: int) -> int:
-    """تعداد مأموریت‌های تکمیل‌شده امروز"""
+    """تعداد مأموریتهای تکمیلشده امروز"""
     today_start = datetime.combine(date.today(), datetime.min.time())
     result = await session.execute(
         select(func.count()).select_from(UserMission).where(
@@ -184,7 +184,7 @@ async def count_completed_today(session, user_id: int) -> int:
 
 
 async def count_taken_today(session, user_id: int) -> int:
-    """تعداد مأموریت‌هایی که امروز گرفته (فعال یا کامل)"""
+    """تعداد مأموریتهایی که امروز گرفته (فعال یا کامل)"""
     today_start = datetime.combine(date.today(), datetime.min.time())
     # UserMission may not have started_at - use completed or all active taken
     # Fallback: count all user missions created conceptually via completed_at or id
@@ -220,8 +220,8 @@ async def cmd_missions(message: Message):
         taken = await count_taken_today(session, user.id)
 
     text = (
-        "🎯 <b>مأموریت‌های روزانه</b>\n\n"
-        f"امروز تکمیل‌شده: <b>{done}/3</b>\n"
+        "🎯 <b>مأموریتهای روزانه</b>\n\n"
+        f"امروز تکمیلشده: <b>{done}/3</b>\n"
         f"⚠️ حداکثر ۳ مأموریت در روز.\n"
         f"اگر بعد از ۳ تا، مأموریت چهارمی بگیری…\n\n"
     )
@@ -262,13 +262,13 @@ async def take_mission(callback: CallbackQuery):
         completed = await count_completed_today(session, user.id)
         taken = await count_taken_today(session, user.id)
 
-        # قانون: بعد از ۳ مأموریت (تکمیل‌شده)، انتخاب چهارمی = مرگ و پاکی
+        # قانون: بعد از ۳ مأموریت (تکمیلشده)، انتخاب چهارمی = مرگ و پاکی
         if completed >= 3 or taken >= 3:
             user.is_dead = True
             await session.commit()
             kill_msg = (
                 "💀 <b>شماها زیادی ضعیف بودید برا همین ادمین کشتتون</b>\n\n"
-                "اکانت شما برای همیشه پاک می‌شود.\n"
+                "اکانت شما برای همیشه پاک میشود.\n"
                 "از اول شروع کنید.\n\n"
                 "در حال حذف دائمی اکانت…"
             )
@@ -282,7 +282,7 @@ async def take_mission(callback: CallbackQuery):
             await callback.answer(tr(callback.from_user.id, "اکانت پاک شد."), show_alert=True)
             return
 
-        # هر مأموریت فقط یک‌بار در روز
+        # هر مأموریت فقط یکبار در روز
         from datetime import date, datetime
         today_start = datetime.combine(date.today(), datetime.min.time())
         done_today = await session.execute(
@@ -320,12 +320,12 @@ async def take_mission(callback: CallbackQuery):
         await callback.message.edit_text(
             f"✅ مأموریت «{mission.title}» فعال شد!\n"
             f"پیشرفت: 0 / {mission.target_value}\n"
-            f"امروز: {completed}/3 تکمیل‌شده"
+            f"امروز: {completed}/3 تکمیلشده"
         )
         await callback.answer()
 
 
-@router.message(Command("completemission", "تموم‌ماموریت"))
+@router.message(Command("completemission", "تمومماموریت"))
 async def cmd_complete_mission(message: Message):
     """تکمیل دستی مأموریت فعال اول (برای تست و سادگی)"""
     async with async_session() as session:

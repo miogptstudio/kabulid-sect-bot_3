@@ -38,7 +38,7 @@ async def cmd_profile(message: Message):
         if user.is_dead:
             status = "💀 مرده — /afterdeath"
         elif getattr(user, "is_spirit_raiser", False):
-            status = "👻 پرورش‌دهنده روح"
+            status = "👻 پرورشدهنده روح"
         else:
             status = "زنده"
 
@@ -53,7 +53,7 @@ async def cmd_profile(message: Message):
             f"💨 سرعت: <b>{pw.get('speed', 10)}</b> | 🛡️ دفاع: <b>{pw.get('defense', 10)}</b>\n"
             f"🌀 جاخالی: <b>{pw.get('dodge', 0):.1f}%</b> | 🧱 بلاک: <b>{pw.get('block', 0):.1f}%</b>\n"
             f"👻 روح رزمی: +{pw.get('spirit', 0)}\n"
-            f"⏳ عمر باقی‌مانده: <b>{lifespan}</b>\n"
+            f"⏳ عمر باقیمانده: <b>{lifespan}</b>\n"
             f"🧬 باکرگی: {virgin}\n"
             f"وضعیت: {status}\n"
         )
@@ -76,7 +76,7 @@ async def cmd_profile(message: Message):
             f"📊 آمار:\n"
             f"├ برد: {user.wins}\n"
             f"├ باخت: {user.losses}\n"
-            f"├ دوئل‌ها: {user.total_duels}\n"
+            f"├ دوئلها: {user.total_duels}\n"
             f"├ درصد برد: {win_rate}%\n"
             f"├ برد متوالی: {user.win_streak}\n"
             f"└ باخت متوالی: {user.loss_streak}\n"

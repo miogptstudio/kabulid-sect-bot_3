@@ -16,8 +16,8 @@ class AutoReplyMiddleware(BaseMiddleware):
 
         msg_id = event.message_id
         bot = data.get("bot")
-        # به‌جای تغییر event.answer از bot.send_message با reply استفاده می‌کنیم
-        # با نگه‌داشتن answer اصلی و پچ امن
+        # بهجای تغییر event.answer از bot.send_message با reply استفاده میکنیم
+        # با نگهداشتن answer اصلی و پچ امن
         orig = Message.answer
 
         async def bound_answer(self_msg, text=None, **kwargs):

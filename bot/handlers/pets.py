@@ -38,7 +38,7 @@ async def cmd_pets(message: Message):
 
     text = (
         "🐾 <b>حیوانات تو</b>\n"
-        f"🏰 کاخ رام‌شدگان: <b>{len(pets)}</b> / <b>{slots}</b> (سقف {MAX_PET_SLOTS})\n"
+        f"🏰 کاخ رامشدگان: <b>{len(pets)}</b> / <b>{slots}</b> (سقف {MAX_PET_SLOTS})\n"
     )
     if last_hunt:
         nxt = last_hunt + timedelta(hours=HUNT_COOLDOWN_HOURS)
@@ -48,9 +48,9 @@ async def cmd_pets(message: Message):
             m = left // 60
             text += f"⏰ شکار بعدی تا {m} دقیقه دیگر\n"
         else:
-            text += "✅ می‌توانی شکار کنی\n"
+            text += "✅ میتوانی شکار کنی\n"
     else:
-        text += "✅ می‌توانی شکار کنی\n"
+        text += "✅ میتوانی شکار کنی\n"
     text += "\n"
 
     if not pets:
@@ -65,9 +65,9 @@ async def cmd_pets(message: Message):
 
     text += (
         "\n<b>دستورات:</b>\n"
-        "/hunt — شکار (هر ۱ ساعت یک‌بار)\n"
+        "/hunt — شکار (هر ۱ ساعت یکبار)\n"
         "/buypet — خرید خونگی (۱۰۰ سکه یا معادل)\n"
-        "/petpalace — وضعیت و ارتقای کاخ رام‌شدگان\n"
+        "/petpalace — وضعیت و ارتقای کاخ رامشدگان\n"
         "/upgradepetpalace — ارتقای ظرفیت (+5)\n"
         "/petinfo شماره | /feedpet | /trainpet | /renamepet\n"
         "/sellpet | /giftpet | /releasepet"
@@ -75,7 +75,7 @@ async def cmd_pets(message: Message):
     await message.answer(text)
 
 
-@router.message(Command("petpalace", "کاخ‌رام", "کاخ‌رام‌شدگان"))
+@router.message(Command("petpalace", "کاخرام", "کاخرامشدگان"))
 async def cmd_pet_palace(message: Message):
     async with async_session() as session:
         user = await get_or_create_user(
@@ -88,18 +88,18 @@ async def cmd_pet_palace(message: Message):
         pets = await get_user_pets(session, user.id)
         slots = pet_capacity(user)
     await message.answer(
-        "🏰 <b>کاخ رام‌شدگان</b>\n\n"
+        "🏰 <b>کاخ رامشدگان</b>\n\n"
         f"ظرفیت فعلی: <b>{slots}</b>\n"
-        f"اشغال‌شده: <b>{len(pets)}</b>\n"
+        f"اشغالشده: <b>{len(pets)}</b>\n"
         f"سقف نهایی: <b>{MAX_PET_SLOTS}</b>\n\n"
         f"هر ارتقا: +{PALACE_UPGRADE_SLOTS} ظرفیت\n"
         f"هزینه هر ارتقا: {PALACE_UPGRADE_COST} سکه (یا معادل ارز بالاتر)\n\n"
         "/upgradepetpalace — ارتقا\n"
-        "شکار: هر ساعت فقط یک‌بار (/hunt)"
+        "شکار: هر ساعت فقط یکبار (/hunt)"
     )
 
 
-@router.message(Command("upgradepetpalace", "ارتقای‌کاخ", "ارتقاءکاخ"))
+@router.message(Command("upgradepetpalace", "ارتقایکاخ", "ارتقاءکاخ"))
 async def cmd_upgrade_palace(message: Message):
     async with async_session() as session:
         user = await get_or_create_user(
@@ -119,13 +119,13 @@ async def cmd_upgrade_palace(message: Message):
         await session.commit()
         new_s = user.pet_slots
     await message.answer(
-        f"✅ کاخ رام‌شدگان ارتقا یافت!\n"
+        f"✅ کاخ رامشدگان ارتقا یافت!\n"
         f"ظرفیت: <b>{new_s}</b> / {MAX_PET_SLOTS}\n"
         f"{pay_msg}"
     )
 
 
-@router.message(Command("petinfo", "اطلاعات‌پت"))
+@router.message(Command("petinfo", "اطلاعاتپت"))
 async def cmd_petinfo(message: Message):
     parts = (message.text or "").split()
     if len(parts) < 2:
@@ -160,7 +160,7 @@ async def cmd_petinfo(message: Message):
 
 @router.message(Command("hunt", "شکار"))
 async def cmd_hunt(message: Message):
-    """شکار حیوان وحشی — کول‌داون ۱ ساعت"""
+    """شکار حیوان وحشی — کولداون ۱ ساعت"""
     now = datetime.utcnow()
     async with async_session() as session:
         user = await get_or_create_user(
@@ -168,7 +168,7 @@ async def cmd_hunt(message: Message):
             message.from_user.full_name, message.from_user.username
         )
         if getattr(user, "is_dead", False):
-            await message.answer(tr(message.from_user.id, "مرده‌ای. /afterdeath"))
+            await message.answer(tr(message.from_user.id, "مردهای. /afterdeath"))
             return
 
         last = getattr(user, "last_hunt_at", None)
@@ -308,7 +308,7 @@ async def cmd_buy_pet(message: Message):
     await message.answer(msg)
 
 
-@router.message(Command("feedpet", "غذای‌پت", "غذاپت"))
+@router.message(Command("feedpet", "غذایپت", "غذاپت"))
 async def cmd_feed_pet(message: Message):
     parts = (message.text or "").split()
     if len(parts) < 2:
@@ -332,7 +332,7 @@ async def cmd_feed_pet(message: Message):
     await message.answer(msg)
 
 
-@router.message(Command("trainpet", "آموزش‌پت", "آموزشپت"))
+@router.message(Command("trainpet", "آموزشپت", "آموزشپت"))
 async def cmd_train_pet(message: Message):
     parts = (message.text or "").split()
     if len(parts) < 2:
@@ -356,11 +356,11 @@ async def cmd_train_pet(message: Message):
     await message.answer(msg)
 
 
-@router.message(Command("renamepet", "نام‌پت"))
+@router.message(Command("renamepet", "نامپت"))
 async def cmd_rename_pet(message: Message):
     parts = (message.text or "").split(maxsplit=2)
     if len(parts) < 3:
-        await message.answer(tr(message.from_user.id, "فرمت: /renamepet شماره نام‌جدید"))
+        await message.answer(tr(message.from_user.id, "فرمت: /renamepet شماره نامجدید"))
         return
     try:
         idx = int(parts[1]) - 1
@@ -385,7 +385,7 @@ async def cmd_rename_pet(message: Message):
     await message.answer(f"✅ نام تغییر کرد: <b>{new_name}</b>")
 
 
-@router.message(Command("sellpet", "فروش‌حیوان", "فروشپت"))
+@router.message(Command("sellpet", "فروشحیوان", "فروشپت"))
 async def cmd_sell_pet(message: Message):
     parts = (message.text or "").split()
     if len(parts) < 2:
@@ -415,7 +415,7 @@ async def cmd_sell_pet(message: Message):
     await message.answer(f"💰 «{name}» فروخته شد! +{price} سکه")
 
 
-@router.message(Command("giftpet", "هدیه‌حیوان", "هدیهپت"))
+@router.message(Command("giftpet", "هدیهحیوان", "هدیهپت"))
 async def cmd_gift_pet(message: Message):
     if not message.reply_to_message:
         await message.answer(tr(message.from_user.id, "روی پیام گیرنده ریپلای کن:\n/giftpet شماره"))
@@ -453,7 +453,7 @@ async def cmd_gift_pet(message: Message):
     await message.answer(f"🎁 «{name}» به {target.full_name} هدیه شد.")
 
 
-@router.message(Command("releasepet", "آزاد‌پت", "رهاپت"))
+@router.message(Command("releasepet", "آزادپت", "رهاپت"))
 async def cmd_release_pet(message: Message):
     parts = (message.text or "").split()
     if len(parts) < 2:
@@ -480,7 +480,7 @@ async def cmd_release_pet(message: Message):
     await message.answer(f"🕊️ «{name}» آزاد شد.")
 
 
-@router.message(Command("wallet", "کیف‌پول", "سکه"))
+@router.message(Command("wallet", "کیفپول", "سکه"))
 async def cmd_wallet(message: Message):
     async with async_session() as session:
         user = await get_or_create_user(
@@ -571,7 +571,7 @@ async def cmd_daily_coin(message: Message):
 
 
 
-@router.message(Command("exchangeup", "ارتقای‌ارز"))
+@router.message(Command("exchangeup", "ارتقایارز"))
 async def cmd_exchange_up(message: Message):
     parts = (message.text or "").split()
     if len(parts) < 2:
@@ -591,13 +591,13 @@ async def cmd_exchange_up(message: Message):
     await message.answer(msg)
 
 
-@router.message(Command("exchangedown", "تبدیل‌پایین", "تبدیل_پایین", "نزول‌ارز"))
+@router.message(Command("exchangedown", "تبدیلپایین", "تبدیل_پایین", "نزولارز"))
 async def cmd_exchange_down(message: Message):
-    """تبدیل ارز بالاتر به پایین‌تر"""
+    """تبدیل ارز بالاتر به پایینتر"""
     parts = (message.text or "").split()
     if len(parts) < 2:
         await message.answer(
-            "⬇️ <b>تبدیل به ارز پایین‌تر</b>" + chr(10)
+            "⬇️ <b>تبدیل به ارز پایینتر</b>" + chr(10)
             + "/exchangedown spirit [n] — روحی → سکه (×1000)" + chr(10)
             + "/exchangedown heavenly [n] — بهشتی → روحی (×1000)" + chr(10)
             + "/exchangedown celestial [n] — آسمانی → بهشتی (×1000)" + chr(10)

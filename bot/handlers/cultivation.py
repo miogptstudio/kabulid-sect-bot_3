@@ -38,21 +38,21 @@ class GatherQiFilter(Filter):
         return text in GATHER_PHRASES or text.lower() in [p.lower() for p in GATHER_PHRASES]
 
 
-@router.message(Command("cultivationrules", "قوانین‌تذهیب", "قوانین_تذهیب", "basiccult", "قوانینتذهیب"))
+@router.message(Command("cultivationrules", "قوانینتذهیب", "قوانین_تذهیب", "basiccult", "قوانینتذهیب"))
 async def cmd_cultivation_rules(message: Message):
     text = (
-        "📜 <b>پایه‌ای‌ترین قوانین تذهیب</b>\n\n"
+        "📜 <b>پایهایترین قوانین تذهیب</b>\n\n"
         "1️⃣ قبل از شروع، جنسیت را با /gender مشخص کن.\n"
         "2️⃣ با /cultivation وضعیت قلمرو، مرحله، انرژی و ریشه را ببین.\n"
-        "3️⃣ با /learntech تکنیک پایه را یاد بگیر؛ با /techniques تکنیک‌ها را مدیریت کن.\n"
-        "4️⃣ /gather یا /meditate برای جمع‌کردن انرژی استفاده می‌شود و محدودیت زمانی دارد.\n"
-        "5️⃣ وقتی انرژی لازم مرحله کامل شود، سیستم در صورت رسیدن به شرط لازم، مرحله/قلمرو را ارتقا می‌دهد.\n"
-        "6️⃣ هر قلمرو ۱۰ مرحله دارد؛ بعد از مرحله ۱۰، در صورت کافی‌بودن شرایط، به قلمرو بعدی می‌روی.\n"
-        "7️⃣ ریشه معنوی، تکنیک، نژاد، مسیر تذهیب، بدن، ساختمان‌ها و بعضی تجهیزات می‌توانند بازده تذهیب را تغییر دهند.\n"
-        "8️⃣ قلمروهای بالاتر به انرژی بسیار بیشتری نیاز دارند؛ در مراحل بسیار بالا عدد انرژی می‌تواند خیلی بزرگ شود.\n"
+        "3️⃣ با /learntech تکنیک پایه را یاد بگیر؛ با /techniques تکنیکها را مدیریت کن.\n"
+        "4️⃣ /gather یا /meditate برای جمعکردن انرژی استفاده میشود و محدودیت زمانی دارد.\n"
+        "5️⃣ وقتی انرژی لازم مرحله کامل شود، سیستم در صورت رسیدن به شرط لازم، مرحله/قلمرو را ارتقا میدهد.\n"
+        "6️⃣ هر قلمرو ۱۰ مرحله دارد؛ بعد از مرحله ۱۰، در صورت کافیبودن شرایط، به قلمرو بعدی میروی.\n"
+        "7️⃣ ریشه معنوی، تکنیک، نژاد، مسیر تذهیب، بدن، ساختمانها و بعضی تجهیزات میتوانند بازده تذهیب را تغییر دهند.\n"
+        "8️⃣ قلمروهای بالاتر به انرژی بسیار بیشتری نیاز دارند؛ در مراحل بسیار بالا عدد انرژی میتواند خیلی بزرگ شود.\n"
         "9️⃣ /afk و /afkclaim برای تذهیب خودکار هستند؛ قبل از استفاده شرایط و زمان را بررسی کن.\n"
         "🔟 /learnforbidden یک مسیر ممنوعه است و ممکن است پیامدهای دائمی داشته باشد.\n\n"
-        "⚠️ انتقال مستقیم قلمرو و مرحله فقط توسط سازنده ربات انجام می‌شود: /transfercult\n"
+        "⚠️ انتقال مستقیم قلمرو و مرحله فقط توسط سازنده ربات انجام میشود: /transfercult\n"
         "⚠️ برای دیدن فهرست قلمروها: /realms\n"
         "⚠️ برای مسیرهای قدرت/سرعت/دفاع: /cultpath\n"
     )
@@ -95,7 +95,7 @@ async def cmd_cultivation(message: Message):
         await message.answer(f"خطا در تذهیب: {type(e).__name__}: {e}")
 
 
-@router.message(Command("techniques", "تکنیک‌ها", "تکنیک"))
+@router.message(Command("techniques", "تکنیکها", "تکنیک"))
 async def cmd_techniques(message: Message):
     async with async_session() as session:
         await ensure_default_techniques(session)
@@ -115,7 +115,7 @@ async def cmd_techniques(message: Message):
         return
     
     builder = InlineKeyboardBuilder()
-    text = "📜 <b>تکنیک‌های تو</b>\n\n"
+    text = "📜 <b>تکنیکهای تو</b>\n\n"
     for ut, tech in rows:
         active = " ✅ فعال" if ut.is_active else ""
         text += f"• {tech.name} ({tech.grade}){active}\n"
@@ -138,7 +138,7 @@ async def activate_tech(callback: CallbackQuery):
     await callback.answer(msg, show_alert=True)
 
 
-@router.message(Command("learnforbidden", "پرورش‌ممنوعه", "ممنوعه"))
+@router.message(Command("learnforbidden", "پرورشممنوعه", "ممنوعه"))
 async def cmd_learn_forbidden(message: Message):
     """یادگیری تکنیک پرورش ممنوعه — غیرقابل برگشت"""
     async with async_session() as session:
@@ -177,16 +177,16 @@ async def cmd_learn_starter(message: Message):
             )
             tech = result.scalar_one_or_none()
         if not tech:
-            await message.answer(tr(message.from_user.id, "تکنیک پایه‌ای پیدا نشد. یک‌بار /cultivation بزن و دوباره /learntech"))
+            await message.answer(tr(message.from_user.id, "تکنیک پایهای پیدا نشد. یکبار /cultivation بزن و دوباره /learntech"))
             return
         msg = await learn_technique(session, user.id, tech)
     await message.answer(msg)
 
 
-@router.message(Command("givetech", "انتقال‌تکنیک"))
+@router.message(Command("givetech", "انتقالتکنیک"))
 async def cmd_give_tech(message: Message):
     if not message.reply_to_message:
-        await message.answer(tr(message.from_user.id, "روی پیام کسی که می‌خوای تکنیک بدی ریپلای کن و /givetech بزن."))
+        await message.answer(tr(message.from_user.id, "روی پیام کسی که میخوای تکنیک بدی ریپلای کن و /givetech بزن."))
         return
     
     async with async_session() as session:
@@ -211,7 +211,7 @@ async def cmd_give_tech(message: Message):
         )
 
 
-@router.message(Command("meditate", "مدیتیت", "gather", "qi", "جمع", "جمع‌آوری"))
+@router.message(Command("meditate", "مدیتیت", "gather", "qi", "جمع", "جمعآوری"))
 async def cmd_meditate(message: Message):
     await do_gather(message, amount=5000)
 
@@ -243,7 +243,7 @@ async def do_gather(message: Message, amount: int = 5000):
             )
             return
         if user.is_dead:
-            await message.answer(tr(message.from_user.id, "💀 مرده‌ای. /afterdeath"))
+            await message.answer(tr(message.from_user.id, "💀 مردهای. /afterdeath"))
             return
         try:
             from services.prison import check_prison_block
@@ -291,7 +291,7 @@ async def do_gather(message: Message, amount: int = 5000):
             absorbed = result.get("gained") or amount
             text = (
                 "🌀 <b>تزکیه / جمع چی</b>" + chr(10)
-                + f"چی جذب‌شده این بار: <b>+{absorbed}</b>" + chr(10) + chr(10)
+                + f"چی جذبشده این بار: <b>+{absorbed}</b>" + chr(10) + chr(10)
                 + f"ریشه: <b>{root2}</b>" + chr(10)
                 + f"قلمرو: <b>{realm2}</b> | مرحله: {stage2}" + chr(10)
                 + f"انرژی: <b>{cur2}</b> / <b>{need2}</b>" + chr(10)
@@ -333,7 +333,7 @@ async def cmd_solo(message: Message):
     user_id = message.from_user.id
     now = datetime.utcnow()
     
-    # پاک کردن زمان‌های قدیمی‌تر از ۱ ساعت
+    # پاک کردن زمانهای قدیمیتر از ۱ ساعت
     times = _solo_times[user_id]
     while times and (now - times[0]).total_seconds() > 3600:
         times.popleft()
@@ -345,7 +345,7 @@ async def cmd_solo(message: Message):
         )
         
         if user.is_dead:
-            await message.answer(tr(message.from_user.id, "💀 تو مرده‌ای و نمی‌تونی تذهیب کنی."))
+            await message.answer(tr(message.from_user.id, "💀 تو مردهای و نمیتونی تذهیب کنی."))
             return
         
         if user.gender == "نامشخص":
@@ -359,7 +359,7 @@ async def cmd_solo(message: Message):
         result = await add_energy(session, user.id, 12)
         user.solo_count = (getattr(user, "solo_count", 0) or 0) + 1
 
-        # ۳ بار اول در ساعت: بدون کاهش عمر | از بار چهارم عمر کم می‌شود
+        # ۳ بار اول در ساعت: بدون کاهش عمر | از بار چهارم عمر کم میشود
         if count_this_hour < 3:
             text = (
                 "🔥 خودارضایی (+انرژی)" + chr(10)
@@ -378,7 +378,7 @@ async def cmd_solo(message: Message):
                 if user.lifespan <= 0:
                     user.is_dead = True
             text = (
-                "🔥 خودارضایی — زیاده‌روی (بیش از ۳ بار در ساعت)" + chr(10)
+                "🔥 خودارضایی — زیادهروی (بیش از ۳ بار در ساعت)" + chr(10)
                 + f"−{cost}% عمر" + chr(10)
             )
             if hasattr(user, "lifespan"):
@@ -401,7 +401,7 @@ async def cmd_solo(message: Message):
                     user.is_dead = True
                     text += "💀 یین به ۱۰۰٪ رسید. /afterdeath" + chr(10)
 
-        # خودارضایی باکرگی را از بین نمی‌برد
+        # خودارضایی باکرگی را از بین نمیبرد
 
         await session.commit()
         
@@ -446,9 +446,9 @@ async def cmd_body_status(message: Message):
 from datetime import datetime, timedelta, timedelta
 from bot.config import GATHER_ENERGY_AMOUNT
 
-@router.message(Command("afk", "تذهیب‌خودکار", "AFK"))
+@router.message(Command("afk", "تذهیبخودکار", "AFK"))
 async def cmd_afk(message: Message):
-    """تذهیب خودکار نیم‌ساعته — از بیداری ریشه تا پایه"""
+    """تذهیب خودکار نیمساعته — از بیداری ریشه تا پایه"""
     async with async_session() as session:
         user = await get_or_create_user(
             session, message.from_user.id,
@@ -472,7 +472,7 @@ async def cmd_afk(message: Message):
     )
 
 
-@router.message(Command("afkclaim", "دریافت‌افک"))
+@router.message(Command("afkclaim", "دریافتافک"))
 async def cmd_afk_claim(message: Message):
     async with async_session() as session:
         user = await get_or_create_user(
@@ -512,7 +512,7 @@ async def cmd_afk_claim(message: Message):
         await message.answer(text)
 
 
-@router.message(Command("body", "بدن", "نوع‌بدن"))
+@router.message(Command("body", "بدن", "نوعبدن"))
 async def cmd_body(message: Message):
     from services.cultivation import BODY_TYPES, BODY_BONUS, get_or_create_cultivation
     parts = (message.text or "").split(maxsplit=1)
@@ -527,7 +527,7 @@ async def cmd_body(message: Message):
             lines = [f"بدن فعلی: <b>{cur}</b>\n", "انواع:"]
             for b in BODY_TYPES:
                 lines.append(f"• {b} (×{BODY_BONUS.get(b, 1)})")
-            lines.append("\n/body نام‌بدن — انتخاب (یک‌بار رایگان بدن معمولی؛ بقیه با سنگ)")
+            lines.append("\n/body نامبدن — انتخاب (یکبار رایگان بدن معمولی؛ بقیه با سنگ)")
             await message.answer("\n".join(lines))
             return
         name = parts[1].strip()
@@ -538,10 +538,10 @@ async def cmd_body(message: Message):
             from services.economy import get_or_create_wallet
             w = await get_or_create_wallet(session, user.id)
             cost = {"بدن چوب زمینی": 50, "بدن بهشتی": 5, "بدن اژدهای اعظم": 20,
-                    "بدن خدایان": 50, "بدن خدای غبطه‌انگیز": 1, "بدن نورانی": 10,
+                    "بدن خدایان": 50, "بدن خدای غبطهانگیز": 1, "بدن نورانی": 10,
                     "بدن تاریک": 10, "بدن روحی": 15}.get(name, 10)
             # خدای غبطه با سنگ خدا، بقیه بهشتی یا روحی
-            if name == "بدن خدای غبطه‌انگیز":
+            if name == "بدن خدای غبطهانگیز":
                 if (w.god_stones or 0) < 1:
                     await message.answer(tr(message.from_user.id, "نیاز ۱ سنگ خدا"))
                     return
@@ -561,19 +561,19 @@ async def cmd_body(message: Message):
         await message.answer(f"✅ بدن «{name}» فعال شد. (ضریب تذهیب ×{BODY_BONUS.get(name, 1)})")
 
 # ——— پرورش بدن ———
-@router.message(Command("bodytechs", "تکنیک‌بدن", "bodytechniques"))
+@router.message(Command("bodytechs", "تکنیکبدن", "bodytechniques"))
 async def cmd_body_techs(message: Message):
     from services import body_cult as bc
     await message.answer(bc.list_techs())
 
 
-@router.message(Command("mybody", "بدن‌من", "وضعیت‌بدن"))
+@router.message(Command("mybody", "بدنمن", "وضعیتبدن"))
 async def cmd_my_body(message: Message):
     from services import body_cult as bc
     await message.answer(bc.status(message.from_user.id))
 
 
-@router.message(Command("bodycult", "پرورش‌بدن", "bodytrain"))
+@router.message(Command("bodycult", "پرورشبدن", "bodytrain"))
 async def cmd_body_cult(message: Message):
     from services import body_cult as bc
     from services.cultivation import get_or_create_cultivation
@@ -604,7 +604,7 @@ async def cmd_body_cult(message: Message):
     await message.answer(msg)
 
 
-@router.message(F.text.func(lambda t: bool(t) and (t.strip() in {"پرورش بدن", "پرورش دادن بدن", "بدن پروری", "پرورش‌بدن"} or t.strip().startswith("پرورش "))))
+@router.message(F.text.func(lambda t: bool(t) and (t.strip() in {"پرورش بدن", "پرورش دادن بدن", "بدن پروری", "پرورشبدن"} or t.strip().startswith("پرورش "))))
 async def text_body_train(message: Message):
     await cmd_body_cult(message)
 
@@ -612,7 +612,7 @@ async def text_body_train(message: Message):
 
 
 # --- تکنیک مخفی: کنترل پوچی اطراف ---
-@router.message(Command("voidtech", "تکنیک‌پوچی", "کنترل‌پوچی"))
+@router.message(Command("voidtech", "تکنیکپوچی", "کنترلپوچی"))
 async def cmd_void_shop(message: Message):
     from services.secret_tech import shop_line
     from aiogram.utils.keyboard import InlineKeyboardBuilder
@@ -621,7 +621,7 @@ async def cmd_void_shop(message: Message):
     await message.answer(shop_line(), reply_markup=builder.as_markup())
 
 
-@router.message(Command("buyvoidtech", "خرید‌پوچی"))
+@router.message(Command("buyvoidtech", "خریدپوچی"))
 async def cmd_buy_void(message: Message):
     async with async_session() as session:
         user = await get_or_create_user(
@@ -646,26 +646,26 @@ async def cmd_buy_void(message: Message):
             await message.answer(msg)
 
 
-@router.message(Command("showvoidtech", "متن‌پوچی"))
+@router.message(Command("showvoidtech", "متنپوچی"))
 async def cmd_show_void(message: Message):
     from services.secret_tech import get_secret_text, is_owner
     if not is_owner(message.from_user.id):
-        await message.answer("این تکنیک را نخریده‌ای.")
+        await message.answer("این تکنیک را نخریدهای.")
         return
     text = get_secret_text(message.from_user.id)
     if not text:
         await message.answer("متنی برای نمایش نیست.")
         return
-    # فقط در چت خصوصی واضح‌تر است؛ در گروه هم فقط به این پیام جواب می‌دهد
+    # فقط در چت خصوصی واضحتر است؛ در گروه هم فقط به این پیام جواب میدهد
     await message.answer(text)
 
 
-@router.message(Command("learnvoidtech", "یادگیری‌پوچی"))
+@router.message(Command("learnvoidtech", "یادگیریپوچی"))
 async def cmd_learn_void(message: Message):
     from services.secret_tech import consume_and_learn, has_learned, TECH_NAME
     msg = consume_and_learn(message.from_user.id)
     if has_learned(message.from_user.id):
-        # ثبت در تکنیک‌های کاربر اگر ممکن
+        # ثبت در تکنیکهای کاربر اگر ممکن
         try:
             async with async_session() as session:
                 await ensure_default_techniques(session)
@@ -696,7 +696,7 @@ async def cmd_learn_void(message: Message):
     await message.answer(msg)
 
 
-@router.message(Command("myvoidtech", "وضعیت‌پوچی"))
+@router.message(Command("myvoidtech", "وضعیتپوچی"))
 async def cmd_my_void(message: Message):
     from services.secret_tech import status
     from aiogram.utils.keyboard import InlineKeyboardBuilder
@@ -780,7 +780,7 @@ async def cb_void_learn(callback: CallbackQuery):
     await cmd_learn_void(_M())  # type: ignore
     await callback.answer("انجام شد")
 
-@router.message(F.text.func(lambda t: bool(t) and (t.strip().startswith("پرورش ") or t.strip() in {"پرورش بدن", "پرورش دادن بدن", "بدن پروری", "پرورش‌بدن"})))
+@router.message(F.text.func(lambda t: bool(t) and (t.strip().startswith("پرورش ") or t.strip() in {"پرورش بدن", "پرورش دادن بدن", "بدن پروری", "پرورشبدن"})))
 async def text_body_train(message: Message):
     # اگر «پرورش پوست» و غیره بود، نام تکنیک را به bodycult بده
     t = (message.text or "").strip()
@@ -815,18 +815,18 @@ async def text_body_train(message: Message):
 
 # --- بازگرداندن یانگ / متعادل کردن یین با تمرین ---
 _recover_cd: dict[int, datetime] = {}
-RECOVER_CD_SEC = 180  # هر ۳ دقیقه یک‌بار
+RECOVER_CD_SEC = 180  # هر ۳ دقیقه یکبار
 RECOVER_YANG = 3      # مرد: +یانگ
 RECOVER_YIN = 3       # زن: −یین (به سمت تعادل)
 
 
-@router.message(Command("trainyang", "تمرین‌یانگ", "بازیابی‌یانگ", "recoverys", "recoveryang"))
+@router.message(Command("trainyang", "تمرینیانگ", "بازیابییانگ", "recoverys", "recoveryang"))
 @router.message(F.text.in_({
     "تمرین یانگ", "تمرین کردن", "بازیابی یانگ", "تمرین بدن یانگ",
     "تمرین یین", "متعادل کردن یین", "تمرین تعادل",
 }))
 async def cmd_recover_yang(message: Message):
-    """با تمرین، یانگ از‌دست‌رفته برمی‌گردد (مرد) یا یین اضافه کم می‌شود (زن)"""
+    """با تمرین، یانگ ازدسترفته برمیگردد (مرد) یا یین اضافه کم میشود (زن)"""
     tg = message.from_user.id
     now = datetime.utcnow()
     last = _recover_cd.get(tg)
@@ -841,7 +841,7 @@ async def cmd_recover_yang(message: Message):
             message.from_user.full_name, message.from_user.username,
         )
         if user.is_dead:
-            await message.answer("💀 مرده‌ای. /afterdeath")
+            await message.answer("💀 مردهای. /afterdeath")
             return
         if user.gender == "نامشخص":
             await message.answer("اول /gender")
@@ -873,7 +873,7 @@ async def cmd_recover_yang(message: Message):
                 if user.yin <= 0:
                     lines.append("✅ یین به تعادل برگشت.")
         else:
-            lines.append("جنسیت پشتیبانی نمی‌شود.")
+            lines.append("جنسیت پشتیبانی نمیشود.")
 
         # کمی پرورش بدن هم ثبت کن (اختیاری)
         try:
@@ -895,7 +895,7 @@ async def cmd_recover_yang(message: Message):
         await message.answer(chr(10).join(lines))
 
 
-@router.message(Command("daopath", "مسیرمعنوی", "مسیر‌معنوی", "dao"))
+@router.message(Command("daopath", "مسیرمعنوی", "مسیرمعنوی", "dao"))
 async def cmd_dao_path(message: Message):
     from services.dao_path import get_dao, set_dao, list_help, PATHS
     parts = (message.text or "").split(maxsplit=1)
@@ -909,9 +909,9 @@ async def cmd_dao_path(message: Message):
     await message.answer(set_dao(tg, parts[1].strip()))
 
 
-@router.message(Command("thousandbody", "بدن‌هزارگانه", "bodyx1000"))
+@router.message(Command("thousandbody", "بدنهزارگانه", "bodyx1000"))
 async def cmd_thousand_body(message: Message):
-    """فعال‌سازی تکنیک بدن هزارگانه — کول‌داون ۱۰ ساعت"""
+    """فعالسازی تکنیک بدن هزارگانه — کولداون ۱۰ ساعت"""
     from datetime import datetime, timedelta
     from services.persist import get_dict, save as psave
     from services.cultivation import ensure_default_techniques, get_or_create_cultivation
@@ -927,7 +927,7 @@ async def cmd_thousand_body(message: Message):
             last_dt = datetime.fromisoformat(str(last))
             if now < last_dt + timedelta(hours=10):
                 left = int((last_dt + timedelta(hours=10) - now).total_seconds() // 60)
-                await message.answer(f"⏳ بدن هزارگانه در کول‌داون است. مانده: {left} دقیقه")
+                await message.answer(f"⏳ بدن هزارگانه در کولداون است. مانده: {left} دقیقه")
                 return
         except Exception:
             pass
@@ -941,7 +941,7 @@ async def cmd_thousand_body(message: Message):
         r = await session.execute(sel(CultivationTechnique).where(CultivationTechnique.name == "بدن هزارگانه"))
         tech = r.scalar_one_or_none()
         if not tech:
-            await message.answer("تکنیک هنوز در دیتابیس نیست. /learntech را یک‌بار بزن.")
+            await message.answer("تکنیک هنوز در دیتابیس نیست. /learntech را یکبار بزن.")
             return
         owned = await session.execute(
             sel(UserTechnique).where(UserTechnique.user_id == user.id, UserTechnique.technique_id == tech.id)
@@ -972,11 +972,11 @@ async def cmd_thousand_body(message: Message):
             f"💥 <b>بدن هزارگانه</b> فعال شد!\n"
             f"قدرت بدن: {base} → <b>{st['total_power']}</b> (×۱۰۰۰)\n"
             f"⚔️ +۱۰۰۰ قدرت نبرد\n"
-            f"⏳ کول‌داون بعدی: ۱۰ ساعت"
+            f"⏳ کولداون بعدی: ۱۰ ساعت"
         )
 
 
-@router.message(Command("voidcontrol", "کنترل‌پوچی", "کنترل_پوچی"))
+@router.message(Command("voidcontrol", "کنترلپوچی", "کنترل_پوچی"))
 async def cmd_void_control(message: Message):
     """نمایش معرفی عمومی؛ متن خصوصی تکنیک فقط برای مالک نسخه/یادگیرنده."""
     from services.secret_tech import is_owner, get_secret_text
@@ -985,10 +985,10 @@ async def cmd_void_control(message: Message):
         return
     await message.answer(
         "🕳️ <b>کنترل پوچی اطراف — بخش اول</b>\n\n"
-        "🔒 متن کامل این تکنیک محرمانه است و فقط بعد از خرید نسخه خطی برای مالک نمایش داده می‌شود.\n"
+        "🔒 متن کامل این تکنیک محرمانه است و فقط بعد از خرید نسخه خطی برای مالک نمایش داده میشود.\n"
         "📜 این بخش عمداً ناقص است و ادامهٔ تکنیک فعلاً منتشر نشده.\n\n"
         "🔒 شرط خرید/یادگیری: قلمرو پوچی + ریشه پوچی\n"
         "💠 قیمت فعلی: ۱ سنگ مطلق\n\n"
         "🛒 برای خرید: /buyvoidtech یا از سالن تکنیک وارد شو.\n"
-        "⚠️ در دنیای واقعی، کنترل «پوچی» یا نیروی نامرئی روش علمی اثبات‌شده‌ای ندارد؛ فقط می‌توان از تمرین‌های امن توجه‌آگاهی برای تمرکز استفاده کرد."
+        "⚠️ در دنیای واقعی، کنترل «پوچی» یا نیروی نامرئی روش علمی اثباتشدهای ندارد؛ فقط میتوان از تمرینهای امن توجهآگاهی برای تمرکز استفاده کرد."
     )

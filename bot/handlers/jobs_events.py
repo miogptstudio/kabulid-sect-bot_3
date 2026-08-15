@@ -45,13 +45,13 @@ async def cmd_work(message: Message):
         await message.answer(f"⚠️ خطا در شغل: {type(e).__name__}: {str(e)[:180]}")
 
 
-@router.message(Command("jobs", "شغل‌ها", "اشغال"))
+@router.message(Command("jobs", "شغلها", "اشغال"))
 async def cmd_jobs(message: Message):
 
     await message.answer_photo(FSInputFile(panel_url("job", name=str(message.from_user.id))), caption=jobs_svc.list_jobs())
 
 
-@router.message(Command("job", "انتخاب‌شغل"))
+@router.message(Command("job", "انتخابشغل"))
 async def cmd_job(message: Message):
     parts = (message.text or "").split(maxsplit=1)
     if len(parts) < 2:
@@ -83,7 +83,7 @@ async def cb_set_job(callback: CallbackQuery):
     await callback.answer()
 
 
-@router.message(Command("myjob", "شغل‌من"))
+@router.message(Command("myjob", "شغلمن"))
 async def cmd_myjob(message: Message):
     j = jobs_svc.get_job(message.from_user.id)
     if not j:
@@ -93,49 +93,49 @@ async def cmd_myjob(message: Message):
     await message.answer(f"💼 شغل: <b>{j}</b>\n{info['desc']} (×{info['mult']})")
 
 
-@router.message(Command("changejob", "تعویض‌شغل"))
+@router.message(Command("changejob", "تعویضشغل"))
 async def cmd_change_job(message: Message):
     parts = (message.text or "").split(maxsplit=1)
     if len(parts) < 2:
-        await message.answer(tr(message.from_user.id, "/changejob نام‌شغل"))
+        await message.answer(tr(message.from_user.id, "/changejob نامشغل"))
         return
     await message.answer(jobs_svc.change_job(message.from_user.id, parts[1].strip()))
 
 
-@router.message(Command("declarewar", "اعلام‌جنگ", "جنگ‌قبیله"))
+@router.message(Command("declarewar", "اعلامجنگ", "جنگقبیله"))
 async def cmd_declare_war(message: Message):
     parts = (message.text or "").split(maxsplit=1)
     if len(parts) < 2:
-        await message.answer(tr(message.from_user.id, "/declarewar نام‌قبیله‌هدف"))
+        await message.answer(tr(message.from_user.id, "/declarewar نامقبیلههدف"))
         return
     await message.answer(tw.declare(message.from_user.id, parts[1]))
 
 
-@router.message(Command("tribewar", "وضعیت‌جنگ"))
+@router.message(Command("tribewar", "وضعیتجنگ"))
 async def cmd_tribe_war(message: Message):
     await message.answer(tw.status(message.from_user.id))
 
 
-@router.message(Command("tribewarfight", "نبرد‌قبیله", "جنگ‌نبرد"))
+@router.message(Command("tribewarfight", "نبردقبیله", "جنگنبرد"))
 async def cmd_tribe_fight(message: Message):
     await message.answer(tw.fight(message.from_user.id))
 
 
-@router.message(Command("cyrussale", "فروش‌کوروش"))
+@router.message(Command("cyrussale", "فروشکوروش"))
 async def cmd_cyrus_sale(message: Message):
     await message.answer("⚔️ ایونت فروش شمشیر کوروش پایان یافته و حذف شده است.")
 
 
 
 
-@router.message(Command("buycyrus", "خرید‌کوروش"))
+@router.message(Command("buycyrus", "خریدکوروش"))
 async def cmd_buy_cyrus(message: Message):
     await message.answer("⚔️ ایونت کوروش حذف شده؛ خرید عمومی ممکن نیست.")
 
 
 
 
-@router.message(Command("luckdice", "تاس‌شانس", "شانس"))
+@router.message(Command("luckdice", "تاسشانس", "شانس"))
 async def cmd_luck_dice(message: Message):
     now = datetime.utcnow()
     last = _last_luck.get(message.from_user.id)
@@ -188,9 +188,9 @@ async def cmd_events(message: Message):
     )
 
 
-@router.message(Command("statuscard", "وضعیت", "کارت‌وضعیت"))
+@router.message(Command("statuscard", "وضعیت", "کارتوضعیت"))
 async def cmd_status_card(message: Message):
-    """کارت وضعیت شبیه ربات‌های تزکیه"""
+    """کارت وضعیت شبیه رباتهای تزکیه"""
     async with async_session() as session:
         user = await get_or_create_user(
             session, message.from_user.id,
@@ -232,7 +232,7 @@ async def cmd_mine(message: Message):
     await message.answer(sm.status(message.from_user.id))
 
 
-@router.message(Command("buymine", "خرید‌معدن"))
+@router.message(Command("buymine", "خریدمعدن"))
 async def cmd_buy_mine(message: Message):
     from services import spirit_mine as sm
     async with async_session() as session:
@@ -248,7 +248,7 @@ async def cmd_buy_mine(message: Message):
         await message.answer(msg)
 
 
-@router.message(Command("claimmine", "برداشت‌معدن"))
+@router.message(Command("claimmine", "برداشتمعدن"))
 async def cmd_claim_mine(message: Message):
     from services import spirit_mine as sm
     ok, msg, amount = sm.claim(message.from_user.id)
@@ -264,7 +264,7 @@ async def cmd_claim_mine(message: Message):
     await message.answer(msg)
 
 
-@router.message(Command("upgrademine", "ارتقا‌معدن"))
+@router.message(Command("upgrademine", "ارتقامعدن"))
 async def cmd_upgrade_mine(message: Message):
     from services import spirit_mine as sm
     async with async_session() as session:
@@ -294,13 +294,13 @@ except NameError:
     router = _R()
 
 
-@router.message(Command("cultbuilding", "ساختمان‌تزکیه", "تزکیه‌خانه"))
+@router.message(Command("cultbuilding", "ساختمانتزکیه", "تزکیهخانه"))
 async def cmd_cult_building(message: Message):
     from services.cult_building import status
     await message.answer(status(message.from_user.id))
 
 
-@router.message(Command("upgradecultbuilding", "ارتقا‌تزکیه"))
+@router.message(Command("upgradecultbuilding", "ارتقاتزکیه"))
 async def cmd_up_cult_building(message: Message):
     async with async_session() as session:
         user = await get_or_create_user(
@@ -326,7 +326,7 @@ async def cmd_up_cult_building(message: Message):
     await message.answer(msg)
 
 
-@router.message(Command("calamitystatus", "وضعیت‌مصیبت"))
+@router.message(Command("calamitystatus", "وضعیتمصیبت"))
 async def cmd_calamity(message: Message):
     from services.sect_calamity import status_text, tick_calamity
     async with async_session() as session:
@@ -337,7 +337,7 @@ async def cmd_calamity(message: Message):
     await message.answer(text)
 
 
-@router.message(Command("protectsect", "محافظت‌فرقه"))
+@router.message(Command("protectsect", "محافظتفرقه"))
 async def cmd_protect_sect(message: Message):
     if message.from_user.id not in ADMIN_IDS:
         await message.answer("فقط ادمین.")
@@ -351,25 +351,25 @@ async def cmd_protect_sect(message: Message):
 
 
 
-@router.message(Command("knowledge", "دانش", "statscombat", "نرخ‌نبرد"))
+@router.message(Command("knowledge", "دانش", "statscombat", "نرخنبرد"))
 async def cmd_knowledge(message: Message):
     from services.knowledge import status
     await message.answer(status(message.from_user.id))
 
 
-@router.message(Command("readbook", "کتاب‌خواندن", "خواندن‌کتاب"))
+@router.message(Command("readbook", "کتابخواندن", "خواندنکتاب"))
 async def cmd_readbook(message: Message):
     from services.knowledge import read_book
     await message.answer(read_book(message.from_user.id))
 
 
-@router.message(Command("wanderworld", "گردش‌جهان", "جهانگردی"))
+@router.message(Command("wanderworld", "گردشجهان", "جهانگردی"))
 async def cmd_wander(message: Message):
     from services.knowledge import wander_world
     await message.answer(wander_world(message.from_user.id))
 
 
-@router.message(Command("talkmaster", "گفتگو‌استاد", "صحبت‌استاد"))
+@router.message(Command("talkmaster", "گفتگواستاد", "صحبتاستاد"))
 async def cmd_talk_master(message: Message):
     from services.knowledge import talk_master
     has = False
@@ -387,25 +387,25 @@ async def cmd_talk_master(message: Message):
     await message.answer(talk_master(message.from_user.id, has))
 
 
-@router.message(Command("trainbody", "تمرین‌بدن", "لول‌بدن"))
+@router.message(Command("trainbody", "تمرینبدن", "لولبدن"))
 async def cmd_train_body(message: Message):
     from services.knowledge import train_body
     await message.answer(train_body(message.from_user.id))
 
 
-@router.message(Command("trainspirit", "تمرین‌روح", "لول‌روح"))
+@router.message(Command("trainspirit", "تمرینروح", "لولروح"))
 async def cmd_train_spirit(message: Message):
     from services.knowledge import train_spirit
     await message.answer(train_spirit(message.from_user.id))
 
 
-@router.message(Command("knights", "شوالیه", "شوالیه‌ها"))
+@router.message(Command("knights", "شوالیه", "شوالیهها"))
 async def cmd_knights(message: Message):
     from services.knights import list_text
     await message.answer(list_text())
 
 
-@router.message(Command("buyknight", "خرید‌شوالیه"))
+@router.message(Command("buyknight", "خریدشوالیه"))
 async def cmd_buy_knight(message: Message):
     parts = (message.text or "").split()
     if len(parts) < 2:
@@ -430,7 +430,7 @@ async def cmd_buy_knight(message: Message):
     await message.answer(msg)
 
 
-@router.message(Command("myknights", "شوالیه‌های‌من"))
+@router.message(Command("myknights", "شوالیههایمن"))
 async def cmd_my_knights(message: Message):
     from services.knights import my_knights
     await message.answer(my_knights(message.from_user.id))
@@ -443,7 +443,7 @@ async def cmd_myhome(message: Message):
     await message.answer(status(message.from_user.id))
 
 
-@router.message(Command("upgradehome", "ارتقا‌خانه"))
+@router.message(Command("upgradehome", "ارتقاخانه"))
 async def cmd_upgrade_home(message: Message):
     async with async_session() as session:
         user = await get_or_create_user(
@@ -455,7 +455,7 @@ async def cmd_upgrade_home(message: Message):
     await message.answer(msg)
 
 
-@router.message(Command("buyfurniture", "خرید‌وسیله"))
+@router.message(Command("buyfurniture", "خریدوسیله"))
 async def cmd_buy_furn(message: Message):
     parts = (message.text or "").split(maxsplit=1)
     if len(parts) < 2:
@@ -488,20 +488,20 @@ async def cmd_buy_furn(message: Message):
 
 
 
-@router.message(Command("bodyrealms", "قلمرو‌بدن", "قلمروبدن"))
+@router.message(Command("bodyrealms", "قلمروبدن", "قلمروبدن"))
 async def cmd_body_realms(message: Message):
     from services.body_spirit_realms import body_realm_status
     await message.answer(body_realm_status(message.from_user.id))
 
 
-@router.message(Command("spiritrealms", "قلمرو‌روح", "قلمروروح"))
+@router.message(Command("spiritrealms", "قلمروروح", "قلمروروح"))
 async def cmd_spirit_realms(message: Message):
     from services.body_spirit_realms import spirit_realm_status
     await message.answer(spirit_realm_status(message.from_user.id))
 
 
 
-@router.message(Command("cultpath", "مسیر‌تذهیب", "مسیرتذهیب"))
+@router.message(Command("cultpath", "مسیرتذهیب", "مسیرتذهیب"))
 async def cmd_cult_path(message: Message):
     from services.cult_paths import list_paths, set_path, get_path
     parts = (message.text or "").split(maxsplit=1)
@@ -512,7 +512,7 @@ async def cmd_cult_path(message: Message):
     await message.answer(set_path(message.from_user.id, parts[1].strip()))
 
 
-@router.message(Command("worldblade", "نابودکننده", "شمشیر‌جهان"))
+@router.message(Command("worldblade", "نابودکننده", "شمشیرجهان"))
 async def cmd_world_blade(message: Message):
     from services.world_blade import status, ITEM_NAME, PRICE
     await message.answer(

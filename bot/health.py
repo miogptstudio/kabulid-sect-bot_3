@@ -100,7 +100,7 @@ async def api_sects(request):
 
 
 async def api_daily(request):
-    """ورود روزانه وب‌اپ: +۵ سنگ بهشتی یک‌بار در روز"""
+    """ورود روزانه وباپ: +۵ سنگ بهشتی یکبار در روز"""
     tg_id = request.query.get("tg_id")
     if not tg_id:
         return web.json_response({"error": "tg_id لازم است"}, status=400)
@@ -174,7 +174,7 @@ async def api_arena_top(request):
 
 
 
-# --- اتاق‌های بازی وب‌اپ ---
+# --- اتاقهای بازی وباپ ---
 _game_rooms: dict[str, dict] = {}
 
 def _new_code() -> str:
@@ -256,12 +256,12 @@ async def start_health_server(port: int = 8080):
     app.router.add_get("/api/game", api_game_room)
     app.router.add_post("/api/game", api_game_room)
 
-    # مینی‌اپ استاتیک
+    # مینیاپ استاتیک
     if WEBAPP_DIR.is_dir():
         app.router.add_get("/app", lambda r: web.FileResponse(WEBAPP_DIR / "index.html"))
         app.router.add_get("/app/", lambda r: web.FileResponse(WEBAPP_DIR / "index.html"))
         app.router.add_static("/app/static", WEBAPP_DIR, show_index=False)
-        # مسیرهای مستقیم فایل‌های وب
+        # مسیرهای مستقیم فایلهای وب
         async def serve_webapp_file(request):
             name = request.match_info.get("filename", "index.html")
             path = WEBAPP_DIR / name

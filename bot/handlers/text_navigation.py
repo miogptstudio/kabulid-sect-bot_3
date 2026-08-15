@@ -1,4 +1,4 @@
-"""ناوبری متنی: کاربر می‌تواند نام بخش را بدون / بنویسد."""
+"""ناوبری متنی: کاربر میتواند نام بخش را بدون / بنویسد."""
 from aiogram import Router, F
 from aiogram.types import Message
 
@@ -6,25 +6,25 @@ router = Router()
 
 
 def _norm(text: str) -> str:
-    return " ".join((text or "").strip().lower().replace("‌", " ").split())
+    return " ".join((text or "").strip().lower().replace("", " ").split())
 
 
-# نام‌های قابل تایپ برای ورود مستقیم به بخش‌ها
+# نامهای قابل تایپ برای ورود مستقیم به بخشها
 ALIASES = {
     "👤 پروفایل": "profile",
     "🧘 تزکیه": "cultivation",
     "⚔️ نبرد": "duel",
     "🎒 کوله بار": "inventory",
-    "🎒 کوله‌بار": "inventory",
+    "🎒 کولهبار": "inventory",
     "⚗ کیمیاگری": "craft",
     "🏛 فرقه": "sects",
     "🏪 بازار": "shop",
     "🎁 گنجینه": "codex",
     "📜 ماموریت ها": "missions",
-    "📜 مأموریت‌ها": "missions",
+    "📜 مأموریتها": "missions",
     "🏆 دستاوردها": "achievements",
     "📊 رتبه بندی": "ranking",
-    "📊 رتبه‌بندی": "ranking",
+    "📊 رتبهبندی": "ranking",
     "🌍 رویدادها": "events",
     "🎁 پاداش روزانه": "daily",
     "🎲 تاس شانس": "luckdice",
@@ -43,13 +43,13 @@ ALIASES = {
     "دوئل کاراکتر": "charduel",
     "دوئل کاراکترها": "charduel",
     "کوله بار": "inventory",
-    "کوله‌بار": "inventory",
+    "کولهبار": "inventory",
     "کیف": "inventory",
     "کیمیاگری": "craft",
     "ساخت": "craft",
     "فرقه": "sects",
     "فرقه ها": "sects",
-    "فرقه‌ها": "sects",
+    "فرقهها": "sects",
     "بازار": "market",
     "مغازه": "shop",
     "فروشگاه": "shop",
@@ -58,12 +58,12 @@ ALIASES = {
     "ماموریت": "missions",
     "مأموریت": "missions",
     "ماموریت ها": "missions",
-    "مأموریت‌ها": "missions",
+    "مأموریتها": "missions",
     "دستاوردها": "achievements",
     "رتبه بندی": "ranking",
-    "رتبه‌بندی": "ranking",
+    "رتبهبندی": "ranking",
     "رتبه ها": "ranking",
-    "رتبه‌ها": "ranking",
+    "رتبهها": "ranking",
     "رویدادها": "events",
     "رویداد": "events",
     "پاداش روزانه": "daily",
@@ -72,7 +72,7 @@ ALIASES = {
     "تاس شانسی": "luckdice",
     "شغل": "jobs",
     "شغل ها": "jobs",
-    "شغل‌ها": "jobs",
+    "شغلها": "jobs",
     "راهنما": "help",
     "دستورات": "commands",
     "قوانین": "rules",
@@ -115,7 +115,7 @@ ALIASES = {
 
 @router.message(F.text)
 async def text_section_navigation(message: Message):
-    # فقط پیام‌های متنی ساده؛ /commandها را دست نمی‌زنیم.
+    # فقط پیامهای متنی ساده؛ /commandها را دست نمیزنیم.
     raw = (message.text or "").strip()
     if not raw or raw.startswith("/"):
         return
@@ -136,17 +136,17 @@ async def text_section_navigation(message: Message):
                 "⚔️ <b>بخش نبرد و دوئل</b>\n\n"
                 "برای دوئل، روی پیام بازیکن موردنظر ریپلای کن و بنویس:\n"
                 "<code>/duel</code>\n\n"
-                "برای دوئل رندوم هم می‌توانی بنویسی:\n"
+                "برای دوئل رندوم هم میتوانی بنویسی:\n"
                 "<code>/randomduel</code>"
             )
         elif key == "servantduel":
             await message.answer(
-                "🧑‍🤝‍🧑 <b>دوئل خدمتکاران</b>\n\n"
+                "🧑🤝🧑 <b>دوئل خدمتکاران</b>\n\n"
                 "روی پیام حریف ریپلای کن و بنویس:\n"
                 "<code>/servantduel شماره_خدمتکار_من شماره_خدمتکار_حریف</code>\n"
                 "یا با آیدی حریف:\n"
                 "<code>/servantduel آیدی شماره_من شماره_حریف</code>\n\n"
-                "این نبرد فقط قدرت خود خدمتکارها را مقایسه می‌کند."
+                "این نبرد فقط قدرت خود خدمتکارها را مقایسه میکند."
             )
         elif key == "charduel":
             await message.answer(
@@ -154,7 +154,7 @@ async def text_section_navigation(message: Message):
                 "روی پیام حریف ریپلای کن و بنویس:\n"
                 "<code>/charduel شماره_کاراکتر_من شماره_کاراکتر_حریف</code>\n"
                 "یا از آیدی حریف استفاده کن.\n\n"
-                "نبرد بر اساس قدرت کاراکتر و ستاره‌های آن انجام می‌شود."
+                "نبرد بر اساس قدرت کاراکتر و ستارههای آن انجام میشود."
             )
         elif key == "inventory":
             from bot.handlers.shop import cmd_inventory

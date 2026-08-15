@@ -40,7 +40,7 @@ async def cmd_buildings(message: Message):
                     await session.rollback()
                 except Exception:
                     pass
-                await message.answer(f"⚠️ خطا در خواندن ساختمان‌ها: {escape(type(e2).__name__)}: {escape(str(e2))}")
+                await message.answer(f"⚠️ خطا در خواندن ساختمانها: {escape(type(e2).__name__)}: {escape(str(e2))}")
                 return
 
         if not buildings:
@@ -51,7 +51,7 @@ async def cmd_buildings(message: Message):
             return
 
         builder = InlineKeyboardBuilder()
-        text = "🏘️ <b>مغازه / ساختمان‌ها</b>" + chr(10) + "(فقط برای تو)" + chr(10) + chr(10)
+        text = "🏘️ <b>مغازه / ساختمانها</b>" + chr(10) + "(فقط برای تو)" + chr(10) + chr(10)
         for b in buildings:
             name = getattr(b, "name", None) or getattr(b, "building_type", None) or f"#{b.id}"
             text += f"• {escape(str(name))}" + chr(10)
@@ -67,17 +67,17 @@ async def cmd_buildings(message: Message):
 
 
 
-@router.message(Command("teahouse", "چایخانه", "چای‌خانه"))
+@router.message(Command("teahouse", "چایخانه", "چایخانه"))
 async def cmd_teahouse(message: Message):
-    """ورود مستقیم به چای‌خانه با صفحه‌بندی"""
+    """ورود مستقیم به چایخانه با صفحهبندی"""
     from sqlalchemy import select as sel
     uid = message.from_user.id
     async with async_session() as session:
         await ensure_default_buildings_and_items(session)
-        result = await session.execute(sel(Building).where(Building.building_type == "چای‌خانه"))
+        result = await session.execute(sel(Building).where(Building.building_type == "چایخانه"))
         b = result.scalar_one_or_none()
         if not b:
-            b = Building(name="چای‌خانه", building_type="چای‌خانه", description="انواع چای")
+            b = Building(name="چایخانه", building_type="چایخانه", description="انواع چای")
             session.add(b)
             await session.commit()
             await session.refresh(b)
@@ -86,14 +86,14 @@ async def cmd_teahouse(message: Message):
         bid = b.id
 
     if not items:
-        await message.answer(tr(message.from_user.id, "چای‌خانه خالی است. /buildings را یک‌بار بزن و دوباره /teahouse"))
+        await message.answer(tr(message.from_user.id, "چایخانه خالی است. /buildings را یکبار بزن و دوباره /teahouse"))
         return
 
     PER = 8
     total_pages = max(1, (len(items) + PER - 1) // PER)
     chunk = items[:PER]
     builder = InlineKeyboardBuilder()
-    text = f"🍵 <b>چای‌خانه</b>" + chr(10) + f"صفحه 1/{total_pages} — {len(items)} نوع چای" + chr(10) + chr(10)
+    text = f"🍵 <b>چایخانه</b>" + chr(10) + f"صفحه 1/{total_pages} — {len(items)} نوع چای" + chr(10) + chr(10)
     for item in chunk:
         desc = escape(str(item.description or ""))[:50]
         item_name = escape(str(item.name or ""))
@@ -103,7 +103,7 @@ async def cmd_teahouse(message: Message):
     builder.adjust(1)
     if total_pages > 1:
         builder.button(text="بعدی ➡️", callback_data=f"bpage:{uid}:{bid}:1")
-    builder.button(text="همه ساختمان‌ها", callback_data=f"shopback:{uid}")
+    builder.button(text="همه ساختمانها", callback_data=f"shopback:{uid}")
     builder.adjust(1)
     await message.answer(text, reply_markup=builder.as_markup())
 
@@ -160,7 +160,7 @@ async def _render_building(callback: CallbackQuery, owner_id: int, building_id: 
         await callback.answer("آیتمی نیست — دوباره /buildings را بزن.", show_alert=True)
         try:
             await callback.message.answer(
-                "این ساختمان خالی است. /buildings را بزن تا آیتم‌ها ساخته شوند."
+                "این ساختمان خالی است. /buildings را بزن تا آیتمها ساخته شوند."
             )
         except Exception:
             pass
@@ -184,7 +184,7 @@ async def _render_building(callback: CallbackQuery, owner_id: int, building_id: 
         builder.button(text="⬅️ قبلی", callback_data=f"bpage:{owner_id}:{building_id}:{page - 1}")
     if page < total_pages - 1:
         builder.button(text="بعدی ➡️", callback_data=f"bpage:{owner_id}:{building_id}:{page + 1}")
-    builder.button(text="⬅️ برگشت ساختمان‌ها", callback_data=f"shopback:{owner_id}")
+    builder.button(text="⬅️ برگشت ساختمانها", callback_data=f"shopback:{owner_id}")
     builder.adjust(2)
 
     try:
@@ -213,7 +213,7 @@ async def shop_back(callback: CallbackQuery):
         buildings = await get_buildings(session)
 
     builder = InlineKeyboardBuilder()
-    text = "🏘️ <b>مغازه / ساختمان‌ها</b>\n\n"
+    text = "🏘️ <b>مغازه / ساختمانها</b>\n\n"
     for b in buildings:
         text += f"• {escape(str(b.name or ''))}\n"
         builder.button(text=b.name, callback_data=f"building:{owner_id}:{b.id}")
@@ -254,7 +254,7 @@ async def process_buy_qty_menu(callback: CallbackQuery):
     builder.adjust(3)
     builder.button(text="انصراف", callback_data=f"shopback:{owner_id}")
     await callback.message.answer(
-        f"🛒 <b>{name}</b>\nقیمت واحد: <b>{price:,}</b>\nچند تا می‌خری؟\n"
+        f"🛒 <b>{name}</b>\nقیمت واحد: <b>{price:,}</b>\nچند تا میخری؟\n"
         f"(یا دستور: <code>/buyitem {item_id} تعداد</code>)",
         reply_markup=builder.as_markup(),
     )
@@ -333,7 +333,7 @@ async def cmd_inventory(message: Message):
     text = "🎒 <b>کیف تو</b>\n\n"
     for i, (inv, item) in enumerate(rows, 1):
         text += f"{i}. {item.name} ×{inv.quantity}\n"
-    text += "\n/use شماره [تعداد] — استفاده (مثلاً /use 1 4)\n/drop شماره [تعداد] — دور انداختن\n/buyitem نام تعداد — خرید دسته‌ای"
+    text += "\n/use شماره [تعداد] — استفاده (مثلاً /use 1 4)\n/drop شماره [تعداد] — دور انداختن\n/buyitem نام تعداد — خرید دستهای"
     await message.answer(text)
 
 
@@ -346,7 +346,7 @@ async def cmd_use_item(message: Message):
             "فرمت: /use شماره [تعداد]\n"
             "اول /inventory بزن؛ شماره ردیف آیتم را ببین.\n"
             "مثال: /use 1\n"
-            "مثال دسته‌ای: /use 1 4  ← چهارتا با هم"
+            "مثال دستهای: /use 1 4  ← چهارتا با هم"
         )
         return
     try:
@@ -418,7 +418,7 @@ async def cmd_use_item(message: Message):
             _pill_warn = ""
         if is_forbidden_item(item.name, effect):
             lock_consume(message.from_user.id)
-            msg_parts.append("☠️ قفل مصرف ابدی فعال شد — دیگر هیچ چیز مصرف نمی‌کنی.")
+            msg_parts.append("☠️ قفل مصرف ابدی فعال شد — دیگر هیچ چیز مصرف نمیکنی.")
 
         if isinstance(effect, dict):
             if effect.get("knowledge"):
@@ -438,7 +438,7 @@ async def cmd_use_item(message: Message):
                 total_life = add_life * use_qty
                 user.lifespan = min(500, cur + total_life)
                 msg_parts.append(f"+{total_life} عمر (×{use_qty}) (الان: {user.lifespan})")
-            # انرژی مستقیم (قرص و غیره — غیر از چای که پایین‌تر هندل می‌شود)
+            # انرژی مستقیم (قرص و غیره — غیر از چای که پایینتر هندل میشود)
             if effect.get("energy") and not (
                 item.item_type == "tea" or effect.get("cooldown_min") or "چای" in (item.name or "")
             ):
@@ -473,7 +473,7 @@ async def cmd_use_item(message: Message):
                 msg_parts.append(f"قدرت دوئل (از آیتم): {int(effect['duel_power']) * use_qty}")
             if effect.get("learn_tech"):
                 msg_parts.append(f"تکنیک مرتبط: {effect['learn_tech']} — /learntech")
-            # چای تذهیب + انرژی با کول‌داون ۱۰ دقیقه
+            # چای تذهیب + انرژی با کولداون ۱۰ دقیقه
             if item.item_type == "tea" or effect.get("cooldown_min") or "چای" in item.name:
                 from datetime import datetime, timedelta
                 global _tea_cd
@@ -508,7 +508,7 @@ async def cmd_use_item(message: Message):
                 from services.combat_blood import heal_poison
                 msg_parts.append(await heal_poison(session, user))
 
-        # fallback نام‌محور اگر effect خالی بود
+        # fallback ناممحور اگر effect خالی بود
         if not effect or (isinstance(effect, dict) and not effect):
             nm = item.name or ""
             if "عمر" in nm:
@@ -543,7 +543,7 @@ async def cmd_use_item(message: Message):
     await message.answer(head + "\n".join(msg_parts))
 
 
-@router.message(Command("drop", "دورریختن", "حذف‌آیتم"))
+@router.message(Command("drop", "دورریختن", "حذفآیتم"))
 async def cmd_drop_item(message: Message):
     """دور انداختن آیتم: /drop شماره [تعداد]"""
     parts = (message.text or "").split()
@@ -651,7 +651,7 @@ async def cmd_gift_item(message: Message):
     await message.answer(f"🎁 «{item.name}» به {recv.full_name} هدیه شد.")
 
 
-@router.message(Command("adshop", "فروشگاه‌ادمین"))
+@router.message(Command("adshop", "فروشگاهادمین"))
 async def cmd_admin_shop(message: Message):
     from bot.config import ADMIN_IDS
     from sqlalchemy import select
@@ -682,7 +682,7 @@ async def cmd_admin_shop(message: Message):
                     await session.commit()
         buildings = await get_buildings(session)
         text = "🛠 <b>فروشگاه ادمین (رایگان)</b>" + chr(10)
-        text += "/adget نام‌دقیق‌آیتم" + chr(10) + chr(10)
+        text += "/adget نامدقیقآیتم" + chr(10) + chr(10)
         text += "⚔️ <b>خاص / یکتا</b>" + chr(10)
         text += "• شمشیر کوروش بزرگ" + chr(10)
         text += "• شمشیر ذوالفقار" + chr(10) + chr(10)
@@ -705,7 +705,7 @@ async def cmd_admin_shop(message: Message):
             await message.answer(text[4000:8000] if len(text) > 4000 else "")
 
 
-@router.message(Command("adget", "ادمین‌بگیر"))
+@router.message(Command("adget", "ادمینبگیر"))
 async def cmd_admin_get(message: Message):
     from bot.config import ADMIN_IDS
     if message.from_user.id not in ADMIN_IDS:
@@ -759,16 +759,16 @@ BUILDING_ALIASES = {
     "دارو": "داروخانه",
     "کیمیاگری": "کیمیاگری",
     "کیمیا": "کیمیاگری",
-    "طلسم‌خانه": "طلسم‌خانه",
-    "طلسم خانه": "طلسم‌خانه",
-    "طلسمخانه": "طلسم‌خانه",
+    "طلسمخانه": "طلسمخانه",
+    "طلسم خانه": "طلسمخانه",
+    "طلسمخانه": "طلسمخانه",
     "آهنگری": "آهنگری",
     "آهنگر": "آهنگری",
     "کتابخانه": "کتابخانه",
     "کتاب": "کتابخانه",
-    "چای‌خانه": "چای‌خانه",
-    "چایخانه": "چای‌خانه",
-    "چای": "چای‌خانه",
+    "چایخانه": "چایخانه",
+    "چایخانه": "چایخانه",
+    "چای": "چایخانه",
 }
 
 
@@ -800,7 +800,7 @@ async def text_open_building(message: Message):
     chunk = items[:PER]
     builder = InlineKeyboardBuilder()
     text = f"🏪 <b>{escape(str(b.name or ''))}</b>" + chr(10) + f"صفحه 1/{total_pages}" + chr(10) + chr(10)
-    text += "خرید با دکمه یا بنویس: <code>خرید نام‌آیتم</code>" + chr(10) + chr(10)
+    text += "خرید با دکمه یا بنویس: <code>خرید نامآیتم</code>" + chr(10) + chr(10)
     for item in chunk:
         desc = (item.description or "")[:50]
         text += f"• <b>{escape(str(item.name or ''))}</b> — {escape(str(item.price or 0))} سکه" + chr(10)
@@ -811,7 +811,7 @@ async def text_open_building(message: Message):
     builder.adjust(1)
     if total_pages > 1:
         builder.button(text="بعدی ➡️", callback_data=f"bpage:{uid}:{bid}:1")
-    builder.button(text="همه ساختمان‌ها", callback_data=f"shopback:{uid}")
+    builder.button(text="همه ساختمانها", callback_data=f"shopback:{uid}")
     builder.adjust(1)
     await message.answer(text, reply_markup=builder.as_markup())
 
@@ -845,12 +845,12 @@ async def text_buy_item(message: Message):
         if not item:
             await message.answer(f"آیتم «{name}» پیدا نشد. اول داروخانه یا /buildings را باز کن.")
             return
-        # همان منطق اصلی خرید را استفاده کن تا خرید متنی و دکمه‌ای یک رفتار داشته باشند.
+        # همان منطق اصلی خرید را استفاده کن تا خرید متنی و دکمهای یک رفتار داشته باشند.
         msg = await buy_item(session, user, item, qty=1)
         await message.answer(msg)
 
 
-@router.message(Command("pillstatus", "وضعیت‌قرص", "سقف‌قرص"))
+@router.message(Command("pillstatus", "وضعیتقرص", "سقفقرص"))
 async def cmd_pill_status(message: Message):
     async with async_session() as session:
         user = await get_or_create_user(session, message.from_user.id, message.from_user.full_name, message.from_user.username)
@@ -860,7 +860,7 @@ async def cmd_pill_status(message: Message):
         lim = max_pills(cult.realm or "بیداری")
         await message.answer(
             status(message.from_user.id, cult.realm or "بیداری") + chr(10)
-            + f"هر قلمرو بالاتر سقف را افزایش می‌دهد." + chr(10)
+            + f"هر قلمرو بالاتر سقف را افزایش میدهد." + chr(10)
             + "بیش از سقف = ۶۰٪ احتمال انفجار و مرگ."
         )
 
@@ -871,9 +871,9 @@ async def cmd_buyitem(message: Message):
     parts = (message.text or "").split(maxsplit=2)
     if len(parts) < 2:
         await message.answer(
-            "🛒 خرید دسته‌ای\n"
+            "🛒 خرید دستهای\n"
             "فرمت: /buyitem شماره تعداد\n"
-            "یا: /buyitem نام‌آیتم تعداد\n"
+            "یا: /buyitem نامآیتم تعداد\n"
             "مثال: /buyitem 3 10\n"
             "اول از /buildings لیست را ببین."
         )

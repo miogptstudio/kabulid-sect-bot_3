@@ -41,7 +41,7 @@ class DuelStates(StatesGroup):
 
 
 async def _resolve_duel(session, challenger: User, opponent: User, stake: int = 0) -> str:
-    """دوئل بر اساس قدرت — خون کم می‌شود، یک‌ضرب مرگ نیست."""
+    """دوئل بر اساس قدرت — خون کم میشود، یکضرب مرگ نیست."""
     from services.combat_blood import apply_damage, has_cyrus, ensure_blood
     await ensure_blood(challenger)
     await ensure_blood(opponent)
@@ -82,7 +82,7 @@ async def _resolve_duel(session, challenger: User, opponent: User, stake: int = 
             winner, loser = a, b
         else:
             winner, loser = b, a
-        logs.append("زمان تمام — برنده از روی خون باقی‌مانده")
+        logs.append("زمان تمام — برنده از روی خون باقیمانده")
 
     await update_user_stats(session, winner, won=True)
     extra = []
@@ -135,7 +135,7 @@ async def _resolve_duel(session, challenger: User, opponent: User, stake: int = 
     if (loser.blood or 0) > 0 and not loser.is_dead:
         loser.blood = min(100, loser.blood + 10)
     await session.commit()
-    text = "🏁 <b>نتیجه دوئل (فقط قدرت — بدون شانس)</b>\n" + "\n".join(logs[-6:]) + f"\n\n🩸 خون‌ها: {a.full_name} {a.blood} | {b.full_name} {b.blood}"
+    text = "🏁 <b>نتیجه دوئل (فقط قدرت — بدون شانس)</b>\n" + "\n".join(logs[-6:]) + f"\n\n🩸 خونها: {a.full_name} {a.blood} | {b.full_name} {b.blood}"
     # لاگ کوتاه و خوانا
     dmg_total = 0
     try:
@@ -231,7 +231,7 @@ async def cmd_duel(message: Message, state: FSMContext):
             caption=f"⚔️ <b>درخواست دوئل</b>\n\n"
             f"از: {challenger.full_name} — قدرت {p1['total']}\n"
             f"به: {opponent.full_name} — قدرت {p2['total']}\n"
-            f"برتری قدرت: {'چالش‌گر' if p1['total']>=p2['total'] else 'حریف'} (بدون شانس){stake_line}\n\n"
+            f"برتری قدرت: {'چالشگر' if p1['total']>=p2['total'] else 'حریف'} (بدون شانس){stake_line}\n\n"
             f"قدرت شامل تکنیک و سلاح است.\n"
             f"فقط <b>{opponent.full_name}</b> دکمه بزند.",
             reply_markup=builder.as_markup(),
@@ -323,7 +323,7 @@ async def reject_text(message: Message, state: FSMContext):
 
 # ---- دوئل اختصاصی خدمتکاران ----
 
-@router.message(Command("servantduel", "دوئل‌خدمتکار", "دوئل‌خدمتکاران"))
+@router.message(Command("servantduel", "دوئلخدمتکار", "دوئلخدمتکاران"))
 async def cmd_servant_duel(message: Message):
     parts = (message.text or "").split()
     try:
@@ -344,11 +344,11 @@ async def cmd_servant_duel(message: Message):
                 return
             target, idx_a, idx_b = int(parts[1]), int(parts[2]), int(parts[3])
     except ValueError:
-        await message.answer("❌ شماره‌ها و آیدی باید عدد باشند.")
+        await message.answer("❌ شمارهها و آیدی باید عدد باشند.")
         return
 
     if target == message.from_user.id:
-        await message.answer("❌ نمی‌توانی با خودت دوئل خدمتکار راه بیندازی.")
+        await message.answer("❌ نمیتوانی با خودت دوئل خدمتکار راه بیندازی.")
         return
 
     from services.servants import propose_servant_duel
@@ -357,7 +357,7 @@ async def cmd_servant_duel(message: Message):
     )
     await message.answer(text)
 
-@router.message(Command("acceptservduel", "قبول‌دوئل‌خدمتکار"))
+@router.message(Command("acceptservduel", "قبولدوئلخدمتکار"))
 async def cmd_accept_servant_duel(message: Message):
     parts = (message.text or "").split(maxsplit=1)
     if len(parts) < 2:
@@ -372,7 +372,7 @@ _random_queue: dict[int, float] = {}  # tg_id -> timestamp
 _QUEUE_TTL = 120  # ثانیه
 
 
-@router.message(Command("randomduel", "دوئل‌رندوم", "رندوم‌دوئل", "duelrandom", "rd"))
+@router.message(Command("randomduel", "دوئلرندوم", "رندومدوئل", "duelrandom", "rd"))
 async def cmd_random_duel(message: Message, state: FSMContext):
     """دوئل با حریف تصادفی — صف یا انتخاب از بازیکنان فعال"""
     import time
@@ -442,7 +442,7 @@ async def cmd_random_duel(message: Message, state: FSMContext):
             )
         )
         candidates = list(result.scalars().all())
-        # فقط حریف‌هایی که اختلاف سطحشان بیش از حد مجاز نیست
+        # فقط حریفهایی که اختلاف سطحشان بیش از حد مجاز نیست
         my_level = int(me.level or 1)
         near = [u for u in candidates if abs(int(u.level or 1) - my_level) <= 15]
         pool = near
@@ -451,9 +451,9 @@ async def cmd_random_duel(message: Message, state: FSMContext):
             # ورود به صف
             _random_queue[tg] = now
             await message.answer(
-                "🎲 کسی برای دوئل رندوم آنلاین/ثبت‌نام‌شده پیدا نشد.\n"
+                "🎲 کسی برای دوئل رندوم آنلاین/ثبتنامشده پیدا نشد.\n"
                 f"به صف اضافه شدی ({_QUEUE_TTL} ثانیه).\n"
-                "نفر بعدی که /randomduel بزند با تو مچ می‌شود.\n"
+                "نفر بعدی که /randomduel بزند با تو مچ میشود.\n"
                 "لغو: /cancelrandom"
             )
             return
@@ -485,11 +485,11 @@ async def cmd_random_duel(message: Message, state: FSMContext):
             f"حریف پیشنهادی: <b>{opponent.full_name}</b>\n"
             f"سطح: {opponent.level or 1} | قدرت≈{p2_total:,} (تو≈{p1_total:,})\n"
             + (f"شرط: {stake} سکه\n" if stake else "")
-            + "اگر حریف آنلاین باشد می‌تواند قبول کند.\n"
+            + "اگر حریف آنلاین باشد میتواند قبول کند.\n"
             "یا صبر کن تا کسی /randomduel بزند و مچ شو.\n"
             "صف: دوباره /randomduel بدون حریف = ورود به صف"
         )
-        # همزمان خودت را در صف بگذار برای مچ سریع‌تر
+        # همزمان خودت را در صف بگذار برای مچ سریعتر
         _random_queue[tg] = now
         try:
             await message.bot.send_message(
@@ -502,13 +502,13 @@ async def cmd_random_duel(message: Message, state: FSMContext):
             await message.answer("📨 درخواست برای حریف ارسال شد. منتظر قبول باش یا در صف بمان.")
         except Exception:
             await message.answer(
-                "ارسال به حریف ممکن نشد (پی‌وی بسته).\n"
-                f"در صف ماندی — نفر بعدی /randomduel با تو مچ می‌شود.\n"
+                "ارسال به حریف ممکن نشد (پیوی بسته).\n"
+                f"در صف ماندی — نفر بعدی /randomduel با تو مچ میشود.\n"
                 f"حریف پیشنهادی بود: {opponent.full_name}"
             )
 
 
-@router.message(Command("cancelrandom", "لغو‌رندوم"))
+@router.message(Command("cancelrandom", "لغورندوم"))
 async def cmd_cancel_random(message: Message):
     tg = message.from_user.id
     if tg in _random_queue:
@@ -518,9 +518,9 @@ async def cmd_cancel_random(message: Message):
         await message.answer("در صف نبودی.")
 
 
-@router.message(Command("randomduelfight", "رندوم‌فوری", "rdfast"))
+@router.message(Command("randomduelfight", "رندومفوری", "rdfast"))
 async def cmd_random_duel_fast(message: Message):
-    """دوئل فوری با یک بازیکن تصادفی (بدون انتظار قبول — شبیه‌سازی)"""
+    """دوئل فوری با یک بازیکن تصادفی (بدون انتظار قبول — شبیهسازی)"""
     tg = message.from_user.id
     async with async_session() as session:
         me = await get_or_create_user(

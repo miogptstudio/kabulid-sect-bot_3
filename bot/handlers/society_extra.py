@@ -19,7 +19,7 @@ from services.marriage import get_wives, get_husband
 router = Router()
 
 # ---- غار ----
-@router.message(Command("cave", "غار", "explorecave", "گردش‌غار"))
+@router.message(Command("cave", "غار", "explorecave", "گردشغار"))
 async def cmd_cave(message: Message):
     async with async_session() as session:
         user = await get_or_create_user(
@@ -89,11 +89,11 @@ async def cmd_cave(message: Message):
 
 
 # ---- قبیله ----
-@router.message(Command("createtribe", "تأسیس‌قبیله", "ساخت‌قبیله"))
+@router.message(Command("createtribe", "تأسیسقبیله", "ساختقبیله"))
 async def cmd_create_tribe(message: Message):
     parts = (message.text or "").split(maxsplit=1)
     if len(parts) < 2:
-        await message.answer(tr(message.from_user.id, "/createtribe نام‌قبیله"))
+        await message.answer(tr(message.from_user.id, "/createtribe نامقبیله"))
         return
     msg = tribes_svc.create_tribe(
         message.from_user.id, parts[1], message.from_user.full_name or "?"
@@ -106,12 +106,12 @@ async def cmd_tribes(message: Message):
     await message.answer(tribes_svc.list_tribes())
 
 
-@router.message(Command("tribe", "قبیله‌من"))
+@router.message(Command("tribe", "قبیلهمن"))
 async def cmd_tribe(message: Message):
     await message.answer(tribes_svc.info(message.from_user.id))
 
 
-@router.message(Command("jointribe", "عضویت‌قبیله"))
+@router.message(Command("jointribe", "عضویتقبیله"))
 async def cmd_join_tribe(message: Message):
     parts = (message.text or "").split(maxsplit=1)
     if len(parts) < 2:
@@ -120,12 +120,12 @@ async def cmd_join_tribe(message: Message):
     await message.answer(tribes_svc.join_tribe(message.from_user.id, parts[1]))
 
 
-@router.message(Command("tribeleave", "ترک‌قبیله"))
+@router.message(Command("tribeleave", "ترکقبیله"))
 async def cmd_tribe_leave(message: Message):
     await message.answer(tribes_svc.leave(message.from_user.id))
 
 
-@router.message(Command("setchief", "بزرگ‌قبیله"))
+@router.message(Command("setchief", "بزرگقبیله"))
 async def cmd_set_chief(message: Message):
     if not message.reply_to_message:
         await message.answer(tr(message.from_user.id, "ریپلای عضو + /setchief"))
@@ -135,7 +135,7 @@ async def cmd_set_chief(message: Message):
     )
 
 
-@router.message(Command("tribeinvite", "دعوت‌قبیله"))
+@router.message(Command("tribeinvite", "دعوتقبیله"))
 async def cmd_tribe_invite(message: Message):
     if not message.reply_to_message:
         await message.answer(tr(message.from_user.id, "ریپلای + /tribeinvite — طرف باید /jointribe نام بزند"))
@@ -144,33 +144,33 @@ async def cmd_tribe_invite(message: Message):
     await message.answer(
         f"دعوت قبیله برای {message.reply_to_message.from_user.full_name}" + chr(10)
         + info + chr(10)
-        + "او باید /jointribe نام‌قبیله بزند."
+        + "او باید /jointribe نامقبیله بزند."
     )
 
 
 # ---- بازرگانی ----
-@router.message(Command("tradeguild", "گروه‌بازرگانی", "بازرگانی"))
+@router.message(Command("tradeguild", "گروهبازرگانی", "بازرگانی"))
 async def cmd_trade_guild(message: Message):
     parts = (message.text or "").split(maxsplit=1)
     if len(parts) < 2:
-        await message.answer(tr(message.from_user.id, "/tradeguild نام‌گروه"))
+        await message.answer(tr(message.from_user.id, "/tradeguild نامگروه"))
         return
     await message.answer(
         trade_svc.create(message.from_user.id, parts[1], message.from_user.full_name or "?")
     )
 
 
-@router.message(Command("tradelist", "لیست‌بازرگانی"))
+@router.message(Command("tradelist", "لیستبازرگانی"))
 async def cmd_trade_list(message: Message):
     await message.answer(trade_svc.list_all())
 
 
-@router.message(Command("tradeinfo", "وضعیت‌بازرگانی"))
+@router.message(Command("tradeinfo", "وضعیتبازرگانی"))
 async def cmd_trade_info(message: Message):
     await message.answer(trade_svc.info(message.from_user.id))
 
 
-@router.message(Command("tradejoin", "عضویت‌بازرگانی"))
+@router.message(Command("tradejoin", "عضویتبازرگانی"))
 async def cmd_trade_join(message: Message):
     parts = (message.text or "").split(maxsplit=1)
     if len(parts) < 2:
@@ -179,12 +179,12 @@ async def cmd_trade_join(message: Message):
     await message.answer(trade_svc.join(message.from_user.id, parts[1]))
 
 
-@router.message(Command("tradeleave", "ترک‌بازرگانی"))
+@router.message(Command("tradeleave", "ترکبازرگانی"))
 async def cmd_trade_leave(message: Message):
     await message.answer(trade_svc.leave(message.from_user.id))
 
 
-@router.message(Command("tradedeposit", "واریز‌بازرگانی"))
+@router.message(Command("tradedeposit", "واریزبازرگانی"))
 async def cmd_trade_deposit(message: Message):
     parts = (message.text or "").split()
     if len(parts) < 2:
@@ -214,7 +214,7 @@ async def cmd_trade_deposit(message: Message):
     await message.answer(f"✅ {amount} سکه به صندوق گروه واریز شد.")
 
 
-@router.message(Command("tradewithdraw", "برداشت‌بازرگانی"))
+@router.message(Command("tradewithdraw", "برداشتبازرگانی"))
 async def cmd_trade_withdraw(message: Message):
     parts = (message.text or "").split()
     if len(parts) < 2:
@@ -241,7 +241,7 @@ async def cmd_trade_withdraw(message: Message):
 
 
 # ---- رگ معنوی ----
-@router.message(Command("vein", "رگ", "رگ‌معنوی", "veins"))
+@router.message(Command("vein", "رگ", "رگمعنوی", "veins"))
 async def cmd_vein(message: Message):
     from services.cultivation import MAX_VEINS
     async with async_session() as session:
@@ -261,12 +261,12 @@ async def cmd_vein(message: Message):
         await message.answer(chr(10).join(lines[20:]))
     await message.answer(
         "فعلی: " + (", ".join(cur) if cur else "هیچ") + chr(10)
-        + "/unlockvein نام‌رگ" + chr(10)
+        + "/unlockvein نامرگ" + chr(10)
         + "مثال: /unlockvein رگ سیمرغ"
     )
 
 
-@router.message(Command("unlockvein", "باز‌رگ"))
+@router.message(Command("unlockvein", "بازرگ"))
 async def cmd_unlock_vein(message: Message):
     parts = (message.text or "").split(maxsplit=1)
     if len(parts) < 2:
@@ -286,13 +286,13 @@ _couple_child_cd: dict = {}
 
 @router.message(Command("havechild", "بچه", "فرزندآوری"))
 async def cmd_have_child(message: Message):
-    """بچه برای زوج متاهل — شانس نادر، کول‌داون ۲۴س"""
+    """بچه برای زوج متاهل — شانس نادر، کولداون ۲۴س"""
     from datetime import datetime, timedelta
     from bot.handlers.social import _servant_children
     key = message.from_user.id
     last = _couple_child_cd.get(key)
     if last and datetime.utcnow() - last < timedelta(hours=24):
-        await message.answer(tr(message.from_user.id, "⏳ هر ۲۴ ساعت یک‌بار می‌توانی تلاش کنی."))
+        await message.answer(tr(message.from_user.id, "⏳ هر ۲۴ ساعت یکبار میتوانی تلاش کنی."))
         return
     async with async_session() as session:
         user = await get_or_create_user(

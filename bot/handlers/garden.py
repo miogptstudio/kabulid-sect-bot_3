@@ -58,13 +58,13 @@ async def cmd_garden(message: Message):
             h, m = left // 3600, (left % 3600) // 60
             text += f"⏰ کاشت بعدی تا {h}س {m}د دیگر" + chr(10)
         else:
-            text += "✅ می‌توانی الان بکاری" + chr(10)
+            text += "✅ میتوانی الان بکاری" + chr(10)
     else:
-        text += "✅ می‌توانی الان بکاری" + chr(10)
+        text += "✅ میتوانی الان بکاری" + chr(10)
 
     text += chr(10)
     if not plots:
-        text += "هنوز چیزی نکاشته‌ای." + chr(10)
+        text += "هنوز چیزی نکاشتهای." + chr(10)
     else:
         now = datetime.utcnow()
         for i, p in enumerate(plots, 1):
@@ -75,8 +75,8 @@ async def cmd_garden(message: Message):
     text += (
         chr(10)
         + "دستورات:" + chr(10)
-        + "/plant نام‌بذر — کاشت (هر ۵ ساعت یک گیاه)" + chr(10)
-        + "/harvest — برداشت رسیده‌ها" + chr(10)
+        + "/plant نامبذر — کاشت (هر ۵ ساعت یک گیاه)" + chr(10)
+        + "/harvest — برداشت رسیدهها" + chr(10)
         + f"/buyland — خرید زمین (+{LAND_SLOTS_PER_BUY} ظرفیت، {LAND_PRICE_COINS} سکه یا معادل)" + chr(10)
         + "بذرها: معمولی | معنوی | روحی"
     )
@@ -105,13 +105,13 @@ async def cmd_plant(message: Message):
         if not getattr(user, "garden_slots", None):
             user.garden_slots = DEFAULT_SLOTS
 
-        # کول‌داون ۵ ساعت
+        # کولداون ۵ ساعت
         last = getattr(user, "last_plant_at", None)
         if last and now < last + PLANT_COOLDOWN:
             left = int((last + PLANT_COOLDOWN - now).total_seconds())
             h, m = left // 3600, (left % 3600) // 60
             await message.answer(
-                f"⏳ هر ۵ ساعت فقط یک گیاه می‌توانی بکاری." + chr(10)
+                f"⏳ هر ۵ ساعت فقط یک گیاه میتوانی بکاری." + chr(10)
                 + f"مانده: {h} ساعت و {m} دقیقه"
             )
             return
@@ -170,7 +170,7 @@ async def cmd_harvest(message: Message):
         await message.answer(tr(message.from_user.id, "چیزی آماده نیست."))
 
 
-@router.message(Command("buyland", "خرید‌زمین", "خریدزمین"))
+@router.message(Command("buyland", "خریدزمین", "خریدزمین"))
 async def cmd_buy_land(message: Message):
     """خرید ظرفیت بیشتر زمین"""
     async with async_session() as session:

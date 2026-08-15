@@ -32,7 +32,7 @@ async def cmd_gender(message: Message, state: FSMContext):
     builder.button(text="زن 👩", callback_data=f"setgender:{message.from_user.id}:زن")
     builder.adjust(1)
     await message.answer(
-        "⚧ <b>انتخاب جنسیت (فقط یک‌بار)</b>\n\n"
+        "⚧ <b>انتخاب جنسیت (فقط یکبار)</b>\n\n"
         "قبل از تذهیب باید جنسیت را مشخص کنی.\n"
         "⚠️ بعد از انتخاب، <b>دیگر قابل تغییر نیست</b>.",
         reply_markup=builder.as_markup(),
@@ -70,12 +70,12 @@ async def set_gender(callback: CallbackQuery):
 
     await callback.message.edit_text(
         f"✅ جنسیت «<b>{gender}</b>» ثبت شد.\n"
-        f"دیگر قابل تغییر نیست. حالا می‌توانی تذهیب کنی."
+        f"دیگر قابل تغییر نیست. حالا میتوانی تذهیب کنی."
     )
     await callback.answer()
 
 
-@router.message(Command("dual", "تذهیب‌دوگانه", "دوگانه"))
+@router.message(Command("dual", "تذهیبدوگانه", "دوگانه"))
 async def cmd_dual(message: Message):
     if not message.reply_to_message:
         await message.answer(
@@ -118,7 +118,7 @@ async def cmd_dual(message: Message):
             f"☯️ <b>درخواست تذهیب دوگانه</b>\n\n"
             f"از: {user1.full_name} ({user1.gender})\n"
             f"به: {user2.full_name} ({user2.gender})\n\n"
-            f"فقط <b>{user2.full_name}</b> می‌تواند قبول/رد کند.",
+            f"فقط <b>{user2.full_name}</b> میتواند قبول/رد کند.",
             reply_markup=builder.as_markup(),
         )
 
@@ -174,7 +174,7 @@ async def dual_reject(callback: CallbackQuery):
     await callback.answer()
 
 
-@router.message(Command("canceldual", "لغو‌دوگانه"))
+@router.message(Command("canceldual", "لغودوگانه"))
 async def cmd_cancel_dual(message: Message):
     from services.dual import cancel_dual
     async with async_session() as session:

@@ -6,8 +6,8 @@ from aiogram.types import TelegramObject, Message, CallbackQuery
 # دستوراتی که حتی در قفل مجازند
 ALLOWED_PREFIXES = (
     "/start", "/help", "/commands", "/دستورات", "/راهنما", "/منو",
-    "/trainstatus", "/trainclaim", "/trainstop", "/train", "/تمرین", "/وضعیت‌تمرین", "/پایان‌تمرین", "/دریافت‌تمرین", "/انصراف‌تمرین", "/قطع‌تمرین", "/stoptrain",
-    "/prison", "/زندان", "/bail", "/وثیقه", "/آزادی‌زندان",
+    "/trainstatus", "/trainclaim", "/trainstop", "/train", "/تمرین", "/وضعیتتمرین", "/پایانتمرین", "/دریافتتمرین", "/انصرافتمرین", "/قطعتمرین", "/stoptrain",
+    "/prison", "/زندان", "/bail", "/وثیقه", "/آزادیزندان",
     "/version", "/نسخه", "/ping", "/تست", "/profile", "/me", "/پروفایل",
     "/rules", "/قوانین",
     "/wallet", "/کیف", "/gather", "/qi", "/cultivation", "/تذهیب",
@@ -41,8 +41,8 @@ class ServiceLockMiddleware(BaseMiddleware):
             for p in ALLOWED_PREFIXES:
                 if low.startswith(p.lower()):
                     return await handler(event, data)
-            # دکمه‌های کیبورد تذهیب هم بلاک شوند مگر train
-            if text in ("تذهیب کردن", "جمع آوری چی", "جمع‌آوری چی", "مدیتیت", "پروفایل"):
+            # دکمههای کیبورد تذهیب هم بلاک شوند مگر train
+            if text in ("تذهیب کردن", "جمع آوری چی", "جمعآوری چی", "مدیتیت", "پروفایل"):
                 if text == "پروفایل":
                     return await handler(event, data)
 

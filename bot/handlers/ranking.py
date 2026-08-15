@@ -15,7 +15,7 @@ router = Router()
 async def cmd_ranking(message: Message):
     from aiogram.types import FSInputFile
     from services.portraits import panel_url
-    await message.answer_photo(FSInputFile(panel_url("ranking")), caption="🏆 <b>رتبه‌بندی</b>")
+    await message.answer_photo(FSInputFile(panel_url("ranking")), caption="🏆 <b>رتبهبندی</b>")
     async with async_session() as session:
         result = await session.execute(
             select(User)
@@ -24,10 +24,10 @@ async def cmd_ranking(message: Message):
         users = result.scalars().all()
 
     if not users:
-        await message.answer(tr(message.from_user.id, "هنوز کسی ثبت‌نام نکرده."))
+        await message.answer(tr(message.from_user.id, "هنوز کسی ثبتنام نکرده."))
         return
 
-    # مرتب‌سازی بر اساس رتبه و XP و برد
+    # مرتبسازی بر اساس رتبه و XP و برد
     users = sorted(
         users,
         key=lambda u: (-get_rank_index(u.rank), -u.xp, -u.wins)
@@ -53,7 +53,7 @@ async def cmd_ranking(message: Message):
 
 
 @router.message(Command(
-    "richest", "wealth", "پولدار", "پولدارترین", "ثروتمند", "لیدربورد‌پول", "toprich"
+    "richest", "wealth", "پولدار", "پولدارترین", "ثروتمند", "لیدربوردپول", "toprich"
 ))
 async def cmd_richest(message: Message):
     """لیست پولدارترین بازیکنان بر اساس معادل سکه همه ارزها"""
@@ -80,7 +80,7 @@ async def cmd_richest(message: Message):
         return
 
     medals = ["🥇", "🥈", "🥉"]
-    lines = ["💰 <b>پولدارترین‌ها</b> (معادل همه ارزها به سکه)", ""]
+    lines = ["💰 <b>پولدارترینها</b> (معادل همه ارزها به سکه)", ""]
     for i, (total, u, w) in enumerate(scored[:15]):
         medal = medals[i] if i < 3 else f"{i+1}."
         name = u.full_name or u.username or str(u.telegram_id)
@@ -105,7 +105,7 @@ async def cmd_richest(message: Message):
 
 
 
-@router.message(Command("achievements", "دستاوردها", "مدال‌ها"))
+@router.message(Command("achievements", "دستاوردها", "مدالها"))
 async def cmd_achievements(message: Message):
     from services.achievements import list_user
     await message.answer(list_user(message.from_user.id))

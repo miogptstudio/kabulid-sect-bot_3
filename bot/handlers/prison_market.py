@@ -12,14 +12,14 @@ router = Router()
 
 BLACK_MARKET = [
     {"name": "خنجر سیاه", "price": 2000, "desc": "سلاح غیرقانونی +۱۵ قدرت"},
-    {"name": "قرص سم‌زدا فوری", "price": 1500, "desc": "پاک کردن سم فوری"},
+    {"name": "قرص سمزدا فوری", "price": 1500, "desc": "پاک کردن سم فوری"},
     {"name": "نقشه زندان", "price": 5000, "desc": "اطلاعات فرار (نمایشی)"},
     {"name": "سنگ روحی دزدی", "price": 3000, "desc": "+3 سنگ روحی"},
     {"name": "چای قاچاق", "price": 8000, "desc": "+20000 انرژی"},
 ]
 
 
-@router.message(Command("bail", "آزادی‌زندان", "وثیقه"))
+@router.message(Command("bail", "آزادیزندان", "وثیقه"))
 async def cmd_bail(message: Message):
     async with async_session() as session:
         user = await get_or_create_user(
@@ -49,7 +49,7 @@ async def cmd_prison(message: Message):
     )
 
 
-@router.message(Command("blackmarket", "بازار‌سیاه", "بازارسیاه"))
+@router.message(Command("blackmarket", "بازارسیاه", "بازارسیاه"))
 async def cmd_black_market(message: Message):
     text = "🕶 <b>بازار سیاه</b>" + chr(10) + "خرید پرریسک — فقط نقد." + chr(10) + chr(10)
     for i, it in enumerate(BLACK_MARKET, 1):
@@ -58,7 +58,7 @@ async def cmd_black_market(message: Message):
     await message.answer(text)
 
 
-@router.message(Command("buyblack", "خرید‌سیاه"))
+@router.message(Command("buyblack", "خریدسیاه"))
 async def cmd_buy_black(message: Message):
     parts = (message.text or "").split()
     if len(parts) < 2:
@@ -104,7 +104,7 @@ async def cmd_season(message: Message):
     await message.answer(season_text())
 
 
-@router.message(Command("train", "تمرین", "زمین‌تمرین", "training"))
+@router.message(Command("train", "تمرین", "زمینتمرین", "training"))
 async def cmd_train(message: Message):
     parts = (message.text or "").split()
     minutes = 60
@@ -123,7 +123,7 @@ async def cmd_train(message: Message):
     await message.answer(msg)
 
 
-@router.message(Command("trainstatus", "وضعیت‌تمرین"))
+@router.message(Command("trainstatus", "وضعیتتمرین"))
 async def cmd_train_status(message: Message):
     async with async_session() as session:
         user = await get_or_create_user(
@@ -135,7 +135,7 @@ async def cmd_train_status(message: Message):
     await message.answer(msg)
 
 
-@router.message(Command("trainclaim", "پایان‌تمرین", "دریافت‌تمرین"))
+@router.message(Command("trainclaim", "پایانتمرین", "دریافتتمرین"))
 async def cmd_train_claim(message: Message):
     async with async_session() as session:
         user = await get_or_create_user(
@@ -147,7 +147,7 @@ async def cmd_train_claim(message: Message):
     await message.answer(msg)
 
 
-@router.message(Command("trainstop", "انصراف‌تمرین", "قطع‌تمرین", "stoptrain"))
+@router.message(Command("trainstop", "انصرافتمرین", "قطعتمرین", "stoptrain"))
 async def cmd_train_stop(message: Message):
     async with async_session() as session:
         user = await get_or_create_user(

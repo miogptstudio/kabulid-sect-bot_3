@@ -17,7 +17,7 @@ GAME_COOLDOWN = timedelta(minutes=2)
 _last_game: dict[int, datetime] = {}
 
 def check_game_cooldown(user_id: int, mark: bool = True):
-    """اگر هنوز کول‌داون دارد، متن پیام برمی‌گردد؛ وگرنه None و در صورت mark زمان ثبت می‌شود"""
+    """اگر هنوز کولداون دارد، متن پیام برمیگردد؛ وگرنه None و در صورت mark زمان ثبت میشود"""
     now = datetime.utcnow()
     last = _last_game.get(user_id)
     if last and now - last < GAME_COOLDOWN:
@@ -33,27 +33,27 @@ def check_game_cooldown(user_id: int, mark: bool = True):
 _rps_pending: dict[int, dict] = {}
 
 
-@router.message(Command("games", "بازی", "بازی‌ها"))
+@router.message(Command("games", "بازی", "بازیها"))
 async def cmd_games_menu(message: Message):
     _glang = get_lang(message.from_user.id)
     # i18n header always available via /games intro
 
-    # فقط منو — زمان کول‌داون مصرف نمی‌شود
+    # فقط منو — زمان کولداون مصرف نمیشود
     cd_info = check_game_cooldown(message.from_user.id, mark=False)
     builder = InlineKeyboardBuilder()
     uid = message.from_user.id
     lang = _glang
     labels = {
-        "rps": {"fa": "✊ سنگ‌کاغذ‌قیچی", "en": "✊ RPS", "ar": "✊ حجر ورقة", "zh": "✊ 猜拳", "ru": "✊ КНБ", "tr": "✊ TKM"},
+        "rps": {"fa": "✊ سنگکاغذقیچی", "en": "✊ RPS", "ar": "✊ حجر ورقة", "zh": "✊ 猜拳", "ru": "✊ КНБ", "tr": "✊ TKM"},
         "dice": {"fa": "🎲 تاس", "en": "🎲 Dice", "ar": "🎲 نرد", "zh": "🎲 骰子", "ru": "🎲 Кости", "tr": "🎲 Zar"},
-        "nard": {"fa": "🎯 تخته‌نرد", "en": "🎯 Backgammon", "ar": "🎯 طاولة", "zh": "🎯 双陆", "ru": "🎯 Нарды", "tr": "🎯 Tavla"},
+        "nard": {"fa": "🎯 تختهنرد", "en": "🎯 Backgammon", "ar": "🎯 طاولة", "zh": "🎯 双陆", "ru": "🎯 Нарды", "tr": "🎯 Tavla"},
         "casino": {"fa": "🎰 کازینو", "en": "🎰 Casino", "ar": "🎰 كازينو", "zh": "🎰 赌场", "ru": "🎰 Казино", "tr": "🎰 Casino"},
         "chess": {"fa": "♟️ شطرنج", "en": "♟️ Chess", "ar": "♟️ شطرنج", "zh": "♟️ 国际象棋", "ru": "♟️ Шахматы", "tr": "♟️ Satranç"},
         "hukum": {"fa": "🃏 حکم", "en": "🃏 Hukum", "ar": "🃏 حكم", "zh": "🃏 卡牌", "ru": "🃏 Карты", "tr": "🃏 Hukum"},
         "puzzle": {"fa": "🧩 پازل", "en": "🧩 Puzzle", "ar": "🧩 ألغاز", "zh": "🧩 谜题", "ru": "🧩 Пазл", "tr": "🧩 Bulmaca"},
         "riddle": {"fa": "🧠 معما", "en": "🧠 Riddle", "ar": "🧠 لغز", "zh": "🧠 谜语", "ru": "🧠 Загадка", "tr": "🧠 Bilmece"},
         "math": {"fa": "🔢 ریاضی", "en": "🔢 Math", "ar": "🔢 رياضة", "zh": "🔢 数学", "ru": "🔢 Математика", "tr": "🔢 Matematik"},
-        "web": {"fa": "🌐 وب‌اپ", "en": "🌐 WebApp", "ar": "🌐 ويب", "zh": "🌐 网页", "ru": "🌐 WebApp", "tr": "🌐 WebApp"},
+        "web": {"fa": "🌐 وباپ", "en": "🌐 WebApp", "ar": "🌐 ويب", "zh": "🌐 网页", "ru": "🌐 WebApp", "tr": "🌐 WebApp"},
     }
     def _lb(k):
         d = labels.get(k, {})
@@ -85,7 +85,7 @@ async def cb_game_menu(callback: CallbackQuery):
     if callback.from_user.id != owner:
         await callback.answer()
         return
-    # باز کردن زیرمنو زمان مصرف نمی‌کند؛ خود بازی مصرف می‌کند
+    # باز کردن زیرمنو زمان مصرف نمیکند؛ خود بازی مصرف میکند
     browse = kind in ("puzzlemenu", "web", "nard", "casino", "chess", "rps", "hukum")
     if browse:
         pass  # بدون mark
@@ -108,11 +108,11 @@ async def cb_game_menu(callback: CallbackQuery):
             reply_markup=builder.as_markup(),
         )
     elif kind == "nard":
-        await callback.message.edit_text(tr(callback.from_user.id, "🎯 تخته‌نرد واقعی در وب‌اپ:\nهمه مهره‌ها را به خانه بیاور → مهره را بزن → دکمه «خروج مهره»\n/nard"))
+        await callback.message.edit_text(tr(callback.from_user.id, "🎯 تختهنرد واقعی در وباپ:\nهمه مهرهها را به خانه بیاور → مهره را بزن → دکمه «خروج مهره»\n/nard"))
     elif kind == "dice":
         d1, d2 = random.randint(1, 6), random.randint(1, 6)
         await callback.message.edit_text(
-            f"🎲 <b>تاس تخته‌نرد</b>\n\n{d1} — {d2}\nجمع: {d1 + d2}"
+            f"🎲 <b>تاس تختهنرد</b>\n\n{d1} — {d2}\nجمع: {d1 + d2}"
         )
     elif kind == "casino":
         await callback.message.edit_text(tr(callback.from_user.id, "🎰 برای کازینو بنویس:\n/casino مبلغ\nمثال: /casino 20\n(حداقل ۱۰ سکه)"))
@@ -120,7 +120,7 @@ async def cb_game_menu(callback: CallbackQuery):
         board = _chess_board_text()
         await callback.message.edit_text(
             f"♟️ <b>شطرنج (نمایشی)</b>\n\n<code>{board}</code>\n\n"
-            f"نسخه کامل‌تر در وب‌اپ: .../webapp/games.html"
+            f"نسخه کاملتر در وباپ: .../webapp/games.html"
         )
     elif kind == "hukum":
         await callback.message.edit_text(tr(callback.from_user.id, "🃏 <b>حکم</b>\n\nبرای شروع: /hukum\nبا حریف: ریپلای + /hukumduel"))
@@ -129,11 +129,11 @@ async def cb_game_menu(callback: CallbackQuery):
         b.button(text="🧩 پازل الگو", callback_data=f"game:pattern:{owner}")
         b.button(text="🧠 معما", callback_data=f"game:riddle:{owner}")
         b.button(text="🔢 ریاضی", callback_data=f"game:math:{owner}")
-        b.button(text="🔤 به‌هم‌ریخته", callback_data=f"game:scramble:{owner}")
+        b.button(text="🔤 بههمریخته", callback_data=f"game:scramble:{owner}")
         b.button(text="🎯 حدس عدد", callback_data=f"game:guess:{owner}")
         b.adjust(1)
         await callback.message.edit_text(
-            "🧩 <b>بازی‌های فکری و پازل</b>" + chr(10) + chr(10)
+            "🧩 <b>بازیهای فکری و پازل</b>" + chr(10) + chr(10)
             + "یکی را انتخاب کن یا:" + chr(10)
             + "/puzzle /riddle /mathquiz /scramble /guess",
             reply_markup=b.as_markup(),
@@ -150,9 +150,9 @@ async def cb_game_menu(callback: CallbackQuery):
         await callback.message.edit_text(tr(callback.from_user.id, "🎯 /guess برای حدس عدد ۱ تا ۱۰۰"))
     elif kind == "web":
         await callback.message.edit_text(
-            "🌐 در BotFather → Menu Button آدرس وب‌اپ را بگذار:\n"
+            "🌐 در BotFather → Menu Button آدرس وباپ را بگذار:\n"
             "<code>https://آدرس-render-تو/webapp/</code>\n"
-            "بازی‌ها: <code>.../webapp/games.html</code>"
+            "بازیها: <code>.../webapp/games.html</code>"
         )
     await callback.answer()
 
@@ -171,7 +171,7 @@ def _chess_board_text() -> str:
     return "\n".join(rows)
 
 
-@router.message(Command("rps", "سنگ‌کاغذ‌قیچی"))
+@router.message(Command("rps", "سنگکاغذقیچی"))
 async def cmd_rps(message: Message):
 
     cd = check_game_cooldown(message.from_user.id)
@@ -237,7 +237,7 @@ async def cmd_chess(message: Message):
         return
     await message.answer(
         f"♟️ <b>شطرنج نمایشی</b>\n\n<code>{_chess_board_text()}</code>\n\n"
-        f"برای صفحه تعاملی: وب‌اپ → games.html"
+        f"برای صفحه تعاملی: وباپ → games.html"
     )
 
 
@@ -292,7 +292,7 @@ async def cmd_casino(message: Message):
 
 _guess: dict[int, int] = {}
 
-@router.message(Command("guess", "حدس‌عدد"))
+@router.message(Command("guess", "حدسعدد"))
 async def cmd_guess(message: Message):
 
     cd = check_game_cooldown(message.from_user.id)
@@ -328,7 +328,7 @@ async def cmd_guess(message: Message):
     elif n < secret:
         await message.answer(tr(message.from_user.id, "بالاتر ⬆️"))
     else:
-        await message.answer(tr(message.from_user.id, "پایین‌تر ⬇️"))
+        await message.answer(tr(message.from_user.id, "پایینتر ⬇️"))
 
 
 @router.message(Command("coinflip", "شیرخط"))
@@ -354,7 +354,7 @@ async def cmd_coin_flip(message: Message):
 
 
 SUITS = ["دل", "خشت", "خاج", "پیک"]
-RANKS_H = ["آس", "شاه", "بی‌بی", "سرباز", "۱۰", "۹", "۸", "۷"]
+RANKS_H = ["آس", "شاه", "بیبی", "سرباز", "۱۰", "۹", "۸", "۷"]
 
 def _draw_card():
     return f"{random.choice(RANKS_H)} {random.choice(SUITS)}"
@@ -367,7 +367,7 @@ async def cmd_hukum(message: Message):
         await message.answer(cd)
         return
     trump = random.choice(["دل", "خشت", "پیک", "گشنیز"])
-    ranks = ["آس", "شاه", "بی‌بی", "سرباز", "۱۰", "۹", "۸"]
+    ranks = ["آس", "شاه", "بیبی", "سرباز", "۱۰", "۹", "۸"]
     suits = ["دل", "خشت", "پیک", "گشنیز"]
     hand = [f"{random.choice(ranks)} {random.choice(suits)}" for _ in range(5)]
     # store hand
@@ -402,14 +402,14 @@ async def cb_hk_card(callback: CallbackQuery):
         await callback.answer(tr(callback.from_user.id, "نامعتبر"), show_alert=True)
         return
     my = st["hand"].pop(idx)
-    ranks = ["آس", "شاه", "بی‌بی", "سرباز", "۱۰", "۹"]
+    ranks = ["آس", "شاه", "بیبی", "سرباز", "۱۰", "۹"]
     suits = ["دل", "خشت", "پیک", "گشنیز"]
     bot = f"{random.choice(ranks)} {random.choice(suits)}"
     def val(c):
         v = 10
         if "آس" in c: v = 14
         elif "شاه" in c: v = 13
-        elif "بی‌بی" in c: v = 12
+        elif "بیبی" in c: v = 12
         elif "سرباز" in c: v = 11
         if st["trump"] in c:
             v += 10
@@ -462,7 +462,7 @@ async def cb_hk_card(callback: CallbackQuery):
     await callback.answer()
 
 
-@router.message(Command("hukumduel", "حکم‌دوئل"))
+@router.message(Command("hukumduel", "حکمدوئل"))
 async def cmd_hukum_duel(message: Message):
     if not message.reply_to_message:
         await message.answer(tr(message.from_user.id, "روی حریف ریپلای کن: /hukumduel"))
@@ -497,7 +497,7 @@ async def cb_hukum_acc(callback: CallbackQuery):
     await callback.answer()
 
 
-@router.message(Command("nard", "تخته‌نرد", "نرد"))
+@router.message(Command("nard", "تختهنرد", "نرد"))
 async def cmd_nard(message: Message):
     cd = check_game_cooldown(message.from_user.id)
     if cd:
@@ -506,11 +506,11 @@ async def cmd_nard(message: Message):
     builder = InlineKeyboardBuilder()
     uid = message.from_user.id
     builder.button(text="🎲 با ربات", callback_data=f"nardbot:{uid}")
-    builder.button(text="🌐 آنلاین (وب‌اپ)", callback_data=f"nardonline:{uid}")
+    builder.button(text="🌐 آنلاین (وباپ)", callback_data=f"nardonline:{uid}")
     builder.adjust(1)
     await message.answer(
-        "🎲 <b>تخته‌نرد</b>" + chr(10)
-        + "با ربات اینجا، آنلاین در وب‌اپ (ساخت/ورود اتاق).",
+        "🎲 <b>تختهنرد</b>" + chr(10)
+        + "با ربات اینجا، آنلاین در وباپ (ساخت/ورود اتاق).",
         reply_markup=builder.as_markup(),
     )
 
@@ -522,14 +522,14 @@ async def cb_nard_bot(callback: CallbackQuery):
         await callback.answer()
         return
     await callback.message.edit_text(
-        "🎲 <b>تخته‌نرد واقعی</b>" + chr(10)
-        + "برای حرکت مهره، بار، و <b>خروج (bearing off)</b> از وب‌اپ استفاده کن:" + chr(10)
-        + "منوی ربات → Open WebApp → بازی‌ها → تخته‌نرد → با ربات" + chr(10) + chr(10)
+        "🎲 <b>تختهنرد واقعی</b>" + chr(10)
+        + "برای حرکت مهره، بار، و <b>خروج (bearing off)</b> از وباپ استفاده کن:" + chr(10)
+        + "منوی ربات → Open WebApp → بازیها → تختهنرد → با ربات" + chr(10) + chr(10)
         + "قوانین خروج:" + chr(10)
         + "• همه ۱۵ مهره باید در خانه باشند" + chr(10)
         + "• تاس دقیق یا بالاترین مهره برای خروج" + chr(10)
         + "• دکمه «خروج مهره» را بزن یا روی همان خانه کلیک کن" + chr(10) + chr(10)
-        + "اتاق دو نفره: تخته‌نرد → آنلاین"
+        + "اتاق دو نفره: تختهنرد → آنلاین"
     )
     await callback.answer()
 
@@ -537,9 +537,9 @@ async def cb_nard_bot(callback: CallbackQuery):
 @router.callback_query(F.data.startswith("nardonline:"))
 async def cb_nard_online(callback: CallbackQuery):
     await callback.message.edit_text(
-        "🌐 تخته‌نرد آنلاین در وب‌اپ:" + chr(10)
+        "🌐 تختهنرد آنلاین در وباپ:" + chr(10)
         + "۱) منوی ربات → Open WebApp" + chr(10)
-        + "۲) بخش بازی‌ها → تخته‌نرد → آنلاین" + chr(10)
+        + "۲) بخش بازیها → تختهنرد → آنلاین" + chr(10)
         + "۳) ساخت اتاق یا ورود با کد"
     )
     await callback.answer()
@@ -549,22 +549,22 @@ async def cb_nard_online(callback: CallbackQuery):
 _pending_puzzle: dict[int, dict] = {}
 
 RIDDLES = [
-    ("چیزی که هرچه بیشتر از آن برداری بزرگ‌تر می‌شود؟", ["حفره", "چاله", "سوراخ"]),
-    ("چه چیزی مال توست اما بیشتر دیگران از آن استفاده می‌کنند؟", ["اسم", "نام"]),
-    ("کدام ماه ۲۸ روز دارد؟", ["همه", "همه ماه‌ها", "همه ماه ها"]),
-    ("هرچه خشک‌تر شود، خیس‌تر می‌شود؟", ["حوله", "دستمال"]),
-    ("چه چیزی بالا می‌رود ولی هرگز پایین نمی‌آید؟", ["سن", "عمر"]),
-    ("کلید دارد اما قفل نیست، فضا دارد اما اتاق نیست؟", ["کیبورد", "صفحه‌کلید", "صفحه کلید"]),
-    ("دو نفر زیر یک چتر راه می‌روند و خیس نمی‌شوند. چرا؟", ["باران نمی‌بارد", "نمی بارد", "بارانی نیست"]),
-    ("چه چیزی پر از سوراخ است ولی آب نگه می‌دارد؟", ["اسفنج"]),
+    ("چیزی که هرچه بیشتر از آن برداری بزرگتر میشود؟", ["حفره", "چاله", "سوراخ"]),
+    ("چه چیزی مال توست اما بیشتر دیگران از آن استفاده میکنند؟", ["اسم", "نام"]),
+    ("کدام ماه ۲۸ روز دارد؟", ["همه", "همه ماهها", "همه ماه ها"]),
+    ("هرچه خشکتر شود، خیستر میشود؟", ["حوله", "دستمال"]),
+    ("چه چیزی بالا میرود ولی هرگز پایین نمیآید؟", ["سن", "عمر"]),
+    ("کلید دارد اما قفل نیست، فضا دارد اما اتاق نیست؟", ["کیبورد", "صفحهکلید", "صفحه کلید"]),
+    ("دو نفر زیر یک چتر راه میروند و خیس نمیشوند. چرا؟", ["باران نمیبارد", "نمی بارد", "بارانی نیست"]),
+    ("چه چیزی پر از سوراخ است ولی آب نگه میدارد؟", ["اسفنج"]),
 ]
 
 WORDS = [
-    ("تذهیب", "تهذیب انرژی فرقه‌ای"),
-    ("فرقه", "گروه پرورش‌دهندگان"),
+    ("تذهیب", "تهذیب انرژی فرقهای"),
+    ("فرقه", "گروه پرورشدهندگان"),
     ("آسمان", "بالای سر"),
     ("شمشیر", "سلاح تیز"),
-    ("جاویدان", "بی‌مرگ"),
+    ("جاویدان", "بیمرگ"),
     ("معما", "پازل فکری"),
     ("رعد", "صدای طوفان"),
     ("کیمیا", "تبدیل فلزات"),
@@ -627,7 +627,7 @@ async def _send_scramble(message: Message, uid: int, edit: bool = False):
     word, hint = random.choice(WORDS)
     scrambled = _scramble_word(word)
     _pending_puzzle[uid] = {"type": "scramble", "answers": [word.lower()]}
-    text = f"🔤 <b>کلمه به‌هم‌ریخته</b>\n\n<code>{scrambled}</code>\nراهنما: {hint}\n\nکلمه درست را بنویس."
+    text = f"🔤 <b>کلمه بههمریخته</b>\n\n<code>{scrambled}</code>\nراهنما: {hint}\n\nکلمه درست را بنویس."
     if edit:
         await message.edit_text(text)
     else:
@@ -664,7 +664,7 @@ async def cmd_puzzle(message: Message):
     builder.button(text="🧩 الگو", callback_data=f"game:pattern:{uid}")
     builder.button(text="🧠 معما", callback_data=f"game:riddle:{uid}")
     builder.button(text="🔢 ریاضی", callback_data=f"game:math:{uid}")
-    builder.button(text="🔤 به‌هم‌ریخته", callback_data=f"game:scramble:{uid}")
+    builder.button(text="🔤 بههمریخته", callback_data=f"game:scramble:{uid}")
     builder.adjust(2)
     await message.answer("🧩 بازی فکری را انتخاب کن:", reply_markup=builder.as_markup())
 
@@ -678,7 +678,7 @@ async def cmd_riddle(message: Message):
     await _send_riddle(message, message.from_user.id)
 
 
-@router.message(Command("mathquiz", "ریاضی", "هوش‌ریاضی"))
+@router.message(Command("mathquiz", "ریاضی", "هوشریاضی"))
 async def cmd_math(message: Message):
     cd = check_game_cooldown(message.from_user.id)
     if cd:
@@ -687,7 +687,7 @@ async def cmd_math(message: Message):
     await _send_math(message, message.from_user.id)
 
 
-@router.message(Command("scramble", "به‌هم‌ریخته", "کلمه"))
+@router.message(Command("scramble", "بههمریخته", "کلمه"))
 async def cmd_scramble(message: Message):
     cd = check_game_cooldown(message.from_user.id)
     if cd:

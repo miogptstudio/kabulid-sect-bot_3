@@ -28,13 +28,13 @@ _last_guardian: dict[int, datetime] = {}
 _gduel: dict[str, dict] = {}
 
 SAMPLE_QUESTIONS = [
-    {"category": "منطق", "difficulty": 1, "question_text": "اگر همه گربه‌ها حیوان باشند و برخی حیوان‌ها سیاه، آیا همه گربه‌ها سیاه‌اند؟", "options": ["بله", "خیر", "نمی‌توان گفت", "بستگی دارد"], "correct_answer": 1},
+    {"category": "منطق", "difficulty": 1, "question_text": "اگر همه گربهها حیوان باشند و برخی حیوانها سیاه، آیا همه گربهها سیاهاند؟", "options": ["بله", "خیر", "نمیتوان گفت", "بستگی دارد"], "correct_answer": 1},
     {"category": "ریاضی", "difficulty": 1, "question_text": "حاصل ۲ + ۲ × ۲؟", "options": ["۶", "۸", "۴", "۲"], "correct_answer": 0},
     {"category": "عمومی", "difficulty": 1, "question_text": "پایتخت ایران؟", "options": ["اصفهان", "تبریز", "تهران", "شیراز"], "correct_answer": 2},
-    {"category": "تاریخ", "difficulty": 1, "question_text": "کوروش بزرگ بنیان‌گذار کدام امپراتوری بود؟", "options": ["ساسانی", "هخامنشی", "اشکانی", "سلجوقی"], "correct_answer": 1},
+    {"category": "تاریخ", "difficulty": 1, "question_text": "کوروش بزرگ بنیانگذار کدام امپراتوری بود؟", "options": ["ساسانی", "هخامنشی", "اشکانی", "سلجوقی"], "correct_answer": 1},
     {"category": "جغرافیا", "difficulty": 1, "question_text": "بلندترین قله ایران؟", "options": ["سبلان", "دنا", "دماوند", "تفتان"], "correct_answer": 2},
     {"category": "ادبیات", "difficulty": 1, "question_text": "سراینده شاهنامه؟", "options": ["سعدی", "حافظ", "فردوسی", "مولوی"], "correct_answer": 2},
-    {"category": "علوم", "difficulty": 1, "question_text": "آب در چند درجه سانتی‌گراد می‌جوشد (سطح دریا)؟", "options": ["۰", "۵۰", "۱۰۰", "۲۱۲"], "correct_answer": 2},
+    {"category": "علوم", "difficulty": 1, "question_text": "آب در چند درجه سانتیگراد میجوشد (سطح دریا)؟", "options": ["۰", "۵۰", "۱۰۰", "۲۱۲"], "correct_answer": 2},
     {"category": "ریاضی", "difficulty": 2, "question_text": "جذر ۱۶؟", "options": ["۲", "۴", "۸", "۱۶"], "correct_answer": 1},
     {"category": "منطق", "difficulty": 2, "question_text": "کدام یکی با بقیه فرق دارد: سگ، گربه، سیب، اسب؟", "options": ["سگ", "گربه", "سیب", "اسب"], "correct_answer": 2},
     {"category": "عمومی", "difficulty": 1, "question_text": "واحد پول ایران؟", "options": ["افغانی", "ریال", "دینار", "لیر"], "correct_answer": 1},
@@ -43,14 +43,14 @@ SAMPLE_QUESTIONS = [
     {"category": "ادبیات", "difficulty": 2, "question_text": "گلستان اثر کیست؟", "options": ["حافظ", "سعدی", "خیام", "نظامی"], "correct_answer": 1},
     {"category": "علوم", "difficulty": 2, "question_text": "سیاره قرمز؟", "options": ["زهره", "مریخ", "مشتری", "عطارد"], "correct_answer": 1},
     {"category": "ریاضی", "difficulty": 2, "question_text": "۱۵٪ از ۲۰۰؟", "options": ["۱۵", "۲۰", "۳۰", "۳۵"], "correct_answer": 2},
-    {"category": "منطق", "difficulty": 1, "question_text": "اگر امروز سه‌شنبه باشد، فردا؟", "options": ["دوشنبه", "چهارشنبه", "پنجشنبه", "جمعه"], "correct_answer": 1},
+    {"category": "منطق", "difficulty": 1, "question_text": "اگر امروز سهشنبه باشد، فردا؟", "options": ["دوشنبه", "چهارشنبه", "پنجشنبه", "جمعه"], "correct_answer": 1},
     {"category": "عمومی", "difficulty": 2, "question_text": "زبان رسمی ایران؟", "options": ["عربی", "ترکی", "فارسی", "کردی"], "correct_answer": 2},
     {"category": "تاریخ", "difficulty": 1, "question_text": "تقویم رسمی ایران؟", "options": ["میلادی", "قمری", "هجری شمسی", "چینی"], "correct_answer": 2},
     {"category": "جغرافیا", "difficulty": 2, "question_text": "استان فارس مرکزش؟", "options": ["یزد", "شیراز", "کرمان", "بوشهر"], "correct_answer": 1},
     {"category": "ادبیات", "difficulty": 1, "question_text": "رباعیات معروف از؟", "options": ["خیام", "رودکی", "عنصری", "فرخی"], "correct_answer": 0},
     {"category": "علوم", "difficulty": 1, "question_text": "گاز لازم برای تنفس انسان؟", "options": ["نیتروژن", "اکسیژن", "هیدروژن", "هلیوم"], "correct_answer": 1},
     {"category": "ریاضی", "difficulty": 1, "question_text": "۷ × ۸؟", "options": ["۵۴", "۵۶", "۶۳", "۴۸"], "correct_answer": 1},
-    {"category": "معما", "difficulty": 2, "question_text": "چیزی که هر چه بیشتر از آن برداری بزرگ‌تر می‌شود؟", "options": ["چاله", "سایه", "باد", "ابر"], "correct_answer": 0},
+    {"category": "معما", "difficulty": 2, "question_text": "چیزی که هر چه بیشتر از آن برداری بزرگتر میشود؟", "options": ["چاله", "سایه", "باد", "ابر"], "correct_answer": 0},
     {"category": "برنامه", "difficulty": 2, "question_text": "زبان این ربات عمدتاً؟", "options": ["Java", "Python", "PHP", "C++"], "correct_answer": 1},
     {"category": "عمومی", "difficulty": 1, "question_text": "تعداد روزهای سال کبیسه؟", "options": ["۳۶۵", "۳۶۶", "۳۶۴", "۳۶۰"], "correct_answer": 1},
     {"category": "منطق", "difficulty": 2, "question_text": "اگر A>B و B>C آنگاه؟", "options": ["A<C", "A=C", "A>C", "نامشخص"], "correct_answer": 2},
@@ -64,20 +64,20 @@ SAMPLE_QUESTIONS = [
     {"category": "ریاضی", "difficulty": 3, "question_text": "۲ به توان ۵؟", "options": ["۱۰", "۲۵", "۳۲", "۶۴"], "correct_answer": 2},
     {"category": "علوم", "difficulty": 2, "question_text": "H2O چیست؟", "options": ["اکسیژن", "آب", "هیدروژن", "نمک"], "correct_answer": 1},
     {"category": "عمومی", "difficulty": 1, "question_text": "چند سیاره در منظومه شمسی؟", "options": ["۷", "۸", "۹", "۱۰"], "correct_answer": 1},
-    {"category": "منطق", "difficulty": 3, "question_text": "همه کتاب‌ها کاغذ دارند. این مجله کاغذ دارد. پس؟", "options": ["مجله کتاب است", "نتیجه قطعی نیست", "مجله کتاب نیست", "همه مجلات کتاب‌اند"], "correct_answer": 1},
+    {"category": "منطق", "difficulty": 3, "question_text": "همه کتابها کاغذ دارند. این مجله کاغذ دارد. پس؟", "options": ["مجله کتاب است", "نتیجه قطعی نیست", "مجله کتاب نیست", "همه مجلات کتاباند"], "correct_answer": 1},
     {"category": "تاریخ", "difficulty": 1, "question_text": "جنگ جهانی دوم کی تمام شد تقریبی؟", "options": ["۱۹۱۸", "۱۹۳۹", "۱۹۴۵", "۱۹۵۰"], "correct_answer": 2},
     {"category": "جغرافیا", "difficulty": 2, "question_text": "قاره استرالیا در کدام نیمکره است بیشتر؟", "options": ["شمالی", "جنوبی", "فقط شرقی", "فقط غربی"], "correct_answer": 1},
-    {"category": "ادبیات", "difficulty": 1, "question_text": "نویسنده بوف کور؟", "options": ["هدایت", "آل‌احمد", "دولت‌آبادی", "دانشور"], "correct_answer": 0},
-    {"category": "برنامه", "difficulty": 1, "question_text": "HTML برای چیست؟", "options": ["دیتابیس", "ساختار صفحه وب", "سیستم‌عامل", "کامپایلر"], "correct_answer": 1},
-    {"category": "معما", "difficulty": 2, "question_text": "چه کلیدی هیچ قفلی را باز نمی‌کند؟", "options": ["شاه‌کلید", "کلید پیانو", "کلید خانه", "کلید ماشین"], "correct_answer": 1},
+    {"category": "ادبیات", "difficulty": 1, "question_text": "نویسنده بوف کور؟", "options": ["هدایت", "آلاحمد", "دولتآبادی", "دانشور"], "correct_answer": 0},
+    {"category": "برنامه", "difficulty": 1, "question_text": "HTML برای چیست؟", "options": ["دیتابیس", "ساختار صفحه وب", "سیستمعامل", "کامپایلر"], "correct_answer": 1},
+    {"category": "معما", "difficulty": 2, "question_text": "چه کلیدی هیچ قفلی را باز نمیکند؟", "options": ["شاهکلید", "کلید پیانو", "کلید خانه", "کلید ماشین"], "correct_answer": 1},
     {"category": "علوم", "difficulty": 3, "question_text": "سرعت نور تقریبی؟", "options": ["۳۰۰ کیلومتر", "۳۰۰ هزار کیلومتر بر ثانیه", "۳۰ هزار", "۳ میلیون"], "correct_answer": 1},
     {"category": "عمومی", "difficulty": 2, "question_text": "المپیک هر چند سال؟", "options": ["۲", "۳", "۴", "۵"], "correct_answer": 2},
     {"category": "ریاضی", "difficulty": 1, "question_text": "۹ × ۹؟", "options": ["۷۲", "۸۱", "۹۹", "۹۰"], "correct_answer": 1},
 
-    {"category": "منطق", "difficulty": 4, "question_text": "اگر A⇒B و B⇒C و ¬C، کدام درست است؟", "options": ["A حتماً درست", "A حتماً نادرست", "B درست", "هیچ‌کدام"], "correct_answer": 1},
+    {"category": "منطق", "difficulty": 4, "question_text": "اگر A⇒B و B⇒C و ¬C، کدام درست است؟", "options": ["A حتماً درست", "A حتماً نادرست", "B درست", "هیچکدام"], "correct_answer": 1},
     {"category": "ریاضی", "difficulty": 4, "question_text": "حد (sin x)/x وقتی x→0؟", "options": ["0", "∞", "1", "وجود ندارد"], "correct_answer": 2},
     {"category": "ریاضی", "difficulty": 3, "question_text": "مشتق x³؟", "options": ["3x", "3x²", "x²", "3x³"], "correct_answer": 1},
-    {"category": "فیزیک", "difficulty": 4, "question_text": "ثابت پلانک با چه واحدی؟", "options": ["ژول", "ژول‌ثانیه", "وات", "نیوتن"], "correct_answer": 1},
+    {"category": "فیزیک", "difficulty": 4, "question_text": "ثابت پلانک با چه واحدی؟", "options": ["ژول", "ژولثانیه", "وات", "نیوتن"], "correct_answer": 1},
     {"category": "شیمی", "difficulty": 3, "question_text": "عدد اتمی کربن؟", "options": ["6", "8", "12", "14"], "correct_answer": 0},
     {"category": "شیمی", "difficulty": 4, "question_text": "pH آب خالص در ۲۵°C؟", "options": ["0", "7", "14", "1"], "correct_answer": 1},
     {"category": "تاریخ", "difficulty": 4, "question_text": "سلسله هخامنشی را چه کسی بنیان گذاشت؟", "options": ["داریوش", "کوروش", "خشایارشا", "کمبوجیه"], "correct_answer": 1},
@@ -86,23 +86,23 @@ SAMPLE_QUESTIONS = [
     {"category": "ادبیات", "difficulty": 4, "question_text": "وزن عروضی بر پایه چیست؟", "options": ["قافیه", "هجای بلند و کوتاه", "قافیه و ردیف فقط", "معنا"], "correct_answer": 1},
     {"category": "برنامه", "difficulty": 4, "question_text": "پیچیدگی جستجوی دودویی؟", "options": ["O(n)", "O(log n)", "O(n²)", "O(1)"], "correct_answer": 1},
     {"category": "برنامه", "difficulty": 3, "question_text": "HTTP وضعیت 404 یعنی؟", "options": ["موفق", "یافت نشد", "خطای سرور", "هدایت"], "correct_answer": 1},
-    {"category": "معما", "difficulty": 4, "question_text": "چه چیزی مال توست اما بیشتر دیگران استفاده می‌کنند؟", "options": ["پول", "اسمت", "خانه‌ات", "زمانت"], "correct_answer": 1},
-    {"category": "منطق", "difficulty": 5, "question_text": "پارادوکس دروغگو: «این جمله نادرست است» چه وضعی دارد؟", "options": ["درست", "نادرست", "تناقض‌آمیز", "بی‌معنا نیست"], "correct_answer": 2},
+    {"category": "معما", "difficulty": 4, "question_text": "چه چیزی مال توست اما بیشتر دیگران استفاده میکنند؟", "options": ["پول", "اسمت", "خانهات", "زمانت"], "correct_answer": 1},
+    {"category": "منطق", "difficulty": 5, "question_text": "پارادوکس دروغگو: «این جمله نادرست است» چه وضعی دارد؟", "options": ["درست", "نادرست", "تناقضآمیز", "بیمعنا نیست"], "correct_answer": 2},
     {"category": "جغرافیا", "difficulty": 3, "question_text": "بلندترین قله ایران؟", "options": ["سبلان", "دماوند", "تفتان", "الوند"], "correct_answer": 1},
-    {"category": "جغرافیا", "difficulty": 4, "question_text": "رود نیل عمدتاً به کدام دریا می‌ریزد؟", "options": ["سرخ", "مدیترانه", "سیاه", "خزر"], "correct_answer": 1},
-    {"category": "علوم", "difficulty": 4, "question_text": "DNA مخفف چیست تقریباً؟", "options": ["اسید ریبونوکلئیک", "دئوکسی‌ریبونوکلئیک اسید", "پروتئین", "آنزیم"], "correct_answer": 1},
+    {"category": "جغرافیا", "difficulty": 4, "question_text": "رود نیل عمدتاً به کدام دریا میریزد؟", "options": ["سرخ", "مدیترانه", "سیاه", "خزر"], "correct_answer": 1},
+    {"category": "علوم", "difficulty": 4, "question_text": "DNA مخفف چیست تقریباً؟", "options": ["اسید ریبونوکلئیک", "دئوکسیریبونوکلئیک اسید", "پروتئین", "آنزیم"], "correct_answer": 1},
     {"category": "عمومی", "difficulty": 3, "question_text": "واحد پول ژاپن؟", "options": ["یوان", "ین", "وون", "بات"], "correct_answer": 1},
-    {"category": "فلسفه", "difficulty": 4, "question_text": "«می‌اندیشم پس هستم» از کیست؟", "options": ["افلاطون", "دکارت", "ارسطو", "کانت"], "correct_answer": 1},
+    {"category": "فلسفه", "difficulty": 4, "question_text": "«میاندیشم پس هستم» از کیست؟", "options": ["افلاطون", "دکارت", "ارسطو", "کانت"], "correct_answer": 1},
     {"category": "ریاضی", "difficulty": 5, "question_text": "مجموع زوایای داخلی چندضلعی n ضلعی؟", "options": ["(n-2)×180", "n×180", "(n-1)×180", "360"], "correct_answer": 0},
-    {"category": "فیزیک", "difficulty": 3, "question_text": "نیروی گرانش با فاصله چه رابطه‌ای دارد؟", "options": ["مستقیم", "معکوس مربع", "ثابت", "نمایی"], "correct_answer": 1},
+    {"category": "فیزیک", "difficulty": 3, "question_text": "نیروی گرانش با فاصله چه رابطهای دارد؟", "options": ["مستقیم", "معکوس مربع", "ثابت", "نمایی"], "correct_answer": 1},
     {"category": "تاریخ ایران", "difficulty": 4, "question_text": "ضحاک در شاهنامه با چه معروف است؟", "options": ["دادگر", "مار بر دوش", "پیامبر", "وزیر"], "correct_answer": 1},
-    {"category": "تاریخ ایران", "difficulty": 3, "question_text": "کاوه‌ی آهنگر علیه چه کسی شورید؟", "options": ["جمشید", "ضحاک", "افراسیاب", "رستم"], "correct_answer": 1},
+    {"category": "تاریخ ایران", "difficulty": 3, "question_text": "کاوهی آهنگر علیه چه کسی شورید؟", "options": ["جمشید", "ضحاک", "افراسیاب", "رستم"], "correct_answer": 1},
     {"category": "منطق", "difficulty": 3, "question_text": "اگر بعضی Aها Bاند و همه Bها Cاند، آیا بعضی Aها Cاند؟", "options": ["حتماً بله", "حتماً خیر", "نتیجه قطعی نیست از این دو", "همه Aها Cاند"], "correct_answer": 0},
-    {"category": "برنامه", "difficulty": 5, "question_text": "Deadlock در سیستم‌عامل یعنی؟", "options": ["سرعت بالا", "بن‌بست منابع", "حافظه آزاد", "صف خالی"], "correct_answer": 1},
-    {"category": "معما", "difficulty": 3, "question_text": "چیزی که هرچه بیشتر برداری بزرگ‌تر می‌شود؟", "options": ["چاله", "کوه", "درخت", "ابر"], "correct_answer": 0},
+    {"category": "برنامه", "difficulty": 5, "question_text": "Deadlock در سیستمعامل یعنی؟", "options": ["سرعت بالا", "بنبست منابع", "حافظه آزاد", "صف خالی"], "correct_answer": 1},
+    {"category": "معما", "difficulty": 3, "question_text": "چیزی که هرچه بیشتر برداری بزرگتر میشود؟", "options": ["چاله", "کوه", "درخت", "ابر"], "correct_answer": 0},
     {"category": "شیمی", "difficulty": 5, "question_text": "عدد آووگادرو تقریبی؟", "options": ["۶٫۰۲×۱۰²³", "۳×۱۰⁸", "۹٫۸", "۱٫۶×۱۰⁻¹⁹"], "correct_answer": 0},
     {"category": "ادبیات", "difficulty": 5, "question_text": "سبک هندی بیشتر با کدام شاعر؟", "options": ["صائب", "فردوسی", "رودکی", "نظامی"], "correct_answer": 0},
-    {"category": "فیزیک", "difficulty": 5, "question_text": "اصل عدم قطعیت هایزنبرگ درباره چیست؟", "options": ["انرژی فقط", "اندازه‌گیری همزمان مکان و تکانه", "نور فقط", "دما"], "correct_answer": 1},
+    {"category": "فیزیک", "difficulty": 5, "question_text": "اصل عدم قطعیت هایزنبرگ درباره چیست؟", "options": ["انرژی فقط", "اندازهگیری همزمان مکان و تکانه", "نور فقط", "دما"], "correct_answer": 1},
     {"category": "ریاضی", "difficulty": 4, "question_text": "اگر log₁₀(x)=2 آنگاه x؟", "options": ["20", "100", "0.01", "2"], "correct_answer": 1},
 
 ]
@@ -116,7 +116,7 @@ def _qid(q: dict) -> str:
 def _pick_question(user_id: int) -> dict | None:
     seen = _seen.setdefault(user_id, set())
     available = [q for q in SAMPLE_QUESTIONS if _qid(q) not in seen]
-    # ترجیح سوال سخت‌تر
+    # ترجیح سوال سختتر
     hard = [q for q in available if int(q.get('difficulty') or 1) >= 3]
     if hard and random.random() < 0.65:
         available = hard
@@ -156,7 +156,7 @@ async def cmd_guardian(message: Message):
     last = _last_guardian.get(uid)
     if last and (datetime.utcnow() - last).total_seconds() < GUARDIAN_COOLDOWN_SEC:
         left = int(GUARDIAN_COOLDOWN_SEC - (datetime.utcnow() - last).total_seconds())
-        await message.answer(f"⏳ نگهبان هر ۵ دقیقه یک‌بار. {left} ثانیه صبر کن.")
+        await message.answer(f"⏳ نگهبان هر ۵ دقیقه یکبار. {left} ثانیه صبر کن.")
         return
     _last_guardian[uid] = datetime.utcnow()
 
@@ -232,11 +232,11 @@ async def process_guardian_answer(callback: CallbackQuery):
     await callback.answer()
 
 
-@router.message(Command("gduel", "نگهبان‌دو نفره", "guardian2", "نگهبان2", "دوئل‌نگهبان"))
+@router.message(Command("gduel", "نگهباندو نفره", "guardian2", "نگهبان2", "دوئلنگهبان"))
 async def cmd_gduel(message: Message):
     """دوئل نگهبان دو نفره — ریپلای"""
     if not message.reply_to_message:
-        await message.answer(tr(message.from_user.id, "روی پیام حریف ریپلای کن و /gduel بزن.\nهر کس زودتر جواب درست بدهد می‌برد."))
+        await message.answer(tr(message.from_user.id, "روی پیام حریف ریپلای کن و /gduel بزن.\nهر کس زودتر جواب درست بدهد میبرد."))
         return
     u2 = message.reply_to_message.from_user
     if u2.id == message.from_user.id:
@@ -259,7 +259,7 @@ async def cmd_gduel(message: Message):
     await message.answer(
         f"🛡️⚔️ <b>دوئل نگهبان</b>\n"
         f"{message.from_user.full_name} vs {u2.full_name}\n"
-        f"۲۰ ثانیه — هر کس زودتر درست بگوید می‌برد!\n\n"
+        f"۲۰ ثانیه — هر کس زودتر درست بگوید میبرد!\n\n"
         f"{q['question_text']}",
         reply_markup=builder.as_markup(),
     )

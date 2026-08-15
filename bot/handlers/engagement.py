@@ -63,9 +63,9 @@ _auctions: list[dict] = []
 async def cmd_auction(message: Message):
     parts = (message.text or "").split(maxsplit=2)
     if len(parts) < 3:
-        text = "🏛️ <b>مزایده‌ها</b>\n\n"
+        text = "🏛️ <b>مزایدهها</b>\n\n"
         if not _auctions:
-            text += "مزایده فعالی نیست.\nساخت: /auction نام‌آیتم قیمت‌شروع"
+            text += "مزایده فعالی نیست.\nساخت: /auction نامآیتم قیمتشروع"
         else:
             for i, a in enumerate(_auctions):
                 text += f"{i+1}. {a['item']} — بالاترین: {a['bid']} سکه (@{a.get('bidder_name','—')})\n"

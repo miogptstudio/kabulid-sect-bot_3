@@ -34,7 +34,7 @@ async def on_startup():
     await migrate_schema()
     try:
         from services.persist import preload_all, load_from_db, sync_to_db
-        # PostgreSQL منبع اصلی داده‌های پایدار است؛ فایل محلی فقط fallback است.
+        # PostgreSQL منبع اصلی دادههای پایدار است؛ فایل محلی فقط fallback است.
         n = await load_from_db()
         preload_all()
         logger.info("Persist loaded from DB: %s namespaces", n)
@@ -60,7 +60,7 @@ async def main():
     dp.message.middleware(AutoReplyMiddleware())
     dp.callback_query.middleware(ServiceLockMiddleware())
 
-    # ورود به بخش‌ها با نوشتن نامشان، بدون نیاز به /command
+    # ورود به بخشها با نوشتن نامشان، بدون نیاز به /command
     dp.include_router(text_navigation.router)
     dp.include_router(start.router)
     dp.include_router(advanced_systems.router)

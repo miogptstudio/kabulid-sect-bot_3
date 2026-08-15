@@ -1,4 +1,4 @@
-"""دستورات نگهداشت کاربر: رویداد، استریک، راهنما، جنگ زمان‌دار، سینک"""
+"""دستورات نگهداشت کاربر: رویداد، استریک، راهنما، جنگ زماندار، سینک"""
 from aiogram import Router
 from aiogram.types import Message
 from aiogram.filters import Command
@@ -13,10 +13,10 @@ from services.i18n import tr
 router = Router()
 
 
-@router.message(Command("guide", "راهنما‌شروع", "آموزش"))
+@router.message(Command("guide", "راهنماشروع", "آموزش"))
 async def cmd_guide(message: Message):
     text = (
-        "📖 <b>راهنمای سه‌مرحله‌ای تازه‌کار</b>\n\n"
+        "📖 <b>راهنمای سهمرحلهای تازهکار</b>\n\n"
         "<b>مرحله ۱ — هویت</b>\n"
         "• /setgender مرد | زن\n"
         "• /race برای دیدن نژادها (اختیاری)\n\n"
@@ -27,7 +27,7 @@ async def cmd_guide(message: Message):
         "<b>مرحله ۳ — اولین دوئل</b>\n"
         "• روی پیام کسی ریپلای کن و /duel بزن\n"
         "• یا /arena برای آرنا\n\n"
-        "بعدی‌های مفید:\n"
+        "بعدیهای مفید:\n"
         "/daily — ورود روزانه و استریک\n"
         "/missions — مأموریت\n"
         "/wallet — کیف پول\n"
@@ -42,7 +42,7 @@ async def cmd_daily(message: Message):
     tg = message.from_user.id
     res = ret.claim_streak(tg)
     if res.get("already"):
-        await message.answer(f"امروز جایزه‌ات را گرفتی.\n🔥 استریک: <b>{res['count']}</b> روز")
+        await message.answer(f"امروز جایزهات را گرفتی.\n🔥 استریک: <b>{res['count']}</b> روز")
         return
     async with async_session() as session:
         user = await get_or_create_user(
@@ -89,13 +89,13 @@ async def cmd_event(message: Message):
         f"{war['msg']}\n\n"
         "/eventjoin — پیوستن به رویداد\n"
         "/eventscore — ثبت +۱ امتیاز (با عمل بازی بهتر است)\n"
-        "/eventtop — برترین‌های امروز\n"
+        "/eventtop — برترینهای امروز\n"
         "/warstatus — وضعیت جنگ قلمرو"
     )
     await message.answer(text)
 
 
-@router.message(Command("eventjoin", "پیوستن‌رویداد"))
+@router.message(Command("eventjoin", "پیوستنرویداد"))
 async def cmd_event_join(message: Message):
     await message.answer(ret.event_join(message.from_user.id))
 
@@ -109,12 +109,12 @@ async def cmd_event_score(message: Message):
     await message.answer(f"⭐ امتیاز رویداد: <b>{sc}</b>\n/eventtop")
 
 
-@router.message(Command("eventtop", "برتر‌رویداد"))
+@router.message(Command("eventtop", "برتررویداد"))
 async def cmd_event_top(message: Message):
     await message.answer(ret.event_top())
 
 
-@router.message(Command("warstatus", "جنگ‌قلمرو"))
+@router.message(Command("warstatus", "جنگقلمرو"))
 async def cmd_war_status(message: Message):
     await message.answer(ret.territory_war_window()["msg"])
 
@@ -136,23 +136,23 @@ async def cmd_repair(message: Message):
         await session.commit()
     await message.answer(
         f"🔧 تعمیر انجام شد. −{cost} سکه غرق شد (ضد تورم).\n"
-        f"ساختمان‌هایت پایدارتر شدند."
+        f"ساختمانهایت پایدارتر شدند."
     )
 
 
-@router.message(Command("revivepay", "هزینه‌احیا"))
+@router.message(Command("revivepay", "هزینهاحیا"))
 async def cmd_revive_cost(message: Message):
     await message.answer(
         f"💀 هزینه احیا: <b>{ret.revive_cost()}</b> سکه\n"
-        f"با /death و انتخاب پرورش‌دهنده روح یا پرداخت هنگام مرگ."
+        f"با /death و انتخاب پرورشدهنده روح یا پرداخت هنگام مرگ."
     )
 
 
-@router.message(Command("marketoffer", "پیشنهادمی‌دم"))
+@router.message(Command("marketoffer", "پیشنهادمیدم"))
 async def cmd_market_offer(message: Message):
     parts = (message.text or "").split()
     if len(parts) < 3:
-        await message.answer("فرمت: /marketoffer شماره‌آگهی قیمت\nمثال: /marketoffer 1 500")
+        await message.answer("فرمت: /marketoffer شمارهآگهی قیمت\nمثال: /marketoffer 1 500")
         return
     try:
         lid = int(parts[1])
@@ -172,7 +172,7 @@ async def cmd_market_offer(message: Message):
 async def cmd_offers(message: Message):
     parts = (message.text or "").split()
     if len(parts) < 2:
-        await message.answer("/offers شماره‌آگهی")
+        await message.answer("/offers شمارهآگهی")
         return
     try:
         lid = int(parts[1])

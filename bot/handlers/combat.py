@@ -17,13 +17,13 @@ router = Router()
 async def cmd_kill(message: Message):
     if message.reply_to_message and message.reply_to_message.from_user:
         if message.reply_to_message.from_user.is_bot:
-            await message.answer("🤖 کسی نمی‌تواند ربات را بکشد.")
+            await message.answer("🤖 کسی نمیتواند ربات را بکشد.")
             return
 
     if not message.reply_to_message:
         await message.answer(
             "☠️ حمله: ریپلای + /kill\n"
-            "با یک ضربه نمی‌میرد — زخمی و مسموم می‌شود.\n"
+            "با یک ضربه نمیمیرد — زخمی و مسموم میشود.\n"
             "۳ ساعت فرصت /heal با قرص سلامتی."
         )
         return
@@ -39,7 +39,7 @@ async def cmd_kill(message: Message):
         t = message.reply_to_message.from_user
         victim = await get_or_create_user(session, t.id, t.full_name, t.username)
         if attacker.is_dead:
-            await message.answer(tr(message.from_user.id, "تو مرده‌ای."))
+            await message.answer(tr(message.from_user.id, "تو مردهای."))
             return
         from services.prison import check_prison_block, record_kill, put_in_prison, KILL_LIMIT_PER_DAY
         block = await check_prison_block(session, attacker)
@@ -48,7 +48,7 @@ async def cmd_kill(message: Message):
             return
         from services.cultivation import is_immortal_race
         if is_immortal_race(getattr(victim, "race", None)):
-            await message.answer(tr(message.from_user.id, "نژاد خدایان نامیراست — نمی‌میرد."))
+            await message.answer(tr(message.from_user.id, "نژاد خدایان نامیراست — نمیمیرد."))
             return
         if victim.is_dead:
             await message.answer(tr(message.from_user.id, "طرف مرده است."))
@@ -60,7 +60,7 @@ async def cmd_kill(message: Message):
 
         p1 = await calc_power(session, attacker)
         p2 = await calc_power(session, victim)
-        # قدرت تعیین می‌کند چقدر آسیب
+        # قدرت تعیین میکند چقدر آسیب
         dmg = 12 + max(0, (p1["total"] - p2["total"]) // 15)
         cyrus = has_cyrus(attacker)
         if cyrus:
@@ -84,7 +84,7 @@ async def cmd_kill(message: Message):
         )
         if res.get("killed"):
             n = record_kill(attacker.id)
-            text += chr(10) + f"📊 قتل‌های امروز تو: {n}/{KILL_LIMIT_PER_DAY}"
+            text += chr(10) + f"📊 قتلهای امروز تو: {n}/{KILL_LIMIT_PER_DAY}"
             if n > KILL_LIMIT_PER_DAY:
                 text += chr(10) + await put_in_prison(session, attacker)
         await message.answer(text)

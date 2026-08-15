@@ -79,7 +79,7 @@ _dual_servant_cd: dict = {}  # telegram_id -> last dual datetime
 _rps_challenges: dict[int, dict] = {}
 
 
-@router.message(Command("pay", "ارسال‌پول", "بفرست‌پول", "انتقال‌ارز", "transfer"))
+@router.message(Command("pay", "ارسالپول", "بفرستپول", "انتقالارز", "transfer"))
 async def cmd_pay(message: Message):
     """انتقال همه ارزها به دیگران"""
     CURRENCY = {
@@ -88,7 +88,7 @@ async def cmd_pay(message: Message):
         "heavenly": ("heavenly_stones", "سنگ بهشتی"), "بهشتی": ("heavenly_stones", "سنگ بهشتی"),
         "celestial": ("celestial_stones", "سنگ آسمانی"), "آسمانی": ("celestial_stones", "سنگ آسمانی"),
         "god": ("god_stones", "سنگ خدا"), "خدا": ("god_stones", "سنگ خدا"),
-        "chaos": ("chaos_stones", "سنگ هرج‌ومرج"), "هرج‌ومرج": ("chaos_stones", "سنگ هرج‌ومرج"),
+        "chaos": ("chaos_stones", "سنگ هرجومرج"), "هرجومرج": ("chaos_stones", "سنگ هرجومرج"),
         "void": ("void_stones", "سنگ پوچی"), "پوچی": ("void_stones", "سنگ پوچی"),
         "origin": ("origin_stones", "سنگ ازلی"), "ازلی": ("origin_stones", "سنگ ازلی"),
         "destiny": ("destiny_stones", "سنگ تقدیر"), "تقدیر": ("destiny_stones", "سنگ تقدیر"),
@@ -102,7 +102,7 @@ async def cmd_pay(message: Message):
     HELP = (
         "💸 <b>انتقال ارز</b>" + chr(10) + chr(10)
         + "ریپلای + /pay نوع مقدار" + chr(10)
-        + "یا /pay آیدی‌عددی نوع مقدار" + chr(10) + chr(10)
+        + "یا /pay آیدیعددی نوع مقدار" + chr(10) + chr(10)
         + "<b>انواع:</b>" + chr(10)
         + "• coins / سکه" + chr(10)
         + "• spirit / روحی" + chr(10)
@@ -157,7 +157,7 @@ async def cmd_pay(message: Message):
             if getattr(target, "telegram_id", None) and message.bot:
                 me = await message.bot.get_me()
                 if target.telegram_id == me.id:
-                    await message.answer("🤖 ربات چیزی از بازیکن‌ها دریافت نمی‌کند (ارز/آیتم).")
+                    await message.answer("🤖 ربات چیزی از بازیکنها دریافت نمیکند (ارز/آیتم).")
                     return
         except Exception:
             pass
@@ -183,7 +183,7 @@ async def cmd_pay(message: Message):
     )
 
 
-@router.message(Command("payall", "انتقال‌چندارز", "بفرست‌همه"))
+@router.message(Command("payall", "انتقالچندارز", "بفرستهمه"))
 async def cmd_payall(message: Message):
     """چند ارز در یک دستور: /payall coins 10 spirit 2 heavenly 1 god 1 chaos 1 void 1 origin 1"""
     CURRENCY = {
@@ -192,7 +192,7 @@ async def cmd_payall(message: Message):
         "heavenly": ("heavenly_stones", "سنگ بهشتی"), "بهشتی": ("heavenly_stones", "سنگ بهشتی"),
         "celestial": ("celestial_stones", "سنگ آسمانی"), "آسمانی": ("celestial_stones", "سنگ آسمانی"),
         "god": ("god_stones", "سنگ خدا"), "خدا": ("god_stones", "سنگ خدا"),
-        "chaos": ("chaos_stones", "سنگ هرج‌ومرج"), "هرج‌ومرج": ("chaos_stones", "سنگ هرج‌ومرج"),
+        "chaos": ("chaos_stones", "سنگ هرجومرج"), "هرجومرج": ("chaos_stones", "سنگ هرجومرج"),
         "void": ("void_stones", "سنگ پوچی"), "پوچی": ("void_stones", "سنگ پوچی"),
         "origin": ("origin_stones", "سنگ ازلی"), "ازلی": ("origin_stones", "سنگ ازلی"),
         "destiny": ("destiny_stones", "سنگ تقدیر"), "تقدیر": ("destiny_stones", "سنگ تقدیر"),
@@ -307,7 +307,7 @@ async def cmd_market(message: Message):
     await message.answer(text)
 
 
-@router.message(Command("marketbuy", "خرید‌بازار"))
+@router.message(Command("marketbuy", "خریدبازار"))
 async def cmd_market_buy(message: Message):
     parts = (message.text or "").split()
     if len(parts) < 2:
@@ -395,7 +395,7 @@ async def cmd_buy_servant_legacy(message: Message):
     (_servants_map().setdefault(str(message.from_user.id), []).append(s["id"]), _ss("servants"))
     await message.answer(
         f"✅ {s['name']} را خریدی.\n"
-        f"⚠️ آسیب زدن به خدمتکار ممنوع است و باعث مرگ و حذف اکانت می‌شود."
+        f"⚠️ آسیب زدن به خدمتکار ممنوع است و باعث مرگ و حذف اکانت میشود."
     )
 
 
@@ -422,9 +422,9 @@ async def cmd_my_servants_legacy(message: Message):
     await message.answer(text)
 
 
-@router.message(Command("marryservant", "ازدواج‌خدمتکار"))
+@router.message(Command("marryservant", "ازدواجخدمتکار"))
 async def cmd_marry_servant(message: Message):
-    """ازدواج با خدمتکار؛ شمارهٔ /myservants یا شمارهٔ بازار را می‌پذیرد."""
+    """ازدواج با خدمتکار؛ شمارهٔ /myservants یا شمارهٔ بازار را میپذیرد."""
     parts = (message.text or "").split()
     selector = None
 
@@ -468,7 +468,7 @@ async def cmd_marry_servant_text(message: Message):
         await message.answer(msg)
 
 
-@router.message(Command("dualservant", "تذهیب‌خدمتکار", "دوگانه‌خدمتکار"))
+@router.message(Command("dualservant", "تذهیبخدمتکار", "دوگانهخدمتکار"))
 async def cmd_dual_servant(message: Message):
     from datetime import datetime, timedelta
     import random
@@ -477,7 +477,7 @@ async def cmd_dual_servant(message: Message):
         await message.answer(
             "☯️ /dualservant شماره" + chr(10)
             + "نیاز: خرید + ازدواج با خدمتکار + /gender مخالف" + chr(10)
-            + "پاداش: +۵۰ انرژی | شانس نادر بچه | کول‌داون ۳۰ دقیقه"
+            + "پاداش: +۵۰ انرژی | شانس نادر بچه | کولداون ۳۰ دقیقه"
         )
         return
     try:
@@ -503,7 +503,7 @@ async def cmd_dual_servant(message: Message):
     last = _dual_servant_cd.get(message.from_user.id)
     if last and datetime.utcnow() - last < timedelta(minutes=30):
         left = int((timedelta(minutes=30) - (datetime.utcnow() - last)).total_seconds() // 60) + 1
-        await message.answer(f"⏳ کول‌داون تذهیب دوگانه خدمتکار: {left} دقیقه")
+        await message.answer(f"⏳ کولداون تذهیب دوگانه خدمتکار: {left} دقیقه")
         return
     async with async_session() as session:
         user = await get_or_create_user(
@@ -550,7 +550,7 @@ async def cmd_dual_servant(message: Message):
     await message.answer(msg)
 
 
-@router.message(Command("childservant", "بچه‌خدمتکار", "فرزند‌خدمتکار"))
+@router.message(Command("childservant", "بچهخدمتکار", "فرزندخدمتکار"))
 async def cmd_child_servant(message: Message):
     import random
     from datetime import datetime, timedelta
@@ -560,7 +560,7 @@ async def cmd_child_servant(message: Message):
         await message.answer(
             "👶 /childservant شماره" + chr(10)
             + "با خدمتکار همسر و جنسیت مخالف" + chr(10)
-            + f"شانس نادر ({CHILD_CHANCE}) | هر ۱ ساعت یک‌بار"
+            + f"شانس نادر ({CHILD_CHANCE}) | هر ۱ ساعت یکبار"
         )
         return
     try:
@@ -581,7 +581,7 @@ async def cmd_child_servant(message: Message):
     key = f"child_{message.from_user.id}"
     last = _dual_servant_cd.get(key)
     if last and datetime.utcnow() - last < timedelta(hours=1):
-        await message.answer(tr(message.from_user.id, "⏳ هر ۱ ساعت یک‌بار."))
+        await message.answer(tr(message.from_user.id, "⏳ هر ۱ ساعت یکبار."))
         return
     async with async_session() as session:
         user = await get_or_create_user(
@@ -618,7 +618,7 @@ async def cmd_child_servant(message: Message):
         )
 
 
-@router.message(Command("mychildren", "فرزندان‌من", "بچه‌ها"))
+@router.message(Command("mychildren", "فرزندانمن", "بچهها"))
 async def cmd_my_children(message: Message):
     kids = _servant_children.get(message.from_user.id, [])
     if not kids:
@@ -634,17 +634,17 @@ async def cmd_my_children(message: Message):
         text += f"{i}. <b>{c.get('name')}</b> ({c.get('gender')})" + chr(10)
         if c.get("servant"):
             text += f"   مادر/پدر خدمتکار: {c['servant']}" + chr(10)
-        text += f"   تکنیک‌ها: {', '.join(techs) if techs else '—'}" + chr(10)
-    text += chr(10) + "/namechild شماره نام‌جدید" + chr(10) + "/teachchild شماره نام‌تکنیک"
+        text += f"   تکنیکها: {', '.join(techs) if techs else '—'}" + chr(10)
+    text += chr(10) + "/namechild شماره نامجدید" + chr(10) + "/teachchild شماره نامتکنیک"
     await message.answer(text)
 
 
-@router.message(Command("namechild", "اسم‌بچه", "نام‌فرزند"))
+@router.message(Command("namechild", "اسمبچه", "نامفرزند"))
 async def cmd_name_child(message: Message):
     """ /namechild شماره نام """
     parts = (message.text or "").split(maxsplit=2)
     if len(parts) < 3:
-        await message.answer("فرمت: /namechild شماره نام‌جدید" + chr(10) + "مثال: /namechild 1 آریا")
+        await message.answer("فرمت: /namechild شماره نامجدید" + chr(10) + "مثال: /namechild 1 آریا")
         return
     try:
         idx = int(parts[1]) - 1
@@ -664,13 +664,13 @@ async def cmd_name_child(message: Message):
     await message.answer(f"✅ نام فرزند عوض شد:" + chr(10) + f"{old} → <b>{new_name}</b>")
 
 
-@router.message(Command("teachchild", "آموزش‌بچه", "تکنیک‌فرزند"))
+@router.message(Command("teachchild", "آموزشبچه", "تکنیکفرزند"))
 async def cmd_teach_child(message: Message):
-    """ /teachchild شماره نام‌تکنیک — از تکنیک‌های خودت به فرزند یاد بده """
+    """ /teachchild شماره نامتکنیک — از تکنیکهای خودت به فرزند یاد بده """
     parts = (message.text or "").split(maxsplit=2)
     if len(parts) < 3:
         await message.answer(
-            "فرمت: /teachchild شماره نام‌تکنیک" + chr(10)
+            "فرمت: /teachchild شماره نامتکنیک" + chr(10)
             + "باید خودت آن تکنیک را بلد باشی." + chr(10)
             + "مثال: /teachchild 1 تنفس پایه"
         )
@@ -712,7 +712,7 @@ async def cmd_teach_child(message: Message):
     if not known:
         await message.answer(
             f"تکنیک «{tech_name}» را بلد نیستی." + chr(10)
-            + "/techniques — لیست تکنیک‌های خودت"
+            + "/techniques — لیست تکنیکهای خودت"
         )
         return
     child = kids[idx]
@@ -721,17 +721,17 @@ async def cmd_teach_child(message: Message):
         await message.answer(f"{child.get('name')} قبلاً «{tech_name}» را بلد است.")
         return
     if len(techs) >= 8:
-        await message.answer("این فرزند حداکثر ۸ تکنیک می‌تواند یاد بگیرد.")
+        await message.answer("این فرزند حداکثر ۸ تکنیک میتواند یاد بگیرد.")
         return
     techs.append(tech_name)
     await message.answer(
         f"📚 به <b>{child.get('name')}</b> تکنیک «{tech_name}» یاد دادی." + chr(10)
-        + f"تکنیک‌های فرزند: {', '.join(techs)}"
+        + f"تکنیکهای فرزند: {', '.join(techs)}"
     )
 
 
 
-@router.message(Command("harmservant", "آسیب‌خدمتکار"))
+@router.message(Command("harmservant", "آسیبخدمتکار"))
 async def cmd_harm_servant(message: Message):
     """آسیب = مرگ + حذف اکانت"""
     ids = _servants_map().get(str(message.from_user.id), [])
@@ -754,7 +754,7 @@ async def cmd_harm_servant(message: Message):
     )
 
 
-@router.message(Command("rpsduel", "سنگ‌دوئل"))
+@router.message(Command("rpsduel", "سنگدوئل"))
 async def cmd_rps_duel(message: Message):
     if not message.reply_to_message:
         await message.answer(tr(message.from_user.id, "روی حریف ریپلای کن و /rpsduel بزن."))
@@ -775,7 +775,7 @@ async def cmd_rps_duel(message: Message):
         )
     builder.adjust(3)
     await message.answer(
-        f"✊✋✌ چالش سنگ‌کاغذ‌قیچی از {message.from_user.full_name}\n"
+        f"✊✋✌ چالش سنگکاغذقیچی از {message.from_user.full_name}\n"
         f"فقط {opp.full_name} انتخاب کند:",
         reply_markup=builder.as_markup(),
     )
@@ -822,9 +822,9 @@ async def cmd_leaders(message: Message):
             select(Sect).where(Sect.is_active == True).order_by(desc(Sect.total_points)).limit(10)
         )
         sects = r2.scalars().all()
-        text += "\n🏛️ <b>لیدربورد فرقه‌ها</b>\n\n"
+        text += "\n🏛️ <b>لیدربورد فرقهها</b>\n\n"
         if not sects:
-            text += "فرقه‌ای نیست.\n"
+            text += "فرقهای نیست.\n"
         for i, s in enumerate(sects, 1):
             text += f"{i}. {s.name} ({s.sect_type}) — {s.total_points} امتیاز\n"
 
@@ -840,7 +840,7 @@ async def cmd_leaders(message: Message):
 
     await message.answer(text)
 
-@router.message(Command("solotop", "لیدر‌جق", "برتر‌خودارضایی"))
+@router.message(Command("solotop", "لیدرجق", "برترخودارضایی"))
 async def cmd_solo_top(message: Message):
     async with async_session() as session:
         result = await session.execute(select(User).where(User.is_active == True))
@@ -857,7 +857,7 @@ async def cmd_solo_top(message: Message):
             if shown >= 15:
                 break
         if shown == 0:
-            lines.append("هنوز آماری نیست. با /solo ثبت می‌شود.")
+            lines.append("هنوز آماری نیست. با /solo ثبت میشود.")
         await message.answer(chr(10).join(lines))
 
 
@@ -866,13 +866,13 @@ async def cmd_solo_top(message: Message):
 @router.message(Command("servants", "خدمتکار", "برده", "بازارخدمتکار"))
 async def cmd_servants_v2(message: Message):
     from services.portraits import panel_url
-    await message.answer_photo(FSInputFile(panel_url("servants")), caption="🧑‍🤝‍🧑 <b>بازار خدمتکاران</b>")
+    await message.answer_photo(FSInputFile(panel_url("servants")), caption="🧑🤝🧑 <b>بازار خدمتکاران</b>")
     # Each servant gets its own image/panel.
     from bot.utils.servant_panel import servant_keyboard, servant_image
     for item in servmod.MARKET:
         idx=int(item["id"])
         img=servant_image(idx)
-        text=(f"🧑‍🤝‍🧑 <b>{item['name']}</b>\n"
+        text=(f"🧑🤝🧑 <b>{item['name']}</b>\n"
               f"🧬 تبار: {item.get('race','—')}\n"
               f"⚧ جنسیت: {item.get('gender','—')}\n"
               f"💰 قیمت: {item.get('price',0):,} سکه\n"
@@ -883,7 +883,7 @@ async def cmd_servants_v2(message: Message):
             await message.answer(text, reply_markup=servant_keyboard(idx))
 
 
-@router.message(Command("buyservant", "خریدخدمتکار", "خرید‌خدمتکار"))
+@router.message(Command("buyservant", "خریدخدمتکار", "خریدخدمتکار"))
 async def cmd_buy_servant_v2(message: Message):
     parts=(message.text or "").split()
     if len(parts)<2 or not parts[1].isdigit():
@@ -912,7 +912,7 @@ async def cmd_buy_servant_v2(message: Message):
             await message.answer(msg)
 
 
-@router.message(Command("myservants", "خدمتکارها‌ی‌من", "لیست‌خدمتکار", "خدمتکار‌من"))
+@router.message(Command("myservants", "خدمتکارهایمن", "لیستخدمتکار", "خدمتکارمن"))
 async def cmd_my_servants_v2(message: Message):
     bag=servmod.list_owned(message.from_user.id)
     if not bag:
@@ -928,7 +928,7 @@ async def cmd_my_servants_v2(message: Message):
             await message.answer(caption,reply_markup=servant_keyboard(idx))
 
 
-@router.message(Command("showservant", "عکس‌خدمتکار", "پرتره‌خدمتکار"))
+@router.message(Command("showservant", "عکسخدمتکار", "پرترهخدمتکار"))
 async def cmd_show_servant(message: Message):
     parts=(message.text or "").split()
     if len(parts)<2 or not parts[1].isdigit():
@@ -1028,7 +1028,7 @@ async def cmd_hunt_servant(message: Message):
                     pass
 
 
-@router.message(Command("trainservant", "پرورش‌خدمتکار"))
+@router.message(Command("trainservant", "پرورشخدمتکار"))
 async def cmd_train_servant(message: Message):
     parts = (message.text or "").split()
     if len(parts) < 2 or not parts[1].isdigit():
@@ -1037,7 +1037,7 @@ async def cmd_train_servant(message: Message):
     await message.answer(servmod.train(message.from_user.id, int(parts[1])))
 
 
-@router.message(Command("transformservant", "دگرگونی‌خدمتکار"))
+@router.message(Command("transformservant", "دگرگونیخدمتکار"))
 async def cmd_transform_servant(message: Message):
     parts = (message.text or "").split()
     if len(parts) < 2 or not parts[1].isdigit():
@@ -1063,7 +1063,7 @@ async def cmd_feed_loyalty(message: Message):
         await message.answer(msg)
 
 
-@router.message(Command("checkbetray", "بررسی‌خیانت"))
+@router.message(Command("checkbetray", "بررسیخیانت"))
 async def cmd_check_betray(message: Message):
     await message.answer(servmod.check_betrayal(message.from_user.id))
 
@@ -1074,8 +1074,8 @@ async def cb_servant_duel_guide(callback: CallbackQuery):
     idx = callback.data.split(":", 1)[1]
     await callback.message.answer(
         "⚔️ <b>دوئل خدمتکاران</b>\n\n"
-        f"خدمتکار شماره {idx} را انتخاب کرده‌ای. برای مبارزه با خدمتکار حریف، "
+        f"خدمتکار شماره {idx} را انتخاب کردهای. برای مبارزه با خدمتکار حریف، "
         "روی پیام او ریپلای کن و بنویس:\n"
         f"<code>/servantduel {idx} شماره_خدمتکار_حریف</code>\n\n"
-        "این دوئل فقط آمار خود خدمتکارها را مقایسه می‌کند."
+        "این دوئل فقط آمار خود خدمتکارها را مقایسه میکند."
     )
