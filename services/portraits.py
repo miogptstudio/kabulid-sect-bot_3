@@ -86,16 +86,14 @@ def pet_url(name: str) -> str:
 
 # تصاویر پنل‌های ربات؛ بر اساس seed ثابت، برای هر بخش تصویر ثابت و قابل‌تکرار است.
 def panel_url(kind: str, gender: str = "مرد", name: str = "Kabulid", size: int = 768) -> str:
-    """Return the exact bundled image for a game panel."""
     from pathlib import Path
     root = Path(__file__).resolve().parent.parent / "assets" / "panels"
-    aliases = {
-        "job": "jobs",
-        "jobs": "jobs",
-        "profile": "profile_female" if gender == "زن" else "profile_male",
-    }
+    aliases = {"job":"jobs", "jobs":"jobs", "profile":"profile_female" if gender=="زن" else "profile_male"}
     path = root / (aliases.get(kind, kind) + ".jpg")
-    if not path.exists():
-        path = root / "settings.jpg"
-    return str(path)
+    return str(path if path.exists() else root/"settings.jpg")
 
+
+def servant_image_path(servant_key: str) -> str:
+    from pathlib import Path
+    path = Path(__file__).resolve().parent.parent / "assets" / "servants" / f"{servant_key}.jpg"
+    return str(path)

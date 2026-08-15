@@ -292,128 +292,131 @@ def wallet_text(w: UserWallet) -> str:
 
 
 def currency_to_coins(w: UserWallet) -> int:
-    """کل دارایی به معادل سکه"""
+    """ارزش کل کیف به معادل سکه؛ بدون سقف مصنوعی پایتونی."""
     c = int(w.coins or 0)
     c += int(w.spirit_stones or 0) * COINS_PER_STONE
     c += int(getattr(w, "heavenly_stones", 0) or 0) * COINS_PER_STONE * STONE_PER_HEAVENLY
     c += int(getattr(w, "celestial_stones", 0) or 0) * COINS_PER_STONE * STONE_PER_HEAVENLY * HEAVENLY_PER_CELESTIAL
-    # god stones: هر واحد = CELESTIAL_PER_GOD آسمانی
-    c += int(getattr(w, "god_stones", 0) or 0) * COINS_PER_STONE * STONE_PER_HEAVENLY * HEAVENLY_PER_CELESTIAL * CELESTIAL_PER_GOD
-    # سطوح بالاتر — با سقف برای جلوگیری از overflow
-    try:
-        unit = COINS_PER_STONE * STONE_PER_HEAVENLY * HEAVENLY_PER_CELESTIAL * CELESTIAL_PER_GOD
-        c += int(getattr(w, "chaos_stones", 0) or 0) * unit * 1000
-        c += int(getattr(w, "void_stones", 0) or 0) * unit * 1000 * 1000
-        c += int(getattr(w, "origin_stones", 0) or 0) * unit * 1000 ** 3
-        c += int(getattr(w, "destiny_stones", 0) or 0) * unit * 1000 ** 4
-        c += int(getattr(w, "immortal_stones", 0) or 0) * unit * 1000 ** 5
-        c += int(getattr(w, "creation_stones", 0) or 0) * unit * 1000 ** 6
-        c += int(getattr(w, "absolute_stones", 0) or 0) * unit * 1000 ** 7
-        c += int(getattr(w, "dragon_coins", 0) or 0) * 100_000
-        c += int(getattr(w, "faith_stones", 0) or 0) * 1000
-    except Exception:
-        pass
-    return int(c) if c < 10**18 else 10**18
+    god_unit = COINS_PER_STONE * STONE_PER_HEAVENLY * HEAVENLY_PER_CELESTIAL * CELESTIAL_PER_GOD
+    c += int(getattr(w, "god_stones", 0) or 0) * god_unit
+    c += int(getattr(w, "chaos_stones", 0) or 0) * god_unit * GOD_PER_CHAOS
+    c += int(getattr(w, "void_stones", 0) or 0) * god_unit * GOD_PER_CHAOS * CHAOS_PER_VOID
+    c += int(getattr(w, "origin_stones", 0) or 0) * god_unit * GOD_PER_CHAOS * CHAOS_PER_VOID * VOID_PER_ORIGIN
+    c += int(getattr(w, "destiny_stones", 0) or 0) * god_unit * 1000 ** 4
+    c += int(getattr(w, "immortal_stones", 0) or 0) * god_unit * 1000 ** 5
+    c += int(getattr(w, "creation_stones", 0) or 0) * god_unit * 1000 ** 6
+    c += int(getattr(w, "absolute_stones", 0) or 0) * god_unit * 1000 ** 7
+    c += int(getattr(w, "dragon_coins", 0) or 0) * 100_000
+    c += int(getattr(w, "faith_stones", 0) or 0) * 1_000
+    return int(c)
+
+
+CURRENCY_ALIASES = {
+    "coin": "coins", "coins": "coins", "سکه": "coins",
+    "spirit": "spirit_stones", "spirit_stone": "spirit_stones", "روحی": "spirit_stones", "سنگ روحی": "spirit_stones",
+    "heavenly": "heavenly_stones", "heaven": "heavenly_stones", "بهشتی": "heavenly_stones", "سنگ بهشتی": "heavenly_stones",
+    "celestial": "celestial_stones", "sky": "celestial_stones", "آسمانی": "celestial_stones", "سنگ آسمانی": "celestial_stones",
+    "god": "god_stones", "godstone": "god_stones", "خدا": "god_stones", "سنگ خدا": "god_stones",
+    "chaos": "chaos_stones", "هرج و مرج": "chaos_stones", "هرج‌ومرج": "chaos_stones", "سنگ هرج و مرج": "chaos_stones",
+    "void": "void_stones", "پوچی": "void_stones", "سنگ پوچی": "void_stones",
+    "origin": "origin_stones", "ازلی": "origin_stones", "سنگ ازلی": "origin_stones",
+    "destiny": "destiny_stones", "تقدیر": "destiny_stones", "سنگ تقدیر": "destiny_stones",
+    "immortal": "immortal_stones", "جاودان": "immortal_stones", "سنگ جاودان": "immortal_stones",
+    "creation": "creation_stones", "خلقت": "creation_stones", "سنگ خلقت": "creation_stones",
+    "absolute": "absolute_stones", "مطلق": "absolute_stones", "سنگ مطلق": "absolute_stones",
+    "faith": "faith_stones", "ایمان": "faith_stones", "سنگ ایمان": "faith_stones",
+    "dragon": "dragon_coins", "dragon_coin": "dragon_coins", "اژدها": "dragon_coins", "سکه اژدها": "dragon_coins",
+}
+
+
+def normalize_currency(value: str | None) -> str | None:
+    if not value:
+        return None
+    v = str(value).strip().lower().replace("‌", " ")
+    return CURRENCY_ALIASES.get(v, v)
+
+
+def pay_specific_currency(w: UserWallet, amount: int, currency: str) -> tuple[bool, str]:
+    """پرداخت دقیق با یک ارز؛ برای آیتم‌هایی که قیمتشان ارز خاص دارد."""
+    amount = int(amount or 0)
+    key = normalize_currency(currency)
+    if amount <= 0:
+        return True, "رایگان"
+    if not key or not hasattr(w, key):
+        return False, "❌ ارز پرداخت نامعتبر است."
+    have = int(getattr(w, key) or 0)
+    if have < amount:
+        return False, f"❌ {currency} کافی نیست. نیاز: {amount:,} | داری: {have:,}"
+    setattr(w, key, have - amount)
+    return True, f"پرداخت: {amount:,} {currency}"
 
 
 def pay_any_currency(w: UserWallet, price_coins: int) -> tuple[bool, str]:
+    """پرداخت قیمت بر حسب سکه با امکان استفاده از ارزهای بالاتر.
+    ارزهای زنجیره‌ای از سکه تا مطلق قابل خرد شدن‌اند؛ ارزهای موازی نیز
+    (ایمان/اژدها) با نرخ مستقل به سکه تبدیل می‌شوند تا باعث خطای خرید نشوند.
     """
-    پرداخت قیمت (به سکه) با هر ارزی.
-    اول از سکه؛ اگر کم بود از سنگ روحی، بهشتی، آسمانی، خدا به‌ترتیب کم می‌شود.
-    """
+    price_coins = int(price_coins or 0)
     if price_coins <= 0:
         return True, "رایگان"
 
-    total = currency_to_coins(w)
+    chain = [
+        ("coins", 1, "سکه"),
+        ("spirit_stones", COINS_PER_STONE, "سنگ روحی"),
+        ("heavenly_stones", COINS_PER_STONE * STONE_PER_HEAVENLY, "سنگ بهشتی"),
+        ("celestial_stones", COINS_PER_STONE * STONE_PER_HEAVENLY * HEAVENLY_PER_CELESTIAL, "سنگ آسمانی"),
+        ("god_stones", COINS_PER_STONE * STONE_PER_HEAVENLY * HEAVENLY_PER_CELESTIAL * CELESTIAL_PER_GOD, "سنگ خدا"),
+        ("chaos_stones", COINS_PER_STONE * STONE_PER_HEAVENLY * HEAVENLY_PER_CELESTIAL * CELESTIAL_PER_GOD * GOD_PER_CHAOS, "سنگ هرج‌ومرج"),
+        ("void_stones", COINS_PER_STONE * STONE_PER_HEAVENLY * HEAVENLY_PER_CELESTIAL * CELESTIAL_PER_GOD * GOD_PER_CHAOS * CHAOS_PER_VOID, "سنگ پوچی"),
+        ("origin_stones", COINS_PER_STONE * STONE_PER_HEAVENLY * HEAVENLY_PER_CELESTIAL * CELESTIAL_PER_GOD * GOD_PER_CHAOS * CHAOS_PER_VOID * VOID_PER_ORIGIN, "سنگ ازلی"),
+        ("destiny_stones", COINS_PER_STONE * STONE_PER_HEAVENLY * HEAVENLY_PER_CELESTIAL * CELESTIAL_PER_GOD * GOD_PER_CHAOS * CHAOS_PER_VOID * VOID_PER_ORIGIN * ORIGIN_PER_DESTINY, "سنگ تقدیر"),
+        ("immortal_stones", COINS_PER_STONE * STONE_PER_HEAVENLY * HEAVENLY_PER_CELESTIAL * CELESTIAL_PER_GOD * GOD_PER_CHAOS * CHAOS_PER_VOID * VOID_PER_ORIGIN * ORIGIN_PER_DESTINY * DESTINY_PER_IMMORTAL, "سنگ جاودان"),
+        ("creation_stones", COINS_PER_STONE * STONE_PER_HEAVENLY * HEAVENLY_PER_CELESTIAL * CELESTIAL_PER_GOD * GOD_PER_CHAOS * CHAOS_PER_VOID * VOID_PER_ORIGIN * ORIGIN_PER_DESTINY * DESTINY_PER_IMMORTAL * IMMORTAL_PER_CREATION, "سنگ خلقت"),
+        ("absolute_stones", COINS_PER_STONE * STONE_PER_HEAVENLY * HEAVENLY_PER_CELESTIAL * CELESTIAL_PER_GOD * GOD_PER_CHAOS * CHAOS_PER_VOID * VOID_PER_ORIGIN * ORIGIN_PER_DESTINY * DESTINY_PER_IMMORTAL * IMMORTAL_PER_CREATION * CREATION_PER_ABSOLUTE, "سنگ مطلق"),
+    ]
+    parallel = [
+        ("faith_stones", FAITH_PER_DRAGON * 1000, "سنگ ایمان"),
+        ("dragon_coins", 100_000, "سکه اژدها"),
+    ]
+    total = sum(int(getattr(w,k,0) or 0) * unit for k,unit,_ in chain + parallel)
     if total < price_coins:
-        return False, (
-            f"❌ موجودی کافی نیست.\n"
-            f"نیاز: {price_coins:,} سکه (یا معادل)\n"
-            f"کل دارایی معادل: {total:,} سکه\n"
-            f"سکه:{w.coins} | روحی:{w.spirit_stones or 0} | بهشتی:{getattr(w,'heavenly_stones',0) or 0} | "
-            f"آسمانی:{getattr(w,'celestial_stones',0) or 0} | خدا:{getattr(w,'god_stones',0) or 0}"
-        )
+        return False, f"❌ موجودی کافی نیست. نیاز: {price_coins:,} سکه یا معادل ارزهای بالاتر | دارایی معادل: {total:,} سکه"
 
+    # Pay the smallest denominations first, then consume one or more higher units.
     remaining = price_coins
-    paid_parts = []
-
-    # 1) سکه
-    take = min(int(w.coins or 0), remaining)
-    if take:
-        w.coins = int(w.coins or 0) - take
-        remaining -= take
-        paid_parts.append(f"{take:,} سکه")
-
-    # 2) سنگ روحی
-    if remaining > 0:
-        spirit = int(w.spirit_stones or 0)
-        need_spirit = (remaining + COINS_PER_STONE - 1) // COINS_PER_STONE  # ceil
-        take_s = min(spirit, need_spirit)
-        if take_s:
-            w.spirit_stones = spirit - take_s
-            # ارزش به سکه
-            value = take_s * COINS_PER_STONE
-            remaining -= value
-            paid_parts.append(f"{take_s} سنگ روحی")
-            # اگر بیش از نیاز بود، باقی را به سکه برگردان
-            if remaining < 0:
-                w.coins = int(w.coins or 0) + (-remaining)
-                remaining = 0
-
-    # 3) سنگ بهشتی
-    if remaining > 0:
-        unit = COINS_PER_STONE * STONE_PER_HEAVENLY  # 1e6
-        have = int(getattr(w, "heavenly_stones", 0) or 0)
-        need = (remaining + unit - 1) // unit
-        take_h = min(have, need)
-        if take_h:
-            w.heavenly_stones = have - take_h
-            value = take_h * unit
-            remaining -= value
-            paid_parts.append(f"{take_h} سنگ بهشتی")
-            if remaining < 0:
-                # باقی را به روحی/سکه نشکنیم ساده: به سکه
-                w.coins = int(w.coins or 0) + (-remaining)
-                remaining = 0
-
-    # 4) سنگ آسمانی
-    if remaining > 0:
-        unit = COINS_PER_STONE * STONE_PER_HEAVENLY * HEAVENLY_PER_CELESTIAL  # 1e9
-        have = int(getattr(w, "celestial_stones", 0) or 0)
-        need = (remaining + unit - 1) // unit
-        take_c = min(have, need)
-        if take_c:
-            w.celestial_stones = have - take_c
-            value = take_c * unit
-            remaining -= value
-            paid_parts.append(f"{take_c} سنگ آسمانی")
-            if remaining < 0:
-                w.coins = int(w.coins or 0) + (-remaining)
-                remaining = 0
-
-    # 5) سنگ خدا
-    if remaining > 0:
-        unit = COINS_PER_STONE * STONE_PER_HEAVENLY * HEAVENLY_PER_CELESTIAL * CELESTIAL_PER_GOD
-        have = int(getattr(w, "god_stones", 0) or 0)
-        need = (remaining + unit - 1) // unit
-        take_g = min(have, need)
-        if take_g:
-            w.god_stones = have - take_g
-            value = take_g * unit
-            remaining -= value
-            paid_parts.append(f"{take_g} سنگ خدا")
-            if remaining < 0:
-                w.coins = int(w.coins or 0) + (-remaining)
-                remaining = 0
-
-    if remaining > 0:
-        return False, "خطا در محاسبه پرداخت."
-
-    detail = " + ".join(paid_parts) if paid_parts else "۰"
-    return True, (
-        f"پرداخت: {detail}\n"
-        f"مانده → سکه:{w.coins} | روحی:{w.spirit_stones or 0} | "
-        f"بهشتی:{getattr(w,'heavenly_stones',0) or 0} | "
-        f"آسمانی:{getattr(w,'celestial_stones',0) or 0} | "
-        f"خدا:{getattr(w,'god_stones',0) or 0}"
-    )
+    paid=[]
+    # For exact payment, process low-to-high and break the first higher unit when needed.
+    for i,(key,unit,label) in enumerate(chain):
+        if remaining <= 0: break
+        have=int(getattr(w,key,0) or 0)
+        take=min(have, remaining//unit)
+        if take:
+            setattr(w,key,have-take); remaining-=take*unit; paid.append(f"{take:,} {label}")
+        if remaining>0 and have-take>0 and remaining < unit:
+            ratio=unit//chain[i-1][1] if i>0 else 0
+            if ratio:
+                # break exactly one higher unit into the previous denomination
+                setattr(w,key,have-take-1)
+                low_key,low_unit,low_label=chain[i-1]
+                setattr(w,low_key,int(getattr(w,low_key,0) or 0)+ratio)
+                low_have=int(getattr(w,low_key,0) or 0)
+                low_take=(remaining+low_unit-1)//low_unit
+                if low_take*low_unit > ratio and i==1:
+                    low_take=ratio
+                setattr(w,low_key,low_have-low_take)
+                remaining=max(0, remaining-low_take*low_unit)
+                paid.append(f"{low_take:,} {low_label} (تبدیل ۱ {label})")
+    # Parallel currencies are consumed only if the main chain is insufficient.
+    if remaining>0:
+        for key,unit,label in parallel:
+            have=int(getattr(w,key,0) or 0)
+            if not have: continue
+            take=(remaining+unit-1)//unit
+            if take<=have:
+                setattr(w,key,have-take); remaining=0
+                paid.append(f"{take:,} {label}")
+                break
+    if remaining>0:
+        # Rollback is safest: this function is called before commit, but callers may continue.
+        return False, "❌ خطا در محاسبه پرداخت؛ خرید انجام نشد."
+    return True, "پرداخت: " + " + ".join(paid)

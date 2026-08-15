@@ -187,6 +187,19 @@ async def calc_power(session: AsyncSession, user: User) -> dict:
     if getattr(user, "is_spirit_raiser", False):
         total += 15
 
+    # Derived combat stats: speed/defense/lifespan now affect effective combat power.
+    try:
+        from services.knowledge import get_speed, get_defense, dodge_rate, block_rate
+        speed = int(get_speed(int(user.telegram_id)))
+        defense = int(get_defense(int(user.telegram_id)))
+        dodge = float(dodge_rate(int(user.telegram_id)))
+        block = float(block_rate(int(user.telegram_id)))
+    except Exception:
+        speed, defense, dodge, block = 10, 10, 0.0, 0.0
+    lifespan = max(0, int(getattr(user, "lifespan", 100) or 100))
+    # Speed, defense and remaining lifespan contribute to combat survivability.
+    total += speed * 2 + defense * 2 + lifespan // 2
+
     try:
         from services.cult_paths import mults
         _m = mults(int(getattr(user, "telegram_id", 0) or 0))
@@ -209,6 +222,11 @@ async def calc_power(session: AsyncSession, user: User) -> dict:
         "spirit": spirit_p,
         "root_name": cult.spiritual_root,
         "realm_name": cult.realm,
+        "speed": speed,
+        "defense": defense,
+        "lifespan": lifespan,
+        "dodge": dodge,
+        "block": block,
     }
 
 

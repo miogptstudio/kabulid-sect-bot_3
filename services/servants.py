@@ -52,7 +52,7 @@ MARKET = [
     {"id": 15, "name": "سهراب", "gender": "مرد", "race": "انسان", "price": 3500, "desc": "پهلوان"},
     {"id": 16, "name": "پریسا", "gender": "زن", "race": "مه‌پیما", "price": 3400, "desc": "جادویی"},
     {"id": 17, "name": "توران", "gender": "مرد", "race": "نیمه‌انسان", "price": 4000, "desc": "نگهبان فرقه"},
-    {"id": 18, "name": "آناهیتا", "gender": "زن", "race": "فرشته‌تبار", "price": 8000, "desc": "نورانی (کمیاب بازار)"},
+    {"id": 18, "name": "آناهیتا", "gender": "زن", "race": "تبار الهی", "price": 999000000000, "desc": "خدمتکار ویژهٔ الههٔ آب‌ها؛ بسیار کمیاب", "special_monthly": True, "monthly_limit": 3},
     {"id": 19, "name": "دیو‌بنده", "gender": "مرد", "race": "دیو‌تبار", "price": 7500, "desc": "تاریک"},
     {"id": 20, "name": "فرشته‌یار", "gender": "زن", "race": "فرشته‌تبار", "price": 8500, "desc": "خدمتکار نور"},
     # گربه‌ای نیمه‌انسان زن
@@ -62,15 +62,65 @@ MARKET = [
     {"id": 24, "name": "پیشی‌زرین", "gender": "زن", "race": "گربه‌ای نیمه‌انسان", "price": 5600, "desc": "پنجه‌طلایی"},
     {"id": 25, "name": "یوره‌نکو", "gender": "زن", "race": "گربه‌ای نیمه‌انسان", "price": 6000, "desc": "نیمه‌روح گربه"},
     # خدمتکارهای تبار الهی — خریدنی و بسیار کمیاب
-    {"id": 26, "name": "آریانا", "gender": "زن", "race": "الهه‌تبار", "price": 1000000000, "desc": "خدمتکار الهی؛ سرعت بالای تذهیب"},
+    {"id": 26, "name": "آریانا", "gender": "زن", "race": "الهه‌تبار", "price": 1000000000, "desc": "خدمتکار الهی؛ سرعت بالای تذهیب", "special_weekly": True},
     {"id": 27, "name": "یوناس", "gender": "مرد", "race": "خدای‌تبار", "price": 1500000000, "desc": "خدمتکار الهی؛ قدرت رزمی عظیم"},
     {"id": 28, "name": "سولارا", "gender": "زن", "race": "آسمانی‌تبار", "price": 2000000000, "desc": "خدمتکار آسمانی؛ محافظ قلمرو"},
     {"id": 29, "name": "ایلیوس", "gender": "مرد", "race": "تبار الهی", "price": 2500000000, "desc": "خون الهی خالص و کمیاب"},
-    {"id": 30, "name": "نِریا", "gender": "زن", "race": "تبار الهی", "price": 3000000000, "desc": "خدمتکار الهی؛ وفاداری بالا"},
+    {"id": 30, "name": "نریا", "gender": "زن", "race": "تبار الهی", "price": 3000000000, "desc": "خدمتکار الهی؛ وفاداری بالا", "special_weekly": True},
     {"id": 31, "name": "کایروس", "gender": "مرد", "race": "خدای‌تبار", "price": 5000000000, "desc": "خدمتکار جنگی خدایان"},
     {"id": 32, "name": "آسترا", "gender": "زن", "race": "آسمانی‌تبار", "price": 7500000000, "desc": "خدمتکار آسمانی؛ تذهیب بسیار سریع"},
     {"id": 33, "name": "اورین", "gender": "مرد", "race": "تبار الهی", "price": 10000000000, "desc": "خدمتکار رده‌بالای الهی"},
 ]
+
+# توضیحات اختصاصی هر خدمتکار؛ در بازار و پنل اختصاصی نمایش داده می‌شود.
+SERVANT_LORE = {
+    "آلیس": "خدمتکاری آرام و منظم که در مدیریت خانه و افزایش ثبات قلمرو مهارت دارد.",
+    "لیان": "نیمه‌انسانی چابک که برای گشت‌زنی، مراقبت و نبردهای سریع تربیت شده است.",
+    "مینگ": "نگهبانی قابل‌اعتماد با تمرکز بر دفاع و محافظت از اموال صاحبش.",
+    "سارا": "خدمتکاری اشرافی با مهارت بالا در اداره تالار و افزایش نظم اجتماعی.",
+    "کای": "نگهبان دروازه با استقامت بالا و واکنش سریع در برابر مهاجمان.",
+    "یوکی": "روباه‌نمای زیرک که به سرعت، فریب و پیدا کردن مسیرهای پنهان شهرت دارد.",
+    "رستم‌یار": "جنگجویی نیرومند با روحیه پهلوانی و تمرکز ویژه روی قدرت رزمی.",
+    "شیرین": "خدمتکار درباری باهوش که در روابط اجتماعی و مدیریت مهمانی‌ها توانمند است.",
+    "بهرام": "شکارچی باتجربه که در ردیابی دشمنان و عملیات خارج از قلمرو مهارت دارد.",
+    "نرگس": "جن جنگلی آرام که با طبیعت پیوند دارد و در رشد و نگهداری قلمرو کمک می‌کند.",
+    "آرش": "کمانداری دقیق که از فاصله دور ضربات سنگین و حساب‌شده وارد می‌کند.",
+    "لاله": "خدمتکاری پرانرژی و متخصص آشپزی که برای پشتیبانی روزمره فرقه مناسب است.",
+    "کاوه": "آهنگری قدرتمند که در ساخت و نگهداری تجهیزات رزمی نقش مهمی دارد.",
+    "مهتاب": "روح‌پیمایی مرموز با توانایی کنترل انرژی‌های روحی و پشتیبانی معنوی.",
+    "سهراب": "پهلوانی جوان و مقاوم که در نبرد مستقیم عملکرد بسیار خوبی دارد.",
+    "پریسا": "مه‌پیما با توانایی پنهان‌کاری و جابه‌جایی در میدان‌های دشوار.",
+    "توران": "نگهبان وفادار فرقه که تمرکز اصلی‌اش دفاع از اعضا و ساختمان‌های مهم است.",
+    "آناهیتا": "خدمتکار الهیِ آب‌ها و باروری؛ آرام، باوقار و بسیار کمیاب که توانایی‌های حمایتی، دفاعی و رشد قلمرو را تقویت می‌کند.",
+    "دیو‌بنده": "جنگجویی تاریک و خشن که در شکستن خطوط دفاعی دشمن تخصص دارد.",
+    "فرشته‌یار": "خدمتکار نورانی با توانایی تقویت روحیه و محافظت از صاحبش.",
+    "میوکا": "گربه‌ای چابک با حواس تیز که در سرعت، جاسوسی و واکنش سریع برتری دارد.",
+    "نکو‌ساکورا": "گربه‌ای آرام و باهوش با استعداد بالا در حرکت بی‌صدا و دیده‌بانی.",
+    "لونا‌گوش": "گربه‌ای با پیوند قوی با انرژی ماه که در شب قدرت بیشتری پیدا می‌کند.",
+    "پیشی‌زرین": "گربه‌ای نادر با پنجه‌های طلایی و استعداد ویژه در پیدا کردن گنج.",
+    "یوره‌نکو": "گربه‌ای روحانی که میان جهان مادی و روحی حرکت می‌کند.",
+    "آریانا": "خدمتکار الهه‌تبار با سرعت بالای تذهیب و توانایی تقویت رشد صاحبش.",
+    "یوناس": "خدای‌تباری سنگین‌قدرت که در نبرد مستقیم و افزایش قدرت رزمی ممتاز است.",
+    "سولارا": "آسمانی‌تباری محافظ که سپرهای قدرتمند برای صاحب و قلمرو ایجاد می‌کند.",
+    "ایلیوس": "دارنده خون الهی خالص که تعادل خوبی میان قدرت، سرعت و دفاع دارد.",
+    "نریا": "خدمتکاری از تبار الهی با وفاداری بالا و استعداد ویژه در پشتیبانی و رشد.",
+    "کایروس": "جنگجوی خدایان که برای نبردهای سنگین و رویارویی با دشمنان قدرتمند ساخته شده است.",
+    "آسترا": "آسمانی‌تباری سریع که رشد تذهیب را به شکل چشمگیری افزایش می‌دهد.",
+    "اورین": "خدمتکار رده‌بالای الهی با انرژی عظیم و سازگاری بالا با تکنیک‌های نادر.",
+    "آلیا": "گربه‌ای الهی‌گونه با چابکی فوق‌العاده که در سرعت و جاخالی تخصص دارد.",
+    "ناکوبی": "خدمتکاری با بال‌های تاریک و حضور سنگین که قدرت رزمی و توان مقابله را افزایش می‌دهد.",
+    "مادر الهه‌گان": "موجودی فراتر از تبارهای معمول الهی؛ نماد حمایت، رشد و قدرت عظیم در کنار صاحبش.",
+}
+
+def servant_lore(name: str, fallback: str = "خدمتکاری ویژه با توانایی‌های منحصربه‌فرد.") -> str:
+    return SERVANT_LORE.get(name, fallback)
+
+# خدمتکارهای ویژه با خرید هفتگی — هرکدام مستقل
+MARKET.extend([
+    {"id": 34, "name": "آلیا", "gender": "زن", "race": "گربه‌ای نیمه‌انسان", "price": 6000000000, "desc": "خدمتکار ویژه؛ تبار گربه‌ای و چابکی بالا", "special_weekly": True},
+    {"id": 35, "name": "ناکوبی", "gender": "زن", "race": "اهریمنی", "price": 9000000000, "desc": "خدمتکار ویژه؛ بال‌های تاریک و قدرت رزمی بالا", "special_weekly": True},
+    {"id": 36, "name": "مادر الهه‌گان", "gender": "زن", "race": "تبار الهی", "price": 50000000000, "desc": "خدمتکار ویژه؛ موجودی فراتر از تبارهای معمول الهی", "special_weekly": True},
+])
 
 # اصیل‌ها فقط با جنگ — قالب برای اسپاون شکار
 PUREBRED_TEMPLATES = [
@@ -156,14 +206,99 @@ def marry_servant(tg: int, selector: int) -> tuple[bool, str, dict | None]:
     ), servant
 
 
+SPECIAL_MONTHLY_IDS = {int(s["id"]) for s in MARKET if s.get("special_monthly")}
+SPECIAL_MONTHLY_LIMITS = {int(s["id"]): int(s.get("monthly_limit", 3)) for s in MARKET if s.get("special_monthly")}
+
+def _monthly_buy_data() -> dict:
+    return get_dict("servant_monthly_buy")
+
+def _month_key() -> str:
+    now = datetime.utcnow()
+    return f"{now.year:04d}-{now.month:02d}"
+
+def monthly_buy_remaining(tg: int, sid: int) -> tuple[int, int] | None:
+    sid = int(sid)
+    if sid not in SPECIAL_MONTHLY_IDS:
+        return None
+    data = _monthly_buy_data()
+    month = _month_key()
+    rec = data.get(str(sid)) or {}
+    if rec.get("month") != month:
+        return 0, SPECIAL_MONTHLY_LIMITS.get(sid, 3)
+    used = max(0, int(rec.get("used", 0)))
+    limit = SPECIAL_MONTHLY_LIMITS.get(sid, 3)
+    return used, max(0, limit - used)
+
+def _record_monthly_buy(sid: int) -> None:
+    sid = int(sid)
+    if sid not in SPECIAL_MONTHLY_IDS:
+        return
+    data = _monthly_buy_data()
+    month = _month_key()
+    rec = data.get(str(sid)) or {}
+    if rec.get("month") != month:
+        rec = {"month": month, "used": 0}
+    rec["used"] = int(rec.get("used", 0)) + 1
+    data[str(sid)] = rec
+    _psave("servant_monthly_buy")
+
+SPECIAL_WEEKLY_COOLDOWN = timedelta(days=7)
+SPECIAL_WEEKLY_IDS = {int(s["id"]) for s in MARKET if s.get("special_weekly")}
+
+def _special_buy_cd() -> dict:
+    return get_dict("servant_special_buy_cd")
+
+def _remaining_special_cd(tg: int, sid: int):
+    if int(sid) not in SPECIAL_WEEKLY_IDS:
+        return None
+    data = _special_buy_cd()
+    raw = data.get(f"{int(tg)}:{int(sid)}")
+    if not raw:
+        return None
+    try:
+        last = datetime.fromisoformat(str(raw))
+        left = SPECIAL_WEEKLY_COOLDOWN - (datetime.utcnow() - last)
+        if left.total_seconds() <= 0:
+            data.pop(f"{int(tg)}:{int(sid)}", None)
+            _psave("servant_special_buy_cd")
+            return None
+        return left
+    except Exception:
+        return None
+
+def special_buy_remaining_text(tg: int, sid: int) -> str | None:
+    left = _remaining_special_cd(tg, sid)
+    if left is None:
+        return None
+    total = max(0, int(left.total_seconds()))
+    days, rem = divmod(total, 86400)
+    hours, rem = divmod(rem, 3600)
+    minutes = rem // 60
+    return f"{days} روز، {hours} ساعت و {minutes} دقیقه"
+
+def _record_special_buy(tg: int, sid: int) -> None:
+    if int(sid) not in SPECIAL_WEEKLY_IDS:
+        return
+    data = _special_buy_cd()
+    data[f"{int(tg)}:{int(sid)}"] = datetime.utcnow().isoformat()
+    _psave("servant_special_buy_cd")
+    try:
+        import asyncio
+        from services.persist import sync_to_db
+        asyncio.get_running_loop().create_task(sync_to_db())
+    except Exception:
+        pass
+
 def market_list() -> str:
     lines = ["🛒 <b>بازار خدمتکار</b>", "نژادهای خریدنی (اصیل‌ها با /huntservant)", ""]
     for s in MARKET:
         race = s.get("race", "انسان")
         pure = "🔒اصیل" if RACES.get(race, {}).get("purebred") else ""
+        weekly = " ⏳ خرید هر ۷ روز" if s.get("special_weekly") else ""
+        monthly = f" 🌙 فقط {s.get('monthly_limit', 3)} عدد در ماه" if s.get("special_monthly") else ""
         lines.append(
-            f"#{s['id']} {s['name']} | {s['gender']} | {race} {pure}" + chr(10)
-            + f"  {s['price']:,} سکه — {s['desc']}"
+            f"#{s['id']} {s['name']} | {s['gender']} | {race} {pure}{weekly}{monthly}" + chr(10)
+            + f"  {s['price']:,} سکه — {servant_lore(s['name'], s.get('desc', "خدمتکار ویژه با توانایی‌های منحصربه‌فرد."))}"
         )
     lines += [
         "",
@@ -189,7 +324,11 @@ def _new_instance(template: dict, source: str = "buy") -> dict:
         "loyalty": int(info.get("loyalty0", 50)),
         "cult": 1,
         "power": int(template.get("power") or 20),
+        "speed": int(template.get("speed") or (12 + int(template.get("power") or 20) // 8)),
+        "defense": int(template.get("defense") or (10 + int(template.get("power") or 20) // 10)),
+        "lifespan": int(template.get("lifespan") or 100),
         "source": source,
+        "special_weekly": bool(template.get("special_weekly")),
         "transformed": False,
         "at": datetime.utcnow().isoformat(),
     }
@@ -222,6 +361,14 @@ def buy(tg: int, sid: int, coins: int) -> tuple[bool, str, int]:
     if not s:
         return False, "شماره نامعتبر. /servants", coins
     race = s.get("race", "انسان")
+    monthly = monthly_buy_remaining(tg, sid)
+    if monthly is not None:
+        used, remaining = monthly
+        if remaining <= 0:
+            return False, f"⛔ خرید «{s['name']}» برای این ماه تمام شده است.\nسهم ماهانه: {SPECIAL_MONTHLY_LIMITS.get(sid, 3)} عدد — ماه بعد دوباره فعال می‌شود.", coins
+    left_text = special_buy_remaining_text(tg, sid)
+    if left_text:
+        return False, f"⏳ خرید «{s['name']}» محدود به هر ۷ روز است.\nزمان باقی‌مانده: {left_text}", coins
     if RACES.get(race, {}).get("purebred") and s["price"] < 7000:
         # rare market purebreds allowed if expensive
         pass
@@ -235,6 +382,8 @@ def buy(tg: int, sid: int, coins: int) -> tuple[bool, str, int]:
     inst = _new_instance(s, "buy")
     bag.append(inst)
     save_owned(tg, bag)
+    _record_special_buy(tg, sid)
+    _record_monthly_buy(sid)
     # legacy sync
     leg = _legacy_ids()
     ids = list(leg.get(str(int(tg))) or [])
@@ -248,6 +397,35 @@ def buy(tg: int, sid: int, coins: int) -> tuple[bool, str, int]:
     ), coins - s["price"]
 
 
+def servant_panel_text(s: dict, index: int = 1, purchased: bool = False) -> str:
+    title = "🛒 خرید انجام شد" if purchased else "🧑‍🤝‍🧑 پنل خدمتکار"
+    lines = [
+        f"{title}",
+        "",
+        f"👤 <b>{s.get('name','—')}</b>  · شماره {index}",
+        f"🧬 تبار: {s.get('race','—')}",
+        f"⚧ جنسیت: {s.get('gender','—')}",
+    ]
+    if s.get("special_monthly"):
+        used, remaining = monthly_buy_remaining(0, int(s.get("base_id") or 0)) or (0, int(s.get("monthly_limit", 3)))
+        lines.append(f"🌙 خرید ویژه: فقط {s.get('monthly_limit', 3)} عدد در هر ماه | باقی‌مانده بازار: {remaining}")
+    elif s.get("special_weekly"):
+        lines.append("⏳ خرید ویژه: هر ۷ روز یک‌بار")
+    lines.extend([
+        f"❤️ وفاداری: <b>{s.get('loyalty',0)}٪</b>",
+        f"🧘 تذهیب: <b>{s.get('cult',1)}</b>",
+        f"⚔️ قدرت: <b>{s.get('power',0)}</b>",
+        f"💨 سرعت: <b>{s.get('speed',0)}</b>",
+        f"🛡️ دفاع: <b>{s.get('defense',0)}</b>",
+        f"⏳ عمر: <b>{s.get('lifespan',100)}</b>",
+        f"✨ وضعیت: {'دگرگون‌شده' if s.get('transformed') else 'طبیعی'}",
+        "",
+        f"برای ارتقا: /trainservant {index}",
+        f"برای وفاداری: /feedloyalty {index}",
+        f"برای ازدواج با خدمتکار: /marry servant {index}",
+    ])
+    return "\n".join(lines)
+
 def owned_text(tg: int) -> str:
     bag = list_owned(tg)
     if not bag:
@@ -258,7 +436,7 @@ def owned_text(tg: int) -> str:
         married = " 💍 همسر" if is_married(tg, s) else ""
         lines.append(
             f"{i}. {s['name']} | {s['gender']} | {s.get('race')} {tr}{married}" + chr(10)
-            + f"   ❤️وفاداری {s.get('loyalty',0)}% | 🧘تذهیب {s.get('cult',1)} | ⚔{s.get('power',0)}"
+            + f"   ❤️وفاداری {s.get('loyalty',0)}% | 🧘تذهیب {s.get('cult',1)} | ⚔{s.get('power',0)} | 💨{s.get('speed',0)} | 🛡️{s.get('defense',0)} | ⏳{s.get('lifespan',100)}"
         )
     lines += [
         "",
@@ -279,6 +457,9 @@ def train(tg: int, idx: int) -> str:
     gain = max(1, int(random.randint(1, 3) * rate))
     s["cult"] = int(s.get("cult") or 1) + gain
     s["power"] = int(s.get("power") or 20) + gain * 2
+    s["speed"] = int(s.get("speed") or 10) + max(1, gain // 2)
+    s["defense"] = int(s.get("defense") or 10) + max(1, gain // 2)
+    s["lifespan"] = min(500, int(s.get("lifespan") or 100) + max(0, gain // 3))
     # کمی وفاداری از توجه
     s["loyalty"] = min(100, int(s.get("loyalty") or 50) + random.randint(0, 2))
     bag[idx - 1] = s
@@ -306,6 +487,9 @@ def transform(tg: int, idx: int) -> str:
     s["race"] = nxt
     s["transformed"] = True
     s["power"] = int(s.get("power") or 0) + 40
+    s["speed"] = int(s.get("speed") or 10) + 12
+    s["defense"] = int(s.get("defense") or 10) + 12
+    s["lifespan"] = min(500, int(s.get("lifespan") or 100) + 25)
     s["loyalty"] = min(100, int(s.get("loyalty") or 50) + 10)
     # گربه‌ای → نیمه‌انسان با حفظ لقب
     if old == "گربه‌ای نیمه‌انسان":
@@ -420,3 +604,84 @@ def hunt(tg: int, player_power: int) -> str:
 
 # سازگاری با کد قدیم
 SERVANTS = MARKET
+
+
+# ==================== دوئل اختصاصی خدمتکارها ====================
+
+def servant_duel_score(servant: dict) -> int:
+    """امتیاز رزمی خدمتکار؛ مستقل از قدرت اصلی صاحب."""
+    power = max(0, int(servant.get("power") or 0))
+    speed = max(0, int(servant.get("speed") or 0))
+    defense = max(0, int(servant.get("defense") or 0))
+    cult = max(1, int(servant.get("cult") or 1))
+    loyalty = max(0, min(100, int(servant.get("loyalty") or 0)))
+    lifespan = max(0, int(servant.get("lifespan") or 0))
+    return power + speed + defense + (cult * 4) + (loyalty * 2) + min(lifespan, 100)
+
+def propose_servant_duel(a_tg: int, b_tg: int, idx_a: int, idx_b: int) -> tuple[bool, str, str | None]:
+    """درخواست دوئل خدمتکار؛ داده درخواست پایدار است تا با ری‌استارت از بین نرود."""
+    a = list_owned(a_tg)
+    b = list_owned(b_tg)
+    if idx_a < 1 or idx_a > len(a):
+        return False, "شماره خدمتکار خودت نامعتبر است.", None
+    if idx_b < 1 or idx_b > len(b):
+        return False, "شماره خدمتکار حریف نامعتبر است.", None
+    if int(a_tg) == int(b_tg):
+        return False, "با خدمتکار خودت نمی‌توانی دوئل کنی.", None
+
+    sa, sb = a[idx_a - 1], b[idx_b - 1]
+    key = f"sd:{int(a_tg)}:{int(b_tg)}:{str(sa.get('uid', idx_a))}:{str(sb.get('uid', idx_b))}"
+    pending = get_dict("servant_duel_pending")
+    pending[key] = {
+        "a": int(a_tg), "b": int(b_tg),
+        "sa": dict(sa), "sb": dict(sb),
+        "created_at": datetime.utcnow().isoformat(),
+    }
+    _psave("servant_duel_pending")
+    pa, pb = servant_duel_score(sa), servant_duel_score(sb)
+    return True, (
+        "⚔️ <b>درخواست دوئل خدمتکاران</b>\n\n"
+        f"🧑 {sa.get('name','—')} — قدرت نبرد {pa:,}\n"
+        f"🧑 {sb.get('name','—')} — قدرت نبرد {pb:,}\n\n"
+        f"حریف باید بنویسد: <code>/acceptservduel {key}</code>\n"
+        "این نبرد فقط بین دو خدمتکار انجام می‌شود و قدرت صاحب‌ها مستقیماً وارد محاسبه نمی‌شود."
+    ), key
+
+def accept_servant_duel(key: str, acceptor_tg: int) -> tuple[bool, str]:
+    pending = get_dict("servant_duel_pending")
+    d = pending.get(key)
+    if not d:
+        return False, "این درخواست پیدا نشد یا قبلاً پاسخ داده شده است."
+    if int(acceptor_tg) != int(d["b"]):
+        return False, "فقط صاحب خدمتکار دوم می‌تواند این درخواست را قبول کند."
+
+    # اطمینان از اینکه هر دو خدمتکار هنوز در اختیار صاحبانشان هستند.
+    a = list_owned(d["a"])
+    b = list_owned(d["b"])
+    uid_a = str(d["sa"].get("uid"))
+    uid_b = str(d["sb"].get("uid"))
+    sa = next((x for x in a if str(x.get("uid")) == uid_a), None)
+    sb = next((x for x in b if str(x.get("uid")) == uid_b), None)
+    if not sa or not sb:
+        pending.pop(key, None)
+        _psave("servant_duel_pending")
+        return False, "یکی از خدمتکارها دیگر در اختیار صاحبش نیست؛ دوئل لغو شد."
+
+    pending.pop(key, None)
+    _psave("servant_duel_pending")
+    pa, pb = servant_duel_score(sa), servant_duel_score(sb)
+
+    if pa == pb:
+        result = "🤝 نتیجه: تساوی"
+    elif pa > pb:
+        result = f"🏆 برنده: {sa.get('name','—')}"
+    else:
+        result = f"🏆 برنده: {sb.get('name','—')}"
+
+    return True, (
+        "⚔️ <b>نتیجه دوئل خدمتکاران</b>\n\n"
+        f"🧑 {sa.get('name','—')}: {pa:,}\n"
+        f"🧑 {sb.get('name','—')}: {pb:,}\n\n"
+        f"{result}\n"
+        "📌 محاسبه بر اساس قدرت، سرعت، دفاع، تذهیب، وفاداری و عمر خدمتکار انجام شد."
+    )

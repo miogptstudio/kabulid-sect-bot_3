@@ -7,6 +7,15 @@ from database.models import User
 # آیتم‌های پیش‌فرض: قرص، طلسم، مواد، گیاه، سلاح
 DEFAULT_ITEMS = [
     {
+        "building_type": "سالن تکنیک",
+        "name": "کتاب کنترل پوچی اطراف — بخش اول",
+        "item_type": "tech_book",
+        "description": "🕳️ فقط بخش اول؛ ادامه تکنیک عمداً در دسترس نیست. قیمت: ۱ سنگ مطلق.",
+        "price": 1,
+        "effect": {"learn_tech": "کنترل پوچی اطراف — بخش اول", "currency": "absolute", "unique": "void_control_part1", "_inflated_v46": True},
+    },
+
+    {
         "building_type": "آهنگری",
         "name": "شمشیر نابودکننده جهان",
         "item_type": "weapon_unique",
@@ -583,20 +592,17 @@ async def buy_item(session: AsyncSession, user: User, item: ShopItem, qty: int =
         if owned.first():
             return "❌ این آیتم یکتاست و قبلاً کسی آن را خریده."
 
-    from services.economy import get_or_create_wallet, pay_any_currency
+    from services.economy import get_or_create_wallet, pay_any_currency, pay_specific_currency
     w = await get_or_create_wallet(session, user.id)
-    # پرداخت با سنگ خدا برای آیتم‌های خاص
     effect = item.effect if isinstance(item.effect, dict) else {}
     total_price = int(item.price or 0) * qty
-    if effect.get("currency") == "god" or effect.get("god_price"):
-        need = int(effect.get("god_price") or item.price or 0) * qty
-        have = int(getattr(w, "god_stones", 0) or 0)
-        if have < need:
-            return f"❌ نیاز {need:,} سنگ خدا (داری {have:,})"
-        w.god_stones = have - need
-        pay_msg = f"−{need:,} سنگ خدا"
-        ok = True
+    explicit_currency = effect.get("currency")
+    explicit_price = effect.get("god_price") if explicit_currency == "god" and effect.get("god_price") else None
+    if explicit_currency:
+        unit_price = int(explicit_price if explicit_price is not None else item.price or 0)
+        ok, pay_msg = pay_specific_currency(w, unit_price * qty, str(explicit_currency))
     else:
+        # هر آیتمی که قیمتش به سکه ثبت شده باشد، می‌تواند با ارزهای بالاتر هم پرداخت شود.
         ok, pay_msg = pay_any_currency(w, total_price)
     if not ok:
         return pay_msg

@@ -52,30 +52,32 @@ def used_today(tg: int) -> int:
     return int(rec.get("count") or 0)
 
 
-def register_pill(tg: int, realm: str) -> tuple[bool, str, bool]:
+def register_pill(tg: int, realm: str, quantity: int = 1) -> tuple[bool, str, bool]:
     """
     returns (allowed_effect, message, died)
     اگر بیش از سقف: اثر قرص اعمال می‌شود ولی ۶۰٪ مرگ
     """
     import random
+    quantity = max(1, int(quantity or 1))
     limit = max_pills(realm)
     m = _map()
     sk = str(int(tg))
     rec = m.get(sk) or {}
     if rec.get("day") != _day():
         rec = {"day": _day(), "count": 0}
-    count = int(rec.get("count") or 0) + 1
+    previous = int(rec.get("count") or 0)
+    count = previous + quantity
     rec["count"] = count
     m[sk] = rec
     _psave("pill_daily")
 
     if count <= limit:
-        return True, f"💊 قرص امروز: {count}/{limit}", False
+        return True, f"💊 مصرف دسته‌ای ×{quantity} — قرص امروز: {count}/{limit}", False
 
     # overdose
     if random.random() < OVERDOSE_DEATH_CHANCE:
         return True, (
-            f"💥 زیاده‌روی قرص! ({count}/{limit})" + chr(10)
+            f"💥 زیاده‌روی قرص! (مصرف ×{quantity} | {count}/{limit})" + chr(10)
             + "بدن تحمل نکرد و منفجر شدی." + chr(10)
             + "برای سقف بالاتر، قلمرو تذهیب را ارتقا بده."
         ), True
