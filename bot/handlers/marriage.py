@@ -67,15 +67,17 @@ async def cmd_marry(message: Message):
         builder.button(text="قبول 💍", callback_data=f"marryaccept:{marriage.id}:{target.id}")
         builder.button(text="رد ❌", callback_data=f"marryreject:{marriage.id}:{target.id}")
         builder.adjust(1)
-        await message.answer(
-            f"💍 <b>درخواست نامزدی</b>\n\n"
-            f"از: {proposer.full_name} (Lv.{proposer.level})\n"
-            f"به: {target.full_name} (Lv.{target.level})\n"
-            f"مهلت: تا {expires} UTC\n"
+        from aiogram.types import FSInputFile
+        from services.portraits import panel_url
+        caption=(
+            f"💍 <b>پنل ازدواج بین دو بازیکن</b>\n\n"
+            f"👤 نفر اول: <b>{proposer.full_name}</b> | Lv.{proposer.level} | {proposer.gender}\n"
+            f"👤 نفر دوم: <b>{target.full_name}</b> | Lv.{target.level} | {target.gender}\n"
+            f"⏳ مهلت نامزدی: {expires} UTC\n"
             f"{warn_text}\n\n"
-            f"فقط <b>{target.full_name}</b> می‌تواند قبول/رد کند.",
-            reply_markup=builder.as_markup(),
+            f"🤝 تصمیم نهایی فقط با رضایت طرف مقابل انجام می‌شود."
         )
+        await message.answer_photo(FSInputFile(panel_url("marriage")),caption=caption,reply_markup=builder.as_markup())
 
 
 @router.callback_query(F.data.startswith("marryaccept:"))
@@ -107,7 +109,7 @@ async def cb_accept(callback: CallbackQuery):
             await callback.answer("پیدا نشد", show_alert=True)
             return
         msg = await accept_marriage(session, m, user.id)
-        await callback.message.edit_text(msg)
+        await callback.message.edit_caption(caption=msg)
     await callback.answer()
 
 
@@ -125,7 +127,7 @@ async def cb_reject(callback: CallbackQuery):
             await callback.answer("پیدا نشد", show_alert=True)
             return
         msg = await reject_marriage(session, m, user.id)
-        await callback.message.edit_text(msg)
+        await callback.message.edit_caption(caption=msg)
     await callback.answer()
 
 

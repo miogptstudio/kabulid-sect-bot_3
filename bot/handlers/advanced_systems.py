@@ -9,7 +9,7 @@ from services.advanced_systems import *
 
 router = Router()
 
-@router.message(Command("cultivationrules", "قوانین‌تذهیب", "قوانینتذهیب"))
+@router.message(Command("cultivationrules"))
 async def cultivation_rules(message: Message):
     await message.answer("""🧘 <b>پایه‌ای‌ترین قوانین تذهیب</b>\n\n• تذهیب از قلمرو و مرحله تشکیل می‌شود.\n• هر قلمرو تا مرحله‌های تعریف‌شده پیش می‌رود؛ با رسیدن به اوج، ورود به قلمرو بعدی یک جهش بزرگ است.\n• انرژی معنوی سوخت اصلی پیشرفت است و ریشه معنوی بازدهی آن را تغییر می‌دهد.\n• تکنیک‌ها، رگ‌های معنوی، بدن، روح و تبار می‌توانند قدرت و سرعت رشد را افزایش دهند.\n• قلمرو بالاتر همیشه به معنی پیروزی قطعی نیست؛ تجهیزات، تکنیک، بدن، روح و قدرت رزمی هم محاسبه می‌شوند.\n• ادمین می‌تواند برای تست/مدیریت، تذهیب و قدرت را مستقیماً تنظیم کند.\n• مقادیر بسیار بزرگ برای انرژی و قدرت با عددهای بزرگ پشتیبانی می‌شوند.\n\nدستورات مفید: /cultivation /meditate /train /cultpath /vein /cores /powerstats""")
 
@@ -86,3 +86,84 @@ async def kingdom_stat(message: Message):
     tg=int(p[1]); key=p[2]; val=int(p[3]); aliases={'خزانه':'treasury','ارتش':'army','جمعیت':'population','مالیات':'tax'}; key=aliases.get(key,key)
     if key not in ('treasury','army','population','tax'): return await message.answer('آمار نامعتبر.')
     set_kingdom(tg,**{key:val}); await message.answer('✅ آمار حکومت تنظیم شد.')
+
+# ==================== امکانات توسعه‌یافته V32 ====================
+from aiogram import F
+
+@router.message(Command("crime", "جرم", "تحت_تعقیب"))
+async def crime_cmd(message: Message):
+    from services.advanced_systems import crime_status, commit_crime
+    p=(message.text or "").split()
+    if len(p)>1 and p[1] in ("انجام", "ارتکاب"):
+        r=commit_crime(message.from_user.id, severity=5, bounty=500)
+        return await message.answer(f"🚨 جرم ثبت شد!\n⚠️ تحت تعقیب: {r['wanted']}\n💰 جایزه دستگیری: {r['bounty']:,}")
+    r=crime_status(message.from_user.id)
+    await message.answer(f"⚖️ <b>وضعیت قانونی</b>\n⚠️ تحت تعقیب: {r['wanted']}\n💰 جایزه: {r['bounty']:,}\n🔒 زندان: {'بله' if is_jailed(message.from_user.id) else 'خیر'}")
+
+@router.message(Command("worldmap", "نقشه", "نقشه_جهان"))
+async def worldmap_cmd(message: Message):
+    from services.advanced_systems import world_state, discover_region
+    d=world_state(); name,reg=discover_region(message.from_user.id)
+    await message.answer(f"🗺️ <b>نقشه جهان</b>\n🌤 وضعیت: {d['seasons']}\n☠️ خطر جهانی: {d['danger']}\n\n📍 منطقه کشف‌شده: <b>{name}</b>\n⚠️ خطر: {reg['danger']}\n⛏ منابع: {reg['resources']:,}")
+
+@router.message(Command("kingdomup", "ارتقای_حکومت"))
+async def kingdom_up_cmd(message: Message):
+    from services.advanced_systems import kingdom_upgrade, get_kingdom
+    p=(message.text or "").split(); stat=p[1] if len(p)>1 else "army"; amount=int(p[2]) if len(p)>2 and p[2].isdigit() else 1
+    k=kingdom_upgrade(message.from_user.id,stat,amount)
+    await message.answer(f"👑 ارتقای حکومت انجام شد.\n📊 {stat}: {k.get(stat,0):,}")
+
+@router.message(Command("sectwar", "جنگ_فرقه"))
+async def sectwar_cmd(message: Message):
+    from services.advanced_systems import sect_war
+    p=(message.text or "").split()
+    if len(p)<2 or not p[1].lstrip('-').isdigit(): return await message.answer("فرمت: /sectwar TELEGRAM_ID")
+    r=sect_war(message.from_user.id,int(p[1])); await message.answer(f"⚔️ جنگ فرقه‌ای\nامتیاز تو: {r['score_a']}\nامتیاز حریف: {r['score_b']}\n🏆 برنده: {'تو' if r['winner']==message.from_user.id else 'حریف'}")
+
+@router.message(Command("worldboss", "باس_جهانی", "اژدهای_جهانی"))
+async def worldboss_cmd(message: Message):
+    from services.advanced_systems import world_boss, hit_world_boss
+    p=(message.text or "").split(); d=world_boss()
+    if len(p)>1 and p[1].isdigit(): d,dmg=hit_world_boss(message.from_user.id,int(p[1])); await message.answer(f"🐉 {d['name']}\n💥 آسیب: {dmg:,}\n❤️ جان باقی‌مانده: {d['hp']:,}/{d['max_hp']:,}")
+    else: await message.answer(f"🐉 <b>{d['name']}</b>\n❤️ {d['hp']:,}/{d['max_hp']:,}\n💰 پاداش پایه: {d['reward']:,}\nبرای حمله: /worldboss مقدار_آسیب")
+
+@router.message(Command("chest", "صندوق", "گنج"))
+async def chest_cmd(message: Message):
+    from services.advanced_systems import open_chest
+    p=(message.text or "").split(); grade=p[1] if len(p)>1 else "معمولی"; amount=open_chest(message.from_user.id,grade)
+    await message.answer(f"🎁 صندوق {grade}\n💰 پاداش: {amount:,} سکه")
+
+@router.message(Command("chainmission", "ماموریت_زنجیره"))
+async def chainmission_cmd(message: Message):
+    from services.advanced_systems import chain_mission, advance_chain_mission
+    p=(message.text or "").split(); row,step=chain_mission(message.from_user.id)
+    if len(p)>1 and p[1] in ("انجام","پیشرفت"): row=advance_chain_mission(message.from_user.id); row,step=chain_mission(message.from_user.id)
+    await message.answer(f"📜 <b>مأموریت زنجیره‌ای</b>\nمرحله: {row['step']}\n🎯 هدف فعلی: {step[0]}\nبرای ثبت پیشرفت: /chainmission انجام")
+
+@router.message(Command("event", "رویداد_جهان"))
+async def event_cmd(message: Message):
+    from services.advanced_systems import random_event
+    e=random_event(); await message.answer(f"🌍 <b>رویداد جهانی</b>\n✨ {e['name']}")
+
+@router.message(Command("alliance", "اتحاد"))
+async def alliance_cmd(message: Message):
+    from services.advanced_systems import alliance_create, alliance_join, alliance_list
+    p=(message.text or "").split(maxsplit=2); tg=message.from_user.id
+    if len(p)>=2 and p[1]=="ساخت":
+        if len(p)<3: return await message.answer("فرمت: /alliance ساخت نام")
+        a=alliance_create(tg,p[2]); return await message.answer(f"🤝 اتحاد «{a['name']}» ساخته شد.")
+    if len(p)>=2 and p[1]=="عضویت" and len(p)>2 and p[2].isdigit():
+        a=alliance_join(int(p[2]),tg); return await message.answer("✅ عضو شدی." if a else "❌ اتحاد پیدا نشد.")
+    ls=alliance_list(); await message.answer("🤝 <b>اتحادها</b>\n\n"+"\n".join(f"• {a['name']} — {len(a['members'])} عضو" for a in ls[:20]) if ls else "🤝 هنوز اتحادی ساخته نشده.")
+
+@router.message(Command("bank", "بانک", "سرمایه"))
+async def bank_cmd(message: Message):
+    from services.advanced_systems import bank_balance, bank_deposit, bank_invest
+    p=(message.text or "").split(); tg=message.from_user.id
+    if len(p)>2 and p[1] in ("سپرده","deposit") and p[2].isdigit(): bank_deposit(tg,int(p[2]))
+    elif len(p)>2 and p[1] in ("سرمایه‌گذاری","سرمایهگذاری","invest") and p[2].isdigit(): bank_invest(tg,int(p[2]))
+    b=bank_balance(tg); await message.answer(f"🏦 <b>بانک</b>\n💰 سپرده: {b['deposit']:,}\n📈 سرمایه‌گذاری: {b['invest']:,}\n\nسپرده: /bank سپرده مبلغ\nسرمایه‌گذاری: /bank سرمایه‌گذاری مبلغ")
+
+@router.message(Command("powerformula", "فرمول_قدرت"))
+async def power_formula_cmd(message: Message):
+    await message.answer("⚔️ <b>فرمول قدرت مؤثر</b>\nقدرت پایه + تذهیب + سلاح/زره + بدن + روح + تبار + تکنیک + خدمتکار + قلمرو + ساختمان‌ها + دستاوردها.\n\n⚡ سرعت روی نوبت/جاخالی اثر می‌گذارد.\n🛡 دفاع روی کاهش آسیب اثر می‌گذارد.\n❤️ عمر روی دوام و ظرفیت زنده‌ماندن اثر می‌گذارد.")

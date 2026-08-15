@@ -114,7 +114,7 @@ async def cmd_event_top(message: Message):
     await message.answer(ret.event_top())
 
 
-@router.message(Command("warstatus", "وضعیت‌جنگ", "جنگ‌قلمرو"))
+@router.message(Command("warstatus", "جنگ‌قلمرو"))
 async def cmd_war_status(message: Message):
     await message.answer(ret.territory_war_window()["msg"])
 

@@ -531,13 +531,19 @@ async def cmd_sect_upgrade(message: Message):
     if len(parts) < 2:
         await message.answer("فرمت: /sectupgrade tower|library|forge")
         return
+    aliases = {
+        "برج": "tower", "برج تهذیب": "tower", "tower": "tower",
+        "کتابخانه": "library", "کتابخانه تکنیک": "library", "library": "library",
+        "آهنگری": "forge", "آهنگری فرقه": "forge", "forge": "forge",
+    }
+    key = aliases.get(parts[1].strip().lower(), parts[1].strip().lower())
     async with async_session() as session:
         user = await get_or_create_user(session, message.from_user.id, message.from_user.full_name, message.from_user.username)
         mem = await _require_sect(session, user)
         if not mem or not _is_officer(mem.status):
             await message.answer("فقط رهبر/ارجمند.")
             return
-        await message.answer(ssys.upgrade_building(mem.sect_id, parts[1].lower()))
+        await message.answer(ssys.upgrade_building(mem.sect_id, key))
 
 
 @router.message(Command("sectlibrary", "کتابخانهفرقه"))

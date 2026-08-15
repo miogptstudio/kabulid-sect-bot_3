@@ -1,4 +1,4 @@
-from services.i18n import t_user, get_lang, t as _t
+from services.i18n import t_user, get_lang, t as _t, tr
 import random
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
@@ -217,7 +217,7 @@ async def cb_rps(callback: CallbackQuery):
     await callback.answer()
 
 
-@router.message(Command("dice", "تاس", "تخته‌نرد"))
+@router.message(Command("dice", "تاس"))
 async def cmd_dice(message: Message):
 
     cd = check_game_cooldown(message.from_user.id)

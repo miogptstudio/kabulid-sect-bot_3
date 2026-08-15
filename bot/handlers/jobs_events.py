@@ -307,8 +307,22 @@ async def cmd_up_cult_building(message: Message):
             session, message.from_user.id,
             message.from_user.full_name, message.from_user.username
         )
-        from services.cult_building import upgrade
-        msg = await upgrade(session, user.id, message.from_user.id)
+        from services.cult_building import upgrade, upgrade_cost, level
+        from services.economy import get_or_create_wallet, pay_any_currency
+        tg_id = message.from_user.id
+        current = level(tg_id)
+        cost = upgrade_cost(tg_id)
+        if current >= 20:
+            msg = "ساختمان تذهیب در حداکثر سطح است."
+        else:
+            w = await get_or_create_wallet(session, user.id)
+            ok, pay_msg = pay_any_currency(w, cost)
+            if not ok:
+                msg = pay_msg
+            else:
+                new_level, _ = upgrade(tg_id)
+                await session.commit()
+                msg = f"✅ ساختمان تذهیب → سطح <b>{new_level}</b>" + chr(10) + pay_msg
     await message.answer(msg)
 
 

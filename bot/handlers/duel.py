@@ -5,6 +5,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
+from sqlalchemy import select
 
 from database.engine import async_session
 from database.crud import get_or_create_user, get_user_by_telegram_id, create_duel, update_user_stats
@@ -84,6 +85,7 @@ async def _resolve_duel(session, challenger: User, opponent: User, stake: int = 
         logs.append("زمان تمام — برنده از روی خون باقی‌مانده")
 
     await update_user_stats(session, winner, won=True)
+    extra = []
     try:
         from services.achievements import check_and_award
         msg_a = await check_and_award(session, winner, "first_win")
@@ -115,7 +117,6 @@ async def _resolve_duel(session, challenger: User, opponent: User, stake: int = 
         await add_contribution(session, winner.id, 10)
     except Exception:
         pass
-    extra = []
     try:
         ww = await get_or_create_wallet(session, winner.id)
         ww.coins += 15
@@ -156,7 +157,6 @@ async def _resolve_duel(session, challenger: User, opponent: User, stake: int = 
         text += "\n\n" + "\n".join(logs)
     else:
         text += "\n\n" + "\n".join(logs[:2] + ["…"] + logs[-1:])
-    text += f""  # keep compat
     _ = f"\n\n🏆 برنده: <b>{winner.full_name}</b>\nبازنده: {loser.full_name}"
     if extra:
         text += "\n" + "\n".join(extra)
@@ -320,6 +320,53 @@ async def reject_text(message: Message, state: FSMContext):
     await state.clear()
 
 
+
+# ---- دوئل اختصاصی خدمتکاران ----
+
+@router.message(Command("servantduel", "دوئل‌خدمتکار", "دوئل‌خدمتکاران"))
+async def cmd_servant_duel(message: Message):
+    parts = (message.text or "").split()
+    try:
+        if message.reply_to_message and message.reply_to_message.from_user:
+            target = message.reply_to_message.from_user.id
+            if len(parts) < 3:
+                await message.answer(
+                    "فرمت:\n<code>/servantduel شماره_خدمتکار_من شماره_خدمتکار_حریف</code>\n"
+                    "یا روی پیام حریف ریپلای کن."
+                )
+                return
+            idx_a, idx_b = int(parts[1]), int(parts[2])
+        else:
+            if len(parts) < 4:
+                await message.answer(
+                    "فرمت:\n<code>/servantduel آیدی_حریف شماره_من شماره_حریف</code>"
+                )
+                return
+            target, idx_a, idx_b = int(parts[1]), int(parts[2]), int(parts[3])
+    except ValueError:
+        await message.answer("❌ شماره‌ها و آیدی باید عدد باشند.")
+        return
+
+    if target == message.from_user.id:
+        await message.answer("❌ نمی‌توانی با خودت دوئل خدمتکار راه بیندازی.")
+        return
+
+    from services.servants import propose_servant_duel
+    ok, text, _key = propose_servant_duel(
+        message.from_user.id, target, idx_a, idx_b
+    )
+    await message.answer(text)
+
+@router.message(Command("acceptservduel", "قبول‌دوئل‌خدمتکار"))
+async def cmd_accept_servant_duel(message: Message):
+    parts = (message.text or "").split(maxsplit=1)
+    if len(parts) < 2:
+        await message.answer("<code>/acceptservduel کلید</code>")
+        return
+    from services.servants import accept_servant_duel
+    ok, text = accept_servant_duel(parts[1].strip(), message.from_user.id)
+    await message.answer(text)
+
 # ---- صف دوئل رندوم ----
 _random_queue: dict[int, float] = {}  # tg_id -> timestamp
 _QUEUE_TTL = 120  # ثانیه
@@ -395,10 +442,10 @@ async def cmd_random_duel(message: Message, state: FSMContext):
             )
         )
         candidates = list(result.scalars().all())
-        # ترجیح بازیکنان هم‌سطح‌تر
+        # فقط حریف‌هایی که اختلاف سطحشان بیش از حد مجاز نیست
         my_level = int(me.level or 1)
         near = [u for u in candidates if abs(int(u.level or 1) - my_level) <= 15]
-        pool = near if near else candidates
+        pool = near
 
         if not pool:
             # ورود به صف
@@ -431,10 +478,12 @@ async def cmd_random_duel(message: Message, state: FSMContext):
             p2 = await calc_power(session, opponent)
         except Exception:
             pass
+        p1_total = p1.get("total", 0) if isinstance(p1, dict) else p1
+        p2_total = p2.get("total", 0) if isinstance(p2, dict) else p2
         await message.answer(
             f"🎲 <b>دوئل رندوم</b>\n"
             f"حریف پیشنهادی: <b>{opponent.full_name}</b>\n"
-            f"سطح: {opponent.level or 1} | قدرت≈{p2} (تو≈{p1})\n"
+            f"سطح: {opponent.level or 1} | قدرت≈{p2_total:,} (تو≈{p1_total:,})\n"
             + (f"شرط: {stake} سکه\n" if stake else "")
             + "اگر حریف آنلاین باشد می‌تواند قبول کند.\n"
             "یا صبر کن تا کسی /randomduel بزند و مچ شو.\n"
@@ -447,7 +496,7 @@ async def cmd_random_duel(message: Message, state: FSMContext):
                 opponent.telegram_id,
                 f"🎲 <b>{me.full_name}</b> تو را برای دوئل رندوم چالش کرد!\n"
                 + (f"شرط: {stake} سکه\n" if stake else "")
-                + f"قدرت≈{p1} vs تو≈{p2}",
+                + f"قدرت≈{p1_total:,} vs تو≈{p2_total:,}",
                 reply_markup=builder.as_markup(),
             )
             await message.answer("📨 درخواست برای حریف ارسال شد. منتظر قبول باش یا در صف بمان.")
@@ -490,7 +539,10 @@ async def cmd_random_duel_fast(message: Message):
             return
         my_level = int(me.level or 1)
         near = [u for u in pool if abs(int(u.level or 1) - my_level) <= 20]
-        opponent = random.choice(near if near else pool)
+        if not near:
+            await message.answer("❌ حریف مناسبی برای دوئل رندوم پیدا نشد؛ اختلاف سطح بازیکنان موجود زیاد است.")
+            return
+        opponent = random.choice(near)
         text = await _resolve_duel(session, me, opponent, stake=0)
         await message.answer(
             f"🎲 <b>دوئل رندوم فوری</b>\n"

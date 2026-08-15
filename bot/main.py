@@ -13,6 +13,7 @@ from database.models import Base
 import database.models_v2  # noqa: F401
 import database.models_v3  # noqa: F401
 from bot.handlers import spirit as spirit  # noqa
+from bot.handlers import text_navigation as text_navigation  # noqa
 from bot.handlers import characters as characters  # noqa
 from bot.handlers import retention as retention  # noqa
 from bot.handlers import (
@@ -33,8 +34,9 @@ async def on_startup():
     await migrate_schema()
     try:
         from services.persist import preload_all, load_from_db, sync_to_db
-        preload_all()
+        # PostgreSQL منبع اصلی داده‌های پایدار است؛ فایل محلی فقط fallback است.
         n = await load_from_db()
+        preload_all()
         logger.info("Persist loaded from DB: %s namespaces", n)
         await sync_to_db()
     except Exception as e:
@@ -58,6 +60,8 @@ async def main():
     dp.message.middleware(AutoReplyMiddleware())
     dp.callback_query.middleware(ServiceLockMiddleware())
 
+    # ورود به بخش‌ها با نوشتن نامشان، بدون نیاز به /command
+    dp.include_router(text_navigation.router)
     dp.include_router(start.router)
     dp.include_router(advanced_systems.router)
     dp.include_router(profile.router)

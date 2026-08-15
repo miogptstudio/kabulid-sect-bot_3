@@ -85,7 +85,7 @@ async def cmd_building_codex(message: Message):
 
 
 
-@router.message(Command("realms", "قلمروها", "قلمرو‌ها", "لیست‌قلمرو"))
+@router.message(Command("realms", "قلمرو‌ها", "لیست‌قلمرو"))
 async def cmd_realms(message: Message):
     from database.models_v2 import CULTIVATION_REALMS
     from bot.config import ENERGY_BASE, ENERGY_PER_LEVEL_ADD

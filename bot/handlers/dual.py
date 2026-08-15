@@ -14,7 +14,7 @@ router = Router()
 LOCKED_GENDERS = ("مرد", "زن")
 
 
-@router.message(Command("gender", "جنسیت"))
+@router.message(Command("gender"))
 async def cmd_gender(message: Message, state: FSMContext):
     async with async_session() as session:
         user = await get_or_create_user(

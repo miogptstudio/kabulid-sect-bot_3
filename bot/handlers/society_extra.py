@@ -13,7 +13,7 @@ from services import trade_guild as trade_svc
 from services.cities import get_city, ensure_user_city
 from services.cultivation import SPIRITUAL_VEINS, unlock_vein, get_veins, add_energy
 from services.dual import CHILD_CHANCE
-from services.i18n import t_user
+from services.i18n import t_user, tr
 from services.marriage import get_wives, get_husband
 
 router = Router()

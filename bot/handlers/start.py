@@ -216,7 +216,7 @@ async def btn_arena(message: Message):
         await message.answer(f"خطا آرنا: {e}")
 
 
-@router.message(Command("gather", "qi", "جمع‌آوری", "جمع", "meditate"))
+@router.message(Command("gather", "qi"))
 async def cmd_gather(message: Message):
     try:
         from bot.handlers.cultivation import do_gather
@@ -225,12 +225,12 @@ async def cmd_gather(message: Message):
         await message.answer(f"خطا: {type(e).__name__}: {e}")
 
 
-@router.message(Command("menu", "منو"))
+@router.message(Command("menu"))
 async def cmd_menu(message: Message):
     await message.answer("منو حذف شد. از /help استفاده کن.", reply_markup=ReplyKeyboardRemove())
 
 
-@router.message(Command("gender", "جنسیت"))
+@router.message(Command("gender"))
 async def cmd_gender_alias(message: Message):
     from aiogram.utils.keyboard import InlineKeyboardBuilder
     from database.engine import async_session
@@ -258,7 +258,7 @@ async def cmd_remove_kb(message: Message):
     await message.answer("کیبورد حذف شد. از /help برای دستورات استفاده کن.", reply_markup=ReplyKeyboardRemove())
 
 
-@router.message(Command("version", "نسخه"))
+@router.message(Command("version"))
 async def cmd_version(message: Message):
     try:
         from bot.config import BOT_VERSION, CREATOR_NOTICE, WEBAPP_VERSION

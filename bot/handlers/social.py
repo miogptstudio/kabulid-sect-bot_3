@@ -806,7 +806,7 @@ async def cb_rps_pv(callback: CallbackQuery):
     await callback.answer()
 
 
-@router.message(Command("leaders", "لیدربورد", "برترها"))
+@router.message(Command("leaders", "برترها"))
 async def cmd_leaders(message: Message):
     async with async_session() as session:
         # global by level
@@ -865,83 +865,142 @@ async def cmd_solo_top(message: Message):
 
 @router.message(Command("servants", "خدمتکار", "برده", "بازارخدمتکار"))
 async def cmd_servants_v2(message: Message):
-    from aiogram.types import FSInputFile
     from services.portraits import panel_url
     await message.answer_photo(FSInputFile(panel_url("servants")), caption="🧑‍🤝‍🧑 <b>بازار خدمتکاران</b>")
-    await message.answer(servmod.market_list())
+    # Each servant gets its own image/panel.
+    from bot.utils.servant_panel import servant_keyboard, servant_image
+    for item in servmod.MARKET:
+        idx=int(item["id"])
+        img=servant_image(idx)
+        text=(f"🧑‍🤝‍🧑 <b>{item['name']}</b>\n"
+              f"🧬 تبار: {item.get('race','—')}\n"
+              f"⚧ جنسیت: {item.get('gender','—')}\n"
+              f"💰 قیمت: {item.get('price',0):,} سکه\n"
+              f"📜 {item.get('desc','—')}")
+        if img:
+            await message.answer_photo(img, caption=text, reply_markup=servant_keyboard(idx))
+        else:
+            await message.answer(text, reply_markup=servant_keyboard(idx))
 
 
 @router.message(Command("buyservant", "خریدخدمتکار", "خرید‌خدمتکار"))
 async def cmd_buy_servant_v2(message: Message):
-    parts = (message.text or "").split()
-    if len(parts) < 2 or not parts[1].isdigit():
+    parts=(message.text or "").split()
+    if len(parts)<2 or not parts[1].isdigit():
         await message.answer("فرمت: /buyservant شماره")
         return
     async with async_session() as session:
-        user = await get_or_create_user(session, message.from_user.id, message.from_user.full_name, message.from_user.username)
+        user=await get_or_create_user(session,message.from_user.id,message.from_user.full_name,message.from_user.username)
         from services.economy import get_or_create_wallet
-        w = await get_or_create_wallet(session, user.id)
-        ok, msg, left = servmod.buy(message.from_user.id, int(parts[1]), int(w.coins or 0))
+        w=await get_or_create_wallet(session,user.id)
+        sid=int(parts[1])
+        ok,msg,left=servmod.buy(message.from_user.id,sid,int(w.coins or 0))
         if ok:
-            msg = msg + chr(10) + "/myservants — لیست خدمتکارها"
-        if ok:
-            w.coins = left
+            w.coins=left
             await session.commit()
-            try:
-                from services.portraits import portrait_url
-                s = next((x for x in servmod.MARKET if x['id']==int(parts[1])), None)
-                if s:
-                    await message.answer_photo(
-                        photo=portrait_url(s['name'], s.get('gender','زن'), s.get('race','انسان')),
-                        caption=msg,
-                    )
-                else:
-                    await message.answer(msg)
-            except Exception:
-                await message.answer(msg)
+            bag=servmod.list_owned(message.from_user.id)
+            idx=len(bag)
+            s0=bag[-1]
+            from bot.utils.servant_panel import servant_keyboard, servant_image
+            img=servant_image(sid)
+            caption=servmod.servant_panel_text(s0, idx, purchased=True)
+            if img:
+                await message.answer_photo(img,caption=caption,reply_markup=servant_keyboard(idx))
+            else:
+                await message.answer(caption,reply_markup=servant_keyboard(idx))
         else:
             await message.answer(msg)
 
 
 @router.message(Command("myservants", "خدمتکارها‌ی‌من", "لیست‌خدمتکار", "خدمتکار‌من"))
 async def cmd_my_servants_v2(message: Message):
-    from services.portraits import portrait_url, servant_caption
-    bag = servmod.list_owned(message.from_user.id)
+    bag=servmod.list_owned(message.from_user.id)
     if not bag:
-        await message.answer(servmod.owned_text(message.from_user.id))
-        return
-    await message.answer(servmod.owned_text(message.from_user.id))
-    # حداکثر ۳ عکس اول برای اسپم‌نشدن
-    for s in bag[:3]:
-        try:
-            url = portrait_url(s.get("name", "?"), s.get("gender", "زن"), s.get("race", "انسان"))
-            await message.answer_photo(photo=url, caption=servant_caption(s))
-        except Exception:
-            continue
-    if len(bag) > 3:
-        await message.answer(f"... و {len(bag)-3} خدمتکار دیگر (عکس ۳تای اول نمایش داده شد)")
+        await message.answer(servmod.owned_text(message.from_user.id)); return
+    from bot.utils.servant_panel import servant_keyboard, servant_image
+    for idx,s0 in enumerate(bag,1):
+        # use market base id image when available; hunted/unknown servants use the first matching race image only as fallback
+        img=servant_image(int(s0.get("base_id") or 0))
+        caption=servmod.servant_panel_text(s0,idx)
+        if img:
+            await message.answer_photo(img,caption=caption,reply_markup=servant_keyboard(idx))
+        else:
+            await message.answer(caption,reply_markup=servant_keyboard(idx))
 
 
 @router.message(Command("showservant", "عکس‌خدمتکار", "پرتره‌خدمتکار"))
 async def cmd_show_servant(message: Message):
-    """نمایش عکس یک خدمتکار: /showservant شماره"""
-    from services.portraits import portrait_url, servant_caption
-    parts = (message.text or "").split()
-    if len(parts) < 2 or not parts[1].isdigit():
-        await message.answer("فرمت: /showservant شماره  (از /myservants)")
+    parts=(message.text or "").split()
+    if len(parts)<2 or not parts[1].isdigit():
+        await message.answer("فرمت: /showservant شماره")
         return
-    bag = servmod.list_owned(message.from_user.id)
-    idx = int(parts[1])
-    if idx < 1 or idx > len(bag):
-        await message.answer("شماره نامعتبر.")
-        return
-    s = bag[idx - 1]
-    url = portrait_url(s.get("name", "?"), s.get("gender", "زن"), s.get("race", "انسان"))
-    try:
-        await message.answer_photo(photo=url, caption=servant_caption(s))
-    except Exception as e:
-        await message.answer(servant_caption(s) + chr(10) + f"(عکس لود نشد: {e})")
+    bag=servmod.list_owned(message.from_user.id); idx=int(parts[1])
+    if idx<1 or idx>len(bag):
+        await message.answer("شماره نامعتبر."); return
+    from bot.utils.servant_panel import servant_keyboard, servant_image
+    s0=bag[idx-1]; img=servant_image(int(s0.get("base_id") or 0))
+    caption=servmod.servant_panel_text(s0,idx)
+    if img:
+        await message.answer_photo(img,caption=caption,reply_markup=servant_keyboard(idx))
+    else:
+        await message.answer(caption,reply_markup=servant_keyboard(idx))
 
+
+@router.callback_query(F.data == "servmarket")
+async def cb_serv_market(callback: CallbackQuery):
+    await callback.answer("بازار خدمتکاران")
+    await callback.message.answer("برای دیدن پنل هر خدمتکار، /servants را بزن.")
+
+@router.callback_query(F.data.startswith("servbuy:"))
+async def cb_serv_buy(callback: CallbackQuery):
+    sid=int(callback.data.split(":")[1])
+    # Reuse purchase command logic without requiring text parsing.
+    async with async_session() as session:
+        user=await get_or_create_user(session,callback.from_user.id,callback.from_user.full_name,callback.from_user.username)
+        from services.economy import get_or_create_wallet
+        w=await get_or_create_wallet(session,user.id)
+        ok,msg,left=servmod.buy(callback.from_user.id,sid,int(w.coins or 0))
+        if not ok:
+            await callback.answer(msg,show_alert=True); return
+        w.coins=left; await session.commit()
+        bag=servmod.list_owned(callback.from_user.id); idx=len(bag); s0=bag[-1]
+        from bot.utils.servant_panel import servant_keyboard, servant_image
+        img=servant_image(sid); caption=servmod.servant_panel_text(s0,idx,purchased=True)
+        if img:
+            await callback.message.answer_photo(img,caption=caption,reply_markup=servant_keyboard(idx))
+        else:
+            await callback.message.answer(caption,reply_markup=servant_keyboard(idx))
+    await callback.answer("خرید انجام شد")
+
+@router.callback_query(F.data.startswith("servstatus:"))
+async def cb_serv_status(callback: CallbackQuery):
+    idx=int(callback.data.split(":")[1]); bag=servmod.list_owned(callback.from_user.id)
+    if idx<1 or idx>len(bag): await callback.answer("خدمتکار پیدا نشد",show_alert=True); return
+    from bot.utils.servant_panel import servant_keyboard, servant_image
+    s0=bag[idx-1]; img=servant_image(int(s0.get("base_id") or 0)); caption=servmod.servant_panel_text(s0,idx)
+    if img:
+        await callback.message.answer_photo(img,caption=caption,reply_markup=servant_keyboard(idx))
+    else:
+        await callback.message.answer(caption,reply_markup=servant_keyboard(idx))
+    await callback.answer()
+
+@router.callback_query(F.data.startswith("servloyal:"))
+async def cb_serv_loyal(callback: CallbackQuery):
+    idx=int(callback.data.split(":")[1]); bag=servmod.list_owned(callback.from_user.id)
+    if idx<1 or idx>len(bag): await callback.answer("خدمتکار پیدا نشد",show_alert=True); return
+    s0=bag[idx-1]
+    await callback.answer(f"❤️ وفاداری: {s0.get('loyalty',0)}٪",show_alert=True)
+
+@router.callback_query(F.data.startswith("servtrain:"))
+async def cb_serv_train(callback: CallbackQuery):
+    idx=int(callback.data.split(":")[1]); msg=servmod.train(callback.from_user.id,idx)
+    await callback.message.answer(msg); await callback.answer("پرورش انجام شد")
+
+@router.callback_query(F.data.startswith("servmarry:"))
+async def cb_serv_marry(callback: CallbackQuery):
+    idx=int(callback.data.split(":")[1])
+    ok,msg,_=servmod.marry_servant(callback.from_user.id,idx)
+    await callback.answer(msg,show_alert=True)
 
 @router.message(Command("huntservant", "شکارخدمتکار", "تسخیرنژاد"))
 async def cmd_hunt_servant(message: Message):
@@ -1007,3 +1066,16 @@ async def cmd_feed_loyalty(message: Message):
 @router.message(Command("checkbetray", "بررسی‌خیانت"))
 async def cmd_check_betray(message: Message):
     await message.answer(servmod.check_betrayal(message.from_user.id))
+
+
+@router.callback_query(F.data.startswith("servduelguide:"))
+async def cb_servant_duel_guide(callback: CallbackQuery):
+    await callback.answer()
+    idx = callback.data.split(":", 1)[1]
+    await callback.message.answer(
+        "⚔️ <b>دوئل خدمتکاران</b>\n\n"
+        f"خدمتکار شماره {idx} را انتخاب کرده‌ای. برای مبارزه با خدمتکار حریف، "
+        "روی پیام او ریپلای کن و بنویس:\n"
+        f"<code>/servantduel {idx} شماره_خدمتکار_حریف</code>\n\n"
+        "این دوئل فقط آمار خود خدمتکارها را مقایسه می‌کند."
+    )

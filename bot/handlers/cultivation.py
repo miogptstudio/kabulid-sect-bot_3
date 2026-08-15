@@ -419,7 +419,7 @@ async def cmd_solo(message: Message):
     await message.answer(text)
 
 
-@router.message(Command("virgin", "باکرگی", "وضعیت‌بدن"))
+@router.message(Command("virgin", "باکرگی"))
 async def cmd_body_status(message: Message):
     async with async_session() as session:
         user = await get_or_create_user(
@@ -820,7 +820,7 @@ RECOVER_YANG = 3      # مرد: +یانگ
 RECOVER_YIN = 3       # زن: −یین (به سمت تعادل)
 
 
-@router.message(Command("trainyang", "تمرین‌یانگ", "بازیابی‌یانگ", "recoverys", "recoveryang", "تمرین"))
+@router.message(Command("trainyang", "تمرین‌یانگ", "بازیابی‌یانگ", "recoverys", "recoveryang"))
 @router.message(F.text.in_({
     "تمرین یانگ", "تمرین کردن", "بازیابی یانگ", "تمرین بدن یانگ",
     "تمرین یین", "متعادل کردن یین", "تمرین تعادل",
@@ -974,3 +974,21 @@ async def cmd_thousand_body(message: Message):
             f"⚔️ +۱۰۰۰ قدرت نبرد\n"
             f"⏳ کول‌داون بعدی: ۱۰ ساعت"
         )
+
+
+@router.message(Command("voidcontrol", "کنترل‌پوچی", "کنترل_پوچی"))
+async def cmd_void_control(message: Message):
+    """نمایش معرفی عمومی؛ متن خصوصی تکنیک فقط برای مالک نسخه/یادگیرنده."""
+    from services.secret_tech import is_owner, get_secret_text
+    if is_owner(message.from_user.id):
+        await message.answer(get_secret_text(message.from_user.id))
+        return
+    await message.answer(
+        "🕳️ <b>کنترل پوچی اطراف — بخش اول</b>\n\n"
+        "🔒 متن کامل این تکنیک محرمانه است و فقط بعد از خرید نسخه خطی برای مالک نمایش داده می‌شود.\n"
+        "📜 این بخش عمداً ناقص است و ادامهٔ تکنیک فعلاً منتشر نشده.\n\n"
+        "🔒 شرط خرید/یادگیری: قلمرو پوچی + ریشه پوچی\n"
+        "💠 قیمت فعلی: ۱ سنگ مطلق\n\n"
+        "🛒 برای خرید: /buyvoidtech یا از سالن تکنیک وارد شو.\n"
+        "⚠️ در دنیای واقعی، کنترل «پوچی» یا نیروی نامرئی روش علمی اثبات‌شده‌ای ندارد؛ فقط می‌توان از تمرین‌های امن توجه‌آگاهی برای تمرکز استفاده کرد."
+    )

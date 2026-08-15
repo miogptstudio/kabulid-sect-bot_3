@@ -45,7 +45,7 @@ async def cb_awaken(callback: CallbackQuery):
     await callback.answer()
 
 
-@router.message(Command("trainspirit", "تمرین‌روح", "روح‌تمرین"))
+@router.message(Command("trainspirit", "روح‌تمرین"))
 async def cmd_train_spirit(message: Message):
     await message.answer(ms.train(message.from_user.id))
 

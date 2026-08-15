@@ -402,11 +402,11 @@ async def cmd_use_item(message: Message):
             from services.pill_limit import register_pill
             from services.cultivation import get_or_create_cultivation as _goc
             _cult = await _goc(session, user.id)
-            _okp, _pillmsg, _pill_died = register_pill(message.from_user.id, _cult.realm or "بیداری")
+            _okp, _pillmsg, _pill_died = register_pill(message.from_user.id, _cult.realm or "بیداری", use_qty)
             if _pill_died:
                 user.is_dead = True
                 user.blood = 0
-                inv.quantity = max(0, (inv.quantity or 1) - 1)
+                inv.quantity = max(0, (inv.quantity or 1) - use_qty)
                 if inv.quantity <= 0:
                     await session.delete(inv)
                 await session.commit()
@@ -435,8 +435,9 @@ async def cmd_use_item(message: Message):
             if effect.get("lifespan") or effect.get("life") or effect.get("age"):
                 add_life = int(effect.get("lifespan") or effect.get("life") or effect.get("age") or 0)
                 cur = int(getattr(user, "lifespan", 100) or 100)
-                user.lifespan = min(500, cur + add_life)
-                msg_parts.append(f"+{add_life} عمر (الان: {user.lifespan})")
+                total_life = add_life * use_qty
+                user.lifespan = min(500, cur + total_life)
+                msg_parts.append(f"+{total_life} عمر (×{use_qty}) (الان: {user.lifespan})")
             # انرژی مستقیم (قرص و غیره — غیر از چای که پایین‌تر هندل می‌شود)
             if effect.get("energy") and not (
                 item.item_type == "tea" or effect.get("cooldown_min") or "چای" in (item.name or "")
@@ -458,18 +459,18 @@ async def cmd_use_item(message: Message):
                 msg_parts.append("سپر محافظ فعال شد (۱ بار).")
             if effect.get("combat_power") or effect.get("power_stat"):
                 from services.knowledge import add_combat_stat
-                amt = int(effect.get("combat_power") or effect.get("power_stat") or 5)
+                amt = int(effect.get("combat_power") or effect.get("power_stat") or 5) * use_qty
                 msg_parts.append(add_combat_stat(message.from_user.id, "power", amt))
             if effect.get("combat_speed") or effect.get("speed_stat"):
                 from services.knowledge import add_combat_stat
-                amt = int(effect.get("combat_speed") or effect.get("speed_stat") or 5)
+                amt = int(effect.get("combat_speed") or effect.get("speed_stat") or 5) * use_qty
                 msg_parts.append(add_combat_stat(message.from_user.id, "speed", amt))
             if effect.get("combat_defense") or effect.get("defense_stat"):
                 from services.knowledge import add_combat_stat
-                amt = int(effect.get("combat_defense") or effect.get("defense_stat") or 5)
+                amt = int(effect.get("combat_defense") or effect.get("defense_stat") or 5) * use_qty
                 msg_parts.append(add_combat_stat(message.from_user.id, "defense", amt))
             if effect.get("duel_power"):
-                msg_parts.append(f"قدرت دوئل (از آیتم): {effect['duel_power']}")
+                msg_parts.append(f"قدرت دوئل (از آیتم): {int(effect['duel_power']) * use_qty}")
             if effect.get("learn_tech"):
                 msg_parts.append(f"تکنیک مرتبط: {effect['learn_tech']} — /learntech")
             # چای تذهیب + انرژی با کول‌داون ۱۰ دقیقه
@@ -512,12 +513,13 @@ async def cmd_use_item(message: Message):
             nm = item.name or ""
             if "عمر" in nm:
                 cur = int(getattr(user, "lifespan", 100) or 100)
-                user.lifespan = min(500, cur + 10)
-                msg_parts.append(f"+۱۰ عمر (الان: {user.lifespan})")
+                gain = 10 * use_qty
+                user.lifespan = min(500, cur + gain)
+                msg_parts.append(f"+{gain} عمر (×{use_qty}) (الان: {user.lifespan})")
             elif "انرژی" in nm or "چی" in nm:
                 from services.cultivation import add_energy as _ae2
-                _r = await _ae2(session, user.id, 5000)
-                msg_parts.append("+۵۰۰۰ انرژی")
+                _r = await _ae2(session, user.id, 5000 * use_qty)
+                msg_parts.append(f"+{5000 * use_qty} انرژی")
             elif "سلامت" in nm or "پادزهر" in nm:
                 try:
                     from services.combat_blood import heal_poison
@@ -843,30 +845,9 @@ async def text_buy_item(message: Message):
         if not item:
             await message.answer(f"آیتم «{name}» پیدا نشد. اول داروخانه یا /buildings را باز کن.")
             return
-        # reuse buy logic via price
-        from services.economy import get_or_create_wallet, pay_any_currency
-        from database.models_v3 import UserInventory
-        w = await get_or_create_wallet(session, user.id)
-        ok, pmsg = pay_any_currency(w, int(item.price or 0))
-        if not ok:
-            await message.answer(pmsg)
-            return
-        r = await session.execute(
-            sel(UserInventory).where(
-                UserInventory.user_id == user.id,
-                UserInventory.item_id == item.id,
-            )
-        )
-        inv = r.scalar_one_or_none()
-        if inv:
-            inv.quantity = int(inv.quantity or 0) + 1
-        else:
-            session.add(UserInventory(user_id=user.id, item_id=item.id, quantity=1))
-        await session.commit()
-        await message.answer(
-            f"✅ «<b>{item.name}</b>» خریده شد." + chr(10) + pmsg + chr(10)
-            + "/inventory — کیف"
-        )
+        # همان منطق اصلی خرید را استفاده کن تا خرید متنی و دکمه‌ای یک رفتار داشته باشند.
+        msg = await buy_item(session, user, item, qty=1)
+        await message.answer(msg)
 
 
 @router.message(Command("pillstatus", "وضعیت‌قرص", "سقف‌قرص"))

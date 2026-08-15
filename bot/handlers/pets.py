@@ -13,6 +13,7 @@ from services.pets import (
     pet_capacity, DEFAULT_PET_SLOTS, MAX_PET_SLOTS, PALACE_UPGRADE_SLOTS,
     PALACE_UPGRADE_COST, HUNT_COOLDOWN_HOURS,
 )
+from services.i18n import tr
 from services.economy import (
     get_or_create_wallet, exchange_to_stones, exchange_to_coins,
     exchange_up, exchange_down, wallet_text, pay_any_currency,
@@ -212,7 +213,7 @@ async def cmd_hunt(message: Message):
             pet = await spawn_wild(session)
         except Exception as e:
             await session.commit()
-            await message.answer(f"❌ خطا در اسپان شکار: {type(e).__name__}")
+            await message.answer(f"❌ خطا در اسپان شکار: {type(e).__name__}: {str(e)[:180]}")
             return
 
         msg_a = None
