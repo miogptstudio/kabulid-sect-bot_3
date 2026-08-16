@@ -9,10 +9,6 @@ from services.advanced_systems import *
 
 router = Router()
 
-@router.message(Command("cultivationrules"))
-async def cultivation_rules(message: Message):
-    await message.answer("""🧘 <b>پایهایترین قوانین تذهیب</b>\n\n• تذهیب از قلمرو و مرحله تشکیل میشود.\n• هر قلمرو تا مرحلههای تعریفشده پیش میرود؛ با رسیدن به اوج، ورود به قلمرو بعدی یک جهش بزرگ است.\n• انرژی معنوی سوخت اصلی پیشرفت است و ریشه معنوی بازدهی آن را تغییر میدهد.\n• تکنیکها، رگهای معنوی، بدن، روح و تبار میتوانند قدرت و سرعت رشد را افزایش دهند.\n• قلمرو بالاتر همیشه به معنی پیروزی قطعی نیست؛ تجهیزات، تکنیک، بدن، روح و قدرت رزمی هم محاسبه میشوند.\n• ادمین میتواند برای تست/مدیریت، تذهیب و قدرت را مستقیماً تنظیم کند.\n• مقادیر بسیار بزرگ برای انرژی و قدرت با عددهای بزرگ پشتیبانی میشوند.\n\nدستورات مفید: /cultivation /meditate /train /cultpath /vein /cores /powerstats""")
-
 @router.message(Command("powerstats", "قدرترزمی", "قدرت_رزمی"))
 async def power_stats(message: Message):
     async with async_session() as s:
@@ -155,7 +151,7 @@ async def chainmission_cmd(message: Message):
     if len(p)>1 and p[1] in ("انجام","پیشرفت"): row=advance_chain_mission(message.from_user.id); row,step=chain_mission(message.from_user.id)
     await message.answer(f"📜 <b>مأموریت زنجیرهای</b>\nمرحله: {row['step']}\n🎯 هدف فعلی: {step[0]}\nبرای ثبت پیشرفت: /chainmission انجام")
 
-@router.message(Command("event", "رویداد_جهان"))
+@router.message(Command("worldevent", "رویداد_جهان"))
 async def event_cmd(message: Message):
     from services.advanced_systems import random_event
     e=random_event(); await message.answer(f"🌍 <b>رویداد جهانی</b>\n✨ {e['name']}")

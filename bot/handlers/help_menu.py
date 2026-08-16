@@ -388,11 +388,6 @@ async def cmd_help_admin(message: Message):
     await message.answer(f"<b>{title}</b>\n\n{_render_section(title, items)}")
 
 
-@router.message(Command("version", "نسخه"))
-async def cmd_version(message: Message):
-    await message.answer(f"🤖 نسخه ربات: <b>{BOT_VERSION}</b>")
-
-
 cmd_help_menu = cmd_help
 
 

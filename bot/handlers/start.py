@@ -216,43 +216,6 @@ async def btn_arena(message: Message):
         await message.answer(f"خطا آرنا: {e}")
 
 
-@router.message(Command("gather", "qi"))
-async def cmd_gather(message: Message):
-    try:
-        from bot.handlers.cultivation import do_gather
-        await do_gather(message, amount=5000)
-    except Exception as e:
-        await message.answer(f"خطا: {type(e).__name__}: {e}")
-
-
-@router.message(Command("menu"))
-async def cmd_menu(message: Message):
-    await message.answer("منو حذف شد. از /help استفاده کن.", reply_markup=ReplyKeyboardRemove())
-
-
-@router.message(Command("gender"))
-async def cmd_gender_alias(message: Message):
-    from aiogram.utils.keyboard import InlineKeyboardBuilder
-    from database.engine import async_session
-    from database.crud import get_or_create_user
-    async with async_session() as session:
-        user = await get_or_create_user(
-            session, message.from_user.id,
-            message.from_user.full_name, message.from_user.username
-        )
-        if user.gender in ("مرد", "زن"):
-            await message.answer(f"جنسیت تو «<b>{user.gender}</b>» است و قابل تغییر نیست.")
-            return
-    builder = InlineKeyboardBuilder()
-    builder.button(text="مرد 👨", callback_data=f"setgender:{message.from_user.id}:مرد")
-    builder.button(text="زن 👩", callback_data=f"setgender:{message.from_user.id}:زن")
-    builder.adjust(1)
-    await message.answer(
-        "⚧ انتخاب جنسیت (فقط یکبار). بعد از انتخاب قابل تغییر نیست.",
-        reply_markup=builder.as_markup(),
-    )
-
-
 @router.message(Command("removekb", "حذفکیبورد", "nokb"))
 async def cmd_remove_kb(message: Message):
     await message.answer("کیبورد حذف شد. از /help برای دستورات استفاده کن.", reply_markup=ReplyKeyboardRemove())

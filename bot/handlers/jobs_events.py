@@ -393,12 +393,6 @@ async def cmd_train_body(message: Message):
     await message.answer(train_body(message.from_user.id))
 
 
-@router.message(Command("trainspirit", "تمرینروح", "لولروح"))
-async def cmd_train_spirit(message: Message):
-    from services.knowledge import train_spirit
-    await message.answer(train_spirit(message.from_user.id))
-
-
 @router.message(Command("knights", "شوالیه", "شوالیهها"))
 async def cmd_knights(message: Message):
     from services.knights import list_text
