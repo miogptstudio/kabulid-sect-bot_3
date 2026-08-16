@@ -130,8 +130,23 @@ async def worldboss_cmd(message: Message):
 @router.message(Command("chest", "صندوق", "گنج"))
 async def chest_cmd(message: Message):
     from services.advanced_systems import open_chest
-    p=(message.text or "").split(); grade=p[1] if len(p)>1 else "معمولی"; amount=open_chest(message.from_user.id,grade)
-    await message.answer(f"🎁 صندوق {grade}\n💰 پاداش: {amount:,} سکه")
+    p=(message.text or "").split(); grade=p[1] if len(p)>1 else "معمولی"
+    result=open_chest(message.from_user.id,grade)
+    amount, remaining=result
+    if amount is None:
+        hours=remaining//3600
+        minutes=(remaining%3600)//60
+        if hours:
+            wait=f"{hours} ساعت و {minutes} دقیقه"
+        else:
+            wait=f"{max(1,minutes)} دقیقه"
+        return await message.answer(
+            f"⏳ <b>صندوق هنوز آماده نیست!</b>\n\n"
+            f"🎁 هر بازیکن فقط <b>یک صندوق در هر ۲۴ ساعت</b> می‌تواند باز کند.\n"
+            f"⌛ زمان باقی‌مانده: <b>{wait}</b>\n\n"
+            f"بعد از پایان زمان، دوباره می‌توانی صندوق باز کنی."
+        )
+    await message.answer(f"🎁 صندوق {grade}\n💰 پاداش: {amount:,} سکه\n\n⏳ صندوق بعدی ۲۴ ساعت دیگر قابل باز کردن است.")
 
 @router.message(Command("chainmission", "ماموریت_زنجیره"))
 async def chainmission_cmd(message: Message):

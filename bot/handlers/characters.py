@@ -1,6 +1,5 @@
 """هندلر سیستم کاراکترها."""
 from aiogram import Router, F
-from pathlib import Path
 from aiogram.filters import Command
 from aiogram.types import Message, FSInputFile, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
@@ -49,6 +48,7 @@ def character_detail_text(card: dict, index: int) -> str:
         f"🏆 رتبه: <b>{card.get('rarity','معمولی')}</b> {stars}\n"
         f"⚔️ قدرت: <b>+{card.get('power',0):,}</b>\n"
         f"📈 قدرت پایه: {card.get('base_power',0):,}\n\n"
+        f"📜 <b>توصیف:</b> {card.get('description') or chars.character_description(card.get('name',''))}\n\n"
         f"💠 این کاراکتر از سیستم شانسی به دست آمده و با تکرار، ستارههایش افزایش پیدا میکند.\n"
         f"🔹 هر ستاره قدرت نهایی را افزایش میدهد.\n"
         f"🔹 از قویترین ۳ کاراکتر برای محاسبه پاداش قدرت استفاده میشود.\n\n"
@@ -101,15 +101,7 @@ async def cmd_pull(message: Message):
 @router.message(Command("mychars", "کاراکترها", "لیستکاراکتر"))
 async def cmd_list(message: Message):
     text = chars.list_owned_indexed(message.from_user.id)
-    panel = Path(__file__).resolve().parent.parent / "assets" / "panels" / "character_system.jpg"
-    if panel.exists():
-        await message.answer_photo(
-            photo=FSInputFile(panel),
-            caption=text,
-            reply_markup=character_list_keyboard(message.from_user.id),
-        )
-    else:
-        await message.answer(text, reply_markup=character_list_keyboard(message.from_user.id))
+    await message.answer(text, reply_markup=character_list_keyboard(message.from_user.id))
 
 
 @router.message(Command("charinfo", "اطلاعاتکاراکتر", "پنلکاراکتر"))
@@ -176,15 +168,7 @@ async def cmd_best(message: Message):
 async def cb_chars_list(callback: CallbackQuery):
     text = chars.list_owned_indexed(callback.from_user.id)
     await callback.answer("لیست بروزرسانی شد")
-    panel = Path(__file__).resolve().parent.parent / "assets" / "panels" / "character_system.jpg"
-    if panel.exists():
-        await callback.message.answer_photo(
-            photo=FSInputFile(panel),
-            caption=text,
-            reply_markup=character_list_keyboard(callback.from_user.id),
-        )
-    else:
-        await callback.message.answer(text, reply_markup=character_list_keyboard(callback.from_user.id))
+    await callback.message.answer(text, reply_markup=character_list_keyboard(callback.from_user.id))
 
 
 @router.callback_query(F.data == "chars:pull")
