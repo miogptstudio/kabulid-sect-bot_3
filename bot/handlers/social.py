@@ -920,9 +920,11 @@ async def cmd_buy_servant_v2(message: Message):
         from services.economy import get_or_create_wallet
         w=await get_or_create_wallet(session,user.id)
         sid=int(parts[1])
-        ok,msg,left=servmod.buy(message.from_user.id,sid,int(w.coins or 0))
+        karma=int(getattr(w,"karma_points",0) or 0)
+        ok,msg,left,karma_left=servmod.buy(message.from_user.id,sid,int(w.coins or 0),karma)
         if ok:
             w.coins=left
+            w.karma_points=karma_left
             await session.commit()
             bag=servmod.list_owned(message.from_user.id)
             idx=len(bag)
@@ -1049,10 +1051,13 @@ async def cb_serv_buy(callback: CallbackQuery):
         user=await get_or_create_user(session,callback.from_user.id,callback.from_user.full_name,callback.from_user.username)
         from services.economy import get_or_create_wallet
         w=await get_or_create_wallet(session,user.id)
-        ok,msg,left=servmod.buy(callback.from_user.id,sid,int(w.coins or 0))
+        karma=int(getattr(w,"karma_points",0) or 0)
+        ok,msg,left,karma_left=servmod.buy(callback.from_user.id,sid,int(w.coins or 0),karma)
         if not ok:
             await callback.answer(msg,show_alert=True); return
-        w.coins=left; await session.commit()
+        w.coins=left
+        w.karma_points=karma_left
+        await session.commit()
         bag=servmod.list_owned(callback.from_user.id); idx=len(bag); s0=bag[-1]
         from bot.utils.servant_panel import servant_keyboard, servant_image
         img=servant_image(sid); caption=servmod.servant_panel_text(s0,idx,purchased=True)

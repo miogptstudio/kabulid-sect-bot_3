@@ -54,7 +54,24 @@ def servant_image(index: int):
 
 
 def market_caption(item: dict, position: int, total: int) -> str:
+    karma_price = int(item.get("karma_price") or 0)
     price = int(item.get("price") or 0)
+    if karma_price > 0:
+        price_line = f"☯️ قیمت: <b>{karma_price}</b> کارما"
+    else:
+        price_line = f"💰 قیمت: <b>{price:,}</b> سکه"
+    stock_line = ""
+    try:
+        from services.servants import weekly_stock_remaining, SPECIAL_WEEKLY_STOCK_LIMITS
+        sid = int(item.get("id") or 0)
+        st = weekly_stock_remaining(sid)
+        if st is not None:
+            used, remaining = st
+            limit = SPECIAL_WEEKLY_STOCK_LIMITS.get(sid, 3)
+            stock_line = f"\n📦 موجودی این هفته: <b>{remaining}</b> از {limit}"
+    except Exception:
+        if item.get("special_weekly_stock"):
+            stock_line = f"\n📦 موجودی هفتگی: حداکثر {item.get('special_weekly_stock', 3)} عدد"
     return (
         f"🧑🤝🧑 <b>بازار خدمتکاران</b>\n"
         f"📄 {position + 1} از {total}\n\n"
@@ -62,7 +79,7 @@ def market_caption(item: dict, position: int, total: int) -> str:
         f"🔢 شماره: <code>{item.get('id')}</code>\n"
         f"🧬 تبار: {item.get('race', '—')}\n"
         f"⚧ جنسیت: {item.get('gender', '—')}\n"
-        f"💰 قیمت: <b>{price:,}</b> سکه\n"
+        f"{price_line}{stock_line}\n"
         f"📜 {item.get('desc', '—')}\n\n"
         f"◀️ ▶️ برای ورق زدن · خرید با دکمه پایین"
     )
