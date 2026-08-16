@@ -52,7 +52,7 @@ MARKET = [
     {"id": 15, "name": "سهراب", "gender": "مرد", "race": "انسان", "price": 3500, "desc": "پهلوان"},
     {"id": 16, "name": "پریسا", "gender": "زن", "race": "مهپیما", "price": 3400, "desc": "جادویی"},
     {"id": 17, "name": "توران", "gender": "مرد", "race": "نیمهانسان", "price": 4000, "desc": "نگهبان فرقه"},
-    {"id": 18, "name": "آناهیتا", "gender": "زن", "race": "تبار الهی", "price": 999000000000, "desc": "خدمتکار ویژهٔ الههٔ آبها؛ بسیار کمیاب", "special_monthly": True, "monthly_limit": 3},
+    {"id": 18, "name": "آناهیتا", "gender": "زن", "race": "تبار الهی", "price": 0, "karma_price": 10, "desc": "خدمتکار ویژهٔ الههٔ آبها؛ هفته‌ای ۳ عدد — قیمت ۱۰ کارما", "special_weekly_stock": 3},
     {"id": 19, "name": "دیوبنده", "gender": "مرد", "race": "دیوتبار", "price": 7500, "desc": "تاریک"},
     {"id": 20, "name": "فرشتهیار", "gender": "زن", "race": "فرشتهتبار", "price": 8500, "desc": "خدمتکار نور"},
     # گربهای نیمهانسان زن
@@ -62,11 +62,11 @@ MARKET = [
     {"id": 24, "name": "پیشیزرین", "gender": "زن", "race": "گربهای نیمهانسان", "price": 5600, "desc": "پنجهطلایی"},
     {"id": 25, "name": "یورهنکو", "gender": "زن", "race": "گربهای نیمهانسان", "price": 6000, "desc": "نیمهروح گربه"},
     # خدمتکارهای تبار الهی — خریدنی و بسیار کمیاب
-    {"id": 26, "name": "آریانا", "gender": "زن", "race": "الههتبار", "price": 1000000000, "desc": "خدمتکار الهی؛ سرعت بالای تذهیب", "special_weekly": True},
+    {"id": 26, "name": "آریانا", "gender": "زن", "race": "الههتبار", "price": 0, "karma_price": 10, "desc": "خدمتکار الهی؛ هفته‌ای ۳ عدد — قیمت ۱۰ کارما", "special_weekly_stock": 3},
     {"id": 27, "name": "یوناس", "gender": "مرد", "race": "خدایتبار", "price": 1500000000, "desc": "خدمتکار الهی؛ قدرت رزمی عظیم"},
     {"id": 28, "name": "سولارا", "gender": "زن", "race": "آسمانیتبار", "price": 2000000000, "desc": "خدمتکار آسمانی؛ محافظ قلمرو"},
     {"id": 29, "name": "ایلیوس", "gender": "مرد", "race": "تبار الهی", "price": 2500000000, "desc": "خون الهی خالص و کمیاب"},
-    {"id": 30, "name": "نریا", "gender": "زن", "race": "تبار الهی", "price": 3000000000, "desc": "خدمتکار الهی؛ وفاداری بالا", "special_weekly": True},
+    {"id": 30, "name": "نریا", "gender": "زن", "race": "تبار الهی", "price": 0, "karma_price": 10, "desc": "خدمتکار الهی؛ هفته‌ای ۳ عدد — قیمت ۱۰ کارما", "special_weekly_stock": 3},
     {"id": 31, "name": "کایروس", "gender": "مرد", "race": "خدایتبار", "price": 5000000000, "desc": "خدمتکار جنگی خدایان"},
     {"id": 32, "name": "آسترا", "gender": "زن", "race": "آسمانیتبار", "price": 7500000000, "desc": "خدمتکار آسمانی؛ تذهیب بسیار سریع"},
     {"id": 33, "name": "اورین", "gender": "مرد", "race": "تبار الهی", "price": 10000000000, "desc": "خدمتکار ردهبالای الهی"},
@@ -117,8 +117,8 @@ def servant_lore(name: str, fallback: str = "خدمتکاری ویژه با تو
 
 # خدمتکارهای ویژه با خرید هفتگی — هرکدام مستقل
 MARKET.extend([
-    {"id": 34, "name": "آلیا", "gender": "زن", "race": "گربهای نیمهانسان", "price": 6000000000, "desc": "خدمتکار ویژه؛ تبار گربهای و چابکی بالا", "special_weekly": True},
-    {"id": 35, "name": "ناکوبی", "gender": "زن", "race": "اهریمنی", "price": 9000000000, "desc": "خدمتکار ویژه؛ بالهای تاریک و قدرت رزمی بالا", "special_weekly": True},
+    {"id": 34, "name": "آلیا", "gender": "زن", "race": "گربهای نیمهانسان", "price": 0, "karma_price": 10, "desc": "خدمتکار ویژه؛ هفته‌ای ۳ عدد — قیمت ۱۰ کارما", "special_weekly_stock": 3},
+    {"id": 35, "name": "ناکوبی", "gender": "زن", "race": "اهریمنی", "price": 0, "karma_price": 10, "desc": "خدمتکار ویژه؛ هفته‌ای ۳ عدد — قیمت ۱۰ کارما", "special_weekly_stock": 3},
     {"id": 36, "name": "مادر الههگان", "gender": "زن", "race": "تبار الهی", "price": 50000000000, "desc": "خدمتکار ویژه؛ موجودی فراتر از تبارهای معمول الهی", "special_weekly": True},
 ])
 
@@ -245,6 +245,46 @@ def _record_monthly_buy(sid: int) -> None:
 SPECIAL_WEEKLY_COOLDOWN = timedelta(days=7)
 SPECIAL_WEEKLY_IDS = {int(s["id"]) for s in MARKET if s.get("special_weekly")}
 
+
+SPECIAL_WEEKLY_STOCK_IDS = {int(s["id"]) for s in MARKET if s.get("special_weekly_stock")}
+SPECIAL_WEEKLY_STOCK_LIMITS = {int(s["id"]): int(s.get("special_weekly_stock", 3)) for s in MARKET if s.get("special_weekly_stock")}
+
+def _week_key() -> str:
+    now = datetime.utcnow()
+    # ISO week
+    return f"{now.year:04d}-W{now.isocalendar()[1]:02d}"
+
+def _weekly_stock_data() -> dict:
+    return get_dict("servant_weekly_stock")
+
+def weekly_stock_remaining(sid: int) -> tuple[int, int] | None:
+    """returns (used, remaining) or None if not stock-limited"""
+    sid = int(sid)
+    if sid not in SPECIAL_WEEKLY_STOCK_IDS:
+        return None
+    data = _weekly_stock_data()
+    week = _week_key()
+    rec = data.get(str(sid)) or {}
+    if rec.get("week") != week:
+        return 0, SPECIAL_WEEKLY_STOCK_LIMITS.get(sid, 3)
+    used = max(0, int(rec.get("used", 0)))
+    limit = SPECIAL_WEEKLY_STOCK_LIMITS.get(sid, 3)
+    return used, max(0, limit - used)
+
+def _record_weekly_stock(sid: int) -> None:
+    sid = int(sid)
+    if sid not in SPECIAL_WEEKLY_STOCK_IDS:
+        return
+    data = _weekly_stock_data()
+    week = _week_key()
+    rec = data.get(str(sid)) or {}
+    if rec.get("week") != week:
+        rec = {"week": week, "used": 0}
+    rec["used"] = int(rec.get("used", 0)) + 1
+    data[str(sid)] = rec
+    _psave("servant_weekly_stock")
+
+
 def _special_buy_cd() -> dict:
     return get_dict("servant_special_buy_cd")
 
@@ -357,45 +397,81 @@ def save_owned(tg: int, bag: list) -> None:
     _psave("servants_v2")
 
 
-def buy(tg: int, sid: int, coins: int) -> tuple[bool, str, int]:
+
+def buy(tg: int, sid: int, coins: int, karma: int = 0) -> tuple[bool, str, int, int]:
+    """خرید خدمتکار. برمی‌گرداند: ok, msg, coins_left, karma_left"""
     s = next((x for x in MARKET if x["id"] == sid), None)
     if not s:
-        return False, "شماره نامعتبر. /servants", coins
+        return False, "شماره نامعتبر. /servants", coins, karma
     race = s.get("race", "انسان")
+
+    # موجودی هفتگی سراسری (مثلاً ۳ تا در هفته)
+    stock = weekly_stock_remaining(sid)
+    if stock is not None:
+        used, remaining = stock
+        limit = SPECIAL_WEEKLY_STOCK_LIMITS.get(sid, 3)
+        if remaining <= 0:
+            return False, (
+                f"⛔ موجودی هفتگی «{s['name']}» تمام شده است.\n"
+                f"سهم این هفته: {limit} عدد — هفته بعد دوباره موجود می‌شود."
+            ), coins, karma
+
     monthly = monthly_buy_remaining(tg, sid)
     if monthly is not None:
         used, remaining = monthly
         if remaining <= 0:
-            return False, f"⛔ خرید «{s['name']}» برای این ماه تمام شده است.\nسهم ماهانه: {SPECIAL_MONTHLY_LIMITS.get(sid, 3)} عدد — ماه بعد دوباره فعال میشود.", coins
-    left_text = special_buy_remaining_text(tg, sid)
-    if left_text:
-        return False, f"⏳ خرید «{s['name']}» محدود به هر ۷ روز است.\nزمان باقیمانده: {left_text}", coins
-    if RACES.get(race, {}).get("purebred") and s["price"] < 7000:
-        # rare market purebreds allowed if expensive
-        pass
-    if coins < s["price"]:
-        return False, f"سکه کافی نیست (نیاز {s['price']:,}).", coins
+            return False, (
+                f"⛔ خرید «{s['name']}» برای این ماه تمام شده است.\n"
+                f"سهم ماهانه: {SPECIAL_MONTHLY_LIMITS.get(sid, 3)} عدد — ماه بعد دوباره فعال میشود."
+            ), coins, karma
+
+    # کولداون قدیمی هفتگی (per-user) فقط برای special_weekly بدون stock
+    if s.get("special_weekly") and not s.get("special_weekly_stock"):
+        left_text = special_buy_remaining_text(tg, sid)
+        if left_text:
+            return False, (
+                f"⏳ خرید «{s['name']}» محدود به هر ۷ روز است.\n"
+                f"زمان باقیمانده: {left_text}"
+            ), coins, karma
+
+    karma_price = int(s.get("karma_price") or 0)
+    coin_price = int(s.get("price") or 0)
+
+    if karma_price > 0:
+        if karma < karma_price:
+            return False, f"کارما کافی نیست (نیاز {karma_price} کارما). موجودی: {karma}", coins, karma
+    else:
+        if coins < coin_price:
+            return False, f"سکه کافی نیست (نیاز {coin_price:,}).", coins, karma
+
     bag = list_owned(tg)
-    if any(x.get("base_id") == sid and x.get("source") == "buy" for x in bag):
-        # allow multiple of same market? yes with different uid - limit 1 of same base for buy
-        if sum(1 for x in bag if x.get("base_id") == sid) >= 2:
-            return False, "از این مدل حداکثر ۲ تا.", coins
+    if sum(1 for x in bag if x.get("base_id") == sid) >= 2:
+        return False, "از این مدل حداکثر ۲ تا.", coins, karma
+
     inst = _new_instance(s, "buy")
     bag.append(inst)
     save_owned(tg, bag)
-    _record_special_buy(tg, sid)
+    if s.get("special_weekly") and not s.get("special_weekly_stock"):
+        _record_special_buy(tg, sid)
     _record_monthly_buy(sid)
-    # legacy sync
+    _record_weekly_stock(sid)
+
     leg = _legacy_ids()
     ids = list(leg.get(str(int(tg))) or [])
     if sid not in ids:
         ids.append(sid)
         leg[str(int(tg))] = ids
         _psave("servants")
+
+    new_coins = coins if karma_price > 0 else coins - coin_price
+    new_karma = karma - karma_price if karma_price > 0 else karma
+    pay = f"{karma_price} کارما" if karma_price > 0 else f"{coin_price:,} سکه"
     return True, (
         f"✅ {s['name']} ({race}) خرید شد." + chr(10)
+        + f"پرداخت: {pay}" + chr(10)
         + f"وفاداری: {inst['loyalty']}% | تذهیب: {inst['cult']}"
-    ), coins - s["price"]
+    ), new_coins, new_karma
+
 
 
 def servant_panel_text(s: dict, index: int = 1, purchased: bool = False) -> str:
