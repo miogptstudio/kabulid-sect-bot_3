@@ -865,30 +865,48 @@ async def cmd_solo_top(message: Message):
 
 @router.message(Command("servants", "خدمتکار", "برده", "بازارخدمتکار"))
 async def cmd_servants_v2(message: Message):
-    try:
-        from bot.panel_sender import send_panel
-        await send_panel(message, "servants", caption="🧑🤝🧑 <b>بازار خدمتکاران</b>")
-    except Exception:
-        await message.answer("🧑🤝🧑 <b>بازار خدمتکاران</b>")
-    # Each servant gets its own image/panel.
-    from bot.utils.servant_panel import servant_keyboard, servant_image
-    for item in servmod.MARKET:
-        idx = int(item["id"])
-        img = servant_image(idx)
-        text = (
-            f"🧑🤝🧑 <b>{item['name']}</b>\n"
-            f"🧬 تبار: {item.get('race', '—')}\n"
-            f"⚧ جنسیت: {item.get('gender', '—')}\n"
-            f"💰 قیمت: {item.get('price', 0):,} سکه\n"
-            f"📜 {item.get('desc', '—')}"
-        )
+    """بازار خدمتکاران به سبک فروشگاه: یک پنل با دکمه‌های قبلی/بعدی."""
+    await _send_market_panel(message, position=0)
+
+
+async def _send_market_panel(target, position: int = 0, *, edit: bool = False):
+    """نمایش یک خدمتکار از بازار. target می‌تواند Message یا CallbackQuery.message باشد."""
+    from bot.utils.servant_panel import (
+        servant_image, market_keyboard, market_caption,
+    )
+    market = list(servmod.MARKET)
+    if not market:
+        await target.answer("بازار خدمتکار خالی است.")
+        return
+    total = len(market)
+    position = position % total
+    item = market[position]
+    sid = int(item["id"])
+    caption = market_caption(item, position, total)
+    kb = market_keyboard(position, total, sid)
+    img = servant_image(sid)
+
+    if edit:
         try:
+            from aiogram.types import InputMediaPhoto
             if img:
-                await message.answer_photo(img, caption=text, reply_markup=servant_keyboard(idx))
+                await target.edit_media(
+                    media=InputMediaPhoto(media=img, caption=caption),
+                    reply_markup=kb,
+                )
             else:
-                await message.answer(text, reply_markup=servant_keyboard(idx))
+                await target.edit_caption(caption=caption, reply_markup=kb)
+            return
         except Exception:
-            await message.answer(text, reply_markup=servant_keyboard(idx))
+            pass  # fallback: send new message
+
+    try:
+        if img:
+            await target.answer_photo(img, caption=caption, reply_markup=kb)
+        else:
+            await target.answer(caption, reply_markup=kb)
+    except Exception:
+        await target.answer(caption, reply_markup=kb)
 
 
 @router.message(Command("buyservant", "خریدخدمتکار", "خریدخدمتکار"))
@@ -922,18 +940,52 @@ async def cmd_buy_servant_v2(message: Message):
 
 @router.message(Command("myservants", "خدمتکارهایمن", "لیستخدمتکار", "خدمتکارمن"))
 async def cmd_my_servants_v2(message: Message):
-    bag=servmod.list_owned(message.from_user.id)
+    """لیست خدمتکارهای من — مرور تکی با قبلی/بعدی."""
+    await _send_owned_panel(message, position=0, user_id=message.from_user.id)
+
+
+async def _send_owned_panel(target, position: int, user_id: int, *, edit: bool = False):
+    from bot.utils.servant_panel import servant_image, owned_browse_keyboard
+    bag = servmod.list_owned(user_id)
     if not bag:
-        await message.answer(servmod.owned_text(message.from_user.id)); return
-    from bot.utils.servant_panel import servant_keyboard, servant_image
-    for idx,s0 in enumerate(bag,1):
-        # use market base id image when available; hunted/unknown servants use the first matching race image only as fallback
-        img=servant_image(int(s0.get("base_id") or 0))
-        caption=servmod.servant_panel_text(s0,idx)
+        text = servmod.owned_text(user_id)
+        if edit:
+            try:
+                await target.edit_caption(caption=text)
+                return
+            except Exception:
+                pass
+        await target.answer(text)
+        return
+    total = len(bag)
+    position = position % total
+    bag_index = position + 1
+    s0 = bag[position]
+    img = servant_image(int(s0.get("base_id") or 0))
+    caption = servmod.servant_panel_text(s0, bag_index)
+    caption = f"📦 <b>خدمتکارهای من</b> — {bag_index}/{total}\n\n" + caption
+    kb = owned_browse_keyboard(position, total, bag_index)
+
+    if edit:
+        try:
+            from aiogram.types import InputMediaPhoto
+            if img:
+                await target.edit_media(
+                    media=InputMediaPhoto(media=img, caption=caption),
+                    reply_markup=kb,
+                )
+            else:
+                await target.edit_caption(caption=caption, reply_markup=kb)
+            return
+        except Exception:
+            pass
+    try:
         if img:
-            await message.answer_photo(img,caption=caption,reply_markup=servant_keyboard(idx))
+            await target.answer_photo(img, caption=caption, reply_markup=kb)
         else:
-            await message.answer(caption,reply_markup=servant_keyboard(idx))
+            await target.answer(caption, reply_markup=kb)
+    except Exception:
+        await target.answer(caption, reply_markup=kb)
 
 
 @router.message(Command("showservant", "عکسخدمتکار", "پرترهخدمتکار"))
@@ -956,8 +1008,38 @@ async def cmd_show_servant(message: Message):
 
 @router.callback_query(F.data == "servmarket")
 async def cb_serv_market(callback: CallbackQuery):
-    await callback.answer("بازار خدمتکاران")
-    await callback.message.answer("برای دیدن پنل هر خدمتکار، /servants را بزن.")
+    await callback.answer()
+    await _send_market_panel(callback.message, position=0, edit=True)
+
+
+@router.callback_query(F.data.startswith("servpage:"))
+async def cb_serv_page(callback: CallbackQuery):
+    """ورق زدن بازار خدمتکاران با ◀️ ▶️"""
+    try:
+        pos = int(callback.data.split(":")[1])
+    except Exception:
+        await callback.answer("صفحه نامعتبر", show_alert=True)
+        return
+    await callback.answer()
+    await _send_market_panel(callback.message, position=pos, edit=True)
+
+
+@router.callback_query(F.data.startswith("servownpage:"))
+async def cb_serv_own_page(callback: CallbackQuery):
+    """ورق زدن خدمتکارهای من"""
+    try:
+        pos = int(callback.data.split(":")[1])
+    except Exception:
+        await callback.answer("صفحه نامعتبر", show_alert=True)
+        return
+    await callback.answer()
+    await _send_owned_panel(callback.message, position=pos, user_id=callback.from_user.id, edit=True)
+
+
+@router.callback_query(F.data == "servmylist")
+async def cb_serv_mylist(callback: CallbackQuery):
+    await callback.answer()
+    await _send_owned_panel(callback.message, position=0, user_id=callback.from_user.id, edit=False)
 
 @router.callback_query(F.data.startswith("servbuy:"))
 async def cb_serv_buy(callback: CallbackQuery):
