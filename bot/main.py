@@ -57,7 +57,8 @@ async def main():
     )
     dp = Dispatcher(storage=MemoryStorage())
     dp.message.middleware(ServiceLockMiddleware())
-    dp.message.middleware(AutoReplyMiddleware())
+    # AutoReplyMiddleware موقتاً غیرفعال — باعث می‌شد جواب‌ها ارسال نشوند
+    # dp.message.middleware(AutoReplyMiddleware())
     dp.callback_query.middleware(ServiceLockMiddleware())
 
     # ورود به بخشها با نوشتن نامشان، بدون نیاز به /command

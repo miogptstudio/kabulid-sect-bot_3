@@ -6,7 +6,11 @@ router = Router()
 
 
 def _norm(text: str) -> str:
-    return " ".join((text or "").strip().lower().replace("", " ").split())
+    t = (text or "").strip().lower()
+    # حذف فاصله‌های صفرعرض و نرمال‌سازی ساده
+    for ch in ("\u200c", "\u200f", "\u200e", "\ufeff"):
+        t = t.replace(ch, "")
+    return " ".join(t.split())
 
 
 # نامهای قابل تایپ برای ورود مستقیم به بخشها
@@ -191,7 +195,7 @@ async def text_section_navigation(message: Message):
             await cmd_daily(message)
         elif key == "luckdice":
             from bot.handlers.jobs_events import cmd_luck_dice
-            await cmd_luckdice(message)
+            await cmd_luck_dice(message)
         elif key == "jobs":
             from bot.handlers.jobs_events import cmd_jobs
             await cmd_jobs(message)

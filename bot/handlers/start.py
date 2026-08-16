@@ -33,38 +33,46 @@ def main_keyboard(lang: str = "fa"):
 
 @router.message(CommandStart())
 async def cmd_start(message: Message):
-    async with async_session() as session:
-        user = await get_or_create_user(
-            session,
-            telegram_id=message.from_user.id,
-            full_name=message.from_user.full_name,
-            username=message.from_user.username
-        )
+    try:
+        async with async_session() as session:
+            user = await get_or_create_user(
+                session,
+                telegram_id=message.from_user.id,
+                full_name=message.from_user.full_name,
+                username=message.from_user.username
+            )
 
-        lang = getattr(user, 'language', None) or 'fa'
-        set_lang(message.from_user.id, lang)
-        if message.from_user.id in ADMIN_IDS:
-            if user.role != ROLE_LEADER:
-                user.role = ROLE_LEADER
-                await session.commit()
+            lang = getattr(user, 'language', None) or 'fa'
+            set_lang(message.from_user.id, lang)
+            if message.from_user.id in ADMIN_IDS:
+                if user.role != ROLE_LEADER:
+                    user.role = ROLE_LEADER
+                    await session.commit()
 
-        lang = get_lang(message.from_user.id, getattr(user, "language", None))
-        text = t(
-            "start",
-            lang,
-            name=user.full_name or "Player",
-            ver=__import__("bot.config", fromlist=["BOT_VERSION"]).BOT_VERSION,
-        )
-        text += chr(10) + chr(10) + t("help_hint", lang)
-        await message.answer(text, reply_markup=main_keyboard(lang))
+            lang = get_lang(message.from_user.id, getattr(user, "language", None))
+            text = t(
+                "start",
+                lang,
+                name=user.full_name or "Player",
+                ver=__import__("bot.config", fromlist=["BOT_VERSION"]).BOT_VERSION,
+            )
+            text += chr(10) + chr(10) + t("help_hint", lang)
+            await message.answer(text, reply_markup=main_keyboard(lang))
+            try:
+                await message.answer(CREATOR_NOTICE)
+            except Exception:
+                pass
+            # کارت وضعیت کوتاه
+            try:
+                from bot.handlers.jobs_events import cmd_status_card
+                await cmd_status_card(message)
+            except Exception:
+                pass
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).exception("cmd_start failed: %s", e)
         try:
-            await message.answer(CREATOR_NOTICE)
-        except Exception:
-            pass
-        # کارت وضعیت کوتاه
-        try:
-            from bot.handlers.jobs_events import cmd_status_card
-            await cmd_status_card(message)
+            await message.answer(f"⚠️ خطا در /start: {type(e).__name__}\n{str(e)[:200]}")
         except Exception:
             pass
 
@@ -136,7 +144,11 @@ async def cmd_iamadmin(message: Message):
 
 @router.message(Command("ping", "تست"))
 async def cmd_ping(message: Message):
-    await message.answer(tr(message.from_user.id, "pong ✅ ربات آنلاین است."))
+    try:
+        await message.answer("pong ✅ ربات آنلاین است.")
+    except Exception as e:
+        # fallback بدون HTML
+        await message.answer(f"pong (err: {type(e).__name__})")
 
 
 @router.message(F.text.in_(set(['تأمل', '修炼', 'تذهیب کردن', 'Kültive et', 'Cultivate', 'Культивировать', 'جمع آوری چی', 'Qi topla', 'Gather Qi', 'جمع الطاقة', '聚气', 'Собрать Ци', 'تذهیب کردن', 'جمع آوری چی', 'جمع\u200cآوری چی', 'مدیتیت'])))
