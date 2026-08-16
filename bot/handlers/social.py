@@ -4,7 +4,7 @@ from services import servants as servmod
 import random
 from datetime import datetime
 from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery, URLInputFile
+from aiogram.types import Message, CallbackQuery, URLInputFile, FSInputFile
 from aiogram.filters import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy import select, func, desc
@@ -865,21 +865,29 @@ async def cmd_solo_top(message: Message):
 
 @router.message(Command("servants", "خدمتکار", "برده", "بازارخدمتکار"))
 async def cmd_servants_v2(message: Message):
-    from services.portraits import panel_url
-    await message.answer_photo(FSInputFile(panel_url("servants")), caption="🧑🤝🧑 <b>بازار خدمتکاران</b>")
+    try:
+        from bot.panel_sender import send_panel
+        await send_panel(message, "servants", caption="🧑🤝🧑 <b>بازار خدمتکاران</b>")
+    except Exception:
+        await message.answer("🧑🤝🧑 <b>بازار خدمتکاران</b>")
     # Each servant gets its own image/panel.
     from bot.utils.servant_panel import servant_keyboard, servant_image
     for item in servmod.MARKET:
-        idx=int(item["id"])
-        img=servant_image(idx)
-        text=(f"🧑🤝🧑 <b>{item['name']}</b>\n"
-              f"🧬 تبار: {item.get('race','—')}\n"
-              f"⚧ جنسیت: {item.get('gender','—')}\n"
-              f"💰 قیمت: {item.get('price',0):,} سکه\n"
-              f"📜 {item.get('desc','—')}")
-        if img:
-            await message.answer_photo(img, caption=text, reply_markup=servant_keyboard(idx))
-        else:
+        idx = int(item["id"])
+        img = servant_image(idx)
+        text = (
+            f"🧑🤝🧑 <b>{item['name']}</b>\n"
+            f"🧬 تبار: {item.get('race', '—')}\n"
+            f"⚧ جنسیت: {item.get('gender', '—')}\n"
+            f"💰 قیمت: {item.get('price', 0):,} سکه\n"
+            f"📜 {item.get('desc', '—')}"
+        )
+        try:
+            if img:
+                await message.answer_photo(img, caption=text, reply_markup=servant_keyboard(idx))
+            else:
+                await message.answer(text, reply_markup=servant_keyboard(idx))
+        except Exception:
             await message.answer(text, reply_markup=servant_keyboard(idx))
 
 
