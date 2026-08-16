@@ -117,11 +117,12 @@ ALIASES = {
 }
 
 
-@router.message(F.text)
+@router.message(F.text, ~F.text.startswith("/"))
 async def text_section_navigation(message: Message):
-    # فقط پیامهای متنی ساده؛ /commandها را دست نمیزنیم.
+    # فقط پیامهای متنی ساده (دکمه کیبورد و نام بخش).
+    # دستورات /command عمداً از فیلتر حذف شده‌اند تا روترهای دیگر آن‌ها را بگیرند.
     raw = (message.text or "").strip()
-    if not raw or raw.startswith("/"):
+    if not raw:
         return
 
     key = ALIASES.get(_norm(raw))
@@ -219,10 +220,10 @@ async def text_section_navigation(message: Message):
             await cmd_guardian(message)
         elif key == "servants":
             from bot.handlers.social import cmd_servants_v2
-            await cmd_servants(message)
+            await cmd_servants_v2(message)
         elif key == "myservants":
             from bot.handlers.social import cmd_my_servants_v2
-            await cmd_myservants(message)
+            await cmd_my_servants_v2(message)
         elif key == "marry":
             from bot.handlers.marriage import cmd_marry
             await cmd_marry(message)
@@ -269,4 +270,11 @@ async def text_section_navigation(message: Message):
             from bot.handlers.advanced_systems import bank_cmd
             await bank_cmd(message)
     except Exception as e:
-        await message.answer(f"⚠️ خطا در ورود به بخش: <code>{type(e).__name__}</code>\n{str(e)[:300]}")
+        import logging, traceback
+        logging.getLogger(__name__).exception("text_nav error key=%s: %s", key, e)
+        tb = traceback.format_exc()
+        await message.answer(
+            f"⚠️ خطا در ورود به بخش: <code>{type(e).__name__}</code>\n"
+            f"{str(e)[:300]}\n\n"
+            f"<code>{tb[-400:]}</code>"
+        )

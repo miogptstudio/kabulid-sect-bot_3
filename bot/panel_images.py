@@ -12,5 +12,14 @@ PANEL_IMAGES = {
     "profile": {"male": ASSET_DIR/"profile_male.jpg", "female": ASSET_DIR/"profile_female.jpg", "default": ASSET_DIR/"profile_male.jpg"},
 }
 def get_panel_image(panel, gender=None):
-    v=PANEL_IMAGES.get(panel)
-    return v.get((gender or "").lower(), v["default"]) if isinstance(v,dict) else v
+    v = PANEL_IMAGES.get(panel)
+    if not isinstance(v, dict):
+        return v
+    g = (gender or "").strip().lower()
+    if g in ("female", "زن", "woman", "f"):
+        key = "female"
+    elif g in ("male", "مرد", "man", "m"):
+        key = "male"
+    else:
+        key = "default"
+    return v.get(key, v.get("default"))

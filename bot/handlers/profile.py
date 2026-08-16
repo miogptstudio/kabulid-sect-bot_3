@@ -81,7 +81,13 @@ async def cmd_profile(message: Message):
             f"├ برد متوالی: {user.win_streak}\n"
             f"└ باخت متوالی: {user.loss_streak}\n"
         )
-        await message.answer_photo(
-            FSInputFile(panel_url("profile_female" if user.gender == "زن" else "profile_male", user.gender, str(user.id))),
-            caption=text
-        )
+        try:
+            from bot.panel_sender import send_panel
+            await send_panel(
+                message,
+                "profile",
+                caption=text,
+                gender="female" if user.gender == "زن" else "male",
+            )
+        except Exception:
+            await message.answer(text)
