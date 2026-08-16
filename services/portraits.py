@@ -64,20 +64,35 @@ def servant_caption(s: dict) -> str:
 
 
 def character_url(name: str, rarity: str = "معمولی") -> str:
-    style = {
-        "معمولی": "identicon",
-        "غیرمعمولی": "bottts",
-        "نادر": "adventurer",
-        "حماسی": "avataaars",
-        "افسانهای": "lorelei",
-        "اسطورهای": "personas",
-        "خدایی": "shapes",
-        "ازلی": "shapes",
-        "قادر مطلق": "shapes",
-    }.get(rarity, "identicon")
-    seed = quote(f"char-{rarity}-{name}", safe="")
-    return f"https://api.dicebear.com/9.x/{style}/png?seed={seed}&size=512"
+    """تصویر واقعی و اختصاصی هر یک از ۳۰ کاراکتر فعال.
 
+    تصاویر داخل خود پروژه نگهداری میشوند تا با قطع اینترنت یا تغییر سرویس
+    تصویر، پنل کاراکترها خراب نشود. کاراکترهای قدیمیِ ذخیرهشده همچنان
+    fallback پایدار خودشان را دارند.
+    """
+    from pathlib import Path
+    meta = {
+        "شاگرد گمنام":"01.jpg","نگهبان دروازه":"02.jpg","شاگرد آهنگر":"03.jpg",
+        "شمشیرزن مرزی":"04.jpg","بانوی باد":"05.jpg","سوارکار رخش":"06.jpg",
+        "استاد تیغه نقره":"07.jpg","حکیم آناهیتا":"08.jpg","سردار کاوه":"09.jpg",
+        "زال سپیدموی":"10.jpg","رستم نیمه‌اژدها":"11.jpg","آرش کمانگیر":"12.jpg","گردآفرید":"13.jpg",
+        "جمشید شهریار":"14.jpg","رستم دستان":"15.jpg","آناهیتای مقدس":"16.jpg","سیمرغ زرین":"17.jpg",
+        "اهورامزدا‌زاده":"18.jpg","زروان زمان":"19.jpg","آناهیتای ازلی":"20.jpg","فرّ ایزدی":"21.jpg",
+        "خدای پوچی":"22.jpg","بانوی آسمان‌ها":"23.jpg","فرشته مرگ":"24.jpg","خدای تذهیب":"25.jpg",
+        "خالق بی‌نام":"26.jpg","اولین تذهیبگر":"27.jpg","نگهبان صفر مطلق":"28.jpg",
+        "قادر مطلق":"29.jpg","یگانگی محض":"30.jpg",
+    }
+    root = Path(__file__).resolve().parent.parent / "assets" / "characters"
+    path = root / meta.get(name, "")
+    if path.exists():
+        return str(path)
+    style = {
+        "معمولی": "identicon", "غیرمعمولی": "bottts", "نادر": "adventurer",
+        "حماسی": "avataaars", "افسانه‌ای": "lorelei", "اسطوره‌ای": "personas",
+        "خدایی": "shapes", "ازلی": "shapes", "قادر مطلق": "shapes",
+    }.get(rarity, "identicon")
+    seed = quote(f"legacy-char-{rarity}-{name}", safe="")
+    return f"https://api.dicebear.com/9.x/{style}/png?seed={seed}&size=512"
 
 def pet_url(name: str) -> str:
     seed = quote(f"pet-{name}", safe="")

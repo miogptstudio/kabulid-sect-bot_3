@@ -128,9 +128,40 @@ def hit_world_boss(tg, damage):
     p=d.setdefault("participants",{}); p[str(int(tg))]=int(p.get(str(int(tg)),0))+dmg; save("world_boss"); return d,dmg
 
 def open_chest(tg, grade="معمولی"):
+    """باز کردن صندوق با محدودیت یک‌بار در هر ۲۴ ساعت برای هر بازیکن.
+
+    داده‌های قدیمی chests حفظ می‌شوند؛ فقط last_open_at به رکورد اضافه می‌شود.
+    """
     rewards={"معمولی":(100,1000),"نادر":(1000,10000),"افسانهای":(10000,100000),"الهی":(100000,1000000),"مطلق":(1000000,10000000)}
-    lo,hi=rewards.get(grade,rewards["معمولی"]); amount=random.randint(lo,hi)
-    d=get_dict("chests"); row=d.setdefault(str(int(tg)),{"opened":0,"coins":0}); row["opened"]+=1; row["coins"]+=amount; save("chests"); return amount
+    if grade not in rewards:
+        grade = "معمولی"
+
+    d=get_dict("chests")
+    key=str(int(tg))
+    row=d.setdefault(key,{"opened":0,"coins":0})
+
+    # محدودیت سراسری صندوق: هر ۲۴ ساعت یک بار، مستقل از نوع صندوق.
+    now=datetime.utcnow()
+    last=row.get("last_open_at")
+    if last:
+        try:
+            last_dt=datetime.fromisoformat(str(last))
+            remaining=timedelta(hours=24)-(now-last_dt)
+            if remaining.total_seconds()>0:
+                return None, int(remaining.total_seconds())
+        except (TypeError, ValueError):
+            # رکوردهای قدیمی یا خراب مانع استفاده بازیکن نمی‌شوند.
+            pass
+
+    lo,hi=rewards[grade]
+    amount=random.randint(lo,hi)
+    row["opened"]=int(row.get("opened",0))+1
+    row["coins"]=int(row.get("coins",0))+amount
+    row["last_open_at"]=now.isoformat()
+    row["last_grade"]=grade
+    d[key]=row
+    save("chests")
+    return amount, 0
 
 def chain_mission(tg):
     d=get_dict("chain_missions"); k=str(int(tg)); row=d.setdefault(k,{"step":1,"done":0,"reward":0})

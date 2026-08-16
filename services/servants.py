@@ -298,7 +298,7 @@ def market_list() -> str:
         monthly = f" 🌙 فقط {s.get('monthly_limit', 3)} عدد در ماه" if s.get("special_monthly") else ""
         lines.append(
             f"#{s['id']} {s['name']} | {s['gender']} | {race} {pure}{weekly}{monthly}" + chr(10)
-            + f"  {s['price']:,} سکه — {servant_lore(s['name'], s.get('desc', 'خدمتکار ویژه با تواناییهای منحصربهفرد.'))}"
+            + f"  {s['price']:,} سکه — {servant_lore(s['name'], s.get('desc', "خدمتکار ویژه با تواناییهای منحصربهفرد."))}"
         )
     lines += [
         "",
