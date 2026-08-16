@@ -6,7 +6,7 @@ router = Router()
 
 
 def _norm(text: str) -> str:
-    return " ".join((text or "").strip().lower().replace("", " ").split())
+    return " ".join((text or "").strip().lower().split())
 
 
 # نامهای قابل تایپ برای ورود مستقیم به بخشها
@@ -113,7 +113,7 @@ ALIASES = {
 }
 
 
-@router.message(F.text)
+@router.message(F.text, ~F.text.startswith("/"))
 async def text_section_navigation(message: Message):
     # فقط پیامهای متنی ساده؛ /commandها را دست نمیزنیم.
     raw = (message.text or "").strip()
