@@ -326,17 +326,21 @@ async def cb_help_section(callback: CallbackQuery):
         return
     key = parts[2]
     if key == "all":
-        chunks = [f"📋 <b>همه دستورات بازی</b> — v{BOT_VERSION}\n\n"
-                  "این فهرست کاربرد هر دستور را هم میگوید تا اشتباهی اجرا نشود.\n"]
+        chunks = [f"📋 <b>همه دستورات</b> — v{BOT_VERSION}\n"]
         for _, (title, items) in SECTIONS.items():
-            chunks.append(f"\n<b>{title}</b>\n{_render_section(title, items)}\n")
+            chunks.append(f"\n<b>{title}</b>")
+            for cmd, desc in items[:6]:
+                chunks.append(f"• {cmd}")
         text = "\n".join(chunks)
-        await callback.message.edit_caption(
-            caption=f"📋 <b>همه دستورات</b> — v{BOT_VERSION}\n\nفهرست کامل در پیامهای بعدی ارسال میشود.",
-            reply_markup=_kb(owner),
-        )
-        for i in range(0, len(text), 3900):
-            await callback.message.answer(text[i:i + 3900])
+        if len(text) > 1000:
+            text = text[:990] + "…"
+        try:
+            await callback.message.edit_caption(caption=text, reply_markup=_kb(owner))
+        except Exception:
+            try:
+                await callback.message.edit_text(text, reply_markup=_kb(owner))
+            except Exception:
+                await callback.message.answer(text, reply_markup=_kb(owner))
         await callback.answer()
         return
     if key not in SECTIONS:
@@ -344,12 +348,15 @@ async def cb_help_section(callback: CallbackQuery):
         return
     title, items = SECTIONS[key]
     text = f"<b>{title}</b>\n\n{_render_section(title, items)}"
-    await callback.message.edit_caption(
-        caption=f"<b>{title}</b>\n\nجزئیات کامل در پیام بعدی 👇",
-        reply_markup=_kb(owner),
-    )
-    for i in range(0, len(text), 3900):
-        await callback.message.answer(text[i:i + 3900])
+    if len(text) > 1000:
+        text = text[:990] + "…\n/commands برای فهرست کامل"
+    try:
+        await callback.message.edit_caption(caption=text, reply_markup=_kb(owner))
+    except Exception:
+        try:
+            await callback.message.edit_text(text, reply_markup=_kb(owner))
+        except Exception:
+            await callback.message.answer(text, reply_markup=_kb(owner))
     await callback.answer()
 
 

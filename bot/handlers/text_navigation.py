@@ -177,8 +177,8 @@ async def text_section_navigation(message: Message):
             from bot.handlers.shop import cmd_buildings
             await cmd_buildings(message)
         elif key == "codex":
-            from bot.handlers.codex_items import cmd_codex
-            await cmd_codex(message)
+            from bot.handlers.codex_items import cmd_item_codex
+            await cmd_item_codex(message)
         elif key == "missions":
             from bot.handlers.missions import cmd_missions
             await cmd_missions(message)

@@ -104,7 +104,13 @@ async def cmd_dual(message: Message):
             await message.answer(tr(message.from_user.id, "طرف مقابل هنوز /gender نزده."))
             return
 
-        result = await request_dual(session, user1, user2)
+        try:
+            result = await request_dual(session, user1, user2)
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).exception("dual request: %s", e)
+            await message.answer(f"⚠️ خطا در تذهیب دوگانه: {type(e).__name__}\n{str(e)[:250]}")
+            return
         if isinstance(result, str):
             await message.answer(result)
             return

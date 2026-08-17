@@ -127,3 +127,7 @@ async def cmd_codex_guide(message: Message):
         + "/codex — لیست آیتمها | /buildings — فروشگاه | /help — راهنما"
     )
     await message.answer(text)
+
+
+# alias for text_navigation / older calls
+cmd_codex = cmd_item_codex

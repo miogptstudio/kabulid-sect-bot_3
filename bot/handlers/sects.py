@@ -435,8 +435,25 @@ async def _require_sect(session, user):
 
 
 def _is_officer(status: str) -> bool:
-    s = status or ""
-    return any(x in s for x in ("رهبر", "ارجمند", "ارشد", "معاون"))
+    s = (status or "").lower()
+    keys = ("رهبر", "ارجمند", "ارشد", "معاون", "leader", "elder", "officer")
+    return any(x in s for x in keys)
+
+
+async def _is_sect_officer(session, user, mem) -> bool:
+    """رهبر واقعی (leader_id) یا مقام افسر."""
+    if not mem:
+        return False
+    if _is_officer(getattr(mem, "status", "") or ""):
+        return True
+    try:
+        from database.models_v2 import Sect
+        sect = await session.get(Sect, mem.sect_id)
+        if sect and int(sect.leader_id) == int(user.id):
+            return True
+    except Exception:
+        pass
+    return False
 
 
 @router.message(Command("secttreasury", "خزانهفرقه", "خزانه"))
@@ -456,9 +473,28 @@ async def cmd_sect_treasury(message: Message):
 async def cmd_sect_deposit(message: Message):
     parts = (message.text or "").split()
     if len(parts) < 3:
-        await message.answer("فرمت: /sectdeposit coins|spirit|heavenly|materials مقدار")
+        await message.answer(
+            "فرمت:\n"
+            "/sectdeposit سکه 1000\n"
+            "/sectdeposit coins 1000\n"
+            "/sectdeposit spirit 10\n"
+            "/sectdeposit heavenly 1\n"
+            "/sectdeposit materials 5"
+        )
         return
-    cur, amt = parts[1], int(parts[2])
+    # هر دو ترتیب را بپذیر: /sectdeposit سکه 100  یا  /sectdeposit 100 سکه
+    a, b = parts[1], parts[2]
+    cur, amt = None, None
+    if a.isdigit() or (a.startswith("-") and a[1:].isdigit()):
+        amt, cur = int(a), b
+    elif b.isdigit() or (b.startswith("-") and b[1:].isdigit()):
+        cur, amt = a, int(b)
+    else:
+        await message.answer("مقدار باید عدد باشد. مثال: /sectdeposit سکه 1000")
+        return
+    if amt <= 0:
+        await message.answer("مقدار باید بیشتر از صفر باشد.")
+        return
     async with async_session() as session:
         user = await get_or_create_user(session, message.from_user.id, message.from_user.full_name, message.from_user.username)
         mem = await _require_sect(session, user)
@@ -489,13 +525,20 @@ async def cmd_sect_deposit(message: Message):
 async def cmd_sect_withdraw(message: Message):
     parts = (message.text or "").split()
     if len(parts) < 3:
-        await message.answer("فرمت: /sectwithdraw coins|spirit|heavenly|materials مقدار")
+        await message.answer("فرمت: /sectwithdraw سکه|coins|spirit|heavenly|materials مقدار")
         return
-    cur, amt = parts[1], int(parts[2])
+    a, b = parts[1], parts[2]
+    if a.isdigit() or (a.startswith("-") and a[1:].isdigit()):
+        amt, cur = int(a), b
+    elif b.isdigit() or (b.startswith("-") and b[1:].isdigit()):
+        cur, amt = a, int(b)
+    else:
+        await message.answer("مقدار باید عدد باشد. مثال: /sectwithdraw سکه 500")
+        return
     async with async_session() as session:
         user = await get_or_create_user(session, message.from_user.id, message.from_user.full_name, message.from_user.username)
         mem = await _require_sect(session, user)
-        if not mem or not _is_officer(mem.status):
+        if not mem or not await _is_sect_officer(session, user, mem):
             await message.answer("فقط رهبر/ارجمند/ارشد.")
             return
         ok, msg = ssys.withdraw(mem.sect_id, cur, amt)
@@ -540,7 +583,7 @@ async def cmd_sect_upgrade(message: Message):
     async with async_session() as session:
         user = await get_or_create_user(session, message.from_user.id, message.from_user.full_name, message.from_user.username)
         mem = await _require_sect(session, user)
-        if not mem or not _is_officer(mem.status):
+        if not mem or not await _is_sect_officer(session, user, mem):
             await message.answer("فقط رهبر/ارجمند.")
             return
         await message.answer(ssys.upgrade_building(mem.sect_id, key))
@@ -601,7 +644,7 @@ async def cmd_assign_mission(message: Message):
     async with async_session() as session:
         user = await get_or_create_user(session, message.from_user.id, message.from_user.full_name, message.from_user.username)
         mem = await _require_sect(session, user)
-        if not mem or not _is_officer(mem.status):
+        if not mem or not await _is_sect_officer(session, user, mem):
             await message.answer("فقط رهبر یا ارجمند میتواند مأموریت بدهد.")
             return
         await message.answer(ssys.assign_missions(mem.sect_id, 3))

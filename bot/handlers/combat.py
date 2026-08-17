@@ -15,6 +15,14 @@ router = Router()
 
 @router.message(Command("kill", "بکش", "قتل"))
 async def cmd_kill(message: Message):
+    try:
+        await _cmd_kill_impl(message)
+    except Exception as e:
+        import logging, traceback
+        logging.getLogger(__name__).exception("kill error: %s", e)
+        await message.answer(f"⚠️ خطا در /kill: {type(e).__name__}\n{str(e)[:200]}")
+
+async def _cmd_kill_impl(message: Message):
     if message.reply_to_message and message.reply_to_message.from_user:
         if message.reply_to_message.from_user.is_bot:
             await message.answer("🤖 کسی نمیتواند ربات را بکشد.")
@@ -47,8 +55,9 @@ async def cmd_kill(message: Message):
             await message.answer(block)
             return
         from services.cultivation import is_immortal_race
-        if is_immortal_race(getattr(victim, "race", None)):
-            await message.answer(tr(message.from_user.id, "نژاد خدایان نامیراست — نمیمیرد."))
+        from services.immortal import is_immortal_tg, is_immortal_user
+        if is_immortal_race(getattr(victim, "race", None)) or is_immortal_tg(t.id) or is_immortal_user(victim):
+            await message.answer("🛡️ این بازیکن نامیراست و نمیمیرد.")
             return
         if victim.is_dead:
             await message.answer(tr(message.from_user.id, "طرف مرده است."))
@@ -87,4 +96,8 @@ async def cmd_kill(message: Message):
             text += chr(10) + f"📊 قتلهای امروز تو: {n}/{KILL_LIMIT_PER_DAY}"
             if n > KILL_LIMIT_PER_DAY:
                 text += chr(10) + await put_in_prison(session, attacker)
+        try:
+            await session.commit()
+        except Exception:
+            pass
         await message.answer(text)

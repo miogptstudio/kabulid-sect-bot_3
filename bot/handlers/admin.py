@@ -19,6 +19,11 @@ def is_config_admin(user_id: int) -> bool:
     return user_id in ADMIN_IDS
 
 
+def _staff_ok(user_id: int, min_rank: str) -> bool:
+    from services.staff import has_perm
+    return has_perm(user_id, min_rank)
+
+
 @router.message(Command("admin"))
 async def cmd_admin(message: Message):
     async with async_session() as session:
@@ -29,9 +34,9 @@ async def cmd_admin(message: Message):
             username=message.from_user.username
         )
 
-    # فقط سازنده ربات (ADMIN_IDS)
-    if not is_config_admin(message.from_user.id):
-        await message.answer(tr(message.from_user.id, "⛔️ پنل ادمین فقط برای سازنده ربات است."))
+    from services.staff import has_perm, PERM_DIAG, get_staff, staff_help_text
+    if not has_perm(message.from_user.id, PERM_DIAG):
+        await message.answer("⛔️ پنل مدیریت برای مقام ویژه و بالاتر است.")
         return
 
     text = (
@@ -99,7 +104,8 @@ async def cmd_restrict(message: Message):
             message.from_user.full_name, message.from_user.username
         )
 
-        if not can_restrict(actor) and not is_config_admin(message.from_user.id):
+        from services.staff import has_perm, PERM_RESTRICT
+        if not can_restrict(actor) and not has_perm(message.from_user.id, PERM_RESTRICT):
             await message.answer(tr(message.from_user.id, "⛔️ دسترسی نداری."))
             return
 
@@ -144,7 +150,8 @@ async def cmd_unrestrict(message: Message):
             message.from_user.full_name, message.from_user.username
         )
 
-        if not can_restrict(actor) and not is_config_admin(message.from_user.id):
+        from services.staff import has_perm, PERM_RESTRICT
+        if not can_restrict(actor) and not has_perm(message.from_user.id, PERM_RESTRICT):
             await message.answer(tr(message.from_user.id, "⛔️ دسترسی نداری."))
             return
 
@@ -178,7 +185,8 @@ async def cmd_promote(message: Message):
             message.from_user.full_name, message.from_user.username
         )
 
-        if not can_promote_demote(actor) and not is_config_admin(message.from_user.id):
+        from services.staff import has_perm, PERM_PROMOTE_RANK
+        if not can_promote_demote(actor) and not has_perm(message.from_user.id, PERM_PROMOTE_RANK):
             await message.answer(tr(message.from_user.id, "⛔️ دسترسی نداری."))
             return
 
@@ -214,7 +222,8 @@ async def cmd_demote(message: Message):
             message.from_user.full_name, message.from_user.username
         )
 
-        if not can_promote_demote(actor) and not is_config_admin(message.from_user.id):
+        from services.staff import has_perm, PERM_PROMOTE_RANK
+        if not can_promote_demote(actor) and not has_perm(message.from_user.id, PERM_PROMOTE_RANK):
             await message.answer(tr(message.from_user.id, "⛔️ دسترسی نداری."))
             return
 
@@ -248,8 +257,9 @@ async def cmd_set_cult(message: Message):
     فرمت: /setcult ID قلمرو مرحله [انرژی] یا ریپلای + /setcult قلمرو مرحله [انرژی]
     قلمرو میتواند نام کامل یا شماره آن در فهرست قلمروها باشد؛ مرحله تا ۱۵ است.
     """
-    if not is_config_admin(message.from_user.id):
-        await message.answer(tr(message.from_user.id, "فقط سازنده."))
+    from services.staff import has_perm, PERM_SETCULT
+    if not has_perm(message.from_user.id, PERM_SETCULT):
+        await message.answer("⛔️ نیاز به مقام ادمین یا بالاتر.")
         return
     from database.models_v2 import CULTIVATION_REALMS
     from services.cultivation import get_or_create_cultivation
@@ -305,8 +315,8 @@ async def cmd_set_cult(message: Message):
             realm = next((r for r in CULTIVATION_REALMS if r == realm_raw), None)
             if realm is None:
                 # تطبیق منعطف برای فاصله/نیمفاصله
-                norm = realm_raw.replace(" ", "").replace("", "")
-                realm = next((r for r in CULTIVATION_REALMS if r.replace(" ", "").replace("", "") == norm), None)
+                norm = realm_raw.replace(" ", "").replace("‌", "")
+                realm = next((r for r in CULTIVATION_REALMS if r.replace(" ", "").replace("‌", "") == norm), None)
 
         if realm is None:
             await message.answer(
@@ -334,8 +344,12 @@ async def cmd_set_cult(message: Message):
 
 @router.message(Command("givemoney", "بدهپول"))
 async def cmd_give_money(message: Message):
-    if not is_config_admin(message.from_user.id):
-        await message.answer(tr(message.from_user.id, "فقط سازنده."))
+    from services.staff import has_perm, PERM_GIVEMONEY, check_money_amount, money_limit
+    if not has_perm(message.from_user.id, PERM_GIVEMONEY):
+        await message.answer(
+            "⛔️ نیاز به مقام مدیر یا بالاتر.\n"
+            f"سقف پول‌دهی مقام تو: {money_limit(message.from_user.id):,}"
+        )
         return
     from services.economy import get_or_create_wallet
     parts = (message.text or "").split()
@@ -362,6 +376,10 @@ async def cmd_give_money(message: Message):
             await message.answer(tr(message.from_user.id, "نوع و مقدار لازم است."))
             return
         kind, amount = args[0], int(args[1])
+        ok_lim, lim_msg = check_money_amount(message.from_user.id, amount)
+        if not ok_lim:
+            await message.answer(lim_msg)
+            return
         w = await get_or_create_wallet(session, target.id)
         money_fields = {
             "coins": "coins", "سکه": "coins",
@@ -395,8 +413,12 @@ async def cmd_give_money(message: Message):
 
 @router.message(Command("takemoney", "بگیرپول"))
 async def cmd_take_money(message: Message):
-    if not is_config_admin(message.from_user.id):
-        await message.answer(tr(message.from_user.id, "فقط سازنده."))
+    from services.staff import has_perm, PERM_GIVEMONEY, check_money_amount, money_limit
+    if not has_perm(message.from_user.id, PERM_GIVEMONEY):
+        await message.answer(
+            "⛔️ نیاز به مقام مدیر یا بالاتر.\n"
+            f"سقف پول‌دهی مقام تو: {money_limit(message.from_user.id):,}"
+        )
         return
     from services.economy import get_or_create_wallet
     parts = (message.text or "").split()
@@ -433,8 +455,9 @@ async def cmd_take_money(message: Message):
 
 @router.message(Command("ban"))
 async def cmd_ban(message: Message):
-    if not is_config_admin(message.from_user.id):
-        await message.answer(tr(message.from_user.id, "فقط سازنده."))
+    from services.staff import has_perm, PERM_BAN
+    if not has_perm(message.from_user.id, PERM_BAN):
+        await message.answer("⛔️ نیاز به مقام معاون ادمین یا بالاتر.")
         return
     parts = (message.text or "").split()
     async with async_session() as session:
@@ -461,8 +484,9 @@ async def cmd_ban(message: Message):
 
 @router.message(Command("unban"))
 async def cmd_unban(message: Message):
-    if not is_config_admin(message.from_user.id):
-        await message.answer(tr(message.from_user.id, "فقط سازنده."))
+    from services.staff import has_perm, PERM_BAN
+    if not has_perm(message.from_user.id, PERM_BAN):
+        await message.answer("⛔️ نیاز به مقام معاون ادمین یا بالاتر.")
         return
     parts = (message.text or "").split()
     async with async_session() as session:
@@ -540,8 +564,9 @@ async def cmd_unlock_consume(message: Message):
 @router.message(Command("givepower", "قدرتبده", "setpower"))
 async def cmd_give_power(message: Message):
     """ادمین: /givepower telegram_id مقدار [total|power|speed|defense|body]"""
-    if not is_config_admin(message.from_user.id):
-        await message.answer("فقط سازنده.")
+    from services.staff import has_perm, PERM_GIVEMONEY
+    if not has_perm(message.from_user.id, PERM_GIVEMONEY):
+        await message.answer("⛔️ نیاز به مقام ادمین یا بالاتر.")
         return
     parts = (message.text or "").split()
     if len(parts) < 3:
@@ -596,7 +621,8 @@ async def cmd_give_power(message: Message):
 @router.message(Command("transfercult", "انتقالتذهیب", "کپیتذهیب"))
 async def cmd_transfer_cult(message: Message):
     """سازنده: انتقال کامل تذهیب یک کاربر به کاربر دیگر؛ مناسب قلمروهای بسیار بالا."""
-    if not is_config_admin(message.from_user.id):
+    from services.staff import has_perm, PERM_SETCULT, is_creator
+    if not is_creator(message.from_user.id):
         await message.answer("⛔️ فقط سازنده ربات.")
         return
     parts = (message.text or "").split()
@@ -649,8 +675,9 @@ async def cmd_transfer_cult(message: Message):
 @router.message(Command("diag", "تشخیص", "debugbot"))
 async def cmd_diag(message: Message):
     """تشخیص سریع سیستمها برای ادمین"""
-    if not is_config_admin(message.from_user.id):
-        await message.answer("فقط سازنده.")
+    from services.staff import has_perm, PERM_DIAG
+    if not has_perm(message.from_user.id, PERM_DIAG):
+        await message.answer("⛔️ نیاز به مقام ویژه یا بالاتر.")
         return
     lines = ["🔧 <b>تشخیص ربات</b>", ""]
     checks = []
@@ -703,3 +730,122 @@ async def cmd_diag(message: Message):
     lines.extend(checks)
     lines.append("\n/version /help /buildings /servants /jobs /craft")
     await message.answer(chr(10).join(lines))
+
+
+@router.message(Command("immortal", "نامیرا", "setimmortal"))
+async def cmd_set_immortal(message: Message):
+    """ادمین: /immortal TELEGRAM_ID  یا ریپلای + /immortal"""
+    from services.staff import has_perm, PERM_IMMORTAL
+    if not has_perm(message.from_user.id, PERM_IMMORTAL):
+        await message.answer("⛔️ نیاز به مقام ادمین یا بالاتر.")
+        return
+    from services.immortal import set_immortal, list_immortals
+    parts = (message.text or "").split()
+    tid = None
+    if message.reply_to_message and message.reply_to_message.from_user:
+        tid = message.reply_to_message.from_user.id
+    elif len(parts) >= 2 and parts[1].isdigit():
+        tid = int(parts[1])
+    if tid is None:
+        await message.answer(
+            "فرمت:\n"
+            "/immortal TELEGRAM_ID\n"
+            "یا ریپلای روی پیام فرد + /immortal\n\n"
+            + list_immortals()
+        )
+        return
+    await message.answer(set_immortal(tid, True, by=message.from_user.id))
+
+
+@router.message(Command("unimmortal", "حذفنامیرا"))
+async def cmd_unset_immortal(message: Message):
+    from services.staff import has_perm, PERM_IMMORTAL
+    if not has_perm(message.from_user.id, PERM_IMMORTAL):
+        await message.answer("⛔️ نیاز به مقام ادمین یا بالاتر.")
+        return
+    from services.immortal import set_immortal
+    parts = (message.text or "").split()
+    tid = None
+    if message.reply_to_message and message.reply_to_message.from_user:
+        tid = message.reply_to_message.from_user.id
+    elif len(parts) >= 2 and parts[1].isdigit():
+        tid = int(parts[1])
+    if tid is None:
+        await message.answer("فرمت: /unimmortal TELEGRAM_ID")
+        return
+    await message.answer(set_immortal(tid, False, by=message.from_user.id))
+
+
+# ===== مقامات ربات (سازنده / ادمین / معاون / مدیر / ویژه) =====
+
+@router.message(Command("setstaff", "مقام", "setrank"))
+async def cmd_setstaff(message: Message):
+    """فقط سازنده و ادمین: /setstaff TELEGRAM_ID مقام"""
+    from services.staff import set_staff, list_staff, STAFF_ADMIN, has_perm, PERM_GIVE_STAFF
+    if not has_perm(message.from_user.id, PERM_GIVE_STAFF):
+        await message.answer("⛔️ فقط سازنده و ادمین می‌توانند مقام بدهند.")
+        return
+    parts = (message.text or "").split(maxsplit=2)
+    tid = None
+    rank = None
+    if message.reply_to_message and message.reply_to_message.from_user and len(parts) >= 2:
+        tid = message.reply_to_message.from_user.id
+        rank = parts[1]
+    elif len(parts) >= 3:
+        if parts[1].isdigit():
+            tid = int(parts[1])
+            rank = parts[2]
+    if tid is None or not rank:
+        await message.answer(
+            "فرمت:\n"
+            "/setstaff TELEGRAM_ID ادمین|معاون ادمین|مدیر|ویژه|کاربر\n"
+            "یا ریپلای + /setstaff مقام\n\n"
+            + list_staff()
+        )
+        return
+    ok, msg = set_staff(tid, rank, message.from_user.id)
+    await message.answer(msg)
+
+
+@router.message(Command("stafflist", "لیستمقام", "مقامات"))
+async def cmd_stafflist(message: Message):
+    from services.staff import list_staff, has_perm, PERM_DIAG, PERM_GIVE_STAFF
+    if not (has_perm(message.from_user.id, PERM_DIAG) or has_perm(message.from_user.id, PERM_GIVE_STAFF)):
+        await message.answer("⛔️ دسترسی نداری.")
+        return
+    await message.answer(list_staff())
+
+
+@router.message(Command("mystaff", "مقاممن"))
+async def cmd_mystaff(message: Message):
+    from services.staff import staff_help_text
+    await message.answer(staff_help_text(message.from_user.id))
+
+
+@router.message(Command("testall", "تست‌همه", "selftest", "آزمایش"))
+async def cmd_testall(message: Message):
+    """اجرای خودآزمایی: ایمپورت همه هندلرها + سرویس‌های حیاتی و گزارش خطاها."""
+    from services.staff import has_perm, PERM_DIAG, is_creator
+    if not (has_perm(message.from_user.id, PERM_DIAG) or is_creator(message.from_user.id)):
+        await message.answer("⛔️ فقط ویژه / ادمین / سازنده.")
+        return
+    await message.answer("🧪 در حال اجرای تست‌ها… چند ثانیه صبر کن.")
+    try:
+        from services.selftest import run_selftest
+        report = run_selftest(message.from_user.id)
+    except Exception as e:
+        import traceback
+        report = f"⚠️ خودِ تست ترکید: {type(e).__name__}: {e}\n<code>{traceback.format_exc()[-1500:]}</code>"
+    # split if too long
+    if len(report) <= 4000:
+        await message.answer(report)
+    else:
+        chunk = ""
+        for line in report.splitlines():
+            if len(chunk) + len(line) + 1 > 3900:
+                await message.answer(chunk)
+                chunk = line
+            else:
+                chunk = chunk + "\n" + line if chunk else line
+        if chunk:
+            await message.answer(chunk)

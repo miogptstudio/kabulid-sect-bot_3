@@ -141,22 +141,46 @@ async def cmd_wives(message: Message):
         wives = await get_wives(session, user.id)
         hus = await get_husband(session, user.id)
         text = "💍 <b>خانواده / همسران</b>" + chr(10) + chr(10)
+        n = 0
         if wives:
-            text += f"همسران تو ({len(wives)} نفر) — چندهمسری فعال:" + chr(10)
+            text += f"👥 همسران بازیکن ({len(wives)} نفر):" + chr(10)
             for w in wives:
+                n += 1
                 wu = await session.get(
                     __import__("database.models", fromlist=["User"]).User, w.wife_id
                 )
                 g = getattr(wu, "gender", "") if wu else ""
-                text += f"• {wu.full_name if wu else w.wife_id} ({g})" + chr(10)
+                name = wu.full_name if wu else str(w.wife_id)
+                text += f"{n}. {name} ({g})" + chr(10)
         if hus:
+            n += 1
             hu = await session.get(
                 __import__("database.models", fromlist=["User"]).User, hus.husband_id
             )
             g = getattr(hu, "gender", "") if hu else ""
-            text += f"همسر اصلی تو: {hu.full_name if hu else hus.husband_id} ({g})" + chr(10)
-        if not wives and not hus:
-            text += "همسری نداری." + chr(10) + "ریپلای + /marry برای خواستگاری (دختر با دختر هم مجاز است)."
+            name = hu.full_name if hu else str(hus.husband_id)
+            text += f"{n}. همسر اصلی: {name} ({g})" + chr(10)
+        # خدمتکارهای ازدواج‌کرده
+        try:
+            from services import servants as servmod
+            bag = servmod.list_owned(message.from_user.id)
+            married_servs = [s for s in bag if servmod.is_married(message.from_user.id, s)]
+            if married_servs:
+                text += chr(10) + f"🧑🤝🧑 همسران خدمتکار ({len(married_servs)} نفر):" + chr(10)
+                for s in married_servs:
+                    n += 1
+                    text += (
+                        f"{n}. {s.get('name','—')} | {s.get('gender','—')} | {s.get('race','—')}"
+                        + f" | ❤️{s.get('loyalty',0)}% | 🧘{s.get('cult',1)}" + chr(10)
+                    )
+        except Exception as e:
+            text += chr(10) + f"(خطا در خواندن همسر خدمتکار: {type(e).__name__})" + chr(10)
+        if n == 0:
+            text += (
+                "همسری نداری." + chr(10)
+                + "ریپلای + /marry برای خواستگاری" + chr(10)
+                + "/marryservant شماره — ازدواج با خدمتکار"
+            )
         await message.answer(text)
 
 
