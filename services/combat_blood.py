@@ -126,6 +126,7 @@ async def apply_damage(
                     "dodged": False,
                     "immune": True,
                     "msg": f"🛡 سپر پوچی {defender.full_name}: هیچ حملهای اثر نکرد!",
+                    "messages": [f"🛡 سپر پوچی {defender.full_name}: هیچ حملهای اثر نکرد!"],
                 }
             # ضد نفوذ
             if eff.get("anti_pen"):
@@ -149,6 +150,7 @@ async def apply_damage(
             "killed": False,
             "dodged": True,
             "msg": f"💨 {defender.full_name} با سرعت بالاتر جاخالی داد (قطعی).",
+            "messages": [f"💨 {defender.full_name} با سرعت بالاتر جاخالی داد (قطعی)."],
         }
 
     # تفاوت قدرت — سطح پایین تقریباً به سطح بالا آسیب نمیزند
@@ -216,6 +218,7 @@ async def apply_damage(
         "mitigation": int(mitigation * 100),
         "penetration": pen,
         "msg": f"آسیب {dmg} (دفاع {effective_def} | نفوذ {pen})",
+        "messages": [f"آسیب {dmg} (دفاع {effective_def} | نفوذ {pen})"],
     }
 
 
