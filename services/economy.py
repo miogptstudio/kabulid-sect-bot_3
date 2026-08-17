@@ -332,7 +332,10 @@ CURRENCY_ALIASES = {
 def normalize_currency(value: str | None) -> str | None:
     if not value:
         return None
-    v = str(value).strip().lower().replace("", " ")
+    v = str(value).strip().lower()
+    for ch in ("‌", "‏", "‎", "﻿"):
+        v = v.replace(ch, "")
+    v = " ".join(v.split())
     return CURRENCY_ALIASES.get(v, v)
 
 

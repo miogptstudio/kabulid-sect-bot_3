@@ -76,7 +76,7 @@ async def create_sect(
     member = SectMember(
         user_id=leader.id,
         sect_id=sect.id,
-        status="عضو داخلی فرقه"
+        status="رهبر"
     )
     session.add(member)
     

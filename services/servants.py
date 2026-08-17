@@ -52,7 +52,7 @@ MARKET = [
     {"id": 15, "name": "سهراب", "gender": "مرد", "race": "انسان", "price": 3500, "desc": "پهلوان"},
     {"id": 16, "name": "پریسا", "gender": "زن", "race": "مهپیما", "price": 3400, "desc": "جادویی"},
     {"id": 17, "name": "توران", "gender": "مرد", "race": "نیمهانسان", "price": 4000, "desc": "نگهبان فرقه"},
-    {"id": 18, "name": "آناهیتا", "gender": "زن", "race": "تبار الهی", "price": 0, "karma_price": 10, "desc": "خدمتکار ویژهٔ الههٔ آبها؛ هفته‌ای ۳ عدد — قیمت ۱۰ کارما", "special_weekly_stock": 3},
+    {"id": 18, "name": "آناهیتا", "gender": "زن", "race": "تبار الهی", "price": 0, "karma_price": 10, "desc": "خدمتکار ویژهٔ الههٔ آبها؛ بی‌همتا · هفته‌ای ۱ · ۱۰ کارما · پرورش هر ۳۰ث", "special_weekly_stock": 1},
     {"id": 19, "name": "دیوبنده", "gender": "مرد", "race": "دیوتبار", "price": 7500, "desc": "تاریک"},
     {"id": 20, "name": "فرشتهیار", "gender": "زن", "race": "فرشتهتبار", "price": 8500, "desc": "خدمتکار نور"},
     # گربهای نیمهانسان زن
@@ -62,11 +62,11 @@ MARKET = [
     {"id": 24, "name": "پیشیزرین", "gender": "زن", "race": "گربهای نیمهانسان", "price": 5600, "desc": "پنجهطلایی"},
     {"id": 25, "name": "یورهنکو", "gender": "زن", "race": "گربهای نیمهانسان", "price": 6000, "desc": "نیمهروح گربه"},
     # خدمتکارهای تبار الهی — خریدنی و بسیار کمیاب
-    {"id": 26, "name": "آریانا", "gender": "زن", "race": "الههتبار", "price": 0, "karma_price": 10, "desc": "خدمتکار الهی؛ هفته‌ای ۳ عدد — قیمت ۱۰ کارما", "special_weekly_stock": 3},
+    {"id": 26, "name": "آریانا", "gender": "زن", "race": "الههتبار", "price": 0, "karma_price": 10, "desc": "خدمتکار الهی؛ بی‌همتا · هفته‌ای ۱ · ۱۰ کارما · پرورش هر ۳۰ث", "special_weekly_stock": 1},
     {"id": 27, "name": "یوناس", "gender": "مرد", "race": "خدایتبار", "price": 1500000000, "desc": "خدمتکار الهی؛ قدرت رزمی عظیم"},
     {"id": 28, "name": "سولارا", "gender": "زن", "race": "آسمانیتبار", "price": 2000000000, "desc": "خدمتکار آسمانی؛ محافظ قلمرو"},
     {"id": 29, "name": "ایلیوس", "gender": "مرد", "race": "تبار الهی", "price": 2500000000, "desc": "خون الهی خالص و کمیاب"},
-    {"id": 30, "name": "نریا", "gender": "زن", "race": "تبار الهی", "price": 0, "karma_price": 10, "desc": "خدمتکار الهی؛ هفته‌ای ۳ عدد — قیمت ۱۰ کارما", "special_weekly_stock": 3},
+    {"id": 30, "name": "نریا", "gender": "زن", "race": "تبار الهی", "price": 0, "karma_price": 10, "desc": "خدمتکار الهی؛ بی‌همتا · هفته‌ای ۱ · ۱۰ کارما · پرورش هر ۳۰ث", "special_weekly_stock": 1},
     {"id": 31, "name": "کایروس", "gender": "مرد", "race": "خدایتبار", "price": 5000000000, "desc": "خدمتکار جنگی خدایان"},
     {"id": 32, "name": "آسترا", "gender": "زن", "race": "آسمانیتبار", "price": 7500000000, "desc": "خدمتکار آسمانی؛ تذهیب بسیار سریع"},
     {"id": 33, "name": "اورین", "gender": "مرد", "race": "تبار الهی", "price": 10000000000, "desc": "خدمتکار ردهبالای الهی"},
@@ -117,9 +117,9 @@ def servant_lore(name: str, fallback: str = "خدمتکاری ویژه با تو
 
 # خدمتکارهای ویژه با خرید هفتگی — هرکدام مستقل
 MARKET.extend([
-    {"id": 34, "name": "آلیا", "gender": "زن", "race": "گربهای نیمهانسان", "price": 0, "karma_price": 10, "desc": "خدمتکار ویژه؛ هفته‌ای ۳ عدد — قیمت ۱۰ کارما", "special_weekly_stock": 3},
-    {"id": 35, "name": "ناکوبی", "gender": "زن", "race": "اهریمنی", "price": 0, "karma_price": 10, "desc": "خدمتکار ویژه؛ هفته‌ای ۳ عدد — قیمت ۱۰ کارما", "special_weekly_stock": 3},
-    {"id": 36, "name": "مادر الههگان", "gender": "زن", "race": "تبار الهی", "price": 50000000000, "desc": "خدمتکار ویژه؛ موجودی فراتر از تبارهای معمول الهی", "special_weekly": True},
+    {"id": 34, "name": "آلیا", "gender": "زن", "race": "گربهای نیمهانسان", "price": 0, "karma_price": 10, "desc": "خدمتکار ویژه؛ بی‌همتا · هفته‌ای ۱ · ۱۰ کارما · پرورش هر ۳۰ث", "special_weekly_stock": 1},
+    {"id": 35, "name": "ناکوبی", "gender": "زن", "race": "اهریمنی", "price": 0, "karma_price": 10, "desc": "خدمتکار ویژه؛ بی‌همتا · هفته‌ای ۱ · ۱۰ کارما · پرورش هر ۳۰ث", "special_weekly_stock": 1},
+    {"id": 36, "name": "مادر الههگان", "gender": "زن", "race": "تبار الهی", "price": 0, "karma_price": 10, "desc": "خدمتکار ویژه؛ بی‌همتا · هفته‌ای ۱ · ۱۰ کارما · پرورش هر ۳۰ث", "special_weekly_stock": 1},
 ])
 
 # اصیلها فقط با جنگ — قالب برای اسپاون شکار
@@ -249,6 +249,10 @@ SPECIAL_WEEKLY_IDS = {int(s["id"]) for s in MARKET if s.get("special_weekly")}
 SPECIAL_WEEKLY_STOCK_IDS = {int(s["id"]) for s in MARKET if s.get("special_weekly_stock")}
 SPECIAL_WEEKLY_STOCK_LIMITS = {int(s["id"]): int(s.get("special_weekly_stock", 3)) for s in MARKET if s.get("special_weekly_stock")}
 
+# خدمتکارهای بی‌همتا — پرورش خیلی سریع‌تر و رشد قوی‌تر
+UNIQUE_SERVANT_IDS = {18, 26, 30, 34, 35, 36}  # آناهیتا، آریانا، نریا، آلیا، ناکوبی، مادر الهه‌گان
+UNIQUE_TRAIN_COOLDOWN = 30  # ثانیه
+
 def _week_key() -> str:
     now = datetime.utcnow()
     # ISO week
@@ -356,20 +360,31 @@ def market_list() -> str:
 def _new_instance(template: dict, source: str = "buy") -> dict:
     race = template.get("race") or "انسان"
     info = RACES.get(race, RACES["انسان"])
+    base_id = int(template.get("id") or 0)
+    is_unique = base_id in UNIQUE_SERVANT_IDS
+    power0 = int(template.get("power") or 20)
+    if is_unique:
+        power0 = max(power0, 80)
+        cult0 = 5
+        loyalty0 = min(100, int(info.get("loyalty0", 50)) + 15)
+    else:
+        cult0 = 1
+        loyalty0 = int(info.get("loyalty0", 50))
     return {
         "uid": f"{template.get('id', random.randint(1000,9999))}_{random.randint(100,999)}",
         "base_id": template.get("id"),
         "name": template["name"],
         "gender": template.get("gender", "زن"),
         "race": race,
-        "loyalty": int(info.get("loyalty0", 50)),
-        "cult": 1,
-        "power": int(template.get("power") or 20),
-        "speed": int(template.get("speed") or (12 + int(template.get("power") or 20) // 8)),
-        "defense": int(template.get("defense") or (10 + int(template.get("power") or 20) // 10)),
-        "lifespan": int(template.get("lifespan") or 100),
+        "loyalty": loyalty0,
+        "cult": cult0,
+        "power": power0,
+        "speed": int(template.get("speed") or (12 + power0 // 8)),
+        "defense": int(template.get("defense") or (10 + power0 // 10)),
+        "lifespan": int(template.get("lifespan") or (150 if is_unique else 100)),
         "source": source,
         "special_weekly": bool(template.get("special_weekly")),
+        "unique": is_unique,
         "transformed": False,
         "at": datetime.utcnow().isoformat(),
     }
@@ -525,26 +540,86 @@ def owned_text(tg: int) -> str:
     return chr(10).join(lines)
 
 
+def _train_cooldown_seconds(cult: int, base_id: int | None = None) -> int:
+    """پایه ۱ ساعت؛ با بالا رفتن تذهیب کمتر می‌شود.
+    خدمتکارهای بی‌همتا: ثابت ۳۰ ثانیه.
+    """
+    if base_id is not None and int(base_id) in UNIQUE_SERVANT_IDS:
+        return UNIQUE_TRAIN_COOLDOWN
+    cult = max(1, int(cult or 1))
+    base = 3600
+    reduction = min(3300, (cult - 1) * 27)
+    return max(300, base - reduction)
+
+
+def _train_gain(cult: int, race: str, base_id: int | None = None) -> int:
+    """هرچه سطح بالاتر، تذهیب دریافتی بیشتر. بی‌همتاها رشد خیلی قوی‌تری دارند."""
+    rate = float(RACES.get(race, {}).get("cult_rate", 1.0))
+    cult = max(1, int(cult or 1))
+    base = random.randint(1, 3) * rate
+    level_bonus = 1.0 + (cult / 40.0)
+    gain = base * level_bonus
+    if base_id is not None and int(base_id) in UNIQUE_SERVANT_IDS:
+        gain *= 3.0  # سه برابر رشد برای بی‌همتا
+    return max(1, int(gain))
+
+
 def train(tg: int, idx: int) -> str:
     bag = list_owned(tg)
     if idx < 1 or idx > len(bag):
         return "شماره نامعتبر."
     s = bag[idx - 1]
-    rate = float(RACES.get(s.get("race"), {}).get("cult_rate", 1.0))
-    gain = max(1, int(random.randint(1, 3) * rate))
-    s["cult"] = int(s.get("cult") or 1) + gain
-    s["power"] = int(s.get("power") or 20) + gain * 2
-    s["speed"] = int(s.get("speed") or 10) + max(1, gain // 2)
-    s["defense"] = int(s.get("defense") or 10) + max(1, gain // 2)
-    s["lifespan"] = min(500, int(s.get("lifespan") or 100) + max(0, gain // 3))
-    # کمی وفاداری از توجه
-    s["loyalty"] = min(100, int(s.get("loyalty") or 50) + random.randint(0, 2))
+    cult_now = int(s.get("cult") or 1)
+    base_id = int(s.get("base_id") or 0)
+    is_unique = base_id in UNIQUE_SERVANT_IDS
+    cd = _train_cooldown_seconds(cult_now, base_id)
+
+    last_raw = s.get("last_train")
+    if last_raw:
+        try:
+            last = datetime.fromisoformat(str(last_raw))
+            elapsed = (datetime.utcnow() - last).total_seconds()
+            if elapsed < cd:
+                left = max(1, int(cd - elapsed))
+                if left >= 60:
+                    m, sec = divmod(left, 60)
+                    tleft = f"{m}د {sec}ث"
+                else:
+                    tleft = f"{left}ث"
+                tag = " ✨ بی‌همتا" if is_unique else ""
+                return (
+                    "⏳ پرورش «" + str(s.get("name")) + "»" + tag + " هنوز آماده نیست."
+                    + chr(10) + "زمان باقیمانده: <b>" + tleft + "</b>"
+                    + chr(10) + "کولداون: " + str(cd) + " ثانیه"
+                )
+        except Exception:
+            pass
+
+    race = s.get("race") or "انسان"
+    gain = _train_gain(cult_now, race, base_id)
+    # بی‌همتا: پاداش اضافه به قدرت/سرعت/دفاع
+    power_mult = 4 if is_unique else 2
+    s["cult"] = cult_now + gain
+    s["power"] = int(s.get("power") or 20) + gain * power_mult
+    s["speed"] = int(s.get("speed") or 10) + max(1, gain // (1 if is_unique else 2))
+    s["defense"] = int(s.get("defense") or 10) + max(1, gain // (1 if is_unique else 2))
+    s["lifespan"] = min(500, int(s.get("lifespan") or 100) + max(0, gain // (2 if is_unique else 3)))
+    s["loyalty"] = min(100, int(s.get("loyalty") or 50) + random.randint(0, 3 if is_unique else 2))
+    s["last_train"] = datetime.utcnow().isoformat()
     bag[idx - 1] = s
     save_owned(tg, bag)
-    msg = f"🧘 {s['name']}: تذهیب {s['cult']} (+{gain}) | قدرت {s['power']}"
+
+    new_cd = _train_cooldown_seconds(s["cult"], base_id)
+    tag = " ✨ بی‌همتا" if is_unique else ""
+    msg = (
+        "🧘 <b>" + str(s["name"]) + "</b>" + tag + " پرورش یافت."
+        + chr(10) + "تذهیب: <b>" + str(s["cult"]) + "</b> (+" + str(gain) + ") | قدرت: " + str(s["power"])
+        + chr(10) + "⏳ کولداون بعدی: " + str(new_cd) + " ثانیه"
+    )
     if s["cult"] >= TRANSFORM_CULT and not s.get("transformed"):
         msg += chr(10) + f"✨ آماده دگرگونی! /transformservant {idx}"
     return msg
+
 
 
 def transform(tg: int, idx: int) -> str:

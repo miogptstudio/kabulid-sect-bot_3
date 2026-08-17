@@ -95,12 +95,12 @@ def try_advance(tg_id: int, name_attempt: str) -> tuple[str, bool]:
     ok = False
 
     # نرمالسازی
-    raw = name_attempt.replace(" ", "").replace("", "").replace("-", "")
+    raw = name_attempt.replace(" ", "").replace("‌", "").replace("-", "")
     low = name_attempt.lower().strip()
 
     if nxt["name"]:
         # منطقه نامدار: فقط نام درست
-        cnorm = nxt["name"].replace(" ", "").replace("", "")
+        cnorm = nxt["name"].replace(" ", "").replace("‌", "")
         if raw == cnorm or name_attempt == nxt["name"]:
             ok = True
     else:
