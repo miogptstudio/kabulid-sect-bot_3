@@ -79,7 +79,7 @@ async def _cmd_kill_impl(message: Message):
             )
             await message.answer(
                 f"⚔️ {attacker.full_name} با شمشیر کوروش به {victim.full_name} زد!\n"
-                + "\n".join(res["messages"])
+                + str(res.get("msg") or "")
             )
             return
 
@@ -89,7 +89,7 @@ async def _cmd_kill_impl(message: Message):
             f"⚔️ حمله {attacker.full_name} به {victim.full_name}" + chr(10)
             + f"قدرت {p1['total']} vs {p2['total']}" + chr(10)
             + f"آسیب: {res.get('damage')} | خون حریف: {res.get('blood')}/{res.get('max_blood', 100)}" + chr(10)
-            + chr(10).join(res["messages"]) + chr(10) + poison_msg
+            + str(res.get("msg") or "") + chr(10) + poison_msg
         )
         if res.get("killed"):
             n = record_kill(attacker.id)
