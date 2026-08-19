@@ -44,6 +44,11 @@ def is_in_prison(user: User) -> bool:
     return datetime.utcnow() < until
 
 
+# نام قدیمی برای سازگاری با سیستم تمرین و کدهای قبلی.
+def is_imprisoned(user: User) -> bool:
+    return is_in_prison(user)
+
+
 async def try_bail(session: AsyncSession, user: User) -> str:
     from services.economy import get_or_create_wallet
     if not is_in_prison(user):
