@@ -29,6 +29,10 @@ def set_bloodline(tg, name):
     row, d = _row("bloodlines", tg); row["name"] = key; d[str(int(tg))] = row; save("bloodlines")
     return key
 
+def activate_bloodline(tg, name):
+    """فعال کردن تبار توسط خود بازیکن؛ فقط نامهای تعریفشده در BLOODLINES پذیرفته میشوند."""
+    return set_bloodline(tg, str(name or "").strip())
+
 def bloodline_bonus(tg):
     name = get_bloodline(tg)
     return BLOODLINES.get(name, (1.0, ""))[0]

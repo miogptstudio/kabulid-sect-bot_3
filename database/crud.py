@@ -8,8 +8,15 @@ from database.models import User, Duel, Medal, Achievement, UserAchievement, Sea
 # ==================== USER ====================
 
 async def get_user_by_telegram_id(session: AsyncSession, telegram_id: int) -> User | None:
-    result = await session.execute(select(User).where(User.telegram_id == telegram_id))
-    return result.scalar_one_or_none()
+    result = await session.execute(
+        select(User)
+        .where(User.telegram_id == telegram_id)
+        .order_by(User.id.asc())
+        .limit(1)
+    )
+    # بعضی نسخههای قدیمی ممکن است بهدلیل دادههای تکراری چند ردیف داشته باشند؛
+    # برای جلوگیری از MultipleResultsFound همیشه اولین رکورد معتبر را برمیگردانیم.
+    return result.scalars().first()
 
 
 async def create_user(session: AsyncSession, telegram_id: int, full_name: str, username: str | None = None) -> User:

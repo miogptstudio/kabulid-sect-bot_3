@@ -161,6 +161,7 @@ async def craft(session: AsyncSession, user: User, recipe: Recipe) -> dict:
         pass
 
     materials = await get_user_materials(session, user.id)
+    mats = dict(recipe.required_materials or {})
     for mat_name, needed in mats.items():
         if materials.get(mat_name, 0) < needed:
             return {"success": False, "message": f"مواد کافی نداری (نیاز: {needed}× {mat_name})"}
