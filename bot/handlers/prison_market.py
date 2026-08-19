@@ -42,14 +42,14 @@ async def cmd_prison(message: Message):
             await message.answer(block)
             return
     await message.answer(
-        f"آزاد هستی." + chr(10)
-        + f"قتل امروز: {kills_today(message.from_user.id)}/3" + chr(10)
-        + f"با بیش از ۳ قتل در روز → {5} ساعت زندان." + chr(10)
-        + f"وثیقه: /bail ({BAIL_HEAVENLY} سنگ بهشتی)"
+        f"🔓 فعلاً آزاد هستی." + chr(10)
+        + f"⚔️ قتل امروز: {kills_today(message.from_user.id)}/3" + chr(10)
+        + "بعد از ۳ قتل، قتل چهارم = ۵ ساعت زندان." + chr(10)
+        + f"💰 وثیقه: /bail ({BAIL_HEAVENLY} سنگ بهشتی)"
     )
 
 
-@router.message(Command("blackmarket", "بازارسیاه", "بازارسیاه"))
+@router.message(Command("blackmarket", "بازارسیاه"))
 async def cmd_black_market(message: Message):
     text = "🕶 <b>بازار سیاه</b>" + chr(10) + "خرید پرریسک — فقط نقد." + chr(10) + chr(10)
     for i, it in enumerate(BLACK_MARKET, 1):

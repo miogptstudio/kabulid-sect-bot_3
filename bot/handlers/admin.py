@@ -177,6 +177,65 @@ async def cmd_unrestrict(message: Message):
         await message.answer(f"✅ محدودیت {target.full_name} برداشته شد.")
 
 
+@router.message(Command("jail"))
+async def cmd_jail(message: Message):
+    async with async_session() as session:
+        actor = await get_or_create_user(session, message.from_user.id, message.from_user.full_name, message.from_user.username)
+        from services.staff import has_perm, PERM_RESTRICT
+        if not can_restrict(actor) and not has_perm(message.from_user.id, PERM_RESTRICT):
+            await message.answer("⛔ دسترسی نداری.")
+            return
+        parts = (message.text or "").split()
+        if len(parts) < 2:
+            await message.answer("فرمت: /jail <telegram_id> [ساعت]")
+            return
+        try:
+            tg_id = int(parts[1]); hours = max(1, min(168, int(parts[2])) if len(parts) > 2 else 5)
+        except ValueError:
+            await message.answer("آیدی و ساعت باید عدد باشند.")
+            return
+        target = await get_user_by_telegram_id(session, tg_id)
+        if not target:
+            await message.answer("کاربر پیدا نشد.")
+            return
+        if not can_manage(actor, target) and not is_config_admin(message.from_user.id):
+            await message.answer("⛔ نمیتونی این کاربر رو زندانی کنی.")
+            return
+        from services.prison import PRISON_HOURS
+        from datetime import datetime, timedelta
+        target.restricted_until = datetime.utcnow() + timedelta(hours=hours)
+        target.restriction_reason = "زندان"
+        await session.commit()
+        await message.answer(f"🔒 {target.full_name} برای {hours} ساعت زندانی شد.")
+
+
+@router.message(Command("unjail"))
+async def cmd_unjail(message: Message):
+    async with async_session() as session:
+        actor = await get_or_create_user(session, message.from_user.id, message.from_user.full_name, message.from_user.username)
+        from services.staff import has_perm, PERM_RESTRICT
+        if not can_restrict(actor) and not has_perm(message.from_user.id, PERM_RESTRICT):
+            await message.answer("⛔ دسترسی نداری.")
+            return
+        parts = (message.text or "").split()
+        if len(parts) < 2:
+            await message.answer("فرمت: /unjail <telegram_id>")
+            return
+        try:
+            tg_id = int(parts[1])
+        except ValueError:
+            await message.answer("آیدی باید عدد باشد.")
+            return
+        target = await get_user_by_telegram_id(session, tg_id)
+        if not target:
+            await message.answer("کاربر پیدا نشد.")
+            return
+        target.restricted_until = None
+        target.restriction_reason = None
+        await session.commit()
+        await message.answer(f"🔓 {target.full_name} از زندان آزاد شد.")
+
+
 @router.message(Command("promote"))
 async def cmd_promote(message: Message):
     async with async_session() as session:
