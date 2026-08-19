@@ -111,7 +111,7 @@ async def cmd_restrict(message: Message):
 
         parts = message.text.split()
         if len(parts) < 3:
-            await message.answer(tr(message.from_user.id, "فرمت: /restrict <telegram_id> <دقیقه> [دلیل]"))
+            await message.answer(tr(message.from_user.id, "فرمت: /restrict &lt;telegram_id&gt; &lt;دقیقه&gt; [دلیل]"))
             return
 
         try:
@@ -157,7 +157,7 @@ async def cmd_unrestrict(message: Message):
 
         parts = message.text.split()
         if len(parts) < 2:
-            await message.answer(tr(message.from_user.id, "فرمت: /unrestrict <telegram_id>"))
+            await message.answer(tr(message.from_user.id, "فرمت: /unrestrict &lt;telegram_id&gt;"))
             return
 
         try:
@@ -192,7 +192,7 @@ async def cmd_promote(message: Message):
 
         parts = message.text.split()
         if len(parts) < 2:
-            await message.answer(tr(message.from_user.id, "فرمت: /promote <telegram_id>"))
+            await message.answer(tr(message.from_user.id, "فرمت: /promote &lt;telegram_id&gt;"))
             return
 
         try:
@@ -229,7 +229,7 @@ async def cmd_demote(message: Message):
 
         parts = message.text.split()
         if len(parts) < 2:
-            await message.answer(tr(message.from_user.id, "فرمت: /demote <telegram_id>"))
+            await message.answer(tr(message.from_user.id, "فرمت: /demote &lt;telegram_id&gt;"))
             return
 
         try:

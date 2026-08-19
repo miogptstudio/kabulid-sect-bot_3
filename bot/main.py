@@ -1,6 +1,8 @@
 import asyncio
 import logging
 import os
+from html import escape
+import re
 from aiogram import Bot, Dispatcher
 from aiogram.types import ErrorEvent
 from aiogram.client.default import DefaultBotProperties
@@ -29,6 +31,58 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
+_ALLOWED_HTML_TAGS = {
+    "b", "strong", "i", "em", "u", "ins", "s", "strike", "del",
+    "code", "pre", "blockquote", "tg-spoiler", "a", "tg-emoji"
+}
+_TAG_RE = re.compile(r"</?([A-Za-z][A-Za-z0-9_-]*)(?:\s[^>]*)?>")
+
+
+def _safe_html_text(value: str) -> str:
+    """Keep Telegram-supported HTML, escape unknown tags, and fail safe on bad nesting."""
+    if not isinstance(value, str) or "<" not in value:
+        return value
+
+    def repl(m):
+        tag = m.group(1).lower()
+        if tag in _ALLOWED_HTML_TAGS:
+            return m.group(0)
+        return escape(m.group(0))
+
+    value = _TAG_RE.sub(repl, value)
+
+    # Telegram rejects malformed/unbalanced HTML. If that happens, strip markup
+    # completely rather than letting a harmless user-visible message crash a handler.
+    stack = []
+    token_re = re.compile(r"<(b|strong|i|em|u|ins|s|strike|del|code|pre|blockquote|tg-spoiler|a|tg-emoji)(?:\s[^>]*)?>(.*?)</\1>", re.I | re.S)
+    # A conservative balance check: every opening/closing supported tag must pair.
+    for m in re.finditer(r"<(\/)?(b|strong|i|em|u|ins|s|strike|del|code|pre|blockquote|tg-spoiler|a|tg-emoji)(?:\s[^>]*)?>", value, re.I):
+        closing = bool(m.group(1))
+        tag = m.group(2).lower()
+        if not closing:
+            stack.append(tag)
+        elif not stack or stack[-1] != tag:
+            return re.sub(r"<[^>]+>", "", value)
+        else:
+            stack.pop()
+    if stack:
+        return re.sub(r"<[^>]+>", "", value)
+    return value
+
+
+class SafeHTMLBot(Bot):
+    """Bot wrapper that prevents malformed dynamic HTML from breaking handlers."""
+    async def __call__(self, method, request_timeout=None):
+        # TelegramMethod objects expose text/caption for the methods where the
+        # global default parse mode is applied. Sanitize only those fields.
+        for field in ("text", "caption"):
+            if hasattr(method, field):
+                value = getattr(method, field)
+                if isinstance(value, str):
+                    setattr(method, field, _safe_html_text(value))
+        return await super().__call__(method, request_timeout=request_timeout)
+
+
 async def on_startup():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -52,7 +106,7 @@ async def main():
     port = int(os.getenv("PORT", 8080))
     await start_health_server(port)
 
-    bot = Bot(
+    bot = SafeHTMLBot(
         token=BOT_TOKEN,
         default=DefaultBotProperties(parse_mode=ParseMode.HTML)
     )
@@ -120,7 +174,7 @@ async def main():
                     "⚠️ خطا در اجرای دستور: "
                     + type(err).__name__
                     + "\n"
-                    + str(err)[:200]
+                    + escape(str(err)[:200])
                     + "\n/help"
                 )
         except Exception:

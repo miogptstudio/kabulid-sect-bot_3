@@ -286,23 +286,49 @@ SECTIONS = {
 }
 
 
+def _short_desc(desc: str, limit: int = 62) -> str:
+    """توضیح کوتاه و خوانا برای راهنما؛ جزئیات اضافه حذف می‌شود."""
+    desc = desc.replace("؛", "؛").strip()
+    # فقط بخش اول توضیح را نگه می‌داریم؛ جزئیات بیشتر در خود دستور نمایش داده می‌شود.
+    for sep in ("؛", "؛", "。"):
+        if sep in desc:
+            desc = desc.split(sep, 1)[0].strip()
+    # عبارت‌های طولانی و تکراری را کوتاه کن.
+    replacements = {
+        "نمایش ": "نمایش ",
+        "لیست ": "لیست ",
+        "فهرست ": "فهرست ",
+        "در صورت داشتن شرایط": "اگر شرایطش را داری",
+        "قبل از استفاده": "قبلش",
+        "قبل از اجرا": "قبلش",
+        "قبل از تأیید": "قبلش",
+        "در صورت امکان": "اگر ممکن باشد",
+    }
+    for a, b in replacements.items():
+        desc = desc.replace(a, b)
+    if len(desc) > limit:
+        cut = desc[:limit - 1].rsplit(" ", 1)[0].strip()
+        desc = (cut or desc[:limit - 1]).rstrip("،؛:") + "…"
+    return desc
+
 def _render_section(title: str, items: list[tuple[str, str]]) -> str:
-    # ورودیهای راهنما را HTML-escape میکنیم تا /help به خاطر < یا > خراب نشود.
-    return "\n".join(f"<b>{escape(cmd)}</b> — {escape(desc)}" for cmd, desc in items)
+    return "\n".join(f"• <b>{escape(cmd)}</b> — {escape(_short_desc(desc))}" for cmd, desc in items)
+
+def _render_commands_only(items: list[tuple[str, str]]) -> str:
+    return "\n".join(f"• <b>{escape(cmd)}</b>" for cmd, _ in items)
 
 
 def _render_limited(items: list[tuple[str, str]], max_len: int = 1000) -> str:
     lines = []
     used = 0
     for cmd, desc in items:
-        line = f"• <b>{escape(cmd)}</b> — {escape(desc)}"
+        line = f"• <b>{escape(cmd)}</b> — {escape(_short_desc(desc))}"
         extra = len(line) + (1 if lines else 0)
         if used + extra > max_len:
             break
         lines.append(line)
         used += extra
     return "\n".join(lines)
-
 
 def _kb(uid: int = 0):
     b = InlineKeyboardBuilder()
@@ -317,12 +343,11 @@ def _kb(uid: int = 0):
 async def cmd_help(message: Message):
     uid = message.from_user.id
     text = (
-        f"📖 <b>راهنمای کامل بازی</b> — نسخه {BOT_VERSION}\n\n"
-        "هر دکمه فقط توضیح میدهد آن بخش چه کاری دارد.\n"
-        "اگر نمیدانی چه چیزی را بزنی، اول همین راهنما را باز کن.\n\n"
-        "💡 بیشتر بخشها علاوه بر کامند، با نوشتن نام فارسی بخش هم باز میشوند.\n"
-        "⚠️ دستورهای خرید، انتقال، ارتقا و مصرف ممکن است روی موجودی/وضعیتت اثر بگذارند؛ قبل از تأیید پیام را بخوان.\n\n"
-        "یک بخش را انتخاب کن:"
+        f"📖 <b>راهنمای بازی</b> — v{BOT_VERSION}\n\n"
+        "هر بخش را باز کن تا دستورهای همان بخش را ببینی.\n"
+        "💡 برای شروع: /start و بعد /guide\n"
+        "⚠️ قبل از خرید یا انتقال، پیام تأیید را بخوان.\n\n"
+        "یک بخش را انتخاب کن 👇"
     )
     await send_panel(message, "help", caption=text, reply_markup=_kb(uid))
 
@@ -375,18 +400,18 @@ async def cb_help_section(callback: CallbackQuery):
 
 @router.message(Command("commands", "دستورات", "cmds"))
 async def cmd_commands(message: Message):
-    chunks = [f"📋 <b>فهرست کامل دستورات بازی</b> — v{BOT_VERSION}\n\n"
-              "کنار هر دستور نوشته شده دقیقاً چه کاری انجام میدهد.\n"
-              "دستورهای دارای خرید/مصرف/انتقال را بدون خواندن توضیحات اجرا نکن.\n"]
+    # فهرست کوتاه است؛ برای توضیح هر دستور، /help و بخش مربوطه را باز کن.
+    chunks = [f"📋 <b>دستورات بازی</b> — v{BOT_VERSION}\n"
+              "برای توضیح هر دستور، /help را باز کن.\n"]
     current = "\n".join(chunks)
     for _, (title, items) in SECTIONS.items():
-        block = f"\n<b>{escape(title)}</b>\n{_render_section(title, items)}\n"
+        block = f"\n<b>{escape(title)}</b>\n{_render_commands_only(items)}\n"
         if len(current) + len(block) > 3900:
             await message.answer(current)
             current = block
         else:
             current += block
-    if current:
+    if current.strip():
         await message.answer(current)
 
 
