@@ -59,16 +59,21 @@ def has_learned(tg_id: int) -> bool:
     return int(tg_id) in _learned()
 
 
-def buy(tg_id: int) -> tuple[bool, str]:
+def buy(tg_id: int, god_stones: int) -> tuple[bool, str, int]:
+    """خرید تکنیک مخفی با سنگ خدا و برگرداندن موجودی باقی‌مانده."""
     tg = int(tg_id)
+    stones = max(0, int(god_stones or 0))
     if tg in _owners() or tg in _learned():
-        return False, "قبلاً خریده یا یاد گرفتهای."
+        return False, "قبلاً خریدی یا یاد گرفتی.", stones
+    if stones < PRICE_GOD:
+        return False, f"❌ سنگ خدا کافی نیست. نیاز: {PRICE_GOD:,} | موجودی: {stones:,}", stones
     o = _owners(); o.add(tg); _save_owners(o)
     tm = _text_map(); tm[str(tg)] = True; _psave("void_text")
+    left = stones - PRICE_GOD
     return True, (
         f"✅ خرید <b>{TECH_NAME}</b> موفق." + chr(10)
         + "دکمه یا /showvoidtech برای دیدن متن (فقط تو)."
-    )
+    ), left
 
 
 def show_text(tg_id: int) -> str:
