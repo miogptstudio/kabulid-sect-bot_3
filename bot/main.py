@@ -23,6 +23,7 @@ from bot.handlers import (
 from bot.health import start_health_server
 from bot.middlewares.service_lock import ServiceLockMiddleware
 from bot.middlewares.auto_reply import AutoReplyMiddleware
+from bot.middlewares.panel_owner import PanelOwnerMiddleware
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -60,6 +61,7 @@ async def main():
     # AutoReplyMiddleware موقتاً غیرفعال — باعث می‌شد جواب‌ها ارسال نشوند
     # dp.message.middleware(AutoReplyMiddleware())
     dp.callback_query.middleware(ServiceLockMiddleware())
+    dp.callback_query.middleware(PanelOwnerMiddleware())
 
     # ورود به بخشها با نوشتن نامشان، بدون نیاز به /command
     dp.include_router(text_navigation.router)

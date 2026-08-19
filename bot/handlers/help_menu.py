@@ -6,6 +6,7 @@ from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder
+from html import escape
 
 from bot.config import ADMIN_IDS, BOT_VERSION
 from bot.panel_sender import send_panel
@@ -255,8 +256,9 @@ SECTIONS = {
         ("/codexguide", "راهنمای کامل مفاهیم و سیستمها."),
         ("/buildingscodex", "دانشنامه ساختمانها."),
         ("/realms", "لیست قلمروها."),
-        ("/bloodlines /تبارها", "لیست تبارها و ویژگیهایشان."),
-        ("/mybloodline", "تبار فعلی خودت."),
+        ("/bloodlines /تبارها", "لیست تبارها و ویژگیهایشان؛ داخل همین بخش دکمه «فعال کردن» هر تبار را بزن."),
+        ("/activatebloodline نام", "فعال کردن تبار انتخابی خودت؛ مثال: /activatebloodline الهی."),
+        ("/mybloodline", "تبار فعلی خودت و ضریب آن."),
         ("/race", "نژادها و وضعیت نژاد شخصیت."),
     ]),
     "prison": ("🔒 زندان و وضعیتهای خاص", [
@@ -285,7 +287,21 @@ SECTIONS = {
 
 
 def _render_section(title: str, items: list[tuple[str, str]]) -> str:
-    return "\n".join(f"<b>{cmd}</b> — {desc}" for cmd, desc in items)
+    # ورودیهای راهنما را HTML-escape میکنیم تا /help به خاطر < یا > خراب نشود.
+    return "\n".join(f"<b>{escape(cmd)}</b> — {escape(desc)}" for cmd, desc in items)
+
+
+def _render_limited(items: list[tuple[str, str]], max_len: int = 1000) -> str:
+    lines = []
+    used = 0
+    for cmd, desc in items:
+        line = f"• <b>{escape(cmd)}</b> — {escape(desc)}"
+        extra = len(line) + (1 if lines else 0)
+        if used + extra > max_len:
+            break
+        lines.append(line)
+        used += extra
+    return "\n".join(lines)
 
 
 def _kb(uid: int = 0):
@@ -328,12 +344,10 @@ async def cb_help_section(callback: CallbackQuery):
     if key == "all":
         chunks = [f"📋 <b>همه دستورات</b> — v{BOT_VERSION}\n"]
         for _, (title, items) in SECTIONS.items():
-            chunks.append(f"\n<b>{title}</b>")
-            for cmd, desc in items[:6]:
-                chunks.append(f"• {cmd}")
+            section = _render_limited(items, 500)
+            if section:
+                chunks.append(f"\n<b>{escape(title)}</b>\n{section}")
         text = "\n".join(chunks)
-        if len(text) > 1000:
-            text = text[:990] + "…"
         try:
             await callback.message.edit_caption(caption=text, reply_markup=_kb(owner))
         except Exception:
@@ -347,9 +361,8 @@ async def cb_help_section(callback: CallbackQuery):
         await callback.answer("بخش نامعتبر است.", show_alert=True)
         return
     title, items = SECTIONS[key]
-    text = f"<b>{title}</b>\n\n{_render_section(title, items)}"
-    if len(text) > 1000:
-        text = text[:990] + "…\n/commands برای فهرست کامل"
+    section = _render_limited(items, 900)
+    text = f"<b>{escape(title)}</b>\n\n{section}\n\n📌 برای فهرست کامل: /commands"
     try:
         await callback.message.edit_caption(caption=text, reply_markup=_kb(owner))
     except Exception:
@@ -365,11 +378,16 @@ async def cmd_commands(message: Message):
     chunks = [f"📋 <b>فهرست کامل دستورات بازی</b> — v{BOT_VERSION}\n\n"
               "کنار هر دستور نوشته شده دقیقاً چه کاری انجام میدهد.\n"
               "دستورهای دارای خرید/مصرف/انتقال را بدون خواندن توضیحات اجرا نکن.\n"]
+    current = "\n".join(chunks)
     for _, (title, items) in SECTIONS.items():
-        chunks.append(f"\n<b>{title}</b>\n{_render_section(title, items)}\n")
-    text = "\n".join(chunks)
-    for i in range(0, len(text), 3900):
-        await message.answer(text[i:i + 3900])
+        block = f"\n<b>{escape(title)}</b>\n{_render_section(title, items)}\n"
+        if len(current) + len(block) > 3900:
+            await message.answer(current)
+            current = block
+        else:
+            current += block
+    if current:
+        await message.answer(current)
 
 
 @router.message(Command("rules", "قوانین"))

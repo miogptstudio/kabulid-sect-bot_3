@@ -12,30 +12,26 @@ from services.economy import get_or_create_wallet
 router = Router()
 
 
-def character_list_keyboard(tg_id: int | None = None):
+def character_list_keyboard(tg_id: int):
     kb = InlineKeyboardBuilder()
-    if tg_id is not None:
-        bag = chars._owned.get(tg_id) or []
-        for i, c in enumerate(bag[:12], 1):
-            kb.button(text=f"🎴 {i}. {c.get('name','کاراکتر')[:18]}", callback_data=f"chars:view:{i}")
-        if bag:
-            kb.adjust(2)
-    kb.button(text="🎲 کاراکتر جدید", callback_data="chars:pull")
-    kb.button(text="⭐ بهترین کاراکتر", callback_data="chars:best")
-    kb.button(text="📊 رتبهها", callback_data="chars:rates")
-    kb.button(text="⚔️ دوئل کاراکتر", callback_data="chars:duelguide")
-    kb.button(text="🔄 بروزرسانی لیست", callback_data="chars:list")
+    bag = chars._owned.get(tg_id) or []
+    for i, c in enumerate(bag[:12], 1):
+        kb.button(text=f"🎴 {i}. {c.get('name','کاراکتر')[:18]}", callback_data=f"chars:view:{tg_id}:{i}")
+    kb.button(text="🎲 کاراکتر جدید", callback_data=f"chars:pull:{tg_id}")
+    kb.button(text="⭐ بهترین کاراکتر", callback_data=f"chars:best:{tg_id}")
+    kb.button(text="📊 رتبهها", callback_data=f"chars:rates:{tg_id}")
+    kb.button(text="⚔️ دوئل کاراکتر", callback_data=f"chars:duelguide:{tg_id}")
+    kb.button(text="🔄 بروزرسانی لیست", callback_data=f"chars:list:{tg_id}")
     kb.adjust(2)
     return kb.as_markup()
 
 
-
-def character_detail_keyboard(index: int):
+def character_detail_keyboard(index: int, owner_id: int):
     kb = InlineKeyboardBuilder()
-    kb.button(text="⬅️ لیست کاراکترها", callback_data="chars:list")
-    kb.button(text="🎲 کاراکتر جدید", callback_data="chars:pull")
-    kb.button(text="⭐ بهترین", callback_data="chars:best")
-    kb.button(text="🔀 ترکیب تکراری", callback_data="chars:merge")
+    kb.button(text="⬅️ لیست کاراکترها", callback_data=f"chars:list:{owner_id}")
+    kb.button(text="🎲 کاراکتر جدید", callback_data=f"chars:pull:{owner_id}")
+    kb.button(text="⭐ بهترین", callback_data=f"chars:best:{owner_id}")
+    kb.button(text="🔀 ترکیب تکراری", callback_data=f"chars:merge:{owner_id}")
     kb.adjust(2, 2)
     return kb.as_markup()
 
@@ -85,12 +81,12 @@ async def _pull_character(message: Message):
             await message.answer_photo(
                 photo=character_url(card.get("name", "؟"), card.get("rarity", "معمولی")),
                 caption=msg,
-                reply_markup=character_list_keyboard(),
+                reply_markup=character_list_keyboard(callback.from_user.id),
             )
             return
         except Exception:
             pass
-    await message.answer(msg, reply_markup=character_list_keyboard())
+    await message.answer(msg, reply_markup=character_list_keyboard(callback.from_user.id))
 
 
 @router.message(Command("pullchar", "کاراکتر", "کاراکترشانسی", "gacha", "شانسی"))
@@ -101,7 +97,7 @@ async def cmd_pull(message: Message):
 @router.message(Command("mychars", "کاراکترها", "لیستکاراکتر"))
 async def cmd_list(message: Message):
     text = chars.list_owned_indexed(message.from_user.id)
-    await message.answer(text, reply_markup=character_list_keyboard(message.from_user.id))
+    await message.answer(text, reply_markup=character_list_keyboard(callback.from_user.id))
 
 
 @router.message(Command("charinfo", "اطلاعاتکاراکتر", "پنلکاراکتر"))
@@ -124,17 +120,21 @@ async def cmd_char_info(message: Message):
         await message.answer_photo(
             photo=character_url(card.get("name", "کاراکتر"), card.get("rarity", "معمولی")),
             caption=character_detail_text(card, idx),
-            reply_markup=character_detail_keyboard(idx),
+            reply_markup=character_detail_keyboard(idx, message.from_user.id),
         )
     except Exception:
-        await message.answer(character_detail_text(card, idx), reply_markup=character_detail_keyboard(idx))
+        await message.answer(character_detail_text(card, idx), reply_markup=character_detail_keyboard(idx, message.from_user.id))
 
 
 @router.callback_query(F.data.startswith("chars:view:"))
 async def cb_char_view(callback: CallbackQuery):
     await callback.answer()
     try:
-        idx = int(callback.data.rsplit(":", 1)[1])
+        parts = callback.data.split(":")
+        if len(parts) != 4 or int(parts[2]) != callback.from_user.id:
+            await callback.answer("⛔ این پنل برای صاحبش است.", show_alert=True)
+            return
+        idx = int(parts[3])
     except Exception:
         await callback.message.answer("شماره کاراکتر نامعتبر است.")
         return
@@ -147,46 +147,66 @@ async def cb_char_view(callback: CallbackQuery):
         await callback.message.answer_photo(
             photo=character_url(card.get("name", "کاراکتر"), card.get("rarity", "معمولی")),
             caption=character_detail_text(card, idx),
-            reply_markup=character_detail_keyboard(idx),
+            reply_markup=character_detail_keyboard(idx, callback.from_user.id),
         )
     except Exception:
-        await callback.message.answer(character_detail_text(card, idx), reply_markup=character_detail_keyboard(idx))
+        await callback.message.answer(character_detail_text(card, idx), reply_markup=character_detail_keyboard(idx, callback.from_user.id))
 
 
-@router.callback_query(F.data == "chars:merge")
+@router.callback_query(F.data.startswith("chars:merge:"))
 async def cb_chars_merge(callback: CallbackQuery):
+    parts = callback.data.split(":")
+    if len(parts) != 3 or int(parts[2]) != callback.from_user.id:
+        await callback.answer("⛔ این پنل برای صاحبش است.", show_alert=True)
+        return
     await callback.answer()
-    await callback.message.answer(chars.merge_duplicates(callback.from_user.id), reply_markup=character_list_keyboard())
+    await callback.message.answer(chars.merge_duplicates(callback.from_user.id), reply_markup=character_list_keyboard(callback.from_user.id))
 
 
 @router.message(Command("bestchar", "بهترینکاراکتر"))
 async def cmd_best(message: Message):
-    await message.answer(chars.best_char(message.from_user.id), reply_markup=character_list_keyboard())
+    await message.answer(chars.best_char(message.from_user.id), reply_markup=character_list_keyboard(message.from_user.id))
 
 
-@router.callback_query(F.data == "chars:list")
+@router.callback_query(F.data.startswith("chars:list:"))
 async def cb_chars_list(callback: CallbackQuery):
+    parts = callback.data.split(":")
+    if len(parts) != 3 or int(parts[2]) != callback.from_user.id:
+        await callback.answer("⛔ این پنل برای صاحبش است.", show_alert=True)
+        return
     text = chars.list_owned_indexed(callback.from_user.id)
     await callback.answer("لیست بروزرسانی شد")
     await callback.message.answer(text, reply_markup=character_list_keyboard(callback.from_user.id))
 
 
-@router.callback_query(F.data == "chars:pull")
+@router.callback_query(F.data.startswith("chars:pull:"))
 async def cb_chars_pull(callback: CallbackQuery):
+    parts = callback.data.split(":")
+    if len(parts) != 3 or int(parts[2]) != callback.from_user.id:
+        await callback.answer("⛔ این پنل برای صاحبش است.", show_alert=True)
+        return
     await callback.answer()
     await _pull_character(callback.message)
 
 
-@router.callback_query(F.data == "chars:best")
+@router.callback_query(F.data.startswith("chars:best:"))
 async def cb_chars_best(callback: CallbackQuery):
+    parts = callback.data.split(":")
+    if len(parts) != 3 or int(parts[2]) != callback.from_user.id:
+        await callback.answer("⛔ این پنل برای صاحبش است.", show_alert=True)
+        return
     await callback.answer()
-    await callback.message.answer(chars.best_char(callback.from_user.id), reply_markup=character_list_keyboard())
+    await callback.message.answer(chars.best_char(callback.from_user.id), reply_markup=character_list_keyboard(callback.from_user.id))
 
 
-@router.callback_query(F.data == "chars:rates")
+@router.callback_query(F.data.startswith("chars:rates:"))
 async def cb_chars_rates(callback: CallbackQuery):
+    parts = callback.data.split(":")
+    if len(parts) != 3 or int(parts[2]) != callback.from_user.id:
+        await callback.answer("⛔ این پنل برای صاحبش است.", show_alert=True)
+        return
     await callback.answer()
-    await callback.message.answer(chars.rarity_guide(), reply_markup=character_list_keyboard())
+    await callback.message.answer(chars.rarity_guide(), reply_markup=character_list_keyboard(callback.from_user.id))
 
 
 @router.message(Command("tradechar", "معاوضهکاراکتر"))
@@ -254,10 +274,10 @@ async def cmd_accept_cduel(message: Message):
 
 @router.message(Command("mergechar", "ترکیبکاراکتر", "ادغامکاراکتر"))
 async def cmd_merge_char(message: Message):
-    await message.answer(chars.merge_duplicates(message.from_user.id), reply_markup=character_list_keyboard())
+    await message.answer(chars.merge_duplicates(message.from_user.id), reply_markup=character_list_keyboard(callback.from_user.id))
 
 
-@router.callback_query(F.data == "chars:duelguide")
+@router.callback_query(F.data.startswith("chars:duelguide:"))
 async def cb_chars_duelguide(callback: CallbackQuery):
     await callback.answer()
     await callback.message.answer(

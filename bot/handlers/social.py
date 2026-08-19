@@ -866,10 +866,10 @@ async def cmd_solo_top(message: Message):
 @router.message(Command("servants", "خدمتکار", "برده", "بازارخدمتکار"))
 async def cmd_servants_v2(message: Message):
     """بازار خدمتکاران به سبک فروشگاه: یک پنل با دکمه‌های قبلی/بعدی."""
-    await _send_market_panel(message, position=0)
+    await _send_market_panel(message, position=0, owner_id=message.from_user.id)
 
 
-async def _send_market_panel(target, position: int = 0, *, edit: bool = False):
+async def _send_market_panel(target, position: int = 0, *, owner_id: int, edit: bool = False):
     """نمایش یک خدمتکار از بازار. target می‌تواند Message یا CallbackQuery.message باشد."""
     from bot.utils.servant_panel import (
         servant_image, market_keyboard, market_caption,
@@ -883,7 +883,7 @@ async def _send_market_panel(target, position: int = 0, *, edit: bool = False):
     item = market[position]
     sid = int(item["id"])
     caption = market_caption(item, position, total)
-    kb = market_keyboard(position, total, sid)
+    kb = market_keyboard(position, total, sid, owner_id)
     img = servant_image(sid)
 
     if edit:
@@ -933,9 +933,9 @@ async def cmd_buy_servant_v2(message: Message):
             img=servant_image(sid)
             caption=servmod.servant_panel_text(s0, idx, purchased=True)
             if img:
-                await message.answer_photo(img,caption=caption,reply_markup=servant_keyboard(idx))
+                await message.answer_photo(img,caption=caption,reply_markup=servant_keyboard(idx, callback.from_user.id))
             else:
-                await message.answer(caption,reply_markup=servant_keyboard(idx))
+                await message.answer(caption,reply_markup=servant_keyboard(idx, callback.from_user.id))
         else:
             await message.answer(msg)
 
@@ -966,7 +966,7 @@ async def _send_owned_panel(target, position: int, user_id: int, *, edit: bool =
     img = servant_image(int(s0.get("base_id") or 0))
     caption = servmod.servant_panel_text(s0, bag_index)
     caption = f"📦 <b>خدمتکارهای من</b> — {bag_index}/{total}\n\n" + caption
-    kb = owned_browse_keyboard(position, total, bag_index)
+    kb = owned_browse_keyboard(position, total, bag_index, user_id)
 
     if edit:
         try:
@@ -1003,34 +1003,34 @@ async def cmd_show_servant(message: Message):
     s0=bag[idx-1]; img=servant_image(int(s0.get("base_id") or 0))
     caption=servmod.servant_panel_text(s0,idx)
     if img:
-        await message.answer_photo(img,caption=caption,reply_markup=servant_keyboard(idx))
+        await message.answer_photo(img,caption=caption,reply_markup=servant_keyboard(idx, callback.from_user.id))
     else:
-        await message.answer(caption,reply_markup=servant_keyboard(idx))
+        await message.answer(caption,reply_markup=servant_keyboard(idx, callback.from_user.id))
 
 
-@router.callback_query(F.data == "servmarket")
+@router.callback_query(F.data.startswith("servmarket:"))
 async def cb_serv_market(callback: CallbackQuery):
     await callback.answer()
-    await _send_market_panel(callback.message, position=0, edit=True)
+    await _send_market_panel(callback.message, position=0, owner_id=callback.from_user.id, edit=True)
 
 
 @router.callback_query(F.data.startswith("servpage:"))
 async def cb_serv_page(callback: CallbackQuery):
     """ورق زدن بازار خدمتکاران با ◀️ ▶️"""
     try:
-        pos = int(callback.data.split(":")[1])
+        pos = int(callback.data.split(":")[2])
     except Exception:
         await callback.answer("صفحه نامعتبر", show_alert=True)
         return
     await callback.answer()
-    await _send_market_panel(callback.message, position=pos, edit=True)
+    await _send_market_panel(callback.message, position=pos, owner_id=callback.from_user.id, edit=True)
 
 
 @router.callback_query(F.data.startswith("servownpage:"))
 async def cb_serv_own_page(callback: CallbackQuery):
     """ورق زدن خدمتکارهای من"""
     try:
-        pos = int(callback.data.split(":")[1])
+        pos = int(callback.data.split(":")[2])
     except Exception:
         await callback.answer("صفحه نامعتبر", show_alert=True)
         return
@@ -1038,14 +1038,14 @@ async def cb_serv_own_page(callback: CallbackQuery):
     await _send_owned_panel(callback.message, position=pos, user_id=callback.from_user.id, edit=True)
 
 
-@router.callback_query(F.data == "servmylist")
+@router.callback_query(F.data.startswith("servmylist:"))
 async def cb_serv_mylist(callback: CallbackQuery):
     await callback.answer()
     await _send_owned_panel(callback.message, position=0, user_id=callback.from_user.id, edit=False)
 
 @router.callback_query(F.data.startswith("servbuy:"))
 async def cb_serv_buy(callback: CallbackQuery):
-    sid=int(callback.data.split(":")[1])
+    sid=int(callback.data.split(":")[2])
     # Reuse purchase command logic without requiring text parsing.
     async with async_session() as session:
         user=await get_or_create_user(session,callback.from_user.id,callback.from_user.full_name,callback.from_user.username)
@@ -1062,38 +1062,38 @@ async def cb_serv_buy(callback: CallbackQuery):
         from bot.utils.servant_panel import servant_keyboard, servant_image
         img=servant_image(sid); caption=servmod.servant_panel_text(s0,idx,purchased=True)
         if img:
-            await callback.message.answer_photo(img,caption=caption,reply_markup=servant_keyboard(idx))
+            await callback.message.answer_photo(img,caption=caption,reply_markup=servant_keyboard(idx, callback.from_user.id))
         else:
-            await callback.message.answer(caption,reply_markup=servant_keyboard(idx))
+            await callback.message.answer(caption,reply_markup=servant_keyboard(idx, callback.from_user.id))
     await callback.answer("خرید انجام شد")
 
 @router.callback_query(F.data.startswith("servstatus:"))
 async def cb_serv_status(callback: CallbackQuery):
-    idx=int(callback.data.split(":")[1]); bag=servmod.list_owned(callback.from_user.id)
+    parts=callback.data.split(":"); idx=int(parts[2]); bag=servmod.list_owned(callback.from_user.id)
     if idx<1 or idx>len(bag): await callback.answer("خدمتکار پیدا نشد",show_alert=True); return
     from bot.utils.servant_panel import servant_keyboard, servant_image
     s0=bag[idx-1]; img=servant_image(int(s0.get("base_id") or 0)); caption=servmod.servant_panel_text(s0,idx)
     if img:
-        await callback.message.answer_photo(img,caption=caption,reply_markup=servant_keyboard(idx))
+        await callback.message.answer_photo(img,caption=caption,reply_markup=servant_keyboard(idx, callback.from_user.id))
     else:
-        await callback.message.answer(caption,reply_markup=servant_keyboard(idx))
+        await callback.message.answer(caption,reply_markup=servant_keyboard(idx, callback.from_user.id))
     await callback.answer()
 
 @router.callback_query(F.data.startswith("servloyal:"))
 async def cb_serv_loyal(callback: CallbackQuery):
-    idx=int(callback.data.split(":")[1]); bag=servmod.list_owned(callback.from_user.id)
+    parts=callback.data.split(":"); idx=int(parts[2]); bag=servmod.list_owned(callback.from_user.id)
     if idx<1 or idx>len(bag): await callback.answer("خدمتکار پیدا نشد",show_alert=True); return
     s0=bag[idx-1]
     await callback.answer(f"❤️ وفاداری: {s0.get('loyalty',0)}٪",show_alert=True)
 
 @router.callback_query(F.data.startswith("servtrain:"))
 async def cb_serv_train(callback: CallbackQuery):
-    idx=int(callback.data.split(":")[1]); msg=servmod.train(callback.from_user.id,idx)
+    idx=int(callback.data.split(":")[2]); msg=servmod.train(callback.from_user.id,idx)
     await callback.message.answer(msg); await callback.answer("پرورش انجام شد")
 
 @router.callback_query(F.data.startswith("servmarry:"))
 async def cb_serv_marry(callback: CallbackQuery):
-    idx=int(callback.data.split(":")[1])
+    idx=int(callback.data.split(":")[2])
     ok,msg,_=servmod.marry_servant(callback.from_user.id,idx)
     await callback.answer(msg,show_alert=True)
 
@@ -1166,7 +1166,7 @@ async def cmd_check_betray(message: Message):
 @router.callback_query(F.data.startswith("servduelguide:"))
 async def cb_servant_duel_guide(callback: CallbackQuery):
     await callback.answer()
-    idx = callback.data.split(":", 1)[1]
+    idx = callback.data.split(":", 2)[2]
     await callback.message.answer(
         "⚔️ <b>دوئل خدمتکاران</b>\n\n"
         f"خدمتکار شماره {idx} را انتخاب کردهای. برای مبارزه با خدمتکار حریف، "

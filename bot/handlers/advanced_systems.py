@@ -1,5 +1,5 @@
-from aiogram import Router
-from aiogram.types import Message
+from aiogram import Router, F
+from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command
 from bot.config import ADMIN_IDS
 from database.engine import async_session
@@ -19,12 +19,78 @@ async def power_stats(message: Message):
 
 @router.message(Command("bloodlines", "تبارها", "تبار"))
 async def bloodlines(message: Message):
-    text="🧬 <b>تبارها</b>\n\n"+"\n".join(f"• {k} — ضریب ×{v[0]} — {v[1]}" for k,v in BLOODLINES.items())
-    await message.answer(text)
+    from aiogram.utils.keyboard import InlineKeyboardBuilder
+    from html import escape
+    uid = message.from_user.id
+    current = get_bloodline(uid)
+    text = (
+        "🧬 <b>تبارها</b>\n\n"
+        "برای فعال کردن تبار، روی دکمه «فعال کردن» همان تبار بزن. "
+        "تبار انتخابشده فوراً به عنوان تبار فعال ثبت میشود.\n\n"
+        + "\n".join(
+            f"• <b>{escape(k)}</b> — ضریب ×{v[0]} — {escape(v[1])}"
+            + (" ← فعال" if k == current else "")
+            for k, v in BLOODLINES.items()
+        )
+    )
+    kb = InlineKeyboardBuilder()
+    for name in BLOODLINES:
+        kb.button(text=f"🧬 فعال کردن {name}", callback_data=f"activateblood:{uid}:{name}")
+    kb.button(text="🔄 تبار فعلی", callback_data=f"myblood:{uid}")
+    kb.adjust(2)
+    await message.answer(text, reply_markup=kb.as_markup())
+
+@router.callback_query(F.data.startswith("activateblood:"))
+async def cb_activate_bloodline(callback: CallbackQuery):
+    parts = callback.data.split(":", 2)
+    if len(parts) != 3:
+        return await callback.answer("درخواست نامعتبر است.", show_alert=True)
+    try:
+        owner = int(parts[1])
+    except ValueError:
+        return await callback.answer("درخواست نامعتبر است.", show_alert=True)
+    if callback.from_user.id != owner:
+        return await callback.answer("⛔ این پنل برای صاحبش است.", show_alert=True)
+    name = activate_bloodline(owner, parts[2])
+    if not name:
+        return await callback.answer("❌ این تبار وجود ندارد.", show_alert=True)
+    await callback.answer(f"✅ تبار «{name}» فعال شد.", show_alert=True)
+    try:
+        await callback.message.edit_text(
+            f"🧬 <b>تبار فعال شد</b>\n\n"
+            f"تبار فعلی: <b>{name}</b>\n"
+            f"ضریب تبار: ×{BLOODLINES[name][0]}\n\n"
+            "برای تغییر تبار دوباره /bloodlines را بزن.",
+            reply_markup=None,
+        )
+    except Exception:
+        pass
+
+@router.callback_query(F.data.startswith("myblood:"))
+async def cb_my_bloodline(callback: CallbackQuery):
+    parts = callback.data.split(":", 1)
+    try:
+        owner = int(parts[1])
+    except Exception:
+        return await callback.answer("درخواست نامعتبر است.", show_alert=True)
+    if callback.from_user.id != owner:
+        return await callback.answer("⛔ این پنل برای صاحبش است.", show_alert=True)
+    name = get_bloodline(owner)
+    await callback.answer(f"تبار فعلی: {name} ×{BLOODLINES[name][0]}", show_alert=True)
+
+@router.message(Command("activatebloodline", "فعالکردنتبار", "فعالتبار"))
+async def activate_bloodline_cmd(message: Message):
+    parts = (message.text or "").split(maxsplit=1)
+    if len(parts) < 2:
+        return await message.answer("فرمت: /activatebloodline نام تبار\nمثال: /activatebloodline الهی")
+    name = activate_bloodline(message.from_user.id, parts[1])
+    if not name:
+        return await message.answer("❌ تبار پیدا نشد. /bloodlines را بزن.")
+    await message.answer(f"✅ تبار «{name}» فعال شد.\nضریب تبار: ×{BLOODLINES[name][0]}")
 
 @router.message(Command("mybloodline", "تباری", "تبارمن"))
 async def my_bloodline(message: Message):
-    name=get_bloodline(message.from_user.id); await message.answer(f"🧬 تبار فعلی: <b>{name}</b>\nضریب تبار: ×{BLOODLINES[name][0]}")
+    name=get_bloodline(message.from_user.id); await message.answer(f"🧬 تبار فعلی: <b>{name}</b>\nضریب تبار: ×{BLOODLINES[name][0]}\n\nبرای تغییر: /bloodlines یا /activatebloodline نام")
 
 @router.message(Command("setbloodline", "تنظیمتبار"))
 async def set_bl(message: Message):
