@@ -933,9 +933,9 @@ async def cmd_buy_servant_v2(message: Message):
             img=servant_image(sid)
             caption=servmod.servant_panel_text(s0, idx, purchased=True)
             if img:
-                await message.answer_photo(img,caption=caption,reply_markup=servant_keyboard(idx, callback.from_user.id))
+                await message.answer_photo(img,caption=caption,reply_markup=servant_keyboard(idx, message.from_user.id))
             else:
-                await message.answer(caption,reply_markup=servant_keyboard(idx, callback.from_user.id))
+                await message.answer(caption,reply_markup=servant_keyboard(idx, message.from_user.id))
         else:
             await message.answer(msg)
 
@@ -1003,9 +1003,9 @@ async def cmd_show_servant(message: Message):
     s0=bag[idx-1]; img=servant_image(int(s0.get("base_id") or 0))
     caption=servmod.servant_panel_text(s0,idx)
     if img:
-        await message.answer_photo(img,caption=caption,reply_markup=servant_keyboard(idx, callback.from_user.id))
+        await message.answer_photo(img,caption=caption,reply_markup=servant_keyboard(idx, message.from_user.id))
     else:
-        await message.answer(caption,reply_markup=servant_keyboard(idx, callback.from_user.id))
+        await message.answer(caption,reply_markup=servant_keyboard(idx, message.from_user.id))
 
 
 @router.callback_query(F.data.startswith("servmarket:"))
@@ -1062,9 +1062,9 @@ async def cb_serv_buy(callback: CallbackQuery):
         from bot.utils.servant_panel import servant_keyboard, servant_image
         img=servant_image(sid); caption=servmod.servant_panel_text(s0,idx,purchased=True)
         if img:
-            await callback.message.answer_photo(img,caption=caption,reply_markup=servant_keyboard(idx, callback.from_user.id))
+            await callback.message.answer_photo(img,caption=caption,reply_markup=servant_keyboard(idx, message.from_user.id))
         else:
-            await callback.message.answer(caption,reply_markup=servant_keyboard(idx, callback.from_user.id))
+            await callback.message.answer(caption,reply_markup=servant_keyboard(idx, message.from_user.id))
     await callback.answer("خرید انجام شد")
 
 @router.callback_query(F.data.startswith("servstatus:"))
@@ -1074,9 +1074,9 @@ async def cb_serv_status(callback: CallbackQuery):
     from bot.utils.servant_panel import servant_keyboard, servant_image
     s0=bag[idx-1]; img=servant_image(int(s0.get("base_id") or 0)); caption=servmod.servant_panel_text(s0,idx)
     if img:
-        await callback.message.answer_photo(img,caption=caption,reply_markup=servant_keyboard(idx, callback.from_user.id))
+        await callback.message.answer_photo(img,caption=caption,reply_markup=servant_keyboard(idx, message.from_user.id))
     else:
-        await callback.message.answer(caption,reply_markup=servant_keyboard(idx, callback.from_user.id))
+        await callback.message.answer(caption,reply_markup=servant_keyboard(idx, message.from_user.id))
     await callback.answer()
 
 @router.callback_query(F.data.startswith("servloyal:"))

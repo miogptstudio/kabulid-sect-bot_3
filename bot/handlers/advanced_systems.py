@@ -189,26 +189,47 @@ async def worldboss_cmd(message: Message):
     if len(p)>1 and p[1].isdigit(): d,dmg=hit_world_boss(message.from_user.id,int(p[1])); await message.answer(f"🐉 {d['name']}\n💥 آسیب: {dmg:,}\n❤️ جان باقیمانده: {d['hp']:,}/{d['max_hp']:,}")
     else: await message.answer(f"🐉 <b>{d['name']}</b>\n❤️ {d['hp']:,}/{d['max_hp']:,}\n💰 پاداش پایه: {d['reward']:,}\nبرای حمله: /worldboss مقدار_آسیب")
 
-@router.message(Command("chest", "صندوق", "گنج"))
+@router.message(Command("chest", "صندوق", "گنج", "صندوقروزانه"))
 async def chest_cmd(message: Message):
     from services.advanced_systems import open_chest
-    p=(message.text or "").split(); grade=p[1] if len(p)>1 else "معمولی"
-    result=open_chest(message.from_user.id,grade)
-    amount, remaining=result
+    result=open_chest(message.from_user.id, None)
+    amount, remaining, grade=result
     if amount is None:
-        hours=remaining//3600
-        minutes=(remaining%3600)//60
-        if hours:
-            wait=f"{hours} ساعت و {minutes} دقیقه"
-        else:
-            wait=f"{max(1,minutes)} دقیقه"
-        return await message.answer(
-            f"⏳ <b>صندوق هنوز آماده نیست!</b>\n\n"
-            f"🎁 هر بازیکن فقط <b>یک صندوق در هر ۲۴ ساعت</b> می‌تواند باز کند.\n"
-            f"⌛ زمان باقی‌مانده: <b>{wait}</b>\n\n"
-            f"بعد از پایان زمان، دوباره می‌توانی صندوق باز کنی."
-        )
-    await message.answer(f"🎁 صندوق {grade}\n💰 پاداش: {amount:,} سکه\n\n⏳ صندوق بعدی ۲۴ ساعت دیگر قابل باز کردن است.")
+        hours=remaining//3600; minutes=(remaining%3600)//60
+        return await message.answer(f"⏳ صندوق روزانه آماده نیست.\nزمان باقی‌مانده: <b>{hours} ساعت و {minutes} دقیقه</b>")
+    async with async_session() as session:
+        from services.economy import get_or_create_wallet
+        u=await get_or_create_user(session,message.from_user.id,message.from_user.full_name,message.from_user.username)
+        w=await get_or_create_wallet(session,u.id); w.coins=int(w.coins or 0)+int(amount)
+        await session.commit()
+    await message.answer(f"🎁 <b>صندوق روزانه باز شد!</b>\n🎲 رتبه شانسی: <b>{grade}</b>\n💰 +{amount:,} سکه\n\nفردا دوباره شانس داری.")
+
+@router.message(Command("chests", "فروشگاهصندوق", "خریدصندوق"))
+async def chest_shop_cmd(message: Message):
+    from services.advanced_systems import chest_shop
+    lines=["🎁 <b>فروشگاه صندوق‌ها</b>","","صندوق روزانه رایگان است و رتبه‌اش شانسی است:","/chest"]
+    for rank,price,rr in chest_shop():
+        lines.append(f"• <b>{rank}</b> — {price:,} سکه — پاداش {rr[0]:,} تا {rr[1]:,}")
+    lines.append("\nخرید: /buychest نام‌رتبه")
+    await message.answer("\n".join(lines))
+
+@router.message(Command("buychest", "خریدصندوقرتبه"))
+async def buy_chest_cmd(message: Message):
+    from services.advanced_systems import CHEST_RANKS
+    parts=(message.text or "").split(maxsplit=1)
+    if len(parts)<2 or parts[1].strip() not in CHEST_RANKS or CHEST_RANKS[parts[1].strip()]["price"]<=0:
+        await message.answer("فرمت: /buychest نادر\nرتبه‌ها: نادر | افسانه‌ای | الهی | مطلق")
+        return
+    rank=parts[1].strip(); price=CHEST_RANKS[rank]["price"]; lo,hi=CHEST_RANKS[rank]["range"]
+    amount=random.randint(lo,hi)
+    async with async_session() as session:
+        u=await get_or_create_user(session,message.from_user.id,message.from_user.full_name,message.from_user.username)
+        from services.economy import get_or_create_wallet
+        w=await get_or_create_wallet(session,u.id)
+        if int(w.coins or 0)<price:
+            await message.answer(f"❌ سکه کافی نیست. نیاز: {price:,} | موجودی: {int(w.coins or 0):,}"); return
+        w.coins-=price; w.coins+=amount; await session.commit()
+    await message.answer(f"🎁 صندوق <b>{rank}</b> خریداری و باز شد!\n💰 جایزه: +{amount:,} سکه\n🪙 هزینه: {price:,} سکه")
 
 @router.message(Command("chainmission", "ماموریت_زنجیره"))
 async def chainmission_cmd(message: Message):

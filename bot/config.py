@@ -1,5 +1,5 @@
-BOT_VERSION = "33.0.0"
-WEBAPP_VERSION = "5.0.0"
+BOT_VERSION = "41.0.0"
+WEBAPP_VERSION = "6.0.0"
 # پیام عمومی سازنده
 CREATOR_NOTICE = """📢 پیام جهانی — نسخه 4.7.9
 

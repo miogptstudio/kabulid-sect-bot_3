@@ -456,6 +456,7 @@ async def cmd_give_money(message: Message):
             "faith": "faith_stones", "ایمان": "faith_stones",
             "dragon": "dragon_coins", "اژدها": "dragon_coins",
             "karma": "karma_points", "کارما": "karma_points",
+            "ink": "eternal_ink", "جوهر": "eternal_ink", "جوهر ازلی": "eternal_ink",
         }
         field = money_fields.get(kind)
         if not field:
@@ -623,8 +624,8 @@ async def cmd_unlock_consume(message: Message):
 @router.message(Command("givepower", "قدرتبده", "setpower"))
 async def cmd_give_power(message: Message):
     """ادمین: /givepower telegram_id مقدار [total|power|speed|defense|body]"""
-    from services.staff import has_perm, PERM_GIVEMONEY
-    if not has_perm(message.from_user.id, PERM_GIVEMONEY):
+    from services.staff import has_perm, PERM_GIVEPOWER
+    if not has_perm(message.from_user.id, PERM_GIVEPOWER):
         await message.answer("⛔️ نیاز به مقام ادمین یا بالاتر.")
         return
     parts = (message.text or "").split()
@@ -674,6 +675,43 @@ async def cmd_give_power(message: Message):
             mapk = {"power": "power", "قدرت": "power", "speed": "speed", "defense": "defense", "دفاع": "defense", "سرعت": "speed"}
             k = mapk.get(kind, "power")
             msg = add_combat_stat(tid, k, amount) + f"\nهدف: `{tid}`"
+    await message.answer(msg)
+
+
+@router.message(Command("takepower", "کمکردنقدرت", "حذفقدرت", "removepower"))
+async def cmd_take_power(message: Message):
+    """کم کردن قدرت اعطایی ادمین؛ مقدار منفی به givepower هم پشتیبانی می‌شود."""
+    from services.staff import has_perm, PERM_GIVEPOWER
+    if not has_perm(message.from_user.id, PERM_GIVEPOWER):
+        await message.answer("⛔️ نیاز به مقام معاون ادمین یا بالاتر.")
+        return
+    parts = (message.text or "").split()
+    try:
+        if message.reply_to_message and message.reply_to_message.from_user:
+            tid = message.reply_to_message.from_user.id
+            amount = int(parts[1]) if len(parts) > 1 else 0
+            kind = parts[2] if len(parts) > 2 else "total"
+        else:
+            tid = int(parts[1]); amount = int(parts[2]); kind = parts[3] if len(parts) > 3 else "total"
+    except (ValueError, IndexError):
+        await message.answer("فرمت: /takepower آیدی مقدار [total|power|speed|defense|body] یا ریپلای + /takepower مقدار")
+        return
+    amount = abs(amount)
+    # همان سیستم givepower با مقدار منفی، ولی امن و صریح.
+    if kind.lower() in ("body", "بدن"):
+        from services.body_cult import add_body_power
+        msg = add_body_power(tid, -amount)
+    elif kind.lower() in ("total", "کل", "profile", "قدرت_پروفایل"):
+        from services.knowledge import add_admin_power_bonus, get_admin_power_bonus
+        current = get_admin_power_bonus(tid)
+        new_total = max(0, current - amount)
+        add_admin_power_bonus(tid, new_total - current)
+        msg = f"✅ قدرت مستقیم پروفایل {tid}: -{amount}\nقدرت اعطایی فعلی: {new_total}"
+    else:
+        from services.knowledge import add_combat_stat
+        mapk = {"power":"power", "قدرت":"power", "speed":"speed", "سرعت":"speed", "defense":"defense", "دفاع":"defense"}
+        k = mapk.get(kind.lower(), "power")
+        msg = add_combat_stat(tid, k, -amount) + f"\nهدف: `{tid}`"
     await message.answer(msg)
 
 

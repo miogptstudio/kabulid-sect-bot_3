@@ -1,7 +1,7 @@
 from services.i18n import t_user, get_lang, t as _t, tr
 import random
 from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import Message, CallbackQuery, WebAppInfo
 from aiogram.filters import Command, Filter as _AiogramFilter
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
@@ -12,6 +12,18 @@ from database.crud import get_or_create_user
 from services.economy import get_or_create_wallet
 
 router = Router()
+
+@router.message(Command("webapp", "وباپ", "دنیایوب"))
+async def cmd_webapp(message: Message):
+    import os
+    from aiogram.types import InlineKeyboardButton
+    url = (os.getenv("WEBAPP_URL") or "").strip().rstrip("/")
+    if not url:
+        await message.answer("🌐 آدرس وباپ تنظیم نشده است. در Render متغیر WEBAPP_URL را روی https://دامنه-render/webapp/ قرار بده.")
+        return
+    kb = InlineKeyboardBuilder()
+    kb.row(InlineKeyboardButton(text="🌌 ورود به ۹ آسمان", web_app=WebAppInfo(url=url + "/")))
+    await message.answer("🌌 <b>مرکز فرماندهی ۹ آسمان</b>\n\nتمام بخش‌های اصلی بازی از همین مینی‌اپ به همان حساب تلگرام متصل هستند.", reply_markup=kb.as_markup())
 
 GAME_COOLDOWN = timedelta(minutes=2)
 _last_game: dict[int, datetime] = {}
@@ -149,11 +161,14 @@ async def cb_game_menu(callback: CallbackQuery):
     elif kind == "guess":
         await callback.message.edit_text(tr(callback.from_user.id, "🎯 /guess برای حدس عدد ۱ تا ۱۰۰"))
     elif kind == "web":
-        await callback.message.edit_text(
-            "🌐 در BotFather → Menu Button آدرس وباپ را بگذار:\n"
-            "<code>https://آدرس-render-تو/webapp/</code>\n"
-            "بازیها: <code>.../webapp/games.html</code>"
-        )
+        import os
+        url = (os.getenv("WEBAPP_URL") or "").strip().rstrip("/")
+        if url:
+            b = InlineKeyboardBuilder()
+            b.row(__import__("aiogram.types", fromlist=["InlineKeyboardButton"]).InlineKeyboardButton(text="🌌 باز کردن وباپ", web_app=WebAppInfo(url=url + "/")))
+            await callback.message.edit_text("🌌 <b>۹ آسمان</b>\nوباپ به همان حساب تلگرام و دیتابیس ربات متصل است.", reply_markup=b.as_markup())
+        else:
+            await callback.message.edit_text("🌐 متغیر <code>WEBAPP_URL</code> را در Render تنظیم کن؛ سپس /webapp را بزن.")
     await callback.answer()
 
 

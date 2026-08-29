@@ -651,11 +651,11 @@ async def cmd_gift_item(message: Message):
     await message.answer(f"🎁 «{item.name}» به {recv.full_name} هدیه شد.")
 
 
-@router.message(Command("adshop", "فروشگاهادمین"))
+@router.message(Command("adshop", "فروشگاهادمین", "پنلفروشگاهادمین"))
 async def cmd_admin_shop(message: Message):
-    from bot.config import ADMIN_IDS
+    from services.staff import has_perm, PERM_PANEL
     from sqlalchemy import select
-    if message.from_user.id not in ADMIN_IDS:
+    if not has_perm(message.from_user.id, PERM_PANEL):
         await message.answer(tr(message.from_user.id, "فقط ادمین."))
         return
     async with async_session() as session:
@@ -697,18 +697,17 @@ async def cmd_admin_shop(message: Message):
                 mark = " ⭐" if it in uniques else ""
                 text += f"• {it.name}{mark}" + chr(10)
             text += chr(10)
-        # چند پیام اگر طولانی
-        if len(text) <= 4000:
-            await message.answer(text)
-        else:
-            await message.answer(text[:4000])
-            await message.answer(text[4000:8000] if len(text) > 4000 else "")
+        # سقف تلگرام 4096 است؛ به قطعات معتبر تقسیم کن و پیام خالی نفرست.
+        for i in range(0, len(text), 3900):
+            chunk = text[i:i+3900]
+            if chunk.strip():
+                await message.answer(chunk)
 
 
 @router.message(Command("adget", "ادمینبگیر"))
 async def cmd_admin_get(message: Message):
-    from bot.config import ADMIN_IDS
-    if message.from_user.id not in ADMIN_IDS:
+    from services.staff import has_perm, PERM_GIVEMONEY
+    if not has_perm(message.from_user.id, PERM_GIVEMONEY):
         await message.answer(tr(message.from_user.id, "فقط ادمین."))
         return
     parts = (message.text or "").split(maxsplit=1)

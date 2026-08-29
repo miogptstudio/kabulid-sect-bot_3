@@ -106,6 +106,35 @@ ALIASES = {
     "نقشه جهان": "worldmap",
     "جنگ فرقه": "sectwar",
     "باس جهانی": "worldboss",
+    "باس جهان": "worldboss",
+    "حمله به باس": "bossattack",
+    "رویداد جهان": "worldevent",
+    "رویداد جدید": "worldevent",
+    "موقعیت": "world",
+    "مختصات": "world",
+    "جهان جدید": "world",
+    "فروشگاه صندوق": "chests",
+    "خرید صندوق": "chests",
+    "زیرمجموعه فرقه": "subsects",
+    "۹ آسمان": "skies",
+    "۹آسمان": "skies",
+    "نه آسمان": "skies",
+    "آسمان": "skies",
+    "پلکان بهشت": "heavenstair",
+    "پلکانبهشت": "heavenstair",
+    "پلکان": "heavenstair",
+    "صعود": "heavenstair",
+    "مکان های آسمان": "landmarks",
+    "مکانهای آسمان": "landmarks",
+    "مکان های جدید": "landmarks",
+    "شهرهای جهان": "worldcities",
+    "شهرها": "worldcities",
+    "قلمروهای جهان": "worldcities",
+    "ساخت شهر": "newcity",
+    "ساخت کشور": "newcountry",
+    "غذا": "eat",
+    "آب": "drink",
+    "شمال": "north", "جنوب": "south", "شرق": "east", "غرب": "west",
     "صندوق": "chest",
     "ماموریت زنجیره": "chainmission",
     "اتحاد": "alliance",
@@ -125,7 +154,40 @@ async def text_section_navigation(message: Message):
     if not raw:
         return
 
-    key = ALIASES.get(_norm(raw))
+    norm = _norm(raw)
+
+    # اجرای «دستور» بدون اسلش، حتی وقتی آرگومان دارد.
+    if norm.startswith("ساخت شهر ") or norm.startswith("ساختشهر "):
+        from bot.handlers.open_world import cmd_new_city
+        msg = message.model_copy(update={"text": "/newcity " + raw.split(maxsplit=2)[-1]})
+        await cmd_new_city(msg)
+        return
+    if norm.startswith("ساخت کشور ") or norm.startswith("ساختکشور "):
+        from bot.handlers.open_world import cmd_new_country
+        msg = message.model_copy(update={"text": "/newcountry " + raw.split(maxsplit=2)[-1]})
+        await cmd_new_country(msg)
+        return
+    if norm.startswith("ساخت فرقه ") or norm.startswith("ساختفرقه "):
+        from bot.handlers.sects import cmd_create_sect
+        msg = message.model_copy(update={"text": "/createsect " + raw.split(maxsplit=2)[-1]})
+        await cmd_create_sect(msg)
+        return
+    if norm.startswith("قدرت بده ") or norm.startswith("قدرتبده "):
+        from bot.handlers.admin import cmd_give_power
+        msg = message.model_copy(update={"text": "/givepower " + raw.split(maxsplit=2)[-1]})
+        await cmd_give_power(msg)
+        return
+    if norm.startswith("حذف قدرت ") or norm.startswith("حذفقدرت ") or norm.startswith("کم کردن قدرت "):
+        from bot.handlers.admin import cmd_take_power
+        msg = message.model_copy(update={"text": "/takepower " + raw.split(maxsplit=2)[-1]})
+        await cmd_take_power(msg)
+        return
+    if norm.startswith("پلکان بهشت") or norm == "صعود":
+        from bot.handlers.open_world import cmd_heaven_stair
+        await cmd_heaven_stair(message)
+        return
+
+    key = ALIASES.get(norm)
     if not key:
         return
 
@@ -245,18 +307,58 @@ async def text_section_navigation(message: Message):
         elif key == "crime":
             from bot.handlers.advanced_systems import crime_cmd
             await crime_cmd(message)
+        elif key == "skies":
+            from bot.handlers.open_world import cmd_skies
+            await cmd_skies(message)
+        elif key == "heavenstair":
+            from bot.handlers.open_world import cmd_heaven_stair
+            await cmd_heaven_stair(message)
+        elif key == "worldcities":
+            from bot.handlers.open_world import cmd_world_cities
+            await cmd_world_cities(message)
+        elif key == "landmarks":
+            from bot.handlers.open_world import cmd_landmarks
+            await cmd_landmarks(message)
         elif key == "worldmap":
-            from bot.handlers.advanced_systems import worldmap_cmd
-            await worldmap_cmd(message)
+            from bot.handlers.open_world import cmd_world
+            await cmd_world(message)
         elif key == "sectwar":
             from bot.handlers.advanced_systems import sectwar_cmd
             await sectwar_cmd(message)
         elif key == "worldboss":
-            from bot.handlers.advanced_systems import worldboss_cmd
-            await worldboss_cmd(message)
+            from bot.handlers.open_world import cmd_world_boss
+            await cmd_world_boss(message)
         elif key == "chest":
             from bot.handlers.advanced_systems import chest_cmd
             await chest_cmd(message)
+        elif key == "world":
+            from bot.handlers.open_world import cmd_world
+            await cmd_world(message)
+        elif key in ("north", "south", "east", "west"):
+            from bot.handlers.open_world import cmd_move
+            # همان تابع با متن بدون اسلش هم جهت را می‌خواند.
+            await cmd_move(message)
+        elif key == "worldevent":
+            from bot.handlers.open_world import cmd_world_event
+            await cmd_world_event(message)
+        elif key == "bossattack":
+            from bot.handlers.open_world import cmd_boss_attack
+            await cmd_boss_attack(message)
+        elif key == "newcity":
+            await message.answer("برای ساخت شهر بنویس: /newcity نام شهر")
+        elif key == "newcountry":
+            await message.answer("برای ساخت کشور بنویس: /newcountry نام کشور")
+        elif key == "eat":
+            from bot.handlers.open_world import cmd_eat
+            await cmd_eat(message)
+        elif key == "drink":
+            from bot.handlers.open_world import cmd_drink
+            await cmd_drink(message)
+        elif key == "chests":
+            from bot.handlers.advanced_systems import chest_shop_cmd
+            await chest_shop_cmd(message)
+        elif key == "subsects":
+            await message.answer("برای دیدن زیرمجموعه: /subsects شناسه_فرقه")
         elif key == "chainmission":
             from bot.handlers.advanced_systems import chainmission_cmd
             await chainmission_cmd(message)

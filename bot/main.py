@@ -10,12 +10,13 @@ from aiogram.enums import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
 
 from bot.config import BOT_TOKEN
-from database.engine import engine, migrate_schema
+from database.engine import engine, migrate_schema, async_session as async_session_for_portal
 from database.models import Base
 import database.models_v2  # noqa: F401
 import database.models_v3  # noqa: F401
 from bot.handlers import spirit as spirit  # noqa
 from bot.handlers import text_navigation as text_navigation  # noqa
+from bot.handlers import open_world as open_world  # noqa
 from bot.handlers import characters as characters  # noqa
 from bot.handlers import retention as retention  # noqa
 from bot.handlers import (
@@ -88,6 +89,14 @@ async def on_startup():
         await conn.run_sync(Base.metadata.create_all)
     await migrate_schema()
     try:
+        from services.open_world import launch_portal_once, portal_story
+        async with async_session_for_portal() as _portal_session:
+            launched = await launch_portal_once(_portal_session)
+        if launched:
+            logger.info("WORLD PORTAL: all players moved to the new open world")
+    except Exception as e:
+        logger.warning("world portal init: %s", e)
+    try:
         from services.persist import preload_all, load_from_db, sync_to_db
         # PostgreSQL منبع اصلی دادههای پایدار است؛ فایل محلی فقط fallback است.
         n = await load_from_db()
@@ -119,6 +128,7 @@ async def main():
 
     # ورود به بخشها با نوشتن نامشان، بدون نیاز به /command
     dp.include_router(text_navigation.router)
+    dp.include_router(open_world.router)
     dp.include_router(start.router)
     dp.include_router(advanced_systems.router)
     dp.include_router(profile.router)
@@ -170,13 +180,14 @@ async def main():
                 msg = upd.callback_query.message
             if msg:
                 err = event.exception
-                await msg.answer(
+                err_text = (
                     "⚠️ خطا در اجرای دستور: "
                     + type(err).__name__
                     + "\n"
-                    + escape(str(err)[:200])
+                    + escape(str(err)[:180])
                     + "\n/help"
                 )
+                await msg.answer(err_text[:3900])
         except Exception:
             pass
         return True

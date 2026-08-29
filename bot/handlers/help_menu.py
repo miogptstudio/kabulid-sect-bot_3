@@ -268,6 +268,23 @@ SECTIONS = {
         ("/releasespirit", "رهاسازی روح در سیستم پس از مرگ."),
         ("/possess", "سیستم تسخیر درون بازی؛ فقط طبق شرایط بازی."),
     ]),
+    "openworld": ("🌌 جهان باز جدید", [
+        ("/world /جهان /مختصات", "نمایش مختصات، شهر، گرسنگی، تشنگی و خطر منطقه."),
+        ("شمال | جنوب | شرق | غرب", "حرکت واقعی روی شبکه جهان؛ بدون کامند هم کار می‌کند."),
+        ("/newcity نام | ساخت شهر نام", "در فاصله کافی از شهر آغازین یک شهر تازه بساز؛ هر دو شکل با و بدون اسلش کار می‌کنند."),
+        ("/newcountry نام", "در فاصله بیشتر از شهر آغازین یک کشور بساز."),
+        ("/skies | ۹ آسمان", "نمایش آسمان فعلی، داستان، مکان‌های شاخص و قوانین صعود."),
+        ("/heavenstair | پلکان بهشت", "چالش پلکان بهشت برای صعود به آسمان بعدی."),
+        ("/landmarks | مکان‌های جدید", "فهرست شهرها و مکان‌های شاخص آسمان فعلی."),
+        ("/worldevent", "رویداد مکان‌محور تازه ایجاد می‌کند."),
+        ("/worldboss", "مکان باس جهانی را نشان می‌دهد؛ برای مبارزه باید به همان مختصات بروی."),
+        ("ساخت فرقه نام نوع", "فرقه را بدون اسلش بساز؛ نمونه: ساخت فرقه اژدهای سرخ ارتدوکس."),
+        ("قدرت بده ... | حذف قدرت ...", "فرمان‌های مدیریتی قدرت، در صورت داشتن سطح دسترسی لازم."),
+        ("/bossattack", "در مختصات باس، یک ضربه به سیمرغ خطوط غبارآلود وارد می‌کند."),
+        ("/eat /drink", "گرسنگی و تشنگی را بازیابی می‌کند."),
+        ("/chest", "صندوق روزانه با رتبه شانسی بر اساس شانس باز می‌شود."),
+        ("/chests /buychest", "فروشگاه صندوق‌های رتبه‌دار و خرید صندوق‌های قوی‌تر."),
+    ]),
     "admin": ("🛡️ ادمین — فقط سازنده", [
         ("/admin", "پنل مدیریت."),
         ("/helpforadmin", "راهنمای کامل دستورات مدیریتی."),
@@ -276,7 +293,8 @@ SECTIONS = {
         ("/promote /demote", "ارتقا/کاهش نقش کاربر؛ فقط ادمین."),
         ("/setcult", "تنظیم تذهیب بسیار بالا برای کاربر؛ فقط ادمین."),
         ("/givemoney /takemoney", "دادن/گرفتن ارز؛ فقط ادمین."),
-        ("/givepower", "دادن قدرت رزمی/ویژگیهای قدرتی؛ فقط ادمین."),
+        ("/givepower /takepower", "افزایش یا کم کردن قدرت مستقیم و آمار رزمی؛ فقط مقام مجاز."),
+        ("/adshop /adget", "فروشگاه ادمین و گرفتن رایگان آیتم؛ طبق مقام مدیریتی."),
         ("/transfercult", "انتقال تذهیب بین کاربران؛ فقط ادمین."),
         ("/ban /unban", "مسدود/رفع مسدودی کاربر؛ فقط ادمین."),
         ("/unlockconsume", "بازکردن قفل مصرف در شرایط مدیریتی؛ فقط ادمین."),
@@ -373,13 +391,26 @@ async def cb_help_section(callback: CallbackQuery):
             if section:
                 chunks.append(f"\n<b>{escape(title)}</b>\n{section}")
         text = "\n".join(chunks)
-        try:
-            await callback.message.edit_caption(caption=text, reply_markup=_kb(owner))
-        except Exception:
+        if len(text) <= 3900:
             try:
-                await callback.message.edit_text(text, reply_markup=_kb(owner))
+                await callback.message.edit_caption(caption=text, reply_markup=_kb(owner))
             except Exception:
-                await callback.message.answer(text, reply_markup=_kb(owner))
+                try:
+                    await callback.message.edit_text(text, reply_markup=_kb(owner))
+                except Exception:
+                    await callback.message.answer(text, reply_markup=_kb(owner))
+        else:
+            # تلگرام سقف 4096 دارد؛ همه دستورات را در چند پیام سالم میفرستیم.
+            await callback.message.answer(f"📋 <b>همه دستورات</b> — v{BOT_VERSION}")
+            buf = ""
+            for _, (title, items) in SECTIONS.items():
+                block = f"<b>{escape(title)}</b>\n{_render_limited(items, 900)}\n\n"
+                if len(buf) + len(block) > 3900 and buf:
+                    await callback.message.answer(buf)
+                    buf = ""
+                buf += block
+            if buf:
+                await callback.message.answer(buf, reply_markup=_kb(owner))
         await callback.answer()
         return
     if key not in SECTIONS:
@@ -435,7 +466,9 @@ async def cmd_help_admin(message: Message):
         await message.answer("⛔ این بخش فقط برای سازنده ربات است.")
         return
     title, items = SECTIONS["admin"]
-    await message.answer(f"<b>{title}</b>\n\n{_render_section(title, items)}")
+    text = f"<b>{title}</b>\n\n{_render_section(title, items)}"
+    for i in range(0, len(text), 3900):
+        await message.answer(text[i:i+3900])
 
 
 cmd_help_menu = cmd_help

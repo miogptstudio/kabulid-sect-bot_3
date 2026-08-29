@@ -269,6 +269,16 @@ async def do_gather(message: Message, amount: int = 5000):
             message.from_user.full_name, message.from_user.username
         )
         result = await add_energy(session, user.id, amount)
+        # در آسمان‌ها، عبور از «پیشرفته» بدون صعود مجاز نیست؛ صعود اجباری انجام می‌شود.
+        forced = None
+        try:
+            from services.open_world import forced_sky_ascension
+            forced = forced_sky_ascension(user, result.get("realm") or "بیداری")
+            if forced:
+                await session.commit()
+                result.setdefault("messages", []).append(f"☁️ صعود اجباری: به <b>{forced['name']}</b> رسیدی.")
+        except Exception:
+            forced = None
         try:
             from services.missions_progress import bump_mission
             for m in await bump_mission(session, user.id, "gather"):

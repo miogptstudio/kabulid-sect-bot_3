@@ -42,7 +42,8 @@ async def cmd_sects(message: Message):
         text += "هنوز فرقهای نیست.\n"
     else:
         for s in sects:
-            text += f"• <b>{s.name}</b> ({s.sect_type}) — اعضا: {s.member_count} | امتیاز: {s.total_points}\n"
+            parent = f" | زیرمجموعه #{s.parent_sect_id}" if getattr(s, "parent_sect_id", None) else ""
+            text += f"• <b>{s.name}</b> ({s.sect_type}) — اعضا: {s.member_count} | قدرت: {getattr(s, 'power_level', 0):,}{parent}\n"
     
     if my:
         text += f"\n📍 تو عضو فرقه هستی (وضعیت: {my.status})"
@@ -54,7 +55,9 @@ async def cmd_sects(message: Message):
     
     text += (
         "\n\n<b>دستورات فرقه:</b>\n"
-        "/createsect نام نوع — ساخت فرقه (تذهیب بالا+)\n"
+        "/createsect نام نوع [شناسه فرقه مادر] — ساخت فرقه\n"
+        "/subsects شناسه — دیدن زیرمجموعه‌های یک فرقه\n"
+        "قدرت فرقه بر پایه قدرت رهبر و امتیاز اعضا رشد می‌کند.\n"
         "  انواع: ارتدوکس / بیطرف / شیطانی\n"
         "/joinsect نام — <b>عضو شدن</b> در فرقه\n"
         "/mysect — وضعیت فرقه و امتیاز مشارکت تو\n"
@@ -67,9 +70,9 @@ async def cmd_sects(message: Message):
     await message.answer(text)
 
 
-@router.message(Command("createsect"))
+@router.message(Command("createsect", "ساختفرقه", "فرقهجدید"))
 async def cmd_create_sect(message: Message):
-    parts = message.text.split(maxsplit=2)
+    parts = message.text.split(maxsplit=3)
     if len(parts) < 3:
         await message.answer(
             f"فرمت: /createsect &lt;نام&gt; &lt;نوع&gt;\n"
@@ -79,6 +82,9 @@ async def cmd_create_sect(message: Message):
         return
     
     name, sect_type = parts[1], parts[2]
+    parent_id = None
+    if len(parts) >= 4 and parts[3].strip().isdigit():
+        parent_id = int(parts[3].strip())
     if sect_type not in SECT_TYPES:
         await message.answer(f"نوع نامعتبر. انواع: {', '.join(SECT_TYPES)}")
         return
@@ -88,8 +94,9 @@ async def cmd_create_sect(message: Message):
             session, message.from_user.id,
             message.from_user.full_name, message.from_user.username
         )
+        parent = await session.get(Sect, parent_id) if parent_id else None
         try:
-            sect = await create_sect(session, name, sect_type, user)
+            sect = await create_sect(session, name, sect_type, user, parent_sect=parent)
             try:
                 from services.dao_path import set_dao
                 if sect_type in ("ارتدوکس", "شیطانی", "بیطرف"):
@@ -130,6 +137,24 @@ async def cmd_join_sect(message: Message):
             await message.answer(f"✅ به <b>{sect.name}</b> پیوستی. وضعیت: {member.status}")
         except ValueError as e:
             await message.answer(str(e))
+
+
+@router.message(Command("subsects", "زیرمجموعهفرقه", "زیرفرقهها"))
+async def cmd_subsects(message: Message):
+    parts=(message.text or "").split()
+    if len(parts)<2 or not parts[1].isdigit():
+        await message.answer("فرمت: /subsects شناسه_فرقه")
+        return
+    from services.sects import list_subsects
+    async with async_session() as session:
+        parent=await session.get(Sect,int(parts[1]))
+        if not parent:
+            await message.answer("❌ فرقه پیدا نشد."); return
+        children=await list_subsects(session,parent.id)
+    if not children:
+        await message.answer(f"🏛️ «{parent.name}» زیرمجموعه‌ای ندارد."); return
+    text=f"🏛️ <b>زیرمجموعه‌های {parent.name}</b>\n\n" + "\n".join(f"• #{x.id} {x.name} — قدرت {getattr(x,'power_level',0):,}" for x in children)
+    await message.answer(text[:3900])
 
 
 @router.message(Command("mysect"))

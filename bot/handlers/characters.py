@@ -81,12 +81,12 @@ async def _pull_character(message: Message):
             await message.answer_photo(
                 photo=character_url(card.get("name", "؟"), card.get("rarity", "معمولی")),
                 caption=msg,
-                reply_markup=character_list_keyboard(callback.from_user.id),
+                reply_markup=character_list_keyboard(message.from_user.id),
             )
             return
         except Exception:
             pass
-    await message.answer(msg, reply_markup=character_list_keyboard(callback.from_user.id))
+    await message.answer(msg, reply_markup=character_list_keyboard(message.from_user.id))
 
 
 @router.message(Command("pullchar", "کاراکتر", "کاراکترشانسی", "gacha", "شانسی"))
@@ -97,7 +97,7 @@ async def cmd_pull(message: Message):
 @router.message(Command("mychars", "کاراکترها", "لیستکاراکتر"))
 async def cmd_list(message: Message):
     text = chars.list_owned_indexed(message.from_user.id)
-    await message.answer(text, reply_markup=character_list_keyboard(callback.from_user.id))
+    await message.answer(text, reply_markup=character_list_keyboard(message.from_user.id))
 
 
 @router.message(Command("charinfo", "اطلاعاتکاراکتر", "پنلکاراکتر"))
@@ -274,7 +274,7 @@ async def cmd_accept_cduel(message: Message):
 
 @router.message(Command("mergechar", "ترکیبکاراکتر", "ادغامکاراکتر"))
 async def cmd_merge_char(message: Message):
-    await message.answer(chars.merge_duplicates(message.from_user.id), reply_markup=character_list_keyboard(callback.from_user.id))
+    await message.answer(chars.merge_duplicates(message.from_user.id), reply_markup=character_list_keyboard(message.from_user.id))
 
 
 @router.callback_query(F.data.startswith("chars:duelguide:"))
