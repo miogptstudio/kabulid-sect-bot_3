@@ -15,7 +15,6 @@ from database.models import Base
 import database.models_v2  # noqa: F401
 import database.models_v3  # noqa: F401
 from bot.handlers import spirit as spirit  # noqa
-from bot.handlers import selftest as selftest  # noqa
 from bot.handlers import text_navigation as text_navigation  # noqa
 from bot.handlers import open_world as open_world  # noqa
 from bot.handlers import characters as characters  # noqa
@@ -78,11 +77,39 @@ class SafeHTMLBot(Bot):
     async def __call__(self, method, request_timeout=None):
         # TelegramMethod objects expose text/caption for the methods where the
         # global default parse mode is applied. Sanitize only those fields.
+        # Telegram SendMessage has a hard ~4096-character limit. A number of
+        # game lists (help, inventory, rankings, etc.) can legitimately grow
+        # beyond it, so split oversized text instead of letting the whole
+        # handler fail with "message is too long". Long text is sent without
+        # HTML markup to avoid splitting an HTML tag in half.
         for field in ("text", "caption"):
             if hasattr(method, field):
                 value = getattr(method, field)
                 if isinstance(value, str):
                     setattr(method, field, _safe_html_text(value))
+
+        if method.__class__.__name__ == "SendMessage":
+            value = getattr(method, "text", "")
+            if isinstance(value, str) and len(value) > 3900:
+                import re as _re
+                plain = _re.sub(r"<[^>]+>", "", value)
+                chunks = []
+                while len(plain) > 3900:
+                    cut = plain.rfind("\n", 0, 3900)
+                    if cut < 500:
+                        cut = 3900
+                    chunks.append(plain[:cut])
+                    plain = plain[cut:].lstrip("\n")
+                if plain:
+                    chunks.append(plain)
+                last_result = None
+                for i, chunk in enumerate(chunks):
+                    updates = {"text": chunk}
+                    if i > 0 and hasattr(method, "reply_markup"):
+                        updates["reply_markup"] = None
+                    part = method.model_copy(update=updates)
+                    last_result = await super().__call__(part, request_timeout=request_timeout)
+                return last_result
         return await super().__call__(method, request_timeout=request_timeout)
 
 
@@ -168,7 +195,6 @@ async def main():
     dp.include_router(codex_items.router)
     dp.include_router(prison_market.router)
     dp.include_router(admin.router)
-    dp.include_router(selftest.router)
     # ناوبری متنی بعد از handlerهای اصلی؛ تا دکمه‌های متنی قبلی مسدود نشوند.
     dp.include_router(text_navigation.router)
     dp.include_router(fallback.router)

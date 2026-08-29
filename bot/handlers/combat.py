@@ -77,14 +77,20 @@ async def _cmd_kill_impl(message: Message):
                 session, attacker, victim, dmg,
                 is_cyrus_strike=True, is_death_duel=True
             )
-            await message.answer(
+            text = (
                 f"⚔️ {attacker.full_name} با شمشیر کوروش به {victim.full_name} زد!\n"
                 + str(res.get("msg") or "")
             )
+            if res.get("killed"):
+                n = record_kill(attacker.id)
+                text += chr(10) + f"📊 قتلهای امروز تو: {n}/{KILL_LIMIT_PER_DAY}"
+                if n > KILL_LIMIT_PER_DAY:
+                    text += chr(10) + await put_in_prison(session, attacker)
+            await message.answer(text)
             return
 
         res = await apply_damage(session, attacker, victim, dmg)
-        poison_msg = await apply_poison(session, victim)
+        poison_msg = "" if res.get("killed") else await apply_poison(session, victim)
         text = (
             f"⚔️ حمله {attacker.full_name} به {victim.full_name}" + chr(10)
             + f"قدرت {p1['total']} vs {p2['total']}" + chr(10)

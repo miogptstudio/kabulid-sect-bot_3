@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any, Awaitable, Callable
 
 from aiogram import BaseMiddleware
-from aiogram.types import Message, MessageEntity
+from aiogram.types import Message
 
 
 _ZERO_WIDTH = "\u200c\u200d\u200e\u200f\ufeff"
@@ -53,7 +53,13 @@ class TextCommandMiddleware(BaseMiddleware):
     def __init__(self) -> None:
         super().__init__()
         self.aliases = load_command_aliases()
-        # برای تطبیق چندکلمه‌ای فارسی، aliasهای طولانی‌تر را اول بررسی می‌کنیم.
+        # بعضی نام‌ها عمداً بین دو سیستم مشترک‌اند؛ این نگاشت‌ها باید
+        # با معنای منوی اصلی ثابت بمانند و به ترتیب اسکن فایل‌ها وابسته نباشند.
+        self.aliases.update({
+            normalize("مقاممن"): "iamadmin",
+            normalize("شهرها"): "worldcities",
+            normalize("قلمروها"): "territories",
+        })
         self._sorted = sorted(self.aliases, key=len, reverse=True)
 
     def _rewrite(self, text: str) -> str | None:
@@ -80,10 +86,5 @@ class TextCommandMiddleware(BaseMiddleware):
         if isinstance(event, Message) and event.text and not event.text.lstrip().startswith("/"):
             rewritten = self._rewrite(event.text)
             if rewritten:
-                # CommandFilter in aiogram relies on the bot_command entity in
-                # addition to the visible text. Merely changing Message.text is
-                # not enough for every aiogram version. Add the entity explicitly.
-                command_token = rewritten.split(maxsplit=1)[0]
-                entities = [MessageEntity(type="bot_command", offset=0, length=len(command_token))]
-                event = event.model_copy(update={"text": rewritten, "entities": entities})
+                event = event.model_copy(update={"text": rewritten})
         return await handler(event, data)

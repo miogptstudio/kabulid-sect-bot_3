@@ -25,7 +25,7 @@ async def cmd_world(message: Message):
 @router.message(Command("east", "شرق", "move_east"))
 @router.message(Command("west", "غرب", "move_west"))
 async def cmd_move(message: Message):
-    raw = (message.text or "").split()[0].lstrip("/").lower().replace("‌", "")
+    raw = (message.text or "").split()[0].lstrip("/").lower()
     direction = {"north":"north","شمال":"north","move_north":"north","south":"south","جنوب":"south","move_south":"south","east":"east","شرق":"east","move_east":"east","west":"west","غرب":"west","move_west":"west"}.get(raw)
     if not direction:
         return

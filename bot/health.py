@@ -101,54 +101,27 @@ async def api_sects(request):
 
 
 async def api_daily(request):
-    """ورود روزانه وباپ: +۵ سنگ بهشتی یکبار در روز"""
-    tg_id = request.query.get("tg_id")
-    if not tg_id:
-        return web.json_response({"error": "tg_id لازم است"}, status=400)
-    try:
-        tg_id = int(tg_id)
-    except ValueError:
-        return web.json_response({"error": "نامعتبر"}, status=400)
-    from datetime import datetime, date
+    """پاداش ورود وباپ؛ دقیقاً یکبار در هر روز و به‌صورت پایدار."""
+    from datetime import date
     from database.engine import async_session
-    from database.crud import get_user_by_telegram_id
     from services.economy import get_or_create_wallet
+    from services.persist import get_dict, save as persist_save
 
     async with async_session() as session:
-        user = await get_user_by_telegram_id(session, tg_id)
+        user = await _web_user(request, session)
         if not user:
-            return web.json_response({"error": "اول در ربات /start بزن"})
+            return web.json_response({"error": "احراز هویت Telegram WebApp نامعتبر است."}, status=401)
         w = await get_or_create_wallet(session, user.id)
-        today = date.today()
-        last = getattr(w, "last_daily_web", None) or getattr(w, "last_daily_coin", None)
-        # reuse last_daily_coin if no separate field - check coins daily field OR store in spirit as marker
-        # use last_daily_coin date for simplicity separate key via checking a note
-        # Store web daily on last_daily_coin only if we add field - use heavenly claim via checking
-        from sqlalchemy import text as sqltext
-        # Simple: use last_daily_coin for bot dailycoin; for web use a file-less approach with last_daily_coin + 1 day offset
-        # Better: add attribute last_web_daily if column exists
-        claimed = False
-        if hasattr(w, "last_daily_coin") and w.last_daily_coin and w.last_daily_coin.date() == today:
-            # allow separate web daily - use spirit_stones modulo trick no
-            pass
-        # Use coins field as last web daily stored in a JSON - simplest: check heaven claimed today via comparing
-        # Add in-memory daily set
-        global _web_daily
-        try:
-            _web_daily
-        except NameError:
-            _web_daily = set()
-        key = (tg_id, today.isoformat())
-        if key in _web_daily:
-            return web.json_response({"ok": False, "msg": "امروز پاداش ورود را گرفتی."})
-        w.heavenly_stones = (w.heavenly_stones or 0) + 5
-        _web_daily.add(key)
+        today = date.today().isoformat()
+        daily = get_dict("web_daily_claims")
+        key = str(user.telegram_id)
+        if daily.get(key) == today:
+            return web.json_response({"ok": False, "msg": "امروز پاداش ورود را گرفتی.", "heavenly_stones": int(w.heavenly_stones or 0)})
+        w.heavenly_stones = int(w.heavenly_stones or 0) + 5
+        daily[key] = today
+        persist_save("web_daily_claims")
         await session.commit()
-        return web.json_response({
-            "ok": True,
-            "msg": "+۵ سنگ بهشتی",
-            "heavenly_stones": w.heavenly_stones,
-        })
+        return web.json_response({"ok": True, "msg": "+۵ سنگ بهشتی", "heavenly_stones": int(w.heavenly_stones or 0)})
 
 
 async def api_arena_top(request):
@@ -183,18 +156,14 @@ def _new_code() -> str:
     return "".join(random.choices(string.ascii_uppercase + string.digits, k=5))
 
 async def api_game_room(request):
-    """ساخت/ورود/وضعیت اتاق بازی: chess|rps|hukum|nard"""
-    import json
-    from aiohttp import web
+    """ساخت/ورود/وضعیت اتاق بازی با هویت Telegram WebApp."""
     action = request.query.get("action", "status")
     code = (request.query.get("code") or "").upper()
     game = request.query.get("game", "chess")
-    tg_id = request.query.get("tg_id")
+    tg_id = _telegram_webapp_user_id(request)
+    if not tg_id:
+        return web.json_response({"error": "احراز هویت Telegram WebApp نامعتبر است."}, status=401)
     name = request.query.get("name") or "بازیکن"
-    try:
-        tg_id = int(tg_id) if tg_id else None
-    except ValueError:
-        return web.json_response({"error": "tg_id"}, status=400)
 
     if action == "create":
         max_p = {"chess": 2, "rps": 2, "nard": 2, "hukum": 8}.get(game, 2)
@@ -273,11 +242,15 @@ def _telegram_webapp_user_id(request):
                         return int(user_obj["id"])
         except Exception:
             pass
-    raw = request.query.get("tg_id")
-    try:
-        return int(raw) if raw else None
-    except Exception:
-        return None
+    # برای جلوگیری از جعل شناسه، fallback قدیمی فقط وقتی صریحاً فعال شده باشد.
+    # در Telegram WebApp واقعی، initData معتبر مسیر اصلی احراز هویت است.
+    if os.getenv("ALLOW_WEBAPP_TG_ID", "0") == "1":
+        raw = request.query.get("tg_id")
+        try:
+            return int(raw) if raw else None
+        except Exception:
+            return None
+    return None
 
 
 async def _web_user(request, session):
@@ -528,6 +501,7 @@ async def start_health_server(port: int = 8080):
         app.router.add_get("/webapp", lambda r: web.FileResponse(WEBAPP_DIR / "index.html"))
         app.router.add_get("/webapp/", lambda r: web.FileResponse(WEBAPP_DIR / "index.html"))
         app.router.add_get("/webapp/{filename}", serve_webapp_file)
+        app.router.add_get("/app/{filename}", serve_webapp_file)
         logger.info(f"WebApp mounted from {WEBAPP_DIR}")
     else:
         logger.warning("webapp directory not found")
