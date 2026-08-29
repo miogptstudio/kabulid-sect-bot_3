@@ -136,11 +136,13 @@ def sky_info(user) -> dict:
 
 
 def realm_above_advanced(realm: str) -> bool:
-    # استاد و تمام قلمروهای بعد از آن، «بالاتر از پیشرفته» محسوب می‌شوند.
-    order = ["بیداری", "پایه", "میانه", "متوسط", "بالا", "اوج", "پیشرفته", "استاد", "هسته", "هستهٔ کامل", "روح", "روحکامل", "نیمهخدا", "شبهخدا", "خدا"]
+    # منبع واحد قلمروها را از مدل تذهیب می‌خوانیم تا با اضافه‌شدن
+    # قلمروهای جدید، صعود اجباری دوباره از کار نیفتد.
     try:
-        return order.index(realm or "بیداری") > order.index("پیشرفته")
-    except ValueError:
+        from database.models_v2 import CULTIVATION_REALMS
+        advanced_index = CULTIVATION_REALMS.index("پیشرفته")
+        return CULTIVATION_REALMS.index(realm or "بیداری") > advanced_index
+    except (ValueError, TypeError):
         return False
 
 
@@ -210,7 +212,10 @@ def _survival_cost(user, steps=1):
 
 
 def move(user, direction: str) -> dict:
-    d = DIRECTIONS[direction]
+    direction = ALIASES.get(str(direction or "").strip().lower(), str(direction or "").strip().lower())
+    d = DIRECTIONS.get(direction)
+    if not d:
+        return {"ok": False, "error": "جهت نامعتبر است؛ شمال، جنوب، شرق یا غرب را انتخاب کن."}
     now = datetime.utcnow()
     last = getattr(user, "last_world_move_at", None)
     if last:
@@ -330,6 +335,8 @@ def create_city(user, name: str):
 
 def create_country(user, name: str):
     d = world_state(); name = name.strip()[:40]
+    if not name:
+        return False, "نام کشور خالی است."
     countries = d.setdefault("countries", {})
     key = str(user.telegram_id)
     x, y = int(getattr(user, "world_x", 0) or 0), int(getattr(user, "world_y", 0) or 0)

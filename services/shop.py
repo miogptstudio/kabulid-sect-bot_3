@@ -581,6 +581,11 @@ async def buy_item(session: AsyncSession, user: User, item: ShopItem, qty: int =
         return "❌ این آیتم غیرفعال است."
     if item.price is None:
         item.price = 0
+    stock = int(getattr(item, "stock", -1) if getattr(item, "stock", -1) is not None else -1)
+    if stock == 0:
+        return "❌ موجودی این آیتم تمام شده است."
+    if stock > 0 and qty > stock:
+        return f"❌ موجودی کافی نیست. فقط {stock} عدد باقی مانده است."
     is_unique = item.item_type == "weapon_unique" or (isinstance(item.effect, dict) and item.effect.get("unique"))
     if is_unique:
         qty = 1
@@ -641,5 +646,7 @@ async def buy_item(session: AsyncSession, user: User, item: ShopItem, qty: int =
         inv = UserInventory(user_id=user.id, item_id=item.id, quantity=qty)
         session.add(inv)
 
+    if stock > 0:
+        item.stock = stock - qty
     await session.commit()
     return f"✅ «{item.name}» ×{qty} خریداری شد. {pay_msg}"
