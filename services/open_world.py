@@ -170,7 +170,7 @@ def challenge_heaven_stair(user, power: int) -> dict:
         user.city = SKIES[user.sky]["landmarks"][0]
         user.hunger = max(40, int(getattr(user, "hunger", 100) or 0))
         user.thirst = max(40, int(getattr(user, "thirst", 100) or 0))
-        return {"ok": True, "sky": user.sky, "message": f"🌤️ پلکان بهشت را شکستی و به <b>{SKIES[user.sky]["name"]}</b> صعود کردی!"}
+        return {"ok": True, "sky": user.sky, "message": f"🌤️ پلکان بهشت را شکستی و به <b>{SKIES[user.sky]['name']}</b> صعود کردی!"}
     user.sky_trial = False
     return {"ok": False, "message": f"🪨 پلکان تو را پس زد. قدرت لازم تقریبی: {target:,}. قدرت فعلی: {power:,}. دوباره بعداً تلاش کن."}
 
