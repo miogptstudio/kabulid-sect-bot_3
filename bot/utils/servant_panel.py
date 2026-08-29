@@ -6,7 +6,6 @@ from bot.servant_images import get_servant_image_by_id
 def servant_keyboard(index: int, owner_id: int):
     """کیبورد خدمتکار خریداری‌شده (مالک)."""
     kb = InlineKeyboardBuilder()
-    kb.button(text="🛒 خرید", callback_data=f"servbuy:{owner_id}:{index}")
     kb.button(text="📋 وضعیت", callback_data=f"servstatus:{owner_id}:{index}")
     kb.button(text="❤️ وفاداری", callback_data=f"servloyal:{owner_id}:{index}")
     kb.button(text="🧘 پرورش", callback_data=f"servtrain:{owner_id}:{index}")

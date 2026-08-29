@@ -15,6 +15,7 @@ from database.models import Base
 import database.models_v2  # noqa: F401
 import database.models_v3  # noqa: F401
 from bot.handlers import spirit as spirit  # noqa
+from bot.handlers import selftest as selftest  # noqa
 from bot.handlers import text_navigation as text_navigation  # noqa
 from bot.handlers import open_world as open_world  # noqa
 from bot.handlers import characters as characters  # noqa
@@ -27,6 +28,7 @@ from bot.health import start_health_server
 from bot.middlewares.service_lock import ServiceLockMiddleware
 from bot.middlewares.auto_reply import AutoReplyMiddleware
 from bot.middlewares.panel_owner import PanelOwnerMiddleware
+from bot.middlewares.text_commands import TextCommandMiddleware
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -121,13 +123,13 @@ async def main():
     )
     dp = Dispatcher(storage=MemoryStorage())
     dp.message.middleware(ServiceLockMiddleware())
+    dp.message.middleware(TextCommandMiddleware())
     # AutoReplyMiddleware موقتاً غیرفعال — باعث می‌شد جواب‌ها ارسال نشوند
     # dp.message.middleware(AutoReplyMiddleware())
     dp.callback_query.middleware(ServiceLockMiddleware())
     dp.callback_query.middleware(PanelOwnerMiddleware())
 
     # ورود به بخشها با نوشتن نامشان، بدون نیاز به /command
-    dp.include_router(text_navigation.router)
     dp.include_router(open_world.router)
     dp.include_router(start.router)
     dp.include_router(advanced_systems.router)
@@ -166,6 +168,9 @@ async def main():
     dp.include_router(codex_items.router)
     dp.include_router(prison_market.router)
     dp.include_router(admin.router)
+    dp.include_router(selftest.router)
+    # ناوبری متنی بعد از handlerهای اصلی؛ تا دکمه‌های متنی قبلی مسدود نشوند.
+    dp.include_router(text_navigation.router)
     dp.include_router(fallback.router)
 
     @dp.errors()

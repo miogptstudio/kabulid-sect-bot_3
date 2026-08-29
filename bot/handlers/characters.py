@@ -128,7 +128,6 @@ async def cmd_char_info(message: Message):
 
 @router.callback_query(F.data.startswith("chars:view:"))
 async def cb_char_view(callback: CallbackQuery):
-    await callback.answer()
     try:
         parts = callback.data.split(":")
         if len(parts) != 4 or int(parts[2]) != callback.from_user.id:
@@ -136,8 +135,9 @@ async def cb_char_view(callback: CallbackQuery):
             return
         idx = int(parts[3])
     except Exception:
-        await callback.message.answer("شماره کاراکتر نامعتبر است.")
+        await callback.answer("شماره کاراکتر نامعتبر است.", show_alert=True)
         return
+    await callback.answer()
     card = chars.get_char(callback.from_user.id, idx)
     if not card:
         await callback.message.answer("❌ کاراکتر پیدا نشد. /mychars")

@@ -1045,7 +1045,11 @@ async def cb_serv_mylist(callback: CallbackQuery):
 
 @router.callback_query(F.data.startswith("servbuy:"))
 async def cb_serv_buy(callback: CallbackQuery):
-    sid=int(callback.data.split(":")[2])
+    parts = callback.data.split(":")
+    if len(parts) != 3 or int(parts[1]) != callback.from_user.id:
+        await callback.answer("⛔ این دکمه برای صاحب پنل نیست.", show_alert=True)
+        return
+    sid=int(parts[2])
     # Reuse purchase command logic without requiring text parsing.
     async with async_session() as session:
         user=await get_or_create_user(session,callback.from_user.id,callback.from_user.full_name,callback.from_user.username)
@@ -1069,7 +1073,10 @@ async def cb_serv_buy(callback: CallbackQuery):
 
 @router.callback_query(F.data.startswith("servstatus:"))
 async def cb_serv_status(callback: CallbackQuery):
-    parts=callback.data.split(":"); idx=int(parts[2]); bag=servmod.list_owned(callback.from_user.id)
+    parts=callback.data.split(":")
+    if len(parts) != 3 or int(parts[1]) != callback.from_user.id:
+        await callback.answer("⛔ این دکمه برای صاحب پنل نیست.", show_alert=True); return
+    idx=int(parts[2]); bag=servmod.list_owned(callback.from_user.id)
     if idx<1 or idx>len(bag): await callback.answer("خدمتکار پیدا نشد",show_alert=True); return
     from bot.utils.servant_panel import servant_keyboard, servant_image
     s0=bag[idx-1]; img=servant_image(int(s0.get("base_id") or 0)); caption=servmod.servant_panel_text(s0,idx)
@@ -1081,19 +1088,28 @@ async def cb_serv_status(callback: CallbackQuery):
 
 @router.callback_query(F.data.startswith("servloyal:"))
 async def cb_serv_loyal(callback: CallbackQuery):
-    parts=callback.data.split(":"); idx=int(parts[2]); bag=servmod.list_owned(callback.from_user.id)
+    parts=callback.data.split(":")
+    if len(parts) != 3 or int(parts[1]) != callback.from_user.id:
+        await callback.answer("⛔ این دکمه برای صاحب پنل نیست.", show_alert=True); return
+    idx=int(parts[2]); bag=servmod.list_owned(callback.from_user.id)
     if idx<1 or idx>len(bag): await callback.answer("خدمتکار پیدا نشد",show_alert=True); return
     s0=bag[idx-1]
     await callback.answer(f"❤️ وفاداری: {s0.get('loyalty',0)}٪",show_alert=True)
 
 @router.callback_query(F.data.startswith("servtrain:"))
 async def cb_serv_train(callback: CallbackQuery):
-    idx=int(callback.data.split(":")[2]); msg=servmod.train(callback.from_user.id,idx)
-    await callback.message.answer(msg); await callback.answer("پرورش انجام شد")
+    parts=callback.data.split(":")
+    if len(parts) != 3 or int(parts[1]) != callback.from_user.id:
+        await callback.answer("⛔ این دکمه برای صاحب پنل نیست.", show_alert=True); return
+    idx=int(parts[2]); msg=servmod.train(callback.from_user.id,idx)
+    await callback.message.answer(msg); await callback.answer("انجام شد")
 
 @router.callback_query(F.data.startswith("servmarry:"))
 async def cb_serv_marry(callback: CallbackQuery):
-    idx=int(callback.data.split(":")[2])
+    parts=callback.data.split(":")
+    if len(parts) != 3 or int(parts[1]) != callback.from_user.id:
+        await callback.answer("⛔ این دکمه برای صاحب پنل نیست.", show_alert=True); return
+    idx=int(parts[2])
     ok,msg,_=servmod.marry_servant(callback.from_user.id,idx)
     await callback.answer(msg,show_alert=True)
 

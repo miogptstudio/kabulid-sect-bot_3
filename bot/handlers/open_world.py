@@ -25,7 +25,7 @@ async def cmd_world(message: Message):
 @router.message(Command("east", "شرق", "move_east"))
 @router.message(Command("west", "غرب", "move_west"))
 async def cmd_move(message: Message):
-    raw = (message.text or "").split()[0].lstrip("/").lower()
+    raw = (message.text or "").split()[0].lstrip("/").lower().replace("‌", "")
     direction = {"north":"north","شمال":"north","move_north":"north","south":"south","جنوب":"south","move_south":"south","east":"east","شرق":"east","move_east":"east","west":"west","غرب":"west","move_west":"west"}.get(raw)
     if not direction:
         return
@@ -161,7 +161,7 @@ async def cmd_boss_attack(message: Message):
     else:
         await message.answer(f"⚔️ ضربه زدی: {dmg:,}\n❤️ باس: {b['hp']:,}/{b['max_hp']:,}\n\n{boss_attack_text(b)}")
 
-@router.message(F.text)
+@router.message(F.text.func(lambda t: bool(t) and not t.strip().startswith("/") and t.strip().lower() in ALIASES))
 async def text_move(message: Message):
     raw = (message.text or "").strip().lower()
     direction = ALIASES.get(raw)

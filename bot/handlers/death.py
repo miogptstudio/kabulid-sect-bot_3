@@ -178,7 +178,6 @@ async def cmd_possess(message: Message):
     )
 
 
-@router.message(Command("suicide", "خودکشی", "انتحار"))
 async def cmd_suicide(message: Message):
     """خودکشی درونبازی — مرگ کاراکتر و رفتن به منوی بعد از مرگ"""
     async with async_session() as session:
