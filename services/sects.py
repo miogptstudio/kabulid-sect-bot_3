@@ -53,7 +53,8 @@ async def create_sect(
     sect_type: str,
     leader: User,
     description: str = None,
-    symbol: str = "⚜️"
+    symbol: str = "⚜️",
+    parent_sect: Sect | None = None
 ) -> Sect:
     if sect_type not in SECT_TYPES:
         raise ValueError("نوع فرقه نامعتبر است")
@@ -62,12 +63,23 @@ async def create_sect(
     if not ok:
         raise ValueError(msg)
     
+    from services.power import calc_power
+    leader_power_data = await calc_power(session, leader)
+    leader_power = int(leader_power_data.get("total") or 0)
+    if parent_sect is not None:
+        if not parent_sect.is_active:
+            raise ValueError("فرقه مادر فعال نیست.")
+        if int(parent_sect.power_level or 0) <= leader_power:
+            raise ValueError("فرقه زیرمجموعه باید از فرقه مادر ضعیف‌تر باشد.")
     sect = Sect(
-        name=name,
+        name=name[:64],
         sect_type=sect_type,
         description=description or f"فرقه {name}",
         leader_id=leader.id,
-        member_count=1
+        member_count=1,
+        parent_sect_id=(parent_sect.id if parent_sect else None),
+        leader_power=leader_power,
+        power_level=max(1, leader_power),
     )
     # اگر فیلد symbol در مدل نبود، در description نگه میداریم
     session.add(sect)
@@ -276,3 +288,21 @@ async def transfer_leadership(session: AsyncSession, leader: User, new_leader: U
     sect.leader_id = new_leader.id
     await session.commit()
     return f"👑 رهبری فرقه «{sect.name}» به {new_leader.full_name} واگذار شد."
+
+
+async def refresh_sect_power(session: AsyncSession, sect: Sect) -> int:
+    """قدرت فرقه از قدرت رهبر + مشارکت اعضا مشتق می‌شود."""
+    leader = await session.get(User, sect.leader_id) if sect.leader_id else None
+    leader_power = 0
+    if leader:
+        from services.power import calc_power
+        leader_power = int((await calc_power(session, leader)).get("total") or 0)
+    sect.leader_power = leader_power
+    sect.power_level = max(1, leader_power + int(sect.total_points or 0))
+    await session.commit()
+    return int(sect.power_level)
+
+
+async def list_subsects(session: AsyncSession, parent_id: int):
+    result = await session.execute(select(Sect).where(Sect.parent_sect_id == int(parent_id), Sect.is_active == True))
+    return result.scalars().all()

@@ -38,8 +38,17 @@ class User(Base):
     equipped_weapon_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     has_cyrus_sword: Mapped[bool] = mapped_column(Boolean, default=False)
     first_cities: Mapped[str | None] = mapped_column(Text, nullable=True)  # csv city ids visited
-    city: Mapped[str] = mapped_column(String(32), default="tehran")
-    world: Mapped[str] = mapped_column(String(32), default="فانی")  # فانی / بهشتی / زیرین
+    city: Mapped[str] = mapped_column(String(64), default="tehran")
+    # جهان باز جدید
+    world_x: Mapped[int] = mapped_column(Integer, default=0)
+    world_y: Mapped[int] = mapped_column(Integer, default=0)
+    hunger: Mapped[int] = mapped_column(Integer, default=100)
+    thirst: Mapped[int] = mapped_column(Integer, default=100)
+    last_world_move_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    world: Mapped[str] = mapped_column(String(64), default="فانی")  # جهان/آسمان فعلی
+    sky: Mapped[int] = mapped_column(Integer, default=1)  # یکی از ۹ آسمان
+    sky_trial: Mapped[bool] = mapped_column(Boolean, default=False)  # آماده/درگیر پلکان بهشت
+    sky_ascended_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     lifespan: Mapped[int] = mapped_column(Integer, default=100)  # عمر ۰-۱۰۰
     is_spirit_raiser: Mapped[bool] = mapped_column(Boolean, default=False)  # پرورشدهنده روح بعد از مرگ
     race: Mapped[str] = mapped_column(String(32), default="انسان")  # نژاد

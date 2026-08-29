@@ -274,7 +274,8 @@ def wallet_text(w: UserWallet) -> str:
         f"🌀 سنگ خلقت: <b>{getattr(w, 'creation_stones', 0) or 0}</b>\n"
         f"💠 سنگ مطلق: <b>{getattr(w, 'absolute_stones', 0) or 0}</b>\n"
         f"🙏 سنگ ایمان: <b>{getattr(w, 'faith_stones', 0) or 0}</b>\n"
-        f"🐉 سکه اژدها: <b>{getattr(w, 'dragon_coins', 0) or 0}</b>\n\n"
+        f"🐉 سکه اژدها: <b>{getattr(w, 'dragon_coins', 0) or 0}</b>\n"
+        f"🪶 جوهر ازلی: <b>{getattr(w, 'eternal_ink', 0) or 0}</b>\n\n"
         f"تبدیل:\n"
         f"۱۰۰۰ سکه → ۱ روحی\n"
         f"۱۰۰۰ روحی → ۱ بهشتی\n"
@@ -325,7 +326,7 @@ CURRENCY_ALIASES = {
     "creation": "creation_stones", "خلقت": "creation_stones", "سنگ خلقت": "creation_stones",
     "absolute": "absolute_stones", "مطلق": "absolute_stones", "سنگ مطلق": "absolute_stones",
     "faith": "faith_stones", "ایمان": "faith_stones", "سنگ ایمان": "faith_stones",
-    "dragon": "dragon_coins", "dragon_coin": "dragon_coins", "اژدها": "dragon_coins", "سکه اژدها": "dragon_coins",
+    "dragon": "dragon_coins", "dragon_coin": "dragon_coins", "اژدها": "dragon_coins", "سکه اژدها": "dragon_coins", "ink": "eternal_ink", "جوهر": "eternal_ink", "جوهر ازلی": "eternal_ink",
 }
 
 

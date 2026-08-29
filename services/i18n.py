@@ -40,7 +40,7 @@ T: dict[str, dict[str, str]] = {
         "tr": "Geçersiz dil. /lang",
     },
     "start": {
-        "fa": "سلام {name}!\nبه دنیای فرقه خوش آمدی.\nنسخه: {ver}\n\n/help راهنما | /lang زبان",
+        "fa": "سلام {name}!\nبه جهان تازه خوش آمدی؛ جهان قدیمی فرو ریخته و سفر از شهر آغازین شروع می‌شود.\nنسخه: {ver}\n\n/help راهنما | /lang زبان",
         "en": "Hello {name}!\nWelcome to the Sect World.\nVersion: {ver}\n\n/help | /lang",
         "ar": "مرحباً {name}!\nأهلاً بك في عالم الطائفة.\nالإصدار: {ver}\n\n/help | /lang",
         "zh": "你好 {name}！\n欢迎来到宗门世界。\n版本：{ver}\n\n/help | /lang",

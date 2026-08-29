@@ -35,7 +35,15 @@ USER_COLUMNS = [
     ("has_cyrus_sword", "BOOLEAN DEFAULT FALSE"),
     ("first_cities", "TEXT NULL"),
     ("city", "VARCHAR(64) DEFAULT 'tehran'"),
+    ("world_x", "INTEGER DEFAULT 0"),
+    ("world_y", "INTEGER DEFAULT 0"),
+    ("hunger", "INTEGER DEFAULT 100"),
+    ("thirst", "INTEGER DEFAULT 100"),
+    ("last_world_move_at", "TIMESTAMP NULL"),
     ("world", "VARCHAR(64) DEFAULT 'فانی'"),
+    ("sky", "INTEGER DEFAULT 1"),
+    ("sky_trial", "BOOLEAN DEFAULT FALSE"),
+    ("sky_ascended_at", "TIMESTAMP NULL"),
     ("lifespan", "INTEGER DEFAULT 100"),
     ("is_spirit_raiser", "BOOLEAN DEFAULT FALSE"),
     ("gender", "VARCHAR(16) DEFAULT 'نامشخص'"),
@@ -80,6 +88,7 @@ WALLET_COLUMNS = [
     ("absolute_stones", "BIGINT DEFAULT 0"),
     ("faith_stones", "BIGINT DEFAULT 0"),
     ("dragon_coins", "BIGINT DEFAULT 0"),
+    ("eternal_ink", "BIGINT DEFAULT 0"),
 ]
 
 BUILDING_COLUMNS = [
@@ -164,7 +173,7 @@ async def migrate_schema():
                 "coins", "spirit_stones", "heavenly_stones", "celestial_stones",
                 "god_stones", "chaos_stones", "void_stones", "origin_stones",
                 "karma_points", "destiny_stones", "immortal_stones",
-                "creation_stones", "absolute_stones", "faith_stones", "dragon_coins"
+                "creation_stones", "absolute_stones", "faith_stones", "dragon_coins", "eternal_ink"
             ):
                 try:
                     await conn.execute(text(
@@ -186,6 +195,13 @@ async def migrate_schema():
                 await conn.execute(text('ALTER TABLE "cultivations" ALTER COLUMN "energy" TYPE BIGINT USING "energy"::BIGINT'))
             except Exception as e:
                 logger.warning("skip cultivations.energy BIGINT migration: %s", e)
+
+        for col, td in [
+            ("parent_sect_id", "INTEGER NULL"),
+            ("power_level", "BIGINT DEFAULT 0"),
+            ("leader_power", "BIGINT DEFAULT 0"),
+        ]:
+            await add_col("sects", col, td)
 
         # user_techniques
         for col, td in [

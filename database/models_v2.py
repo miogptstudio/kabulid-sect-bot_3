@@ -33,6 +33,9 @@ class Sect(Base):
     member_count: Mapped[int] = mapped_column(Integer, default=0)
     
     leader_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    parent_sect_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    power_level: Mapped[int] = mapped_column(BigInteger, default=0)
+    leader_power: Mapped[int] = mapped_column(BigInteger, default=0)
     
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())

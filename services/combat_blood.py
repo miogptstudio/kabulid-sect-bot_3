@@ -236,12 +236,14 @@ async def check_poison_death(session: AsyncSession, user: User) -> bool:
         return False
     if datetime.utcnow() < until:
         return False
-    # سم تمام شد بدون درمان → مرگ
-    user.is_dead = True
-    user.blood = 0
+    # پایان سم نباید باعث مرگ ناگهانی و بی‌دلیل شود.
+    # سم منقضی می‌شود و فقط وضعیت مسمومیت پاک می‌شود؛ آسیب فقط از حملات واقعی می‌آید.
     user.poisoned_until = None
+    if not getattr(user, "is_dead", False):
+        mx = await max_blood_async(session, user)
+        user.blood = max(1, min(int(user.blood or 1), mx))
     await session.commit()
-    return True
+    return False
 
 
 async def heal_poison(session: AsyncSession, user: User) -> str:

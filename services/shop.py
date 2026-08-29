@@ -450,7 +450,7 @@ async def _sync_unique_prices(session: AsyncSession):
     await session.commit()
 
 
-PRICE_INFLATION = 5  # ضریب قیمتها نسبت به نسخه اولیه
+PRICE_INFLATION = 3  # موج گرانی جدید؛ قیمت‌های عادی فعلی ×۳ می‌شوند
 
 
 async def ensure_default_buildings_and_items(session: AsyncSession):
@@ -503,9 +503,10 @@ async def ensure_default_buildings_and_items(session: AsyncSession):
         for it in r.scalars().all():
             if it.price is not None and 0 < int(it.price) < 50000:
                 eff = dict(it.effect) if isinstance(it.effect, dict) else {}
-                if not eff.get("_inflated_v46"):
+                if not eff.get("_inflated_v48"):
+                    # قیمت‌های نسخه‌های قبلی هم یک مرحله گران‌تر می‌شوند.
+                    eff["_inflated_v48"] = True
                     it.price = int(it.price) * PRICE_INFLATION
-                    eff["_inflated_v46"] = True
                     it.effect = eff
         await session.commit()
     except Exception:

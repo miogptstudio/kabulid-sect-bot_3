@@ -110,7 +110,7 @@ def get_admin_power_bonus(tg: int) -> int:
 
 def add_admin_power_bonus(tg: int, amount: int) -> int:
     cur = get_admin_power_bonus(tg)
-    nv = cur + int(amount)
+    nv = max(0, cur + int(amount))
     _pset("admin_power", tg, nv)
     return nv
 
@@ -141,15 +141,15 @@ def add_combat_stat(tg: int, kind: str, amount: int) -> str:
     tg = int(tg)
     if kind in ("power", "قدرت"):
         cur = int(_pget("know_pow", tg, 0) or 0)
-        _pset("know_pow", tg, cur + amount)
+        _pset("know_pow", tg, max(0, cur + amount))
         return f"⚔️ قدرت نبرد +{amount} (کل مؤثر: {get_power(tg)})"
     if kind in ("speed", "سرعت"):
         cur = int(_pget("know_spd", tg, 0) or 0)
-        _pset("know_spd", tg, cur + amount)
+        _pset("know_spd", tg, max(0, cur + amount))
         return f"💨 سرعت +{amount} | جاخالی: {dodge_rate(tg):.1f}٪"
     if kind in ("defense", "دفاع"):
         cur = int(_pget("know_def", tg, 0) or 0)
-        _pset("know_def", tg, cur + amount)
+        _pset("know_def", tg, max(0, cur + amount))
         return f"🛡️ دفاع +{amount} | بلاک کامل: {block_rate(tg):.1f}٪"
     return "نوع نامعتبر"
 

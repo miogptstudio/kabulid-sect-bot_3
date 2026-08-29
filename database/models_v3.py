@@ -254,6 +254,7 @@ class UserWallet(Base):
     absolute_stones: Mapped[int] = mapped_column(BigInteger, default=0)  # سنگ مطلق
     faith_stones: Mapped[int] = mapped_column(BigInteger, default=0)  # سنگ ایمان
     dragon_coins: Mapped[int] = mapped_column(BigInteger, default=0)  # سکه اژدها
+    eternal_ink: Mapped[int] = mapped_column(BigInteger, default=0)  # جوهر ازلی
     
     # نرخ: ۱۰۰۰ سکه = ۱ سنگ روحی
 

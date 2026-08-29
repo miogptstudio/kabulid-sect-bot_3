@@ -131,41 +131,55 @@ def hit_world_boss(tg, damage):
     d=world_boss(); dmg=max(1,int(damage)); dmg=min(dmg,d["hp"]); d["hp"]-=dmg
     p=d.setdefault("participants",{}); p[str(int(tg))]=int(p.get(str(int(tg)),0))+dmg; save("world_boss"); return d,dmg
 
-def open_chest(tg, grade="معمولی"):
-    """باز کردن صندوق با محدودیت یک‌بار در هر ۲۴ ساعت برای هر بازیکن.
+CHEST_RANKS = {
+    "معمولی": {"range": (100, 1_000), "chance": 55, "price": 0},
+    "نادر": {"range": (1_000, 10_000), "chance": 25, "price": 5_000},
+    "افسانه‌ای": {"range": (10_000, 100_000), "chance": 12, "price": 50_000},
+    "الهی": {"range": (100_000, 1_000_000), "chance": 6, "price": 500_000},
+    "مطلق": {"range": (1_000_000, 10_000_000), "chance": 2, "price": 5_000_000},
+}
 
-    داده‌های قدیمی chests حفظ می‌شوند؛ فقط last_open_at به رکورد اضافه می‌شود.
-    """
-    rewards={"معمولی":(100,1000),"نادر":(1000,10000),"افسانهای":(10000,100000),"الهی":(100000,1000000),"مطلق":(1000000,10000000)}
-    if grade not in rewards:
-        grade = "معمولی"
+def _chest_rank_by_luck(tg):
+    # شانس بازیکن کمی با آمار قدرت مستقیم/کارما بهتر می‌شود؛ تضمین رتبه بالا وجود ندارد.
+    luck = 0
+    try:
+        row = get_dict("advanced_power").get(str(int(tg)), {})
+        luck += min(10, max(0, int(row.get("luck", 0) or 0)))
+    except Exception:
+        pass
+    roll = random.uniform(0, 100)
+    # شانس اضافی به رده‌های بالاتر منتقل می‌شود.
+    weights = [55-luck, 25+luck*0.4, 12+luck*0.3, 6+luck*0.2, 2+luck*0.1]
+    total = sum(max(0.1, x) for x in weights)
+    roll = random.uniform(0, total)
+    acc = 0
+    for rank, weight in zip(CHEST_RANKS, weights):
+        acc += max(0.1, weight)
+        if roll <= acc:
+            return rank
+    return "معمولی"
 
+def open_chest(tg, grade=None):
+    """صندوق روزانه: اگر grade خالی باشد رتبه بر اساس شانس تعیین می‌شود."""
     d=get_dict("chests")
-    key=str(int(tg))
-    row=d.setdefault(key,{"opened":0,"coins":0})
-
-    # محدودیت سراسری صندوق: هر ۲۴ ساعت یک بار، مستقل از نوع صندوق.
-    now=datetime.utcnow()
-    last=row.get("last_open_at")
+    key=str(int(tg)); row=d.setdefault(key,{"opened":0,"coins":0})
+    now=datetime.utcnow(); last=row.get("last_open_at")
     if last:
         try:
-            last_dt=datetime.fromisoformat(str(last))
-            remaining=timedelta(hours=24)-(now-last_dt)
+            remaining=timedelta(hours=24)-(now-datetime.fromisoformat(str(last)))
             if remaining.total_seconds()>0:
-                return None, int(remaining.total_seconds())
-        except (TypeError, ValueError):
-            # رکوردهای قدیمی یا خراب مانع استفاده بازیکن نمی‌شوند.
+                return None, int(remaining.total_seconds()), None
+        except Exception:
             pass
-
-    lo,hi=rewards[grade]
+    actual = grade if grade in CHEST_RANKS and grade != "" else _chest_rank_by_luck(tg)
+    lo,hi=CHEST_RANKS[actual]["range"]
     amount=random.randint(lo,hi)
-    row["opened"]=int(row.get("opened",0))+1
-    row["coins"]=int(row.get("coins",0))+amount
-    row["last_open_at"]=now.isoformat()
-    row["last_grade"]=grade
-    d[key]=row
-    save("chests")
-    return amount, 0
+    row.update({"opened":int(row.get("opened",0))+1,"coins":int(row.get("coins",0))+amount,"last_open_at":now.isoformat(),"last_grade":actual})
+    d[key]=row; save("chests")
+    return amount, 0, actual
+
+def chest_shop():
+    return [(r, v["price"], v["range"]) for r,v in CHEST_RANKS.items() if v["price"] > 0]
 
 def chain_mission(tg):
     d=get_dict("chain_missions"); k=str(int(tg)); row=d.setdefault(k,{"step":1,"done":0,"reward":0})

@@ -9,6 +9,27 @@ from database.models_v3 import (
 )
 
 
+def _reset_persistent_gameplay(tg_id: int, full: bool = False):
+    """ریست وضعیت‌های حافظه‌ای که قبلاً بعد از مرگ جا می‌ماندند."""
+    from services.persist import get_dict, save
+    namespaces = [
+        ("chars_owned", {}), ("chars_last_pull", {}),
+        ("servants_v2", {}), ("servants", {}), ("servant_hunt_cd", {}), ("servant_marriages", {}), ("servant_monthly_buy", {}), ("servant_weekly_stock", {}),
+        ("void_learned", None), ("void_owners", None), ("void_text", {}),
+        ("chests", {}),
+    ]
+    key = str(int(tg_id))
+    for ns, default in namespaces:
+        d = get_dict(ns)
+        if isinstance(d, dict):
+            if default is None:
+                ids = [x for x in d.get("ids", []) if int(x) != int(tg_id)]
+                d["ids"] = ids
+            else:
+                d.pop(key, None)
+            save(ns)
+
+
 async def become_spirit_raiser(session: AsyncSession, user: User) -> str:
     if is_immortal_race(getattr(user, 'race', None)):
         return "نژاد خدایان نامیراست."
@@ -21,6 +42,12 @@ async def become_spirit_raiser(session: AsyncSession, user: User) -> str:
     user.is_spirit_raiser = True
     user.yang = 50
     user.yin = 0
+    user.blood = 100
+    user.poisoned_until = None
+    if hasattr(user, "hunger"): user.hunger = 100
+    if hasattr(user, "thirst"): user.thirst = 100
+    if hasattr(user, "last_world_move_at"): user.last_world_move_at = None
+    _reset_persistent_gameplay(user.telegram_id)
     try:
         cult = await session.execute(
             select(Cultivation).where(Cultivation.user_id == user.id)
@@ -140,6 +167,8 @@ async def erase_existence(session: AsyncSession, user: User) -> str:
     except Exception:
         pass
 
+    _reset_persistent_gameplay(tg_id, full=True)
+
     # ریست کامل فیلدهای کاربر = اکانت نو
     user.is_dead = False
     user.is_spirit_raiser = False
@@ -162,8 +191,16 @@ async def erase_existence(session: AsyncSession, user: User) -> str:
     user.equipped_weapon_id = None
     user.has_cyrus_sword = False
     user.first_cities = None
-    user.city = "tehran"
-    user.world = "فانی"
+    user.city = "شهر آغازین"
+    user.world = "اَبَرجهانِ هزار-هزار-هزار-دنیا"
+    if hasattr(user, "sky"): user.sky = 1
+    if hasattr(user, "sky_trial"): user.sky_trial = False
+    if hasattr(user, "sky_ascended_at"): user.sky_ascended_at = None
+    if hasattr(user, "world_x"): user.world_x = 0
+    if hasattr(user, "world_y"): user.world_y = 0
+    if hasattr(user, "hunger"): user.hunger = 100
+    if hasattr(user, "thirst"): user.thirst = 100
+    if hasattr(user, "last_world_move_at"): user.last_world_move_at = None
     user.lifespan = 100
     user.is_banned = False
     user.is_active = True
