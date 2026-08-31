@@ -92,11 +92,20 @@ def character_url(name: str, rarity: str = "معمولی") -> str:
         "خدایی": "shapes", "ازلی": "shapes", "قادر مطلق": "shapes",
     }.get(rarity, "identicon")
     seed = quote(f"legacy-char-{rarity}-{name}", safe="")
-    return f"https://api.dicebear.com/9.x/{style}/png?seed={seed}&size=512"
+    fallback = root / "01.jpg"
+    if fallback.exists():
+        return str(fallback)
+    return str(root / "panels" / "character_system.jpg")
 
 def pet_url(name: str) -> str:
     seed = quote(f"pet-{name}", safe="")
-    return f"https://api.dicebear.com/9.x/bottts/png?seed={seed}&size=512"
+    from pathlib import Path
+    root = Path(__file__).resolve().parent.parent / "assets" / "servants"
+    for name in ("01.jpg", "02.jpg", "03.jpg"):
+        p = root / name
+        if p.exists():
+            return str(p)
+    return str(Path(__file__).resolve().parent.parent / "assets" / "panels" / "pets.jpg")
 
 
 # تصاویر پنلهای ربات؛ بر اساس seed ثابت، برای هر بخش تصویر ثابت و قابلتکرار است.

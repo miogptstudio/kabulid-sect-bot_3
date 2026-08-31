@@ -89,6 +89,18 @@ def vein_mult(user_id: int, telegram_id: int | None = None) -> float:
     return m
 
 
+def dual_root_bonus(user_id: int) -> float:
+    """تقویت پایدار ریشه از تذهیب دوگانه؛ هر ۷ بار یک تکامل و هر بار کمی رشد."""
+    try:
+        data = _vein_get("dual_evolution")
+        row = data.get(str(int(user_id)), {})
+        count = int(row.get("count", 0))
+        evolution = int(row.get("evolution", 0))
+        # هر بار موفق +۱٪، هر تکامل ۷ بار +۵٪ اضافه.
+        return 1.0 + count * 0.01 + evolution * 0.05
+    except Exception:
+        return 1.0
+
 def root_cult_mult(root: str) -> float:
     """ضریب ریشه با تطبیق تقریبی نام"""
     if not root or root == "بدون ریشه":
@@ -616,6 +628,7 @@ async def add_energy(session: AsyncSession, user_id: int, amount: int) -> dict:
 
     root = cult.spiritual_root or "بدون ریشه"
     rmult = root_cult_mult(root) if "root_cult_mult" in dir() else float(ROOT_CULT_MULT.get(root, 1.0))
+    rmult *= dual_root_bonus(user_id)
     try:
         rmult = root_cult_mult(root)
     except Exception:

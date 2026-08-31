@@ -1,4 +1,9 @@
 import random
+from datetime import datetime, timedelta
+from services.persist import get_dict as _dual_get, save as _dual_save
+
+DUAL_COOLDOWN_MINUTES = 30
+DUAL_EVOLVE_THRESHOLD = 7
 from datetime import datetime
 from sqlalchemy import select, or_
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -24,6 +29,23 @@ async def request_dual(session: AsyncSession, user1: User, user2: User) -> DualC
     if g1 not in ("مرد", "زن") or g2 not in ("مرد", "زن"):
         return "جنسیت نامعتبر. /gender"
     
+    # تذهیب دوگانه هر ۳۰ دقیقه یک‌بار برای هر بازیکن؛ زمان در persist ذخیره می‌شود.
+    cooldowns = _dual_get("dual_cooldowns")
+    now = datetime.utcnow()
+    for uid in (user1.id, user2.id):
+        raw = cooldowns.get(str(uid))
+        if raw:
+            try:
+                last = datetime.fromisoformat(raw)
+                remain = timedelta(minutes=DUAL_COOLDOWN_MINUTES) - (now - last)
+                if remain.total_seconds() > 0:
+                    mins_total = max(1, int((remain.total_seconds() + 59) // 60))
+                    hours, mins = divmod(mins_total, 60)
+                    time_text = f"{hours}ساعت و {mins}دقیقه" if hours else f"{mins}دقیقه"
+                    return f"⏳ تذهیب دوگانه برای {user1.full_name if uid == user1.id else user2.full_name} هنوز آماده نیست. زمان باقی‌مانده: {time_text}."
+            except (ValueError, TypeError):
+                cooldowns.pop(str(uid), None)
+
     cult1 = await get_or_create_cultivation(session, user1.id)
     cult2 = await get_or_create_cultivation(session, user2.id)
     
@@ -100,13 +122,12 @@ async def accept_dual(session: AsyncSession, dual: DualCultivation, accepter_id:
         r2 = {"messages": [f"خطا انرژی2: {type(e).__name__}"]}
 
     dual.energy_shared = 160
-    # از دست دادن باکرگی
-    u1 = await session.get(User, dual.user1_id)
-    u2 = await session.get(User, dual.user2_id)
-    if u1:
-        u1.is_virgin = False
-    if u2:
-        u2.is_virgin = False
+    # ثبت cooldown فقط پس از موفقیت واقعی
+    cooldowns = _dual_get("dual_cooldowns")
+    now = datetime.utcnow()
+    cooldowns[str(dual.user1_id)] = now.isoformat()
+    cooldowns[str(dual.user2_id)] = now.isoformat()
+    _dual_save("dual_cooldowns")
     dual.status = "finished"
     dual.finished_at = datetime.utcnow()
     await session.commit()
@@ -117,37 +138,17 @@ async def accept_dual(session: AsyncSession, dual: DualCultivation, accepter_id:
     if r2.get("messages"):
         msg += "نفر دوم: " + " | ".join(r2["messages"])
     
-    # شانس بچهدار شدن — نژاد نامیرا / قادر مطلق / خدایان نازا هستند
-    try:
-        from services.cultivation import STERILE_RACES
-    except Exception:
-        STERILE_RACES = {"نامیرا", "قادر مطلق", "خدایان"}
-    u1r = getattr(u1, "race", None) if u1 else None
-    u2r = getattr(u2, "race", None) if u2 else None
-    if (u1r in STERILE_RACES) or (u2r in STERILE_RACES):
-        msg += "\n⚠️ یکی از طرفین نژاد نامیرا/قادر مطلق است — تولیدمثل ممکن نیست."
-    elif random.random() < CHILD_CHANCE:
-        from database.models import User
-        u1 = await session.get(User, dual.user1_id)
-        u2 = await session.get(User, dual.user2_id)
-        child_name = f"فرزند {u1.full_name[:8]} و {u2.full_name[:8]}"
-        
-        # ثبت یک یوزر مجازی به عنوان فرزند (telegram_id منفی برای غیرواقعی بودن)
-        child = User(
-            telegram_id=-(dual.user1_id * 100000 + dual.user2_id),  # آیدی مصنوعی یکتا
-            full_name=child_name,
-            gender=random.choice(["مرد", "زن"]),
-            rank="عضو دستههای پایینتر"
-        )
-        session.add(child)
-        await session.commit()
-        
-        msg += (
-            f"\n\n👶✨ <b>معجزه رخ داد!</b>\n"
-            f"با شانس بسیار نادر، فرزندی متولد شد: <b>{child_name}</b>\n"
-            f"جنسیت: {child.gender}"
-        )
-    
+    # هر ۷ تذهیب موفق، یک تکامل ریشه ثبت می‌کند.
+    progress = _dual_get("dual_evolution")
+    for uid in (dual.user1_id, dual.user2_id):
+        key = str(uid)
+        row = progress.setdefault(key, {"count": 0, "evolution": 0})
+        row["count"] = int(row.get("count", 0)) + 1
+        if row["count"] % DUAL_EVOLVE_THRESHOLD == 0:
+            row["evolution"] = int(row.get("evolution", 0)) + 1
+            msg += f"\n🌱 <b>تکامل ریشه!</b> سطح تکامل تذهیب دوگانه: {row['evolution']}"
+    _dual_save("dual_evolution")
+
     return msg
 
 

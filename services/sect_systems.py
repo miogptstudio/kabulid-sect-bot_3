@@ -59,7 +59,7 @@ def withdraw(sect_id: int, currency: str, amount: int) -> tuple[bool, str]:
 def treasury_text(sect_id: int, sect_name: str = "") -> str:
     t = get_treasury(sect_id)
     return (
-        f"🏦 <b>خزانه فرقه {sect_name}</b>" + chr(10)
+        f"📦 <b>گنجینه صندوق فرقه {sect_name}</b>" + chr(10)
         + f"🪙 سکه: {int(t.get('coins') or 0):,}" + chr(10)
         + f"💎 روحی: {int(t.get('spirit') or 0):,}" + chr(10)
         + f"✨ بهشتی: {int(t.get('heavenly') or 0):,}" + chr(10)
@@ -380,7 +380,7 @@ def do_mission(tg_id: int, sect_id: int, index: int) -> str:
         f"✅ مأموریت <b>{tpl['title']}</b> انجام شد." + chr(10)
         + f"🏅 مشارکت تو: +{tpl['contrib']} (جمع {c})" + chr(10)
         + f"🏦 خزانه: +{tpl.get('coins',0)} سکه / +{tpl.get('spirit',0)} روحی / +{tpl.get('materials',0)} مواد" + chr(10)
-        + f"🎁 پاداش شخصی: +{personal} سکه (با /claimsectreward بعداً یا خودکار در ولت)" + chr(10)
+        + f"🎁 پاداش شخصی: +{personal} سکه (با /claimsectreward بعداً یا خودکار در صندوق)" + chr(10)
         + f"👑 XP رهبری فرقه: +{tpl.get('leader_xp',0)}"
     )
 
