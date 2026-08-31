@@ -442,8 +442,3 @@ async def launch_portal_once(session) -> bool:
     save("open_world")
     await session.commit()
     return True
-
-
-@router.message(Command("weeklystory", "داستانهفتگی", "داستان_هفتگی"))
-async def cmd_weekly_story(message: Message):
-    await message.answer(weekly_story())
