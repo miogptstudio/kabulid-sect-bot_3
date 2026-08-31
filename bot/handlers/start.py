@@ -320,8 +320,8 @@ async def kb_market(message: Message):
 @router.message(F.text.in_({"🎁 گنجینه", "گنجینه"}))
 async def kb_treasure(message: Message):
     try:
-        from bot.handlers.pets import cmd_wallet
-        await cmd_wallet(message)
+        from bot.handlers.advanced_systems import chest_shop_cmd
+        await chest_shop_cmd(message)
     except Exception as e:
         await message.answer(f"خطا: {e}")
 

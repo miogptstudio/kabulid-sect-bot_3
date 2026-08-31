@@ -1,5 +1,5 @@
-BOT_VERSION = "45.0.0"
-WEBAPP_VERSION = "7.0.0"
+BOT_VERSION = "53.0.0"
+WEBAPP_VERSION = "9.0.0"
 # پیام عمومی سازنده
 CREATOR_NOTICE = """📢 پیام جهانی — نسخه 4.7.9
 
@@ -16,6 +16,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
+PAYMENT_CARD_NUMBER = os.getenv("PAYMENT_CARD_NUMBER", "").strip()
 
 def _parse_admin_ids() -> list[int]:
     raw = os.getenv("ADMIN_IDS", "") or ""

@@ -19,6 +19,7 @@ from bot.handlers import text_navigation as text_navigation  # noqa
 from bot.handlers import open_world as open_world  # noqa
 from bot.handlers import characters as characters  # noqa
 from bot.handlers import retention as retention  # noqa
+from bot.handlers import sect_wars
 from bot.handlers import (
     start, profile, duel, guardian, ranking, admin, missions, advanced_systems,
     sects, cultivation, master, arena, accounts, shop, crafting, dual, marriage, pets, death, world, help_menu, combat, engagement, games, garden, social, creatures, combat_extra, race, spirit, society_extra, lang, jobs_events, codex_items, prison_market, fallback
@@ -158,6 +159,7 @@ async def main():
 
     # ورود به بخشها با نوشتن نامشان، بدون نیاز به /command
     dp.include_router(open_world.router)
+    dp.include_router(sect_wars.router)
     dp.include_router(start.router)
     dp.include_router(advanced_systems.router)
     dp.include_router(profile.router)

@@ -1,6 +1,8 @@
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import State, StatesGroup
 from bot.config import ADMIN_IDS
 from database.engine import async_session
 from database.crud import get_or_create_user, get_user_by_telegram_id
@@ -265,3 +267,175 @@ async def bank_cmd(message: Message):
 @router.message(Command("powerformula", "فرمول_قدرت"))
 async def power_formula_cmd(message: Message):
     await message.answer("⚔️ <b>فرمول قدرت مؤثر</b>\nقدرت پایه + تذهیب + سلاح/زره + بدن + روح + تبار + تکنیک + خدمتکار + قلمرو + ساختمانها + دستاوردها.\n\n⚡ سرعت روی نوبت/جاخالی اثر میگذارد.\n🛡 دفاع روی کاهش آسیب اثر میگذارد.\n❤️ عمر روی دوام و ظرفیت زندهماندن اثر میگذارد.")
+
+@router.message(Command("specialshop", "فروشگاهویژه", "فروشگاهرتبه"))
+async def special_shop_cmd(message: Message):
+    from services.real_shop import catalog
+    lines=["💳 <b>فروشگاه ویژه — تومان</b>","","محصولات ثابت و غیرتصادفی:"]
+    for p in catalog():
+        lines.append(f"• <b>{p['name']}</b> — {p['price_toman']:,} تومان")
+        lines.append(f"  {p['description']}")
+        lines.append(f"  /ordershop {p['id']}")
+    lines.append("\n💳 پرداخت به شماره کارت تنظیم‌شده توسط مدیر انجام می‌شود. بعد از واریز، /payreceipt شناسه_سفارش را بزن و عکس رسید را بفرست.")
+    await message.answer("\n".join(lines))
+
+@router.message(Command("ordershop", "سفارشویژه"))
+async def order_special_shop(message: Message):
+    parts=(message.text or "").split(maxsplit=1)
+    if len(parts)<2:
+        await message.answer("فرمت: /ordershop product_id")
+        return
+    try:
+        from services.real_shop import create_order
+        order=create_order(message.from_user.id,parts[1].strip())
+        from services.real_shop import card_number
+        card = card_number()
+        if not card:
+            return await message.answer("❌ پرداخت فعلاً فعال نیست؛ مدیر باید PAYMENT_CARD_NUMBER را با یک شماره کارت ۱۶ رقمی تنظیم کند.")
+        await message.answer(f"🧾 سفارش <b>{order['id']}</b> ثبت شد.\n💵 مبلغ: {order['amount_toman']:,} تومان\n💳 شماره کارت: <code>{card}</code>\n\nپس از واریز: /payreceipt {order['id']}\nسپس عکس رسید را ارسال کن.")
+    except Exception as e:
+        await message.answer(f"❌ {e}")
+
+# ==================== پرداخت دستی فروشگاه ویژه ====================
+class RealShopStates(StatesGroup):
+    waiting_receipt = State()
+
+@router.message(Command("payreceipt", "رسیدپرداخت", "ارسالرسید"))
+async def pay_receipt_cmd(message: Message, state: FSMContext):
+    from services.real_shop import get_order, card_number
+    parts = (message.text or "").split(maxsplit=1)
+    if len(parts) < 2:
+        return await message.answer("فرمت: /payreceipt شناسه_سفارش\nمثال: /payreceipt ABC123")
+    order = get_order(parts[1].strip())
+    if not order or int(order.get("tg_id", 0)) != message.from_user.id:
+        return await message.answer("❌ سفارش پیدا نشد یا متعلق به شما نیست.")
+    if order.get("status") == "approved":
+        return await message.answer("✅ این سفارش قبلاً تأیید شده است.")
+    card = card_number()
+    if not card:
+        return await message.answer("❌ پرداخت فعلاً فعال نیست؛ مدیر باید شماره کارت مقصد را تنظیم کند.")
+    from services.persist import get_dict, save
+    waiting = get_dict("real_shop_receipt_waiting")
+    waiting[str(message.from_user.id)] = order["id"]
+    save("real_shop_receipt_waiting")
+    await state.set_state(RealShopStates.waiting_receipt)
+    await message.answer(
+        f"💳 <b>پرداخت دستی سفارش {order['id']}</b>\n\n"
+        f"محصول: <b>{order['product_id']}</b>\n"
+        f"مبلغ: <b>{order['amount_toman']:,} تومان</b>\n"
+        f"شماره کارت مقصد:\n<code>{card}</code>\n\n"
+        "پس از واریز، <b>عکس واضح رسید</b> را همینجا ارسال کن.\n"
+        "رسید برای ادمین‌ها ارسال می‌شود و بعد از بررسی، سفارش تأیید یا رد خواهد شد."
+    )
+
+@router.message(RealShopStates.waiting_receipt, F.photo)
+async def real_shop_receipt_photo(message: Message, state: FSMContext):
+    from services.persist import get_dict, save
+    from services.real_shop import attach_receipt, get_order
+    waiting = get_dict("real_shop_receipt_waiting")
+    oid = waiting.get(str(message.from_user.id))
+    if not oid:
+        return
+    order = get_order(oid)
+    if not order or int(order.get("tg_id", 0)) != message.from_user.id:
+        waiting.pop(str(message.from_user.id), None); save("real_shop_receipt_waiting"); return
+    try:
+        attach_receipt(oid, message.photo[-1].file_id, message.caption)
+        waiting.pop(str(message.from_user.id), None); save("real_shop_receipt_waiting")
+        await state.clear()
+    except Exception as e:
+        return await message.answer(f"❌ {e}")
+    from aiogram.utils.keyboard import InlineKeyboardBuilder
+    kb = InlineKeyboardBuilder()
+    kb.button(text="✅ تأیید خرید", callback_data=f"realorder:approve:{oid}")
+    kb.button(text="❌ رد رسید", callback_data=f"realorder:reject:{oid}")
+    kb.adjust(2)
+    text = (f"🧾 <b>رسید خرید جدید</b>\n\nسفارش: <code>{oid}</code>\n"
+            f"کاربر: <code>{message.from_user.id}</code>\nمبلغ: <b>{order['amount_toman']:,} تومان</b>\n"
+            f"محصول: {order['product_id']}\nوضعیت: در انتظار بررسی")
+    sent = 0
+    for admin_id in ADMIN_IDS:
+        try:
+            await message.bot.send_photo(admin_id, message.photo[-1].file_id, caption=text, reply_markup=kb.as_markup())
+            sent += 1
+        except Exception:
+            pass
+    await message.answer("✅ رسید دریافت شد و برای ادمین‌ها ارسال شد. بعد از بررسی نتیجه اعلام می‌شود." if sent else "⚠️ رسید ثبت شد، اما ارسال به ادمین‌ها انجام نشد.")
+
+@router.message(Command("purchaseorders", "سفارشاتخرید", "خریدهایادمین"))
+async def admin_purchase_orders(message: Message):
+    if message.from_user.id not in ADMIN_IDS:
+        return await message.answer("⛔ فقط ادمین.")
+    from services.real_shop import list_orders, order_stats
+    from aiogram.utils.keyboard import InlineKeyboardBuilder
+    stats = order_stats()
+    rows = list_orders("receipt_submitted")
+    text = (
+        "🛡️ <b>مدیریت خریدها</b>\n\n"
+        f"⏳ در انتظار رسید: {stats['pending']:,}\n"
+        f"🔎 آماده بررسی: {stats['receipt_submitted']:,}\n"
+        f"✅ تأییدشده: {stats['approved']:,}\n"
+        f"❌ ردشده: {stats['rejected']:,}\n"
+        f"💰 مجموع فروش تأییدشده: {stats['revenue_toman']:,} تومان\n\n"
+        "برای بررسی رسید، پیام رسید ارسالی بازیکن را باز کن."
+    )
+    kb=InlineKeyboardBuilder()
+    kb.button(text=f"🔎 رسیدهای منتظر ({len(rows)})", callback_data="adminorders:list:receipt_submitted")
+    kb.button(text="📋 همه سفارش‌ها", callback_data="adminorders:list:all")
+    kb.button(text="🔄 تازه‌سازی", callback_data="adminorders:list:receipt_submitted")
+    kb.adjust(1)
+    await message.answer(text, reply_markup=kb.as_markup())
+
+@router.callback_query(F.data.startswith("adminorders:"))
+async def admin_orders_panel(callback: CallbackQuery):
+    if callback.from_user.id not in ADMIN_IDS:
+        return await callback.answer("⛔ فقط ادمین.", show_alert=True)
+    from services.real_shop import list_orders, order_stats
+    _, action, status = callback.data.split(":",2)
+    rows=list_orders(status)[:30]
+    stats=order_stats()
+    if action!="list": return await callback.answer("درخواست نامعتبر است.", show_alert=True)
+    if not rows: return await callback.answer("سفارشی برای نمایش نیست.", show_alert=True)
+    lines=["🧾 <b>فهرست سفارش‌ها</b>",""]
+    for o in rows:
+        icon={"pending":"⏳","receipt_submitted":"🔎","approved":"✅","rejected":"❌"}.get(o.get("status"),"•")
+        lines.append(f"{icon} <code>{o['id']}</code> | <code>{o['tg_id']}</code> | {int(o.get('amount_toman',0)):,} تومان")
+        lines.append(f"   {o.get('product_id','—')} · {o.get('status','—')}")
+    lines.append(f"\n📊 کل: {stats['total']} | تأیید: {stats['approved']} | رد: {stats['rejected']}")
+    await callback.message.edit_text("\n".join(lines))
+    await callback.answer("فهرست به‌روزرسانی شد.")
+
+@router.callback_query(F.data.startswith("realorder:"))
+async def real_order_admin_action(callback: CallbackQuery):
+    if callback.from_user.id not in ADMIN_IDS:
+        return await callback.answer("⛔ دسترسی ادمین لازم است.", show_alert=True)
+    _, action, oid = callback.data.split(":", 2)
+    from services.real_shop import get_order, set_status, fulfill_order
+    order = get_order(oid)
+    if not order:
+        return await callback.answer("سفارش پیدا نشد.", show_alert=True)
+    if action == "reject":
+        if order.get("status") == "approved":
+            return await callback.answer("این سفارش قبلاً تأیید شده است.", show_alert=True)
+        set_status(oid, "rejected", callback.from_user.id)
+        try:
+            await callback.bot.send_message(order["tg_id"], f"❌ رسید سفارش <code>{oid}</code> رد شد. در صورت اشتباه، رسید واضح‌تری ارسال کن.")
+        except Exception:
+            pass
+        try:
+            await callback.message.edit_caption(caption=(callback.message.caption or "") + "\n\n❌ <b>رد شد</b>", reply_markup=None)
+        except Exception:
+            pass
+        return await callback.answer("رسید رد شد.")
+    if action == "approve":
+        try:
+            updated = await fulfill_order(oid, callback.from_user.id)
+            await callback.bot.send_message(updated["tg_id"], f"✅ سفارش <code>{oid}</code> تأیید شد و جایزه خرید اعمال شد.")
+            try:
+                await callback.message.edit_caption(caption=(callback.message.caption or "") + "\n\n✅ <b>تأیید شد</b>", reply_markup=None)
+            except Exception:
+                pass
+            return await callback.answer("خرید تأیید و جایزه اعمال شد.")
+        except Exception as e:
+            return await callback.answer(f"❌ {str(e)[:150]}", show_alert=True)
+

@@ -308,7 +308,14 @@ async def api_world(request):
             boss_out={"name":boss.get("name"),"subtitle":boss.get("subtitle"),"hp":boss.get("hp"),"max_hp":boss.get("max_hp"),"x":boss.get("x"),"y":boss.get("y")}
             from services.open_world import boss_phase
             boss_out["phase"]=boss_phase(boss)
-        return web.json_response({"world":d.get("world_name"),"sky":current_sky(user),"sky_name":info["name"],"lore":info["lore"],"x":x,"y":y,"city":user.city,"hunger":user.hunger,"thirst":user.thirst,"danger":min(100,8+(abs(x)+abs(y))//5),"landmark":_location_landmark(x,y,current_sky(user)),"landmarks":info["landmarks"],"event":event,"boss":boss_out,"skies":[{"number":n,"name":v["name"]} for n,v in __import__('services.open_world',fromlist=['SKIES']).SKIES.items()]})
+        from services.open_world import geographic_cell
+        geo=geographic_cell(x,y,current_sky(user))
+        cities=[]
+        for v in d.get("cities",{}).values():
+            if int(v.get("sky",1) or 1)==current_sky(user):
+                cities.append({"name":v.get("name"),"x":int(v.get("x",0)),"y":int(v.get("y",0)),"owner":v.get("owner"),"level":int(v.get("level",1) or 1)})
+        countries=list(d.get("countries",{}).values())
+        return web.json_response({"world":d.get("world_name"),"sky":current_sky(user),"sky_name":info["name"],"lore":info["lore"],"x":x,"y":y,"city":user.city,"hunger":user.hunger,"thirst":user.thirst,"danger":geo["danger"],"landmark":_location_landmark(x,y,current_sky(user)),"landmarks":info["landmarks"],"geo":geo,"cities":cities,"countries":countries,"event":event,"boss":boss_out,"skies":[{"number":n,"name":v["name"]} for n,v in __import__('services.open_world',fromlist=['SKIES']).SKIES.items()]})
 
 
 async def api_sect_full(request):
@@ -357,6 +364,28 @@ async def api_shop_full(request):
                 names={"coins":"سکه","spirit_stones":"سنگ روحی","heavenly_stones":"سنگ بهشتی","celestial_stones":"سنگ آسمانی","god_stones":"سنگ خدا","eternal_ink":"جوهر ازلی"}
                 items.append({"id":it.id,"building_id":b.id,"name":it.name,"item_type":it.item_type,"description":it.description,"price":int(it.price or 0),"currency":cur,"currency_name":names.get(cur,cur),"stock":it.stock})
         return web.json_response({"buildings":[{"id":b.id,"name":b.name,"type":b.building_type} for b in buildings],"items":items})
+
+
+async def api_real_shop(request):
+    from services.real_shop import catalog
+    return web.json_response({"items": catalog(), "currency": "تومان", "note": "پرداخت واقعی پس از اتصال درگاه تأییدشده فعال می‌شود."})
+
+
+async def api_real_shop_order(request):
+    from services.real_shop import create_order
+    tid=_telegram_webapp_user_id(request)
+    if not tid:return web.json_response({"error":"Telegram user لازم است"},status=400)
+    try: body=await request.json()
+    except Exception: body={}
+    try:
+        from services.real_shop import card_number
+        card = card_number()
+        if not card:
+            return web.json_response({"error":"پرداخت دستی هنوز توسط مدیر تنظیم نشده است."}, status=503)
+        order=create_order(tid,str(body.get("product_id") or ""))
+        return web.json_response({"ok":True,"order":order,"card_number":card,"receipt_command":f"/payreceipt {order['id']}","message":f"سفارش {order['id']} ثبت شد. مبلغ را به شماره کارت نمایش‌داده‌شده واریز کن، سپس رسید را در ربات ارسال کن."})
+    except Exception as exc:
+        return web.json_response({"error":str(exc)},status=400)
 
 
 async def api_chests_full(request):
@@ -461,6 +490,92 @@ async def api_admin_sync(request):
             await sync_to_db(); return web.json_response({"ok":True,"message":"همگام‌سازی داده‌ها انجام شد."})
         except Exception as e:return web.json_response({"error":str(e)},status=400)
 
+async def api_admin_real_orders(request):
+    from services.real_shop import list_orders, order_stats
+    from database.engine import async_session
+    async with async_session() as session:
+        user = await _web_user(request, session)
+        if not user or not user.is_staff:
+            return web.json_response({"error":"دسترسی مدیریت نداری"}, status=403)
+    status = request.query.get("status") or "all"
+    product_id = request.query.get("product_id") or None
+    try: limit = max(1, min(100, int(request.query.get("limit", "50"))))
+    except Exception: limit = 50
+    rows = list_orders(status=status, product_id=product_id)[:limit]
+    return web.json_response({"orders": rows, "stats": order_stats()})
+
+async def api_admin_real_order_detail(request):
+    from services.real_shop import get_order, get_audit
+    from database.engine import async_session
+    async with async_session() as session:
+        user = await _web_user(request, session)
+        if not user or not user.is_staff:
+            return web.json_response({"error":"دسترسی مدیریت نداری"}, status=403)
+    oid = str(request.match_info.get("order_id") or "").strip().upper()
+    order = get_order(oid)
+    if not order: return web.json_response({"error":"سفارش پیدا نشد"}, status=404)
+    return web.json_response({"order": order, "audit": get_audit(oid)})
+
+async def api_admin_real_order_action(request):
+    from services.real_shop import get_order, set_status, fulfill_order
+    from database.engine import async_session
+    async with async_session() as session:
+        user = await _web_user(request, session)
+        if not user or not user.is_staff:
+            return web.json_response({"error":"دسترسی مدیریت نداری"}, status=403)
+    try: body = await request.json()
+    except Exception: body = {}
+    oid = str(body.get("order_id") or "").strip().upper()
+    action = str(body.get("action") or "")
+    note = str(body.get("note") or "").strip()[:500]
+    try:
+        order = get_order(oid)
+        if not order: raise ValueError("سفارش پیدا نشد")
+        if action == "approve":
+            order = await fulfill_order(oid, int(user.telegram_id))
+        elif action == "reject":
+            if order.get("status") == "approved": raise ValueError("این سفارش قبلاً تأیید شده است")
+            order = set_status(oid, "rejected", int(user.telegram_id), note or "رسید/پرداخت مورد تأیید نبود.")
+        elif action == "pending":
+            order = set_status(oid, "pending", int(user.telegram_id), note)
+        else: raise ValueError("عملیات نامعتبر است")
+        return web.json_response({"ok":True,"order":order,"message":"عملیات انجام شد."})
+    except Exception as exc:
+        return web.json_response({"error":str(exc)}, status=400)
+
+async def api_admin_real_order_receipt(request):
+    """نمایش امن رسید برای مدیر بدون افشای Bot Token در مرورگر."""
+    from database.engine import async_session
+    from services.real_shop import get_order
+    async with async_session() as session:
+        user = await _web_user(request, session)
+        if not user or not user.is_staff:
+            return web.json_response({"error":"دسترسی مدیریت نداری"}, status=403)
+    oid = str(request.match_info.get("order_id") or "").strip().upper()
+    order = get_order(oid)
+    if not order or not order.get("receipt_file_id"):
+        return web.json_response({"error":"رسیدی برای این سفارش ثبت نشده است."}, status=404)
+    token = os.getenv("BOT_TOKEN", "").strip()
+    if not token:
+        return web.json_response({"error":"BOT_TOKEN تنظیم نشده است."}, status=503)
+    import aiohttp
+    try:
+        async with aiohttp.ClientSession() as client:
+            meta = await client.get(f"https://api.telegram.org/bot{token}/getFile", params={"file_id": order["receipt_file_id"]})
+            meta_data = await meta.json()
+            file_path = ((meta_data.get("result") or {}).get("file_path"))
+            if not file_path:
+                return web.json_response({"error":"فایل رسید از تلگرام دریافت نشد."}, status=502)
+            img = await client.get(f"https://api.telegram.org/file/bot{token}/{file_path}")
+            if img.status != 200:
+                return web.json_response({"error":"دریافت تصویر رسید ناموفق بود."}, status=502)
+            data = await img.read()
+            return web.Response(body=data, content_type=img.headers.get("Content-Type", "image/jpeg"), headers={"Cache-Control":"no-store"})
+    except Exception as exc:
+        logger.exception("receipt proxy failed")
+        return web.json_response({"error":type(exc).__name__+": "+str(exc)[:180]}, status=502)
+
+
 async def start_health_server(port: int = 8080):
     app = web.Application()
     app.router.add_get("/", health_handler)
@@ -474,12 +589,18 @@ async def start_health_server(port: int = 8080):
     app.router.add_get("/api/characters", api_characters_full)
     app.router.add_get("/api/shop", api_shop_full)
     app.router.add_get("/api/chests", api_chests_full)
+    app.router.add_get("/api/real-shop", api_real_shop)
+    app.router.add_post("/api/real-shop/order", api_real_shop_order)
     app.router.add_get("/api/daily", api_daily)
     app.router.add_get("/api/arena", api_arena_top)
     app.router.add_get("/api/game", api_game_room)
     app.router.add_post("/api/game", api_game_room)
     app.router.add_post("/api/action", api_action)
     app.router.add_get("/api/admin", api_admin_summary)
+    app.router.add_get("/api/admin/real-orders", api_admin_real_orders)
+    app.router.add_get("/api/admin/real-orders/{order_id}", api_admin_real_order_detail)
+    app.router.add_get("/api/admin/real-orders/{order_id}/receipt", api_admin_real_order_receipt)
+    app.router.add_post("/api/admin/real-orders/action", api_admin_real_order_action)
     app.router.add_post("/api/admin/sync", api_admin_sync)
 
     # مینیاپ استاتیک

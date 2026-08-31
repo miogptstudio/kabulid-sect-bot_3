@@ -1,5 +1,5 @@
 from aiogram import Router, F
-from aiogram.types import Message
+from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.filters import Command
 from database.engine import async_session
 from database.crud import get_or_create_user
@@ -162,6 +162,72 @@ async def cmd_boss_attack(message: Message):
         await message.answer(f"⚔️ ضربه زدی: {dmg:,}\n❤️ باس: {b['hp']:,}/{b['max_hp']:,}\n\n{boss_attack_text(b)}")
 
 @router.message(F.text.func(lambda t: bool(t) and not t.strip().startswith("/") and t.strip().lower() in ALIASES))
+
+
+@router.message(Command("worldpanel", "پنل_جهان", "پنلجهان", "جهانباز"))
+async def cmd_world_panel(message: Message):
+    async with async_session() as session:
+        user = await ensure_world_user(session, message)
+        st = world_state()
+        info = sky_info(user)
+        await session.commit()
+    x, y = int(getattr(user, 'world_x', 0) or 0), int(getattr(user, 'world_y', 0) or 0)
+    danger = min(100, 8 + (abs(x) + abs(y)) // 5)
+    lines = [
+        "🌍 <b>پنل جهان باز — نقشه جغرافیایی</b>", "",
+        f"🌌 {getattr(user, 'world', WORLD_NAME)}",
+        f"☁️ {info['name']}",
+        f"📍 مختصات: <b>({x}, {y})</b>",
+        f"🧭 منطقه: <b>{info['landmarks'][((abs(x)+abs(y)) % len(info['landmarks']))]}</b>",
+        f"🏙 شهر: <b>{getattr(user, 'city', START_CITY)}</b>",
+        f"☠️ خطر منطقه: <b>{danger}%</b>",
+        f"🍖 {getattr(user, 'hunger', 100)}% | 💧 {getattr(user, 'thirst', 100)}%",
+        "",
+        "🗺️ نقشه ۹×۹: حرکت کن و مختصاتت را تغییر بده.",
+        "⬆️ شمال   ⬅️ غرب   📍 مرکز   ➡️ شرق   ⬇️ جنوب",
+        "",
+        "🏙 /newcity — ساخت شهر",
+        "🌐 /newcountry — ساخت کشور",
+        "🏙 /worldcities — شهرهای این آسمان",
+        "📍 /landmarks — مکان‌های مهم",
+        "☁️ /skies — آسمان‌ها",
+        "⚔️ /holysects — فرقه‌های مقدس",
+        "⚔️ /warstatus — جنگ‌های فعال",
+    ]
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="⬆️ شمال", callback_data="ow:move:north"), InlineKeyboardButton(text="⬇️ جنوب", callback_data="ow:move:south")],
+        [InlineKeyboardButton(text="⬅️ غرب", callback_data="ow:move:west"), InlineKeyboardButton(text="📍 موقعیت", callback_data="ow:loc"), InlineKeyboardButton(text="➡️ شرق", callback_data="ow:move:east")],
+        [InlineKeyboardButton(text="🏙 شهرها", callback_data="ow:cities"), InlineKeyboardButton(text="📍 مکان‌ها", callback_data="ow:landmarks"), InlineKeyboardButton(text="☁️ آسمان", callback_data="ow:skies")],
+    ])
+    await message.answer("\n".join(lines), reply_markup=kb)
+
+@router.callback_query(F.data.startswith("ow:"))
+async def world_panel_callback(callback):
+    from aiogram.types import CallbackQuery
+    await callback.answer()
+    parts = callback.data.split(":")
+    action = parts[1] if len(parts) > 1 else "loc"
+    async with async_session() as session:
+        user = await get_or_create_user(session, callback.from_user.id, callback.from_user.full_name, callback.from_user.username)
+        migrate_player_position(user)
+        if action == "move" and len(parts) > 2:
+            result = move(user, parts[2])
+            await session.commit()
+            if result.get("cooldown"):
+                await callback.message.answer(f"⏳ برای حرکت بعدی {result['cooldown']} ثانیه صبر کن.")
+                return
+            await callback.message.edit_text(location_text(user), reply_markup=callback.message.reply_markup)
+        elif action == "loc":
+            await session.commit(); await callback.message.edit_text(location_text(user), reply_markup=callback.message.reply_markup)
+        elif action == "cities":
+            d=world_state(); info=sky_info(user); rows=[v for v in d.get("cities",{}).values() if int(v.get("sky",1) or 1)==current_sky(user)]
+            text=f"🏙️ <b>شهرهای {info['name']}</b>\n\n" + ("\n".join(f"• {v['name']} — ({v.get('x',0)}, {v.get('y',0)})" for v in rows[:30]) or "هنوز شهر بازیکنی در این آسمان ثبت نشده است.")
+            await session.commit(); await callback.message.edit_text(text, reply_markup=callback.message.reply_markup)
+        elif action == "landmarks":
+            info=sky_info(user); await session.commit(); await callback.message.edit_text("📍 <b>مکان‌های مهم</b>\n\n"+"\n".join("• "+x for x in info['landmarks']), reply_markup=callback.message.reply_markup)
+        elif action == "skies":
+            info=sky_info(user); await session.commit(); await callback.message.edit_text(f"☁️ <b>آسمان {info['number']} از ۹</b>\n{info['name']}\n\n{info['lore']}", reply_markup=callback.message.reply_markup)
+
 async def text_move(message: Message):
     raw = (message.text or "").strip().lower()
     direction = ALIASES.get(raw)
