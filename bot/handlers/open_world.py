@@ -3,7 +3,7 @@ from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.filters import Command
 from database.engine import async_session
 from database.crud import get_or_create_user
-from services.open_world import ALIASES, migrate_player_position, move, location_text, spawn_event, spawn_boss, create_city, create_country, feed, drink, hit_boss, world_state, boss_attack_text, current_sky, sky_info, challenge_heaven_stair, forced_sky_ascension, SKIES
+from services.open_world import ALIASES, migrate_player_position, move, location_text, spawn_event, spawn_boss, create_city, create_country, feed, drink, hit_boss, world_state, boss_attack_text, current_sky, sky_info, challenge_heaven_stair, forced_sky_ascension, SKIES, weekly_story
 
 router = Router()
 
@@ -161,9 +161,6 @@ async def cmd_boss_attack(message: Message):
     else:
         await message.answer(f"⚔️ ضربه زدی: {dmg:,}\n❤️ باس: {b['hp']:,}/{b['max_hp']:,}\n\n{boss_attack_text(b)}")
 
-@router.message(F.text.func(lambda t: bool(t) and not t.strip().startswith("/") and t.strip().lower() in ALIASES))
-
-
 @router.message(Command("worldpanel", "پنل_جهان", "پنلجهان", "جهانباز"))
 async def cmd_world_panel(message: Message):
     async with async_session() as session:
@@ -228,6 +225,7 @@ async def world_panel_callback(callback):
         elif action == "skies":
             info=sky_info(user); await session.commit(); await callback.message.edit_text(f"☁️ <b>آسمان {info['number']} از ۹</b>\n{info['name']}\n\n{info['lore']}", reply_markup=callback.message.reply_markup)
 
+@router.message(F.text.func(lambda t: bool(t) and not t.strip().startswith("/") and t.strip().lower() in ALIASES))
 async def text_move(message: Message):
     raw = (message.text or "").strip().lower()
     direction = ALIASES.get(raw)
@@ -243,3 +241,8 @@ async def text_move(message: Message):
     if result.get("encounter"):
         text += f"\n✨ {result['encounter']}"
     await message.answer(text)
+
+
+@router.message(Command("weeklystory", "داستانهفتگی", "داستان_هفتگی"))
+async def cmd_weekly_story(message: Message):
+    await message.answer(weekly_story())
