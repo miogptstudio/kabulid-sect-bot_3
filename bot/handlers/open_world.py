@@ -3,7 +3,7 @@ from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.filters import Command
 from database.engine import async_session
 from database.crud import get_or_create_user
-from services.open_world import ALIASES, migrate_player_position, move, location_text, spawn_event, spawn_boss, create_city, create_country, feed, drink, hit_boss, world_state, boss_attack_text, current_sky, sky_info, challenge_heaven_stair, forced_sky_ascension, SKIES, weekly_story
+from services.open_world import ALIASES, migrate_player_position, move, location_text, spawn_event, spawn_boss, create_city, create_country, feed, drink, hit_boss, world_state, boss_attack_text, current_sky, sky_info, challenge_heaven_stair, forced_sky_ascension, SKIES, weekly_story, WORLD_NAME, START_CITY
 
 router = Router()
 
