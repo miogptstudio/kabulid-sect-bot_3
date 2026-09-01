@@ -8,10 +8,18 @@ logger = logging.getLogger(__name__)
 
 
 def _normalize_url(url: str) -> str:
+    """Normalize DB URL for SQLAlchemy asyncpg and strip Neon-only params that break asyncpg."""
+    if not url:
+        return url
     if url.startswith("postgres://"):
         url = url.replace("postgres://", "postgresql+asyncpg://", 1)
     elif url.startswith("postgresql://") and "+asyncpg" not in url:
         url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    # channel_binding is not supported by asyncpg and causes connection errors on Neon
+    for junk in ("&channel_binding=require", "channel_binding=require&", "?channel_binding=require"):
+        url = url.replace(junk, "")
+    # clean leftover ?& or trailing ?
+    url = url.replace("?&", "?").rstrip("?&")
     return url
 
 
