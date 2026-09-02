@@ -1,5 +1,6 @@
 import os
 import logging
+from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from sqlalchemy import text
 from bot.config import DATABASE_URL, DATA_DIR
@@ -8,24 +9,40 @@ logger = logging.getLogger(__name__)
 
 
 def _normalize_url(url: str) -> str:
-    """Normalize DB URL for SQLAlchemy asyncpg and strip Neon-only params that break asyncpg."""
+    """Convert postgres URL to asyncpg and strip unsupported sslmode/ssl query params."""
     if not url:
         return url
     if url.startswith("postgres://"):
         url = url.replace("postgres://", "postgresql+asyncpg://", 1)
     elif url.startswith("postgresql://") and "+asyncpg" not in url:
         url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
-    # channel_binding is not supported by asyncpg and causes connection errors on Neon
-    for junk in ("&channel_binding=require", "channel_binding=require&", "?channel_binding=require"):
-        url = url.replace(junk, "")
-    # clean leftover ?& or trailing ?
-    url = url.replace("?&", "?").rstrip("?&")
+
+    # asyncpg does not accept sslmode=... (or ssl=...) as a query argument.
+    # Neon and most hosted Postgres require SSL; we pass it via connect_args instead.
+    if "sslmode=" in url or "?ssl=" in url or "&ssl=" in url:
+        parsed = urlparse(url)
+        qs = parse_qs(parsed.query)
+        qs.pop("sslmode", None)
+        qs.pop("ssl", None)
+        new_query = urlencode({k: v[0] for k, v in qs.items()}, doseq=False)
+        url = urlunparse(parsed._replace(query=new_query))
     return url
 
 
 os.makedirs(DATA_DIR, exist_ok=True)
 _url = _normalize_url(DATABASE_URL)
-engine = create_async_engine(_url, echo=False)
+
+# SSL is required for Neon / remote Postgres. sqlite does not need it.
+_connect_args = {}
+if _url.startswith("postgresql+asyncpg://"):
+    _connect_args["ssl"] = True
+
+engine = create_async_engine(
+    _url,
+    echo=False,
+    connect_args=_connect_args,
+    pool_pre_ping=True,
+)
 async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 
