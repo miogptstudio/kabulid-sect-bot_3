@@ -1,10 +1,12 @@
-"""محدودیت مصرف قرص بر اساس قلمرو — زیادهروی = انفجار"""
+"""محدودیت مصرف قرص — کول‌داون ۵ دقیقه‌ای + سقف روزانه بر اساس قلمرو"""
 from __future__ import annotations
-from datetime import datetime
+from datetime import datetime, timedelta
 from services.persist import get_dict, save as _psave
 
+# کول‌داون بین هر مصرف (درخواست کاربر: ۵ دقیقه)
+COOLDOWN_SECONDS = 5 * 60
+
 # سقف قرص روزانه بر اساس ایندکس قلمرو
-# اوایل (بیداری/پایه/متوسط/بالا): ۵
 BASE_LIMIT = 5
 PER_REALM_BONUS = 3  # هر قلمرو بالاتر +۳
 
@@ -14,7 +16,7 @@ REALM_ORDER = [
     "خلقت", "پوچی", "فراپوچی", "مطلق",
 ]
 
-OVERDOSE_DEATH_CHANCE = 0.60  # ۶۰٪ مرگ در صورت عبور از سقف
+OVERDOSE_DEATH_CHANCE = 0.60  # ۶۰٪ مرگ در صورت عبور از سقف روزانه
 
 
 def _map() -> dict:
@@ -39,7 +41,6 @@ def realm_index(realm: str) -> int:
 
 def max_pills(realm: str) -> int:
     idx = realm_index(realm or "بیداری")
-    # بیداری..بالا ≈ idx 0-3 → حداقل ۵
     return BASE_LIMIT + max(0, idx) * PER_REALM_BONUS
 
 
@@ -52,10 +53,25 @@ def used_today(tg: int) -> int:
     return int(rec.get("count") or 0)
 
 
+def _cooldown_left(rec: dict) -> int:
+    """ثانیه باقی‌مانده از کول‌داون ۵ دقیقه‌ای؛ ۰ یعنی آزاد."""
+    last = rec.get("last_at")
+    if not last:
+        return 0
+    try:
+        last_dt = datetime.fromisoformat(str(last))
+    except Exception:
+        return 0
+    elapsed = (datetime.utcnow() - last_dt).total_seconds()
+    left = COOLDOWN_SECONDS - elapsed
+    return int(left) if left > 0 else 0
+
+
 def register_pill(tg: int, realm: str, quantity: int = 1) -> tuple[bool, str, bool]:
     """
     returns (allowed_effect, message, died)
-    اگر بیش از سقف: اثر قرص اعمال میشود ولی ۶۰٪ مرگ
+    - اول کول‌داون ۵ دقیقه چک می‌شود
+    - بعد سقف روزانه؛ اگر بیش از سقف: اثر اعمال می‌شود ولی ۶۰٪ مرگ
     """
     import random
     quantity = max(1, int(quantity or 1))
@@ -64,31 +80,50 @@ def register_pill(tg: int, realm: str, quantity: int = 1) -> tuple[bool, str, bo
     sk = str(int(tg))
     rec = m.get(sk) or {}
     if rec.get("day") != _day():
-        rec = {"day": _day(), "count": 0}
+        rec = {"day": _day(), "count": 0, "last_at": None}
+
+    # کول‌داون ۵ دقیقه
+    left = _cooldown_left(rec)
+    if left > 0:
+        mins = left // 60
+        secs = left % 60
+        return False, (
+            f"⏳ محدودیت نوشیدن/مصرف قرص: هر ۵ دقیقه یک‌بار.\n"
+            f"حدود {mins} دقیقه و {secs} ثانیه دیگر صبر کن."
+        ), False
+
     previous = int(rec.get("count") or 0)
     count = previous + quantity
     rec["count"] = count
+    rec["last_at"] = datetime.utcnow().isoformat()
     m[sk] = rec
     _psave("pill_daily")
 
     if count <= limit:
-        return True, f"💊 مصرف دستهای ×{quantity} — قرص امروز: {count}/{limit}", False
+        return True, (
+            f"💊 مصرف ×{quantity} — امروز: {count}/{limit}\n"
+            f"⏱ کول‌داون بعدی: ۵ دقیقه"
+        ), False
 
     # overdose
     if random.random() < OVERDOSE_DEATH_CHANCE:
         return True, (
-            f"💥 زیادهروی قرص! (مصرف ×{quantity} | {count}/{limit})" + chr(10)
-            + "بدن تحمل نکرد و منفجر شدی." + chr(10)
-            + "برای سقف بالاتر، قلمرو تذهیب را ارتقا بده."
+            f"💥 زیادهروی قرص! (مصرف ×{quantity} | {count}/{limit})\n"
+            "بدن تحمل نکرد و منفجر شدی.\n"
+            "برای سقف بالاتر، قلمرو تذهیب را ارتقا بده."
         ), True
     return True, (
-        f"⚠️ زیادهروی قرص ({count}/{limit}) — این بار زنده ماندی (۴۰٪)." + chr(10)
-        + f"سقف فعلی قلمرو «{realm}»: {limit} عدد در روز." + chr(10)
-        + "ارتقای قلمرو = ظرفیت بیشتر."
+        f"⚠️ زیادهروی قرص ({count}/{limit}) — این بار زنده ماندی (۴۰٪).\n"
+        f"سقف فعلی قلمرو «{realm}»: {limit} عدد در روز.\n"
+        "ارتقای قلمرو = ظرفیت بیشتر. کول‌داون ۵ دقیقه فعال شد."
     ), False
 
 
 def status(tg: int, realm: str) -> str:
     limit = max_pills(realm)
     used = used_today(tg)
-    return f"💊 مصرف قرص امروز: {used}/{limit} (قلمروه {realm})"
+    m = _map()
+    rec = m.get(str(int(tg))) or {}
+    left = _cooldown_left(rec)
+    cd = f"آزاد ✅" if left <= 0 else f"{left // 60}:{left % 60:02d} باقی"
+    return f"💊 مصرف قرص امروز: {used}/{limit} (قلمروه {realm}) | کول‌داون ۵د: {cd}"

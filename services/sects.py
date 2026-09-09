@@ -62,6 +62,14 @@ async def create_sect(
     ok, msg = await can_create_sect(session, leader)
     if not ok:
         raise ValueError(msg)
+
+    # جلوگیری از UniqueViolation روی sects_name_key
+    name_clean = (name or "").strip()[:64]
+    if not name_clean:
+        raise ValueError("نام فرقه نمی‌تواند خالی باشد.")
+    existing_name = await session.execute(select(Sect).where(Sect.name == name_clean))
+    if existing_name.scalar_one_or_none():
+        raise ValueError(f"فرقه با نام «{name_clean}» از قبل وجود دارد. نام دیگری انتخاب کن.")
     
     from services.power import calc_power
     leader_power_data = await calc_power(session, leader)
@@ -72,7 +80,7 @@ async def create_sect(
         if int(parent_sect.power_level or 0) <= leader_power:
             raise ValueError("فرقه زیرمجموعه باید از فرقه مادر ضعیف‌تر باشد.")
     sect = Sect(
-        name=name[:64],
+        name=name_clean,
         sect_type=sect_type,
         description=description or f"فرقه {name}",
         leader_id=leader.id,

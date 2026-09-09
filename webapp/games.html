@@ -2,23 +2,30 @@
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>بازی‌ها</title>
+<title>بازی‌ها — جهان رزمی</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
 body{font-family:system-ui;background:#0f0f14;color:#eee;padding:12px;margin:0}
-button{padding:10px 12px;margin:3px;border:0;border-radius:10px;background:#6c5ce7;color:#fff}
+button{padding:10px 12px;margin:3px;border:0;border-radius:10px;background:#6c5ce7;color:#fff;font-size:14px}
 .card{background:#1a1a24;border-radius:14px;padding:12px;margin:10px 0}
 .board{display:grid;grid-template-columns:repeat(8,minmax(28px,11vw));gap:2px;justify-content:center;max-width:360px;margin:auto}
 .cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;background:#3d3d4f;font-size:clamp(16px,4.5vw,26px);cursor:pointer;border-radius:4px;user-select:none}
 .cell.l{background:#5a5a6e}
 .cell.sel{outline:2px solid #ffeaa7}
 .cell.hl{background:#6c5ce788}
-.nard{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
-.pip{width:40px;height:40px;border-radius:8px;background:#2d3436;display:flex;align-items:center;justify-content:center}
+.cell.legal{box-shadow:inset 0 0 0 2px #55efc4}
+.nard-board{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;max-width:340px;margin:10px auto}
+.point{min-height:70px;background:#2d3436;border-radius:8px;padding:4px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;font-size:12px}
+.point.top{justify-content:flex-start}
+.checker{width:22px;height:22px;border-radius:50%;margin:1px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:bold}
+.checker.w{background:#dfe6e9;color:#2d3436}
+.checker.b{background:#2d3436;color:#dfe6e9;border:1px solid #636e72}
+.pip{width:44px;height:44px;border-radius:10px;background:#2d3436;display:inline-flex;align-items:center;justify-content:center;font-size:20px;margin:4px}
+.hint{color:#b2bec3;font-size:13px;line-height:1.5}
 </style>
 </head>
 <body>
-<h2>🎮 بازی‌ها</h2>
+<h2>🎮 بازی‌های جهان رزمی</h2>
 <button onclick="show('chess')">♟️ شطرنج</button>
 <button onclick="show('nard')">🎲 تخته‌نرد</button>
 <button onclick="show('rps')">✊ سنگ‌کاغذ</button>
@@ -26,78 +33,224 @@ button{padding:10px 12px;margin:3px;border:0;border-radius:10px;background:#6c5c
 <div id="area" class="card"></div>
 <script>
 const tg=window.Telegram?.WebApp;tg?.ready();tg?.expand();
+
+// ========== شطرنج ==========
+const W='♙♖♘♗♕♔', B='♟♜♞♝♛♚';
 const startPcs=()=>{
   const p=Array(64).fill('');
-  const b=['♜','♞','♝','♛','♚','♝','♞','♜'];
-  for(let i=0;i<8;i++){p[i]=b[i];p[8+i]='♟';p[48+i]='♙';p[56+i]=['♖','♘','♗','♕','♔','♗','♘','♖'][i];}
+  const backB=['♜','♞','♝','♛','♚','♝','♞','♜'];
+  const backW=['♖','♘','♗','♕','♔','♗','♘','♖'];
+  for(let i=0;i<8;i++){p[i]=backB[i];p[8+i]='♟';p[48+i]='♙';p[56+i]=backW[i];}
   return p;
 };
-let pcs=startPcs(), sel=null, turn='w';
-function show(n){
-  const a=document.getElementById('area');
-  if(n==='chess'){
-    a.innerHTML='<p>کلیک روی مهره، بعد خانه مقصد — مهره‌ها جابه‌جا می‌شوند</p><div class="board" id="cb"></div><p id="cm">نوبت: سفید</p><button onclick="pcs=startPcs();sel=null;turn=\'w\';draw()">ریست</button>';
-    draw();
-  } else if(n==='nard'){
-    a.innerHTML=`<p>تخته‌نرد ساده — تاس بزن و امتیاز جمع کن (۳ دور)</p>
-      <div class="nard"><div class="pip" id="d1">?</div><div class="pip" id="d2">?</div></div>
-      <p id="ns">P1:0 | P2:0 | دور:0</p>
-      <button onclick="nardRoll(1)">تاس بازیکن ۱</button>
-      <button onclick="nardRoll(2)">تاس بازیکن ۲</button>`;
-    window._ns={s:[0,0],r:[0,0]};
-  } else if(n==='rps'){
-    a.innerHTML='<button onclick="rps(\'سنگ\')">✊</button><button onclick="rps(\'کاغذ\')">✋</button><button onclick="rps(\'قیچی\')">✌</button><p id="ro"></p>';
-  } else {
-    a.innerHTML='<button onclick="cas()">🎰 بچرخان</button><p id="co"></p>';
+let pcs=startPcs(), sel=null, turn='w', legal=new Set();
+
+function isWhite(pc){return W.includes(pc)}
+function isBlack(pc){return B.includes(pc)}
+function isEnemy(pc, meWhite){return meWhite?isBlack(pc):isWhite(pc)}
+function isFriend(pc, meWhite){return meWhite?isWhite(pc):isBlack(pc)}
+function xy(i){return [i%8, i>>3]}
+function idx(x,y){return y*8+x}
+function onBoard(x,y){return x>=0&&x<8&&y>=0&&y<8}
+
+function rayMoves(from, dirs, meWhite){
+  const out=[];
+  const [fx,fy]=xy(from);
+  for(const [dx,dy] of dirs){
+    let x=fx+dx, y=fy+dy;
+    while(onBoard(x,y)){
+      const i=idx(x,y);
+      if(!pcs[i]){ out.push(i); }
+      else { if(isEnemy(pcs[i], meWhite)) out.push(i); break; }
+      x+=dx; y+=dy;
+    }
   }
+  return out;
 }
+
+function legalMoves(from){
+  const pc=pcs[from]; if(!pc) return [];
+  const meW=isWhite(pc);
+  const [x,y]=xy(from);
+  const moves=[];
+  // pawn
+  if(pc==='♙'||pc==='♟'){
+    const dir = pc==='♙' ? -1 : 1;
+    const startRow = pc==='♙' ? 6 : 1;
+    const one=idx(x,y+dir);
+    if(onBoard(x,y+dir) && !pcs[one]) moves.push(one);
+    if(y===startRow && !pcs[one]){
+      const two=idx(x,y+2*dir);
+      if(onBoard(x,y+2*dir) && !pcs[two]) moves.push(two);
+    }
+    for(const dx of [-1,1]){
+      const cx=x+dx, cy=y+dir;
+      if(onBoard(cx,cy)){
+        const i=idx(cx,cy);
+        if(pcs[i] && isEnemy(pcs[i], meW)) moves.push(i);
+      }
+    }
+    return moves;
+  }
+  // knight
+  if(pc==='♘'||pc==='♞'){
+    for(const [dx,dy] of [[1,2],[2,1],[-1,2],[-2,1],[1,-2],[2,-1],[-1,-2],[-2,-1]]){
+      const nx=x+dx, ny=y+dy;
+      if(!onBoard(nx,ny)) continue;
+      const i=idx(nx,ny);
+      if(!pcs[i] || isEnemy(pcs[i], meW)) moves.push(i);
+    }
+    return moves;
+  }
+  // king
+  if(pc==='♔'||pc==='♚'){
+    for(let dx=-1;dx<=1;dx++) for(let dy=-1;dy<=1;dy++){
+      if(!dx&&!dy) continue;
+      const nx=x+dx, ny=y+dy;
+      if(!onBoard(nx,ny)) continue;
+      const i=idx(nx,ny);
+      if(!pcs[i] || isEnemy(pcs[i], meW)) moves.push(i);
+    }
+    return moves;
+  }
+  // rook / bishop / queen
+  const rookDirs=[[1,0],[-1,0],[0,1],[0,-1]];
+  const bishopDirs=[[1,1],[1,-1],[-1,1],[-1,-1]];
+  if(pc==='♖'||pc==='♜') return rayMoves(from, rookDirs, meW);
+  if(pc==='♗'||pc==='♝') return rayMoves(from, bishopDirs, meW);
+  if(pc==='♕'||pc==='♛') return rayMoves(from, rookDirs.concat(bishopDirs), meW);
+  return moves;
+}
+
 function draw(){
   const b=document.getElementById('cb'); if(!b)return; b.innerHTML='';
   pcs.forEach((pc,i)=>{
     const d=document.createElement('div');
     const light=((i%8)+(i/8|0))%2===0;
-    d.className='cell'+(light?' l':'')+(sel===i?' sel':'');
+    let cls='cell'+(light?' l':'');
+    if(sel===i) cls+=' sel';
+    if(legal.has(i)) cls+=' legal';
+    d.className=cls;
     d.textContent=pc;
     d.onclick=()=>click(i);
     b.appendChild(d);
   });
-  document.getElementById('cm').textContent='نوبت: '+(turn==='w'?'سفید':'سیاه');
+  const cm=document.getElementById('cm');
+  if(cm) cm.textContent='نوبت: '+(turn==='w'?'سفید ♔':'سیاه ♚');
 }
-function isWhite(pc){return '♙♖♘♗♕♔'.includes(pc)}
-function isBlack(pc){return '♟♜♞♝♛♚'.includes(pc)}
+
 function click(i){
   if(sel===null){
-    if(!pcs[i])return;
-    if(turn==='w'&&!isWhite(pcs[i]))return;
-    if(turn==='b'&&!isBlack(pcs[i]))return;
-    sel=i; draw(); return;
+    if(!pcs[i]) return;
+    if(turn==='w' && !isWhite(pcs[i])) return;
+    if(turn==='b' && !isBlack(pcs[i])) return;
+    sel=i;
+    legal=new Set(legalMoves(i));
+    draw(); return;
   }
-  if(sel===i){sel=null;draw();return;}
-  // move
-  const me=pcs[sel];
-  if(turn==='w'&&isWhite(pcs[i])){sel=i;draw();return;}
-  if(turn==='b'&&isBlack(pcs[i])){sel=i;draw();return;}
-  pcs[i]=me; pcs[sel]=''; sel=null; turn=turn==='w'?'b':'w'; draw();
+  if(sel===i){ sel=null; legal=new Set(); draw(); return; }
+  if(!legal.has(i)){
+    // انتخاب مهره خودی دیگر
+    if(pcs[i] && ((turn==='w'&&isWhite(pcs[i]))||(turn==='b'&&isBlack(pcs[i])))){
+      sel=i; legal=new Set(legalMoves(i)); draw(); return;
+    }
+    return;
+  }
+  // حرکت قانونی
+  pcs[i]=pcs[sel]; pcs[sel]='';
+  // ارتقای ساده سرباز
+  if(pcs[i]==='♙' && (i>>3)===0) pcs[i]='♕';
+  if(pcs[i]==='♟' && (i>>3)===7) pcs[i]='♛';
+  sel=null; legal=new Set();
+  turn = turn==='w' ? 'b' : 'w';
+  draw();
 }
-function nardRoll(p){
-  const st=window._ns; if(st.r[p-1]>=3)return;
-  const a=1+Math.floor(Math.random()*6),b=1+Math.floor(Math.random()*6);
-  document.getElementById('d1').textContent=a;
-  document.getElementById('d2').textContent=b;
-  st.s[p-1]+=a+b; st.r[p-1]++;
-  document.getElementById('ns').textContent=`P1:${st.s[0]} (${st.r[0]}/3) | P2:${st.s[1]} (${st.r[1]}/3)`;
-  if(st.r[0]>=3&&st.r[1]>=3){
-    const w=st.s[0]===st.s[1]?'مساوی':(st.s[0]>st.s[1]?'بازیکن ۱':'بازیکن ۲');
-    document.getElementById('ns').textContent+=' → '+w;
+
+// ========== تخته‌نرد ساده (نقاط + مهره + تاس) ==========
+function initNard(){
+  // 12 point board simplified: points 0-11 top, 12-23 bottom conceptually simplified to 12 slots
+  // state: array of {w:count, b:count} for 12 points
+  const pts = Array.from({length:12}, ()=>({w:0,b:0}));
+  // setup classic-ish simplified
+  pts[0].w=2; pts[5].b=5; pts[7].b=3; pts[11].w=5;
+  pts[0].b=2; pts[5].w=5; pts[7].w=3; pts[11].b=5;
+  return {pts, dice:[0,0], turn:'w', msg:'تاس بزن و مهره را حرکت بده (نسخه ساده)'};
+}
+let nard = null;
+
+function renderNard(){
+  const a=document.getElementById('area');
+  if(!nard) nard=initNard();
+  let html = `<p class="hint">تخته‌نرد ساده جهان رزمی — ۱۲ نقطه، تاس بزن، سپس روی نقطه مبدأ و مقصد کلیک کن. هدف: جمع کردن مهره‌ها به سمت خانه.</p>`;
+  html += `<div class="nard-board" id="nb">`;
+  nard.pts.forEach((p,i)=>{
+    const ch = [];
+    for(let k=0;k<p.w;k++) ch.push('<div class="checker w">W</div>');
+    for(let k=0;k<p.b;k++) ch.push('<div class="checker b">B</div>');
+    html += `<div class="point" data-i="${i}" onclick="nardClick(${i})"><small>${i+1}</small>${ch.join('')}</div>`;
+  });
+  html += `</div>`;
+  html += `<div style="text-align:center;margin:8px 0">
+    <span class="pip" id="d1">${nard.dice[0]||'?'}</span>
+    <span class="pip" id="d2">${nard.dice[1]||'?'}</span>
+  </div>`;
+  html += `<p id="nm">${nard.msg} | نوبت: ${nard.turn==='w'?'سفید':'سیاه'}</p>`;
+  html += `<button onclick="nardRoll()">🎲 تاس</button> <button onclick="nard=initNard();renderNard()">ریست</button>`;
+  a.innerHTML = html;
+}
+let nardSel = null;
+window.nardClick = function(i){
+  if(!nard || !nard.dice[0]){ nard.msg='اول تاس بزن'; renderNard(); return; }
+  if(nardSel===null){
+    const p=nard.pts[i];
+    const mine = nard.turn==='w' ? p.w : p.b;
+    if(mine<=0){ nard.msg='این نقطه مهره تو را ندارد'; renderNard(); return; }
+    nardSel=i; nard.msg=`نقطه ${i+1} انتخاب شد — مقصد را بزن`; renderNard(); return;
+  }
+  if(nardSel===i){ nardSel=null; nard.msg='لغو شد'; renderNard(); return; }
+  // move one checker
+  const from=nard.pts[nardSel], to=nard.pts[i];
+  if(nard.turn==='w'){ if(from.w<=0) return; from.w--; to.w++; }
+  else { if(from.b<=0) return; from.b--; to.b++; }
+  nardSel=null;
+  nard.dice=[0,0];
+  nard.turn = nard.turn==='w'?'b':'w';
+  nard.msg='حرکت انجام شد — تاس بعدی';
+  renderNard();
+};
+window.nardRoll = function(){
+  if(!nard) nard=initNard();
+  nard.dice=[1+Math.floor(Math.random()*6), 1+Math.floor(Math.random()*6)];
+  nard.msg=`تاس: ${nard.dice[0]} و ${nard.dice[1]} — مبدأ را انتخاب کن`;
+  nardSel=null;
+  renderNard();
+};
+
+// ========== UI ==========
+function show(n){
+  const a=document.getElementById('area');
+  if(n==='chess'){
+    a.innerHTML='<p class="hint">♟️ شطرنج: مهره را انتخاب کن (خانه‌های مجاز سبز می‌شوند)، بعد مقصد. حرکت‌ها طبق قوانین پایه شطرنج (بدون کیش/قلعه).</p><div class="board" id="cb"></div><p id="cm">نوبت: سفید</p><button onclick="pcs=startPcs();sel=null;legal=new Set();turn=\'w\';draw()">ریست</button>';
+    pcs=startPcs(); sel=null; legal=new Set(); turn='w'; draw();
+  } else if(n==='nard'){
+    nard=initNard(); nardSel=null; renderNard();
+  } else if(n==='rps'){
+    a.innerHTML='<p class="hint">سنگ‌کاغذ-قیچی</p><button onclick="rps(\'سنگ\')">✊ سنگ</button><button onclick="rps(\'کاغذ\')">✋ کاغذ</button><button onclick="rps(\'قیچی\')">✌ قیچی</button><p id="ro"></p>';
+  } else {
+    a.innerHTML='<p class="hint">کازینوی ساده جهان رزمی</p><button onclick="cas()">🎰 بچرخان</button><p id="co"></p>';
   }
 }
-function rps(u){const o=['سنگ','کاغذ','قیچی'][Math.floor(Math.random()*3)];
+function rps(u){
+  const o=['سنگ','کاغذ','قیچی'][Math.floor(Math.random()*3)];
   let r='مساوی';
-  if((u==='سنگ'&&o==='قیچی')||(u==='کاغذ'&&o==='سنگ')||(u==='قیچی'&&o==='کاغذ'))r='برد';
-  else if(u!==o)r='باخت';
-  document.getElementById('ro').textContent=`تو:${u} ربات:${o} → ${r}`;
+  if((u==='سنگ'&&o==='قیچی')||(u==='کاغذ'&&o==='سنگ')||(u==='قیچی'&&o==='کاغذ')) r='برد';
+  else if(u!==o) r='باخت';
+  document.getElementById('ro').textContent=`تو: ${u} | ربات: ${o} → ${r}`;
 }
-function cas(){const x=Math.floor(Math.random()*100);document.getElementById('co').textContent=x>95?'جکپات':x>70?'برد':x>40?'نزدیک':'باخت';}
+function cas(){
+  const x=Math.floor(Math.random()*100);
+  document.getElementById('co').textContent = x>95?'🎊 جکپات!':x>70?'✅ برد':x>40?'نزدیک بود':'❌ باخت';
+}
 show('chess');
 </script>
 </body>

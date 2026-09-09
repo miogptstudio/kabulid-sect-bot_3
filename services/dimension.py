@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from database.models_v3 import GroupDimension, VengefulSpirit
 from database.models import User
 
-DIM_TYPES = ["فانی", "بهشتی", "زیرین"]
+DIM_TYPES = ["جهان رزمی", "فانی", "بهشتی", "زیرین", "اژدهایی"]
 
 
 async def get_or_create_group_dim(session: AsyncSession, chat_id: int, title: str | None = None) -> GroupDimension:
@@ -14,7 +14,7 @@ async def get_or_create_group_dim(session: AsyncSession, chat_id: int, title: st
     if g:
         return g
     # private chat = personal dimension
-    dtype = "فانی"
+    dtype = "جهان رزمی"
     g = GroupDimension(
         chat_id=chat_id,
         name=(title or "بُعد شخصی")[:64],
@@ -66,6 +66,6 @@ async def release_spirit(session: AsyncSession, user: User) -> str:
     if not s:
         return "روح انتقامجوی فعالی نداری."
     s.is_active = False
-    user.world = "فانی"
+    user.world = "جهان رزمی"
     await session.commit()
     return "از مسیر انتقام خارج شدی و به دنیای فانی برگشتی."

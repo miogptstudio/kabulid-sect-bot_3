@@ -179,6 +179,21 @@ async def calc_power(session: AsyncSession, user: User) -> dict:
     except Exception:
         admin_p = 0
     total = base + rank_bonus + realm_p + root_p + weapon_p + spirit_p + job_p + body_p + char_p + race_p + admin_p
+    # آرتیفکت‌های مجهز
+    try:
+        from services.artifacts import power_bonus as art_bonus
+        weapon_p += int(art_bonus(int(getattr(user, "telegram_id", 0) or 0)))
+    except Exception:
+        pass
+        # ایونت آرش کمانگیر: +۱۵٪ قدرت
+    try:
+        from services.persist import get_dict
+        owners = (get_dict("arash_event") or {}).get("owners") or {}
+        if str(int(getattr(user, "telegram_id", 0) or 0)) in owners:
+            total = int(total * 1.15)
+            weapon_p = int(weapon_p + max(10, total * 0.02))
+    except Exception:
+        pass
     try:
         from services.advanced_systems import bloodline_bonus
         total = int(total * float(bloodline_bonus(int(getattr(user, "telegram_id", 0) or 0))))

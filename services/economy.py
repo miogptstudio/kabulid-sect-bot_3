@@ -67,8 +67,25 @@ async def exchange_to_coins(session: AsyncSession, user_id: int, stones: int = 1
 
 
 async def exchange_up(session: AsyncSession, user_id: int, kind: str, amount: int = 1) -> str:
-    """ارتقای ارز: spirit→heavenly→celestial→god"""
+    """ارتقای ارز در کل زنجیره"""
+    amount = max(1, int(amount))
     w = await get_or_create_wallet(session, user_id)
+    kind = (kind or "").strip().lower()
+    aliases = {
+        "heavenly": "heavenly", "بهشتی": "heavenly", "heaven": "heavenly",
+        "celestial": "celestial", "آسمانی": "celestial", "sky": "celestial",
+        "god": "god", "خدا": "god",
+        "chaos": "chaos", "هرجومرج": "chaos",
+        "void": "void", "پوچی": "void",
+        "origin": "origin", "ازلی": "origin",
+        "destiny": "destiny", "تقدیر": "destiny",
+        "immortal": "immortal", "جاودان": "immortal",
+        "creation": "creation", "خلقت": "creation",
+        "absolute": "absolute", "مطلق": "absolute",
+        "faith": "faith", "ایمان": "faith",
+        "dragon": "dragon", "اژدها": "dragon",
+    }
+    kind = aliases.get(kind, kind)
     if kind == "heavenly":
         cost = amount * STONE_PER_HEAVENLY
         if int(w.spirit_stones or 0) < cost:
@@ -173,8 +190,10 @@ async def exchange_up(session: AsyncSession, user_id: int, kind: str, amount: in
 
 
 async def exchange_down(session: AsyncSession, user_id: int, kind: str, amount: int = 1) -> str:
-    """تبدیل ارز بالاتر به پایینتر
-    kind: spirit (روحی→سکه) | heavenly (بهشتی→روحی) | celestial (آسمانی→بهشتی) | god (خدا→آسمانی)
+    """تبدیل ارز بالاتر به یک پله پایین‌تر — کل زنجیره پشتیبانی می‌شود.
+    spirit→سکه | heavenly→spirit | celestial→heavenly | god→celestial |
+    chaos→god | void→chaos | origin→void | destiny→origin |
+    immortal→destiny | creation→immortal | absolute→creation
     """
     amount = max(1, int(amount))
     w = await get_or_create_wallet(session, user_id)
@@ -184,105 +203,84 @@ async def exchange_down(session: AsyncSession, user_id: int, kind: str, amount: 
         "heavenly": "heavenly", "بهشتی": "heavenly", "heaven": "heavenly",
         "celestial": "celestial", "آسمانی": "celestial", "sky": "celestial",
         "god": "god", "خدا": "god", "godstone": "god",
-        "coin": "spirit", "سکه": "spirit",  # روحی→سکه
+        "chaos": "chaos", "هرجومرج": "chaos", "chaos_stones": "chaos",
+        "void": "void", "پوچی": "void", "void_stones": "void",
+        "origin": "origin", "ازلی": "origin", "origin_stones": "origin",
+        "destiny": "destiny", "تقدیر": "destiny", "destiny_stones": "destiny",
+        "immortal": "immortal", "جاودان": "immortal", "immortal_stones": "immortal",
+        "creation": "creation", "خلقت": "creation", "creation_stones": "creation",
+        "absolute": "absolute", "مطلق": "absolute", "absolute_stones": "absolute",
+        "dragon": "dragon", "اژدها": "dragon", "dragon_coins": "dragon",
+        "faith": "faith", "ایمان": "faith", "faith_stones": "faith",
+        "coin": "spirit", "سکه": "spirit",
     }
     kind = aliases.get(kind, kind)
 
-    if kind == "spirit":
-        have = int(w.spirit_stones or 0)
-        if have < amount:
-            return f"❌ سنگ روحی کافی نیست (داری: {have})"
-        w.spirit_stones = have - amount
-        gain = amount * COINS_PER_STONE
-        w.coins = int(w.coins or 0) + gain
-        await session.commit()
-        return f"⬇️ +{gain:,} سکه (از {amount} سنگ روحی) | سکه: {w.coins} | روحی: {w.spirit_stones}"
-
-    if kind == "heavenly":
-        have = int(getattr(w, "heavenly_stones", 0) or 0)
-        if have < amount:
-            return f"❌ سنگ بهشتی کافی نیست (داری: {have})"
-        w.heavenly_stones = have - amount
-        gain = amount * STONE_PER_HEAVENLY
-        w.spirit_stones = int(w.spirit_stones or 0) + gain
-        await session.commit()
-        return f"⬇️ +{gain:,} سنگ روحی (از {amount} بهشتی) | روحی: {w.spirit_stones} | بهشتی: {w.heavenly_stones}"
-
-    if kind == "celestial":
-        have = int(getattr(w, "celestial_stones", 0) or 0)
-        if have < amount:
-            return f"❌ سنگ آسمانی کافی نیست (داری: {have})"
-        w.celestial_stones = have - amount
-        gain = amount * HEAVENLY_PER_CELESTIAL
-        w.heavenly_stones = int(getattr(w, "heavenly_stones", 0) or 0) + gain
-        await session.commit()
-        return f"⬇️ +{gain:,} سنگ بهشتی (از {amount} آسمانی) | بهشتی: {w.heavenly_stones} | آسمانی: {w.celestial_stones}"
-
-    if kind == "god":
-        have = int(getattr(w, "god_stones", 0) or 0)
-        if have < amount:
-            return f"❌ سنگ خدا کافی نیست (داری: {have})"
-        w.god_stones = have - amount
-        gain = amount * CELESTIAL_PER_GOD
-        w.celestial_stones = int(getattr(w, "celestial_stones", 0) or 0) + gain
-        await session.commit()
-        return f"⬇️ +{gain:,} سنگ آسمانی (از {amount} خدا) | آسمانی: {w.celestial_stones} | خدا: {w.god_stones}"
-
-    if kind == "chaos":
-        have = int(getattr(w, "chaos_stones", 0) or 0)
-        if have < amount:
-            return f"❌ هرجومرج کافی نیست (داری: {have})"
-        w.chaos_stones = have - amount
-        gain = amount * GOD_PER_CHAOS
-        w.god_stones = int(getattr(w, "god_stones", 0) or 0) + gain
-        await session.commit()
-        return f"⬇️ +{gain:,} سنگ خدا (از {amount} هرجومرج)"
-    if kind == "void":
-        have = int(getattr(w, "void_stones", 0) or 0)
-        if have < amount:
-            return f"❌ پوچی کافی نیست (داری: {have})"
-        w.void_stones = have - amount
-        gain = amount * CHAOS_PER_VOID
-        w.chaos_stones = int(getattr(w, "chaos_stones", 0) or 0) + gain
-        await session.commit()
-        return f"⬇️ +{gain:,} هرجومرج (از {amount} پوچی)"
-    if kind == "origin":
-        have = int(getattr(w, "origin_stones", 0) or 0)
-        if have < amount:
-            return f"❌ ازلی کافی نیست (داری: {have})"
-        w.origin_stones = have - amount
-        gain = amount * VOID_PER_ORIGIN
-        w.void_stones = int(getattr(w, "void_stones", 0) or 0) + gain
-        await session.commit()
-        return f"⬇️ +{gain:,} پوچی (از {amount} ازلی)"
+    # (attr, lower_attr, rate, label, lower_label)
+    chain = {
+        "spirit": ("spirit_stones", "coins", COINS_PER_STONE, "سنگ روحی", "سکه"),
+        "heavenly": ("heavenly_stones", "spirit_stones", STONE_PER_HEAVENLY, "سنگ بهشتی", "سنگ روحی"),
+        "celestial": ("celestial_stones", "heavenly_stones", HEAVENLY_PER_CELESTIAL, "سنگ آسمانی", "سنگ بهشتی"),
+        "god": ("god_stones", "celestial_stones", CELESTIAL_PER_GOD, "سنگ خدا", "سنگ آسمانی"),
+        "chaos": ("chaos_stones", "god_stones", GOD_PER_CHAOS, "سنگ هرجومرج", "سنگ خدا"),
+        "void": ("void_stones", "chaos_stones", CHAOS_PER_VOID, "سنگ پوچی", "سنگ هرجومرج"),
+        "origin": ("origin_stones", "void_stones", VOID_PER_ORIGIN, "سنگ ازلی", "سنگ پوچی"),
+        "destiny": ("destiny_stones", "origin_stones", ORIGIN_PER_DESTINY, "سنگ تقدیر", "سنگ ازلی"),
+        "immortal": ("immortal_stones", "destiny_stones", DESTINY_PER_IMMORTAL, "سنگ جاودان", "سنگ تقدیر"),
+        "creation": ("creation_stones", "immortal_stones", IMMORTAL_PER_CREATION, "سنگ خلقت", "سنگ جاودان"),
+        "absolute": ("absolute_stones", "creation_stones", CREATION_PER_ABSOLUTE, "سنگ مطلق", "سنگ خلقت"),
+        "dragon": ("dragon_coins", "faith_stones", FAITH_PER_DRAGON, "سکه اژدها", "سنگ ایمان"),
+        "faith": ("faith_stones", "coins", 1000, "سنگ ایمان", "سکه"),
+    }
+    if kind not in chain:
+        return (
+            "نوع نامعتبر.\n"
+            "فرمت: /exchangedown spirit|heavenly|celestial|god|chaos|void|origin|destiny|immortal|creation|absolute|dragon|faith [n]\n"
+            "مثال: /exchangedown absolute 1  → مطلق به خلقت"
+        )
+    attr, lower, rate, label, lower_label = chain[kind]
+    have = int(getattr(w, attr, 0) or 0)
+    if have < amount:
+        return f"❌ {label} کافی نیست (داری: {have:,})"
+    setattr(w, attr, have - amount)
+    gain = amount * rate
+    setattr(w, lower, int(getattr(w, lower, 0) or 0) + gain)
+    await session.commit()
+    new_high = int(getattr(w, attr, 0) or 0)
+    new_low = int(getattr(w, lower, 0) or 0)
     return (
-        "نوع نامعتبر." + chr(10)
-        + "فرمت: /exchangedown spirit|heavenly|celestial|god|chaos|void|origin [n]"
+        f"⬇️ تبدیل شد: −{amount:,} {label} → +{gain:,} {lower_label}" + chr(10)
+        + f"{label}: {new_high:,} | {lower_label}: {new_low:,}"
     )
+
+
 
 
 def wallet_text(w: UserWallet) -> str:
+    nl = chr(10)
     return (
-        f"💰 <b>کیف پول</b>\n\n"
-        f"🪙 سکه: <b>{w.coins}</b>\n"
-        f"💎 سنگ روحی: <b>{w.spirit_stones}</b>\n"
-        f"✨ سنگ بهشتی: <b>{getattr(w, 'heavenly_stones', 0) or 0}</b>\n"
-        f"🌌 سنگ آسمانی: <b>{getattr(w, 'celestial_stones', 0) or 0}</b>\n"
-        f"👑 سنگ خدا: <b>{getattr(w, 'god_stones', 0) or 0}</b>\n"        f"🌪 سنگ هرجومرج: <b>{getattr(w, 'chaos_stones', 0) or 0}</b>\n"        f"🕳 سنگ پوچی: <b>{getattr(w, 'void_stones', 0) or 0}</b>\n"        f"🌌 سنگ ازلی: <b>{getattr(w, 'origin_stones', 0) or 0}</b>\n"        f"☯️ کارما: <b>{getattr(w, 'karma_points', 0) or 0}</b>\n"
-        f"🔮 سنگ تقدیر: <b>{getattr(w, 'destiny_stones', 0) or 0}</b>\n"
-        f"♾️ سنگ جاودان: <b>{getattr(w, 'immortal_stones', 0) or 0}</b>\n"
-        f"🌀 سنگ خلقت: <b>{getattr(w, 'creation_stones', 0) or 0}</b>\n"
-        f"💠 سنگ مطلق: <b>{getattr(w, 'absolute_stones', 0) or 0}</b>\n"
-        f"🙏 سنگ ایمان: <b>{getattr(w, 'faith_stones', 0) or 0}</b>\n"
-        f"🐉 سکه اژدها: <b>{getattr(w, 'dragon_coins', 0) or 0}</b>\n"
-        f"🪶 جوهر ازلی: <b>{getattr(w, 'eternal_ink', 0) or 0}</b>\n\n"
-        f"تبدیل:\n"
-        f"۱۰۰۰ سکه → ۱ روحی\n"
-        f"۱۰۰۰ روحی → ۱ بهشتی\n"
-        f"۱۰۰۰ بهشتی → ۱ آسمانی\n"
-        f"۱٬۰۰۰٬۰۰۰٬۰۰۰ آسمانی → ۱ خدا\n"
-        f"/exchangestone · /exchangeup heavenly|celestial|god"
+        f"💰 <b>کیف پول</b>{nl}{nl}"
+        f"🪙 سکه: <b>{int(w.coins or 0):,}</b>{nl}"
+        f"💎 سنگ روحی: <b>{int(w.spirit_stones or 0):,}</b>{nl}"
+        f"✨ سنگ بهشتی: <b>{int(getattr(w, 'heavenly_stones', 0) or 0):,}</b>{nl}"
+        f"🌌 سنگ آسمانی: <b>{int(getattr(w, 'celestial_stones', 0) or 0):,}</b>{nl}"
+        f"👑 سنگ خدا: <b>{int(getattr(w, 'god_stones', 0) or 0):,}</b>{nl}"
+        f"🌪 سنگ هرجومرج: <b>{int(getattr(w, 'chaos_stones', 0) or 0):,}</b>{nl}"
+        f"🕳 سنگ پوچی: <b>{int(getattr(w, 'void_stones', 0) or 0):,}</b>{nl}"
+        f"🌌 سنگ ازلی: <b>{int(getattr(w, 'origin_stones', 0) or 0):,}</b>{nl}"
+        f"🔮 سنگ تقدیر: <b>{int(getattr(w, 'destiny_stones', 0) or 0):,}</b>{nl}"
+        f"♾️ سنگ جاودان: <b>{int(getattr(w, 'immortal_stones', 0) or 0):,}</b>{nl}"
+        f"🌀 سنگ خلقت: <b>{int(getattr(w, 'creation_stones', 0) or 0):,}</b>{nl}"
+        f"💠 سنگ مطلق: <b>{int(getattr(w, 'absolute_stones', 0) or 0):,}</b>{nl}"
+        f"🙏 سنگ ایمان: <b>{int(getattr(w, 'faith_stones', 0) or 0):,}</b>{nl}"
+        f"🐉 سکه اژدها: <b>{int(getattr(w, 'dragon_coins', 0) or 0):,}</b>{nl}"
+        f"🪶 جوهر ازلی: <b>{int(getattr(w, 'eternal_ink', 0) or 0):,}</b>{nl}{nl}"
+        f"تبدیل: /convert up|down نوع تعداد{nl}"
+        f"/exchangeup · /exchangedown{nl}"
+        f"زنجیره: سکه↔روحی↔بهشتی↔آسمانی↔خدا↔هرجومرج↔پوچی↔ازلی↔تقدیر↔جاودان↔خلقت↔مطلق"
     )
+
+
 
 
 # معادل سکه برای هر واحد ارز (از پایین به بالا)

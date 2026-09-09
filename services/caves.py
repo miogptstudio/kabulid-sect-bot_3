@@ -25,6 +25,12 @@ _last_cave: dict[int, datetime] = {}
 CD = timedelta(minutes=30)  # کمی سریعتر
 
 
+# رویدادهای اضافی جهان رزمی در غارها
+_MARTIAL_FINDS = [
+    "تکه جوهر ازلی", "فلس اژدهای خردسال", "کاغذ طلسم کهنه",
+    "نقشه طبقه سیاه‌چال", "پژواک کمان آرش", "سنگ رعد",
+]
+
 def explore(tg_id: int, city_name: str):
     """همیشه غنیمت — غار پر از چیزهای مختلف"""
     now = datetime.utcnow()

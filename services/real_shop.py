@@ -16,6 +16,9 @@ PRODUCTS = {
     "rank_guardian": {"name": "ارتقای رتبه — سه مرحله", "price_toman": 199000, "type": "rank", "promote_steps": 3, "description": "سه مرحله ارتقای رتبه پس از تأیید ادمین."},
     "chest_pack_small": {"name": "بسته صندوق کوچک", "price_toman": 29000, "type": "bundle", "coins": 25000, "description": "۲۵٬۰۰۰ سکه؛ پاداش ثابت پس از تأیید."},
     "chest_pack_large": {"name": "بسته صندوق بزرگ", "price_toman": 79000, "type": "bundle", "coins": 100000, "description": "۱۰۰٬۰۰۰ سکه؛ پاداش ثابت پس از تأیید."},
+    "chest_pack_mega": {"name": "بسته صندوق جهان رزمی", "price_toman": 149000, "type": "bundle", "coins": 250000, "description": "۲۵۰٬۰۰۰ سکه ویژه جهان رزمی."},
+    "spirit_pack": {"name": "بسته سنگ روحی", "price_toman": 59000, "type": "bundle", "spirit_stones": 50, "description": "۵۰ سنگ روحی پس از تأیید."},
+    "arash_pack": {"name": "بسته ویژه آرش", "price_toman": 99000, "type": "bundle", "coins": 80000, "description": "۸۰٬۰۰۰ سکه + اولویت ایونت آرش (نمادین)."},
 }
 
 def card_number() -> str:
@@ -144,9 +147,15 @@ async def fulfill_order(order_id: str, admin_id: int) -> dict:
             if not user:
                 raise ValueError("کاربر پیدا نشد")
             if product.get("type") == "bundle":
-                # پاداش‌های فروشگاه در namespace پایدار ثبت می‌شوند.
                 from services.advanced_systems import add_stat
-                add_stat(user.telegram_id, "coins", int(product.get("coins", 0)))
+                from services.economy import get_or_create_wallet
+                coins = int(product.get("coins", 0) or 0)
+                w = await get_or_create_wallet(session, user.id)
+                if coins:
+                    w.coins = int(w.coins or 0) + coins
+                ss = int(product.get("spirit_stones", 0) or 0)
+                if ss:
+                    w.spirit_stones = int(w.spirit_stones or 0) + ss
                 await session.commit()
             elif product.get("type") == "rank":
                 from services.ranking import promote, can_promote
