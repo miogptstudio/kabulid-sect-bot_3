@@ -1,5 +1,6 @@
 from aiogram import Router
-from bot.utils.safe_telegram import safe_edit_text, F
+from bot.utils.safe_telegram import safe_edit_text
+from aiogram import F
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder
