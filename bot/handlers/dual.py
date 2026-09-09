@@ -1,4 +1,5 @@
 from aiogram import Router, F
+from bot.utils.safe_telegram import safe_edit_text
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
@@ -60,7 +61,7 @@ async def set_gender(callback: CallbackQuery):
             callback.from_user.full_name, callback.from_user.username
         )
         if user.gender in LOCKED_GENDERS:
-            await callback.message.edit_text(
+            await safe_edit_text(callback, 
                 f"جنسیت قبلاً «{user.gender}» ثبت شده و قابل تغییر نیست."
             )
             await callback.answer()
@@ -68,7 +69,7 @@ async def set_gender(callback: CallbackQuery):
         user.gender = gender
         await session.commit()
 
-    await callback.message.edit_text(
+    await safe_edit_text(callback, 
         f"✅ جنسیت «<b>{gender}</b>» ثبت شد.\n"
         f"دیگر قابل تغییر نیست. حالا میتوانی تذهیب کنی."
     )
@@ -150,7 +151,7 @@ async def dual_accept(callback: CallbackQuery):
             return
         msg = await accept_dual(session, dual, user.id)
         try:
-            await callback.message.edit_text(msg)
+            await safe_edit_text(callback, msg)
         except Exception:
             await callback.message.answer(msg)
     await callback.answer()
@@ -174,7 +175,7 @@ async def dual_reject(callback: CallbackQuery):
             return
         msg = await reject_dual(session, dual, user.id)
         try:
-            await callback.message.edit_text(msg)
+            await safe_edit_text(callback, msg)
         except Exception:
             await callback.message.answer(msg)
     await callback.answer()

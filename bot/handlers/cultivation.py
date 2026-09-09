@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 from aiogram import Router, F
+from bot.utils.safe_telegram import safe_edit_text
 from aiogram.types import Message, FSInputFile, CallbackQuery, URLInputFile
 from aiogram.filters import Command, Filter
 from aiogram.utils.keyboard import InlineKeyboardBuilder

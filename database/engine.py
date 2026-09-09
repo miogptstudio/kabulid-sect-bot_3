@@ -1,6 +1,5 @@
 import os
 import logging
-from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from sqlalchemy import text
 from bot.config import DATABASE_URL, DATA_DIR
@@ -9,40 +8,39 @@ logger = logging.getLogger(__name__)
 
 
 def _normalize_url(url: str) -> str:
-    """Convert postgres URL to asyncpg and strip unsupported sslmode/ssl query params."""
+    """Normalize DB URL for SQLAlchemy asyncpg; strip sslmode/ssl/channel_binding that break asyncpg."""
     if not url:
         return url
     if url.startswith("postgres://"):
         url = url.replace("postgres://", "postgresql+asyncpg://", 1)
     elif url.startswith("postgresql://") and "+asyncpg" not in url:
         url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
-
-    # asyncpg does not accept sslmode=... (or ssl=...) as a query argument.
-    # Neon and most hosted Postgres require SSL; we pass it via connect_args instead.
-    if "sslmode=" in url or "?ssl=" in url or "&ssl=" in url:
+    # strip query params asyncpg does not accept
+    try:
+        from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
         parsed = urlparse(url)
         qs = parse_qs(parsed.query)
-        qs.pop("sslmode", None)
-        qs.pop("ssl", None)
+        for bad in ("sslmode", "ssl", "channel_binding"):
+            qs.pop(bad, None)
         new_query = urlencode({k: v[0] for k, v in qs.items()}, doseq=False)
         url = urlunparse(parsed._replace(query=new_query))
+    except Exception:
+        for junk in (
+            "&channel_binding=require", "channel_binding=require&", "?channel_binding=require",
+            "&sslmode=require", "sslmode=require&", "?sslmode=require",
+            "&sslmode=prefer", "sslmode=prefer&", "?sslmode=prefer",
+        ):
+            url = url.replace(junk, "")
+        url = url.replace("?&", "?").rstrip("?&")
     return url
 
 
 os.makedirs(DATA_DIR, exist_ok=True)
 _url = _normalize_url(DATABASE_URL)
-
-# SSL is required for Neon / remote Postgres. sqlite does not need it.
 _connect_args = {}
 if _url.startswith("postgresql+asyncpg://"):
     _connect_args["ssl"] = True
-
-engine = create_async_engine(
-    _url,
-    echo=False,
-    connect_args=_connect_args,
-    pool_pre_ping=True,
-)
+engine = create_async_engine(_url, echo=False, connect_args=_connect_args, pool_pre_ping=True)
 async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 
@@ -59,13 +57,13 @@ USER_COLUMNS = [
     ("equipped_weapon_id", "INTEGER NULL"),
     ("has_cyrus_sword", "BOOLEAN DEFAULT FALSE"),
     ("first_cities", "TEXT NULL"),
-    ("city", "VARCHAR(64) DEFAULT 'tehran'"),
+    ("city", "VARCHAR(64) DEFAULT 'شهر آغازین'"),
     ("world_x", "INTEGER DEFAULT 0"),
     ("world_y", "INTEGER DEFAULT 0"),
     ("hunger", "INTEGER DEFAULT 100"),
     ("thirst", "INTEGER DEFAULT 100"),
     ("last_world_move_at", "TIMESTAMP NULL"),
-    ("world", "VARCHAR(64) DEFAULT 'فانی'"),
+    ("world", "VARCHAR(64) DEFAULT 'جهان رزمی'"),
     ("sky", "INTEGER DEFAULT 1"),
     ("sky_trial", "BOOLEAN DEFAULT FALSE"),
     ("sky_ascended_at", "TIMESTAMP NULL"),

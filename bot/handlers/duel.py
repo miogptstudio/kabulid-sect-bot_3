@@ -1,5 +1,6 @@
 import random
 from aiogram import Router, F
+from bot.utils.safe_telegram import safe_edit_text
 from aiogram.types import Message, FSInputFile, CallbackQuery, URLInputFile
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.filters import Command
@@ -101,6 +102,29 @@ async def _resolve_duel(session, challenger: User, opponent: User, stake: int = 
         from services.retention import event_add_score
         if getattr(winner, 'telegram_id', None):
             event_add_score(int(winner.telegram_id), 5)
+        try:
+            from services.martial_quests import progress
+            if getattr(winner, "telegram_id", None):
+                progress(int(winner.telegram_id), "duels_won", 1)
+                progress(int(winner.telegram_id), "duels_done", 1)
+            if getattr(loser, "telegram_id", None):
+                progress(int(loser.telegram_id), "duels_done", 1)
+        except Exception:
+            pass
+        try:
+            from services.campaign import progress as camp_prog
+            from services.season_league import add_score
+            from services.combo_combat import unlock_by_progress
+            camp_prog(int(winner.telegram_id), "duels_won", 1)
+            camp_prog(int(winner.telegram_id), "duels_done", 1)
+            if getattr(loser, "telegram_id", None):
+                camp_prog(int(loser.telegram_id), "duels_done", 1)
+            add_score(int(winner.telegram_id), 15, "duel_win")
+            if getattr(loser, "telegram_id", None):
+                add_score(int(loser.telegram_id), 3, "duel_loss")
+            unlock_by_progress(int(winner.telegram_id), duels_won=int(getattr(winner, "wins", 0) or 0))
+        except Exception:
+            pass
     except Exception:
         pass
     try:
@@ -256,7 +280,7 @@ async def cb_duel_accept(callback: CallbackQuery, state: FSMContext):
             cw = await get_or_create_wallet(session, challenger.id)
             ow = await get_or_create_wallet(session, opponent.id)
             if cw.coins < stake or ow.coins < stake:
-                await callback.message.edit_text(tr(callback.from_user.id, "یکی از طرفین سکه شرط را ندارد. دوئل لغو."))
+                await safe_edit_text(callback, tr(callback.from_user.id, "یکی از طرفین سکه شرط را ندارد. دوئل لغو."))
                 await state.clear()
                 await callback.answer()
                 return
@@ -289,7 +313,7 @@ async def cb_duel_reject(callback: CallbackQuery, state: FSMContext):
             await callback.answer(tr(callback.from_user.id, "امروز ۵ بار رد کردی. فردا دوباره."), show_alert=True)
             return
         _inc_reject(callback.from_user.id)
-    await callback.message.edit_text(tr(callback.from_user.id, "❌ دوئل رد شد."))
+    await safe_edit_text(callback, tr(callback.from_user.id, "❌ دوئل رد شد."))
     await state.clear()
     await callback.answer()
 

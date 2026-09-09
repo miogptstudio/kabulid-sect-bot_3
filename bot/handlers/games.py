@@ -1,6 +1,7 @@
 from services.i18n import t_user, get_lang, t as _t, tr
 import random
 from aiogram import Router, F
+from bot.utils.safe_telegram import safe_edit_text
 from aiogram.types import Message, CallbackQuery, WebAppInfo
 from aiogram.filters import Command, Filter as _AiogramFilter
 from aiogram.utils.keyboard import InlineKeyboardBuilder
@@ -115,27 +116,27 @@ async def cb_game_menu(callback: CallbackQuery):
                 callback_data=f"rps:{owner}:{name}",
             )
         builder.adjust(3)
-        await callback.message.edit_text(
+        await safe_edit_text(callback, 
             "✊✋✌ یکی را انتخاب کن:",
             reply_markup=builder.as_markup(),
         )
     elif kind == "nard":
-        await callback.message.edit_text(tr(callback.from_user.id, "🎯 تختهنرد واقعی در وباپ:\nهمه مهرهها را به خانه بیاور → مهره را بزن → دکمه «خروج مهره»\n/nard"))
+        await safe_edit_text(callback, tr(callback.from_user.id, "🎯 تختهنرد واقعی در وباپ:\nهمه مهرهها را به خانه بیاور → مهره را بزن → دکمه «خروج مهره»\n/nard"))
     elif kind == "dice":
         d1, d2 = random.randint(1, 6), random.randint(1, 6)
-        await callback.message.edit_text(
+        await safe_edit_text(callback, 
             f"🎲 <b>تاس تختهنرد</b>\n\n{d1} — {d2}\nجمع: {d1 + d2}"
         )
     elif kind == "casino":
-        await callback.message.edit_text(tr(callback.from_user.id, "🎰 برای کازینو بنویس:\n/casino مبلغ\nمثال: /casino 20\n(حداقل ۱۰ سکه)"))
+        await safe_edit_text(callback, tr(callback.from_user.id, "🎰 برای کازینو بنویس:\n/casino مبلغ\nمثال: /casino 20\n(حداقل ۱۰ سکه)"))
     elif kind == "chess":
         board = _chess_board_text()
-        await callback.message.edit_text(
+        await safe_edit_text(callback, 
             f"♟️ <b>شطرنج (نمایشی)</b>\n\n<code>{board}</code>\n\n"
             f"نسخه کاملتر در وباپ: .../webapp/games.html"
         )
     elif kind == "hukum":
-        await callback.message.edit_text(tr(callback.from_user.id, "🃏 <b>حکم</b>\n\nبرای شروع: /hukum\nبا حریف: ریپلای + /hukumduel"))
+        await safe_edit_text(callback, tr(callback.from_user.id, "🃏 <b>حکم</b>\n\nبرای شروع: /hukum\nبا حریف: ریپلای + /hukumduel"))
     elif kind == "puzzlemenu":
         b = InlineKeyboardBuilder()
         b.button(text="🧩 پازل الگو", callback_data=f"game:pattern:{owner}")
@@ -144,7 +145,7 @@ async def cb_game_menu(callback: CallbackQuery):
         b.button(text="🔤 بههمریخته", callback_data=f"game:scramble:{owner}")
         b.button(text="🎯 حدس عدد", callback_data=f"game:guess:{owner}")
         b.adjust(1)
-        await callback.message.edit_text(
+        await safe_edit_text(callback, 
             "🧩 <b>بازیهای فکری و پازل</b>" + chr(10) + chr(10)
             + "یکی را انتخاب کن یا:" + chr(10)
             + "/puzzle /riddle /mathquiz /scramble /guess",
@@ -159,16 +160,16 @@ async def cb_game_menu(callback: CallbackQuery):
     elif kind == "pattern":
         await _send_pattern(callback.message, callback.from_user.id, edit=True)
     elif kind == "guess":
-        await callback.message.edit_text(tr(callback.from_user.id, "🎯 /guess برای حدس عدد ۱ تا ۱۰۰"))
+        await safe_edit_text(callback, tr(callback.from_user.id, "🎯 /guess برای حدس عدد ۱ تا ۱۰۰"))
     elif kind == "web":
         import os
         url = (os.getenv("WEBAPP_URL") or "").strip().rstrip("/")
         if url:
             b = InlineKeyboardBuilder()
             b.row(__import__("aiogram.types", fromlist=["InlineKeyboardButton"]).InlineKeyboardButton(text="🌌 باز کردن وباپ", web_app=WebAppInfo(url=url + "/")))
-            await callback.message.edit_text("🌌 <b>۹ آسمان</b>\nوباپ به همان حساب تلگرام و دیتابیس ربات متصل است.", reply_markup=b.as_markup())
+            await safe_edit_text(callback, "🌌 <b>۹ آسمان</b>\nوباپ به همان حساب تلگرام و دیتابیس ربات متصل است.", reply_markup=b.as_markup())
         else:
-            await callback.message.edit_text("🌐 متغیر <code>WEBAPP_URL</code> را در Render تنظیم کن؛ سپس /webapp را بزن.")
+            await safe_edit_text(callback, "🌐 متغیر <code>WEBAPP_URL</code> را در Render تنظیم کن؛ سپس /webapp را بزن.")
     await callback.answer()
 
 
@@ -226,7 +227,7 @@ async def cb_rps(callback: CallbackQuery):
             await session.commit()
     else:
         result = "باخت 😢"
-    await callback.message.edit_text(
+    await safe_edit_text(callback, 
         f"تو: <b>{choice}</b>\nربات: <b>{bot_choice}</b>\n\n{result}"
     )
     await callback.answer()
@@ -453,7 +454,7 @@ async def cb_hk_card(callback: CallbackQuery):
                 pass
         elif st["score"] < st["bot"]:
             final = "ربات برد"
-        await callback.message.edit_text(
+        await safe_edit_text(callback, 
             f"🃏 حکم: {st['trump']}" + chr(10)
             + f"تو: {my} | ربات: {bot}" + chr(10)
             + res + chr(10) + chr(10)
@@ -467,7 +468,7 @@ async def cb_hk_card(callback: CallbackQuery):
         for i, c in enumerate(st["hand"]):
             builder.button(text=c, callback_data=f"hkcard:{owner}:{i}")
         builder.adjust(1)
-        await callback.message.edit_text(
+        await safe_edit_text(callback, 
             f"🃏 حکم: <b>{st['trump']}</b>" + chr(10)
             + f"تو: {my} | ربات: {bot} — {res}" + chr(10)
             + f"امتیاز: تو {st['score']} | ربات {st['bot']}" + chr(10)
@@ -508,7 +509,7 @@ async def cb_hukum_acc(callback: CallbackQuery):
         await callback.answer()
         return
     winner = random.choice([callback.from_user.full_name, "حریف"])
-    await callback.message.edit_text(f"🃏 حکم {trump}" + chr(10) + f"برنده: {winner}")
+    await safe_edit_text(callback, f"🃏 حکم {trump}" + chr(10) + f"برنده: {winner}")
     await callback.answer()
 
 
@@ -536,7 +537,7 @@ async def cb_nard_bot(callback: CallbackQuery):
     if callback.from_user.id != owner:
         await callback.answer()
         return
-    await callback.message.edit_text(
+    await safe_edit_text(callback, 
         "🎲 <b>تختهنرد واقعی</b>" + chr(10)
         + "برای حرکت مهره، بار، و <b>خروج (bearing off)</b> از وباپ استفاده کن:" + chr(10)
         + "منوی ربات → Open WebApp → بازیها → تختهنرد → با ربات" + chr(10) + chr(10)
@@ -551,7 +552,7 @@ async def cb_nard_bot(callback: CallbackQuery):
 
 @router.callback_query(F.data.startswith("nardonline:"))
 async def cb_nard_online(callback: CallbackQuery):
-    await callback.message.edit_text(
+    await safe_edit_text(callback, 
         "🌐 تختهنرد آنلاین در وباپ:" + chr(10)
         + "۱) منوی ربات → Open WebApp" + chr(10)
         + "۲) بخش بازیها → تختهنرد → آنلاین" + chr(10)

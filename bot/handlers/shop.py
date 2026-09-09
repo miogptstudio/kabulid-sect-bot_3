@@ -1,4 +1,5 @@
 from aiogram import Router, F
+from bot.utils.safe_telegram import safe_edit_text
 from aiogram.types import Message, FSInputFile, CallbackQuery, URLInputFile
 from aiogram.filters import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder
@@ -188,7 +189,7 @@ async def _render_building(callback: CallbackQuery, owner_id: int, building_id: 
     builder.adjust(2)
 
     try:
-        await callback.message.edit_text(text, reply_markup=builder.as_markup())
+        await safe_edit_text(callback, text, reply_markup=builder.as_markup())
     except Exception:
         try:
             await callback.message.answer(text, reply_markup=builder.as_markup())
@@ -219,7 +220,7 @@ async def shop_back(callback: CallbackQuery):
         builder.button(text=b.name, callback_data=f"building:{owner_id}:{b.id}")
     builder.adjust(1)
 
-    await callback.message.edit_text(text, reply_markup=builder.as_markup())
+    await safe_edit_text(callback, text, reply_markup=builder.as_markup())
     await callback.answer()
 
 
@@ -403,6 +404,9 @@ async def cmd_use_item(message: Message):
             from services.cultivation import get_or_create_cultivation as _goc
             _cult = await _goc(session, user.id)
             _okp, _pillmsg, _pill_died = register_pill(message.from_user.id, _cult.realm or "بیداری", use_qty)
+            if not _okp:
+                await message.answer(_pillmsg)
+                return
             if _pill_died:
                 user.is_dead = True
                 user.blood = 0

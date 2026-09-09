@@ -24,14 +24,14 @@ async def cmd_profile(message: Message):
             username=message.from_user.username
         )
         pw = await calc_power(session, user)
-        city = get_city(getattr(user, "city", None) or "tehran")
+        city = get_city(getattr(user, "city", None) or "start")
         wallet = await get_or_create_wallet(session, user.id)
         cult = await get_or_create_cultivation(session, user.id)
 
         lifespan = getattr(user, "lifespan", None)
         if lifespan is None:
             lifespan = 100
-        world = getattr(user, "world", None) or "فانی"
+        world = getattr(user, "world", None) or "جهان رزمی"
 
         win_rate = user.win_rate
         virgin = "باکره" if user.is_virgin else "غیر باکره"

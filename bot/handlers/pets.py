@@ -183,7 +183,7 @@ async def cmd_hunt(message: Message):
             await message.answer("⏳ هر ساعت فقط یک شکار." + chr(10) + f"مانده: {mnt} دقیقه و {sec} ثانیه")
             return
 
-        world = getattr(user, "world", "فانی") or "فانی"
+        world = getattr(user, "world", "جهان رزمی") or "جهان رزمی"
         risk = 0.35 if world != "زیرین" else 0.7
         try:
             from bot.config import HUNT_RISK_NORMAL, HUNT_RISK_UNDERWORLD
@@ -575,7 +575,7 @@ async def cmd_daily_coin(message: Message):
 async def cmd_exchange_up(message: Message):
     parts = (message.text or "").split()
     if len(parts) < 2:
-        await message.answer(tr(message.from_user.id, "فرمت: /exchangeup heavenly | celestial | god [تعداد]"))
+        await message.answer(tr(message.from_user.id, "فرمت: /exchangeup heavenly|celestial|god|chaos|void|origin|destiny|immortal|creation|absolute|faith|dragon [n]\nیا /convert up god 1"))
         return
     kind = parts[1]
     try:
@@ -591,18 +591,72 @@ async def cmd_exchange_up(message: Message):
     await message.answer(msg)
 
 
+
+
+@router.message(Command("convert", "تبدیلارز", "تبدیل", "صرافی"))
+async def cmd_convert(message: Message):
+    """تبدیل دوطرفه ارز: /convert up|down نوع تعداد"""
+    parts = (message.text or "").split()
+    nl = chr(10)
+    if len(parts) < 3:
+        await message.answer(
+            "💱 <b>صرافی جهان رزمی</b>" + nl + nl
+            + "بالا بردن:" + nl
+            + "/convert up heavenly|celestial|god|chaos|void|origin|destiny|immortal|creation|absolute|dragon [n]" + nl + nl
+            + "پایین آوردن:" + nl
+            + "/convert down spirit|heavenly|celestial|god|chaos|void|origin|destiny|immortal|creation|absolute|dragon|faith [n]" + nl + nl
+            + "مثال:" + nl
+            + "/convert up god 1" + nl
+            + "/convert down absolute 1" + nl
+            + "/convert down spirit 5" + nl + nl
+            + "همچنین: /exchangeup · /exchangedown · /wallet"
+        )
+        return
+    direction = parts[1].strip().lower()
+    kind = parts[2].strip()
+    amount = 1
+    if len(parts) >= 4:
+        try:
+            amount = max(1, int(parts[3].replace(",", "").replace("_", "")))
+        except ValueError:
+            await message.answer("تعداد نامعتبر")
+            return
+    if direction in ("up", "بالا", "ارتقا", "u", "+"):
+        direction = "up"
+    elif direction in ("down", "پایین", "نزول", "d", "-"):
+        direction = "down"
+    else:
+        await message.answer("جهت را مشخص کن: up یا down" + nl + "مثال: /convert down god 1")
+        return
+    async with async_session() as session:
+        user = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
+        if direction == "up":
+            from services.economy import exchange_up
+            msg = await exchange_up(session, user.id, kind, amount)
+        else:
+            from services.economy import exchange_down
+            msg = await exchange_down(session, user.id, kind, amount)
+    await message.answer(msg)
+
+
+
 @router.message(Command("exchangedown", "تبدیلپایین", "تبدیل_پایین", "نزولارز"))
 async def cmd_exchange_down(message: Message):
     """تبدیل ارز بالاتر به پایینتر"""
     parts = (message.text or "").split()
     if len(parts) < 2:
         await message.answer(
-            "⬇️ <b>تبدیل به ارز پایینتر</b>" + chr(10)
-            + "/exchangedown spirit [n] — روحی → سکه (×1000)" + chr(10)
-            + "/exchangedown heavenly [n] — بهشتی → روحی (×1000)" + chr(10)
-            + "/exchangedown celestial [n] — آسمانی → بهشتی (×1000)" + chr(10)
-            + "/exchangedown god [n] — خدا → آسمانی (×1e9)" + chr(10)
-            + "مثال: /exchangedown heavenly 2"
+            "⬇️ <b>تبدیل ارز بالاتر → پایین‌تر</b>" + chr(10)
+            + "زنجیره کامل:" + chr(10)
+            + "absolute → creation → immortal → destiny → origin → void → chaos → god → celestial → heavenly → spirit → سکه" + chr(10)
+            + "dragon → faith → سکه" + chr(10) + chr(10)
+            + "/exchangedown spirit|heavenly|celestial|god|chaos|void|origin|destiny|immortal|creation|absolute|dragon|faith [n]" + chr(10)
+            + "مثال: /exchangedown absolute 1" + chr(10)
+            + "مثال: /exchangedown god 2" + chr(10)
+            + "یا /convert down god 2"
         )
         return
     kind = parts[1]

@@ -2,6 +2,7 @@ import asyncio
 import hashlib
 import random
 from aiogram import Router, F
+from bot.utils.safe_telegram import safe_edit_text
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder
@@ -226,7 +227,7 @@ async def process_guardian_answer(callback: CallbackQuery):
             await session.commit()
 
     try:
-        await callback.message.edit_text(text)
+        await safe_edit_text(callback, text)
     except Exception:
         await callback.message.answer(text)
     await callback.answer()
@@ -318,7 +319,7 @@ async def gduel_ans(callback: CallbackQuery):
         w.coins += 20
         await session.commit()
 
-    await callback.message.edit_text(
+    await safe_edit_text(callback, 
         f"🏆 {callback.from_user.full_name} زودتر جواب درست داد و برد!"
     )
     await callback.answer("بردی!")

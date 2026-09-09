@@ -1,4 +1,5 @@
 from aiogram import Router, F
+from bot.utils.safe_telegram import safe_edit_text, safe_callback_answer
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
@@ -58,7 +59,7 @@ async def cb_activate_bloodline(callback: CallbackQuery):
         return await callback.answer("❌ این تبار وجود ندارد.", show_alert=True)
     await callback.answer(f"✅ تبار «{name}» فعال شد.", show_alert=True)
     try:
-        await callback.message.edit_text(
+        await safe_edit_text(callback, 
             f"🧬 <b>تبار فعال شد</b>\n\n"
             f"تبار فعلی: <b>{name}</b>\n"
             f"ضریب تبار: ×{BLOODLINES[name][0]}\n\n"
@@ -402,7 +403,7 @@ async def admin_orders_panel(callback: CallbackQuery):
         lines.append(f"{icon} <code>{o['id']}</code> | <code>{o['tg_id']}</code> | {int(o.get('amount_toman',0)):,} تومان")
         lines.append(f"   {o.get('product_id','—')} · {o.get('status','—')}")
     lines.append(f"\n📊 کل: {stats['total']} | تأیید: {stats['approved']} | رد: {stats['rejected']}")
-    await callback.message.edit_text("\n".join(lines))
+    await safe_edit_text(callback, "\n".join(lines))
     await callback.answer("فهرست به‌روزرسانی شد.")
 
 @router.callback_query(F.data.startswith("realorder:"))

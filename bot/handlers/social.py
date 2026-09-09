@@ -4,6 +4,7 @@ from services import servants as servmod
 import random
 from datetime import datetime
 from aiogram import Router, F
+from bot.utils.safe_telegram import safe_edit_text
 from aiogram.types import Message, CallbackQuery, URLInputFile, FSInputFile
 from aiogram.filters import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder
@@ -800,7 +801,7 @@ async def cb_rps_pv(callback: CallbackQuery):
         result = f"{callback.from_user.full_name} برد! 🎉"
     else:
         result = f"حریف برد! (انتخاب حریف: {ch_choice})"
-    await callback.message.edit_text(
+    await safe_edit_text(callback, 
         f"تو: {choice}\nحریف: {ch_choice}\n\n{result}"
     )
     await callback.answer()

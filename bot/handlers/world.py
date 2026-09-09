@@ -46,7 +46,7 @@ async def cmd_cities(message: Message):
             message.from_user.full_name, message.from_user.username
         )
         cid = await ensure_user_city(session, user)
-        world = getattr(user, "world", None) or "فانی"
+        world = getattr(user, "world", None) or "جهان رزمی"
     text = list_cities_text(cid, world=world)
     text += f"\n\nدنیای فعلی: <b>{world}</b>\n/goworld برای تغییر دنیا\n/explorecity برای کاوش شهر فعلی"
     await message.answer(text[:4000])
@@ -61,7 +61,12 @@ async def cmd_mycity(message: Message):
             message.from_user.full_name, message.from_user.username
         )
         await ensure_user_city(session, user)
-        c = get_city(user.city or "tehran")
+        c = get_city(user.city or "start")
+    try:
+        from services.campaign import progress as camp_p
+        camp_p(message.from_user.id, "view_city", 1)
+    except Exception:
+        pass
     await message.answer(city_detail_text(c))
 
 
@@ -93,8 +98,8 @@ async def cmd_travel(message: Message):
             session, message.from_user.id,
             message.from_user.full_name, message.from_user.username
         )
-        world = getattr(user, "world", None) or "فانی"
-        cworld = city.get("world") or "فانی"
+        world = getattr(user, "world", None) or "جهان رزمی"
+        cworld = city.get("world") or "جهان رزمی"
         if cworld != world and city.get("world"):
             await message.answer(
                 f"این شهر مال دنیای <b>{cworld}</b> است.\n"
@@ -124,7 +129,7 @@ async def cmd_worlds(message: Message):
             session, message.from_user.id,
             message.from_user.full_name, message.from_user.username
         )
-        cur = getattr(user, "world", None) or "فانی"
+        cur = getattr(user, "world", None) or "جهان رزمی"
     lines = ["🌌 <b>دنیاها</b>", "", f"فعلی: <b>{cur}</b>", ""]
     for name in WORLDS:
         lines.append("• " + name)
@@ -147,7 +152,7 @@ async def cmd_go_world(message: Message):
             message.from_user.full_name, message.from_user.username
         )
         user.world = world
-        user.city = WORLD_DEFAULT_CITY.get(world, "tehran")
+        user.city = WORLD_DEFAULT_CITY.get(world, "start")
         await session.commit()
     await message.answer(
         f"🌌 وارد دنیای <b>{world}</b> شدی." + chr(10)
@@ -177,7 +182,7 @@ async def cmd_dimension(message: Message):
     await message.answer(
         f"🌀 <b>بُعد این مکان</b>\nنام: {g.name}\nنوع: <b>{g.dimension_type}</b>\n"
         f"Chat: <code>{g.chat_id}</code>\n\n"
-        f"ادمین: /setdimension فانی|بهشتی|زیرین"
+        f"ادمین: /setdimension جهان رزمی|بهشتی|زیرین|اژدهایی"
     )
 
 
@@ -189,7 +194,7 @@ async def cmd_set_dimension(message: Message):
         return
     parts = (message.text or "").split(maxsplit=1)
     if len(parts) < 2 or parts[1].strip() not in DIM_TYPES:
-        await message.answer(tr(message.from_user.id, "فرمت: /setdimension فانی|بهشتی|زیرین"))
+        await message.answer(tr(message.from_user.id, "فرمت: /setdimension جهان رزمی|بهشتی|زیرین|اژدهایی|..."))
         return
     async with async_session() as session:
         g = await set_group_dimension(session, message.chat.id, parts[1].strip())
@@ -212,7 +217,7 @@ async def cmd_explore_city(message: Message):
         )
         cid = await ensure_user_city(session, user)
         city = get_city(cid)
-        world = getattr(user, "world", None) or "فانی"
+        world = getattr(user, "world", None) or "جهان رزمی"
 
         visited = []
         raw = getattr(user, "first_cities", None)

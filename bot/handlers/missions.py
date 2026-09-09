@@ -1,5 +1,6 @@
 from datetime import datetime, date
 from aiogram import Router, F
+from bot.utils.safe_telegram import safe_edit_text
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder
@@ -272,7 +273,7 @@ async def take_mission(callback: CallbackQuery):
                 "از اول شروع کنید.\n\n"
                 "در حال حذف دائمی اکانت…"
             )
-            await callback.message.edit_text(kill_msg)
+            await safe_edit_text(callback, kill_msg)
             # پاک کردن کامل
             final = await erase_existence(session, user)
             try:
@@ -317,7 +318,7 @@ async def take_mission(callback: CallbackQuery):
         session.add(user_mission)
         await session.commit()
 
-        await callback.message.edit_text(
+        await safe_edit_text(callback, 
             f"✅ مأموریت «{mission.title}» فعال شد!\n"
             f"پیشرفت: 0 / {mission.target_value}\n"
             f"امروز: {completed}/3 تکمیلشده"

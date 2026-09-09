@@ -1,5 +1,6 @@
 from services.retention import war_is_open, territory_war_window
 from aiogram import Router, F
+from bot.utils.safe_telegram import safe_edit_text
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder
@@ -258,7 +259,7 @@ async def cb_pardon(callback: CallbackQuery):
             if hasattr(target, "lifespan"):
                 target.lifespan = max(target.lifespan or 0, 20)
             await session.commit()
-        await callback.message.edit_text(f"🙏 {target.full_name if target else 'فرد'} بخشیده شد و زنده ماند.")
+        await safe_edit_text(callback, f"🙏 {target.full_name if target else 'فرد'} بخشیده شد و زنده ماند.")
     await callback.answer()
 
 
@@ -280,7 +281,7 @@ async def cb_nopardon(callback: CallbackQuery):
             target.is_dead = True
             target.world = "زیرین"
             await session.commit()
-        await callback.message.edit_text(
+        await safe_edit_text(callback, 
             f"💀 {target.full_name if target else 'فرد'} بخشیده نشد. /afterdeath برای انتخاب سرنوشت."
         )
     await callback.answer()
@@ -401,11 +402,11 @@ async def cb_sect_type(callback: CallbackQuery):
         )
         try:
             sect = await create_sect(session, name, sect_type, user)
-            await callback.message.edit_text(
+            await safe_edit_text(callback, 
                 f"✅ فرقه <b>{sect.name}</b> ({sect_type}) ساخته شد.\nتو رهبر هستی."
             )
         except ValueError as e:
-            await callback.message.edit_text(str(e))
+            await safe_edit_text(callback, str(e))
     await callback.answer()
 
 

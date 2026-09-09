@@ -1,5 +1,6 @@
 from datetime import datetime
 from aiogram import Router, F
+from bot.utils.safe_telegram import safe_edit_text
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder
@@ -20,7 +21,8 @@ router = Router()
 
 # شهرهایی که سلاح گرم مخفی دارند
 CITY_GUNS = {
-    "tehran": ("کلت پنهان", 25),
+    "start": ("خنجر نوآموز", 15),
+    "tehran": ("خنجر نوآموز", 15),
     "mashhad": ("تفنگ شکاری", 30),
     "isfahan": ("تپانچه قدیمی", 22),
     "shiraz": ("اسلحه قاچاق", 28),
@@ -239,7 +241,7 @@ async def cb_death_duel(callback: CallbackQuery):
             await session.refresh(b)
             if a.is_dead or b.is_dead:
                 break
-        await callback.message.edit_text("☠️ <b>دوئل مرگ</b>\n\n" + "\n\n".join(logs[-8:]))
+        await safe_edit_text(callback, "☠️ <b>دوئل مرگ</b>\n\n" + "\n\n".join(logs[-8:]))
     await callback.answer()
 
 
@@ -255,5 +257,5 @@ async def cb_dduel_rej(callback: CallbackQuery):
             if me.id != int(parts[2]):
                 await callback.answer()
                 return
-    await callback.message.edit_text(tr(callback.from_user.id, "دوئل مرگ رد شد."))
+    await safe_edit_text(callback, tr(callback.from_user.id, "دوئل مرگ رد شد."))
     await callback.answer()

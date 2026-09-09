@@ -1,4 +1,5 @@
 from aiogram import Router, F
+from bot.utils.safe_telegram import safe_edit_text
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder
@@ -51,7 +52,7 @@ async def cb_spirit(callback: CallbackQuery):
             callback.from_user.full_name, callback.from_user.username
         )
         msg = await become_spirit_raiser(session, user)
-    await callback.message.edit_text(msg)
+    await safe_edit_text(callback, msg)
     await callback.answer()
 
 
@@ -66,7 +67,7 @@ async def cb_vengeful(callback: CallbackQuery):
             await callback.answer(tr(callback.from_user.id, "مرده نیستی"), show_alert=True)
             return
         spirit = await become_vengeful(session, user, reason="انتخاب بعد از مرگ")
-    await callback.message.edit_text(
+    await safe_edit_text(callback, 
         f"😈 روح انتقامجو شدی!\n"
         f"قدرت روح: {spirit.power}\n"
         f"دنیا: زیرین\n"
@@ -81,7 +82,7 @@ async def cb_void_confirm(callback: CallbackQuery):
     builder.button(text="بله، پاکم کن", callback_data="death:void_confirm")
     builder.button(text="انصراف", callback_data="death:cancel")
     builder.adjust(1)
-    await callback.message.edit_text(
+    await safe_edit_text(callback, 
         "⚠️ مطمئنی؟ اکانت برای همیشه حذف میشود.",
         reply_markup=builder.as_markup(),
     )
@@ -96,17 +97,17 @@ async def cb_void_do(callback: CallbackQuery):
             callback.from_user.full_name, callback.from_user.username
         )
         if not user.is_dead:
-            await callback.message.edit_text(tr(callback.from_user.id, "دیگر مرده نیستی."))
+            await safe_edit_text(callback, tr(callback.from_user.id, "دیگر مرده نیستی."))
             await callback.answer()
             return
         msg = await erase_existence(session, user)
-    await callback.message.edit_text(msg)
+    await safe_edit_text(callback, msg)
     await callback.answer()
 
 
 @router.callback_query(F.data == "death:cancel")
 async def cb_cancel(callback: CallbackQuery):
-    await callback.message.edit_text("انصراف. /afterdeath", reply_markup=death_keyboard())
+    await safe_edit_text(callback, "انصراف. /afterdeath", reply_markup=death_keyboard())
     await callback.answer()
 
 
@@ -219,7 +220,7 @@ async def cb_suicide(callback: CallbackQuery):
         await callback.answer()
         return
     if action == "no":
-        await callback.message.edit_text("انصراف از خودکشی.")
+        await safe_edit_text(callback, "انصراف از خودکشی.")
         await callback.answer()
         return
     async with async_session() as session:
@@ -228,7 +229,7 @@ async def cb_suicide(callback: CallbackQuery):
             callback.from_user.full_name, callback.from_user.username
         )
         if user.is_dead:
-            await callback.message.edit_text("قبلاً مردهای. /afterdeath")
+            await safe_edit_text(callback, "قبلاً مردهای. /afterdeath")
             await callback.answer()
             return
         user.is_dead = True
@@ -240,7 +241,7 @@ async def cb_suicide(callback: CallbackQuery):
                 user.restriction_reason = None
                 user.restricted_until = None
         await session.commit()
-    await callback.message.edit_text(
+    await safe_edit_text(callback, 
         "☠️ خودکشی انجام شد. کاراکتر مرد." + chr(10) + chr(10)
         + "حالا سرنوشتت را انتخاب کن:" + chr(10)
         + "/afterdeath" + chr(10) + chr(10)

@@ -203,7 +203,22 @@ async def main():
 
     @dp.errors()
     async def _on_error(event: ErrorEvent):
-        logger.exception("Update error: %s", event.exception)
+        err = event.exception
+        err_name = type(err).__name__
+        err_s = str(err).lower()
+        benign = (
+            "message is not modified" in err_s
+            or "query is too old" in err_s
+            or "query id is invalid" in err_s
+            or "message to edit not found" in err_s
+            or "there is no text in the message to edit" in err_s
+            or "message can't be edited" in err_s
+            or "bot was blocked" in err_s
+        )
+        if benign:
+            logger.warning("Benign telegram error: %s: %s", err_name, err)
+            return True
+        logger.exception("Update error: %s", err)
         try:
             upd = event.update
             msg = None
@@ -212,18 +227,19 @@ async def main():
             elif upd.callback_query and upd.callback_query.message:
                 msg = upd.callback_query.message
             if msg:
-                err = event.exception
                 err_text = (
                     "⚠️ خطا در اجرای دستور: "
-                    + type(err).__name__
-                    + "\n"
+                    + err_name
+                    + chr(10)
                     + escape(str(err)[:180])
-                    + "\n/help"
+                    + chr(10)
+                    + "/help"
                 )
                 await msg.answer(err_text[:3900])
         except Exception:
             pass
         return True
+
 
     await on_startup()
     logger.info("Bot starting...")

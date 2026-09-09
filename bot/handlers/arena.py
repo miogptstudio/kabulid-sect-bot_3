@@ -1,4 +1,5 @@
-from aiogram import Router, F
+from aiogram import Router
+from bot.utils.safe_telegram import safe_edit_text, F
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder
@@ -139,7 +140,7 @@ async def cb_arena_accept(callback: CallbackQuery):
         ok1, err1 = await can_pay_entry(session, challenger.id, tier)
         ok2, err2 = await can_pay_entry(session, opponent.id, tier)
         if not ok1 or not ok2:
-            await callback.message.edit_text(
+            await safe_edit_text(callback, 
                 f"❌ هزینه ورود کافی نیست.\n{err1}\n{err2}"
             )
             await callback.answer()
@@ -150,13 +151,13 @@ async def cb_arena_accept(callback: CallbackQuery):
             fee2 = await charge_entry(session, opponent.id, tier)
             await session.commit()
         except ValueError as e:
-            await callback.message.edit_text(f"❌ {e}")
+            await safe_edit_text(callback, f"❌ {e}")
             await callback.answer()
             return
 
         text = await run_arena_fight(session, challenger, opponent)
         text = f"💳 ورود: {fee1} / {fee2}\n\n" + text
-        await callback.message.edit_text(text)
+        await safe_edit_text(callback, text)
     await callback.answer()
 
 
@@ -172,7 +173,7 @@ async def cb_arena_reject(callback: CallbackQuery):
         if me.id != o_id:
             await callback.answer()
             return
-    await callback.message.edit_text(tr(callback.from_user.id, "❌ چالش آرنا رد شد. هزینهای کم نشد."))
+    await safe_edit_text(callback, tr(callback.from_user.id, "❌ چالش آرنا رد شد. هزینهای کم نشد."))
     await callback.answer()
 
 

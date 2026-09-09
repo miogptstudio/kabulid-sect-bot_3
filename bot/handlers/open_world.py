@@ -32,6 +32,14 @@ async def cmd_move(message: Message):
     async with async_session() as session:
         user = await ensure_world_user(session, message)
         result = move(user, direction)
+        try:
+            if result and result.get("ok"):
+                from services.martial_quests import progress
+                progress(message.from_user.id, "moves", 1)
+                from services.campaign import progress as camp_p
+                camp_p(message.from_user.id, "moves", 1)
+        except Exception:
+            pass
         await session.commit()
         if result.get("cooldown"):
             await message.answer(f"⏳ برای حرکت بعدی {result['cooldown']} ثانیه صبر کن."); return

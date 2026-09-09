@@ -174,17 +174,139 @@ async def cmd_luck_dice(message: Message):
     await message.answer(f"🎲 تاس: <b>{roll}</b>\n🎁 {reward}")
 
 
+
+
+# ========== ایونت آرش کمانگیر ==========
+# روزانه حداکثر ۲ نفر می‌توانند کمان آرش را بخرند
+_ARASH_BOW_PRICE = 50000  # سکه
+_ARASH_DAILY_LIMIT = 2
+
+def _arash_map():
+    from services.persist import get_dict
+    return get_dict("arash_event")
+
+def _arash_day():
+    from datetime import datetime
+    return datetime.utcnow().strftime("%Y-%m-%d")
+
+def _arash_bought_today() -> list:
+    m = _arash_map()
+    day = _arash_day()
+    rec = m.get("day_buys") or {}
+    if rec.get("day") != day:
+        return []
+    return list(rec.get("buyers") or [])
+
+@router.message(Command("arash", "آرش", "کمانآرش", "ایونتآرش"))
+async def cmd_arash_event(message: Message):
+    """جزئیات ایونت آرش کمانگیر"""
+    try:
+        from services.martial_quests import progress
+        progress(message.from_user.id, "arash_view", 1)
+        from services.campaign import progress as camp_p
+        camp_p(message.from_user.id, "arash_view", 1)
+    except Exception:
+        pass
+    bought = _arash_bought_today()
+    left = max(0, _ARASH_DAILY_LIMIT - len(bought))
+    await message.answer(
+        "🏹 <b>ایونت آرش کمانگیر</b>\n\n"
+        "در افسانه‌های جهان رزمی، آرش کمانگیر با تیری مرزها را تعیین کرد.\n"
+        "اکنون کمان افسانه‌ای او برای مدت محدود در دسترس است.\n\n"
+        f"💰 قیمت کمان آرش: <b>{_ARASH_BOW_PRICE:,}</b> سکه\n"
+        f"👥 سهمیه روزانه: <b>{_ARASH_DAILY_LIMIT}</b> نفر (باقی‌مانده امروز: <b>{left}</b>)\n\n"
+        "✨ اثر کمان:\n"
+        "• +۱۵٪ قدرت در دوئل\n"
+        "• علامت ویژه «آرش» در پروفایل\n"
+        "• یک‌بار در روز تیر ویژه (آسیب اضافه)\n\n"
+        "برای خرید: /buyarash\n"
+        "وضعیت: /arashstatus"
+    )
+
+@router.message(Command("buyarash", "خریدکمانآرش", "خریدآرش"))
+async def cmd_buy_arash(message: Message):
+    from services.persist import get_dict, save
+    from database.engine import async_session
+    from database.crud import get_or_create_user
+    from services.economy import get_or_create_wallet
+    tg = message.from_user.id
+    bought = _arash_bought_today()
+    if tg in bought:
+        await message.answer("قبلاً امروز کمان آرش را خریده‌ای.")
+        return
+    if len(bought) >= _ARASH_DAILY_LIMIT:
+        await message.answer(
+            f"⛔ سهمیه امروز تمام شد ({_ARASH_DAILY_LIMIT} نفر). فردا دوباره تلاش کن.\n"
+            "/arash برای جزئیات"
+        )
+        return
+    async with async_session() as session:
+        user = await get_or_create_user(session, tg, message.from_user.full_name, message.from_user.username)
+        w = await get_or_create_wallet(session, user.id)
+        if (w.coins or 0) < _ARASH_BOW_PRICE:
+            await message.answer(f"سکه کافی نیست. نیاز: {_ARASH_BOW_PRICE:,} — موجودی: {w.coins or 0:,}")
+            return
+        w.coins = (w.coins or 0) - _ARASH_BOW_PRICE
+        # ثبت خرید روزانه
+        m = get_dict("arash_event")
+        day = _arash_day()
+        rec = m.get("day_buys") or {}
+        if rec.get("day") != day:
+            rec = {"day": day, "buyers": []}
+        rec["buyers"] = list(rec.get("buyers") or []) + [tg]
+        m["day_buys"] = rec
+        # مالکیت دائمی کمان
+        owners = m.get("owners") or {}
+        owners[str(tg)] = {"at": __import__("datetime").datetime.utcnow().isoformat(), "name": message.from_user.full_name or str(tg)}
+        m["owners"] = owners
+        save("arash_event")
+        # فلگ روی کاربر اگر فیلد مناسب هست
+        try:
+            if hasattr(user, "has_cyrus_sword"):
+                # از فیلد موجود برای سلاح ویژه استفاده می‌کنیم یا first_cities
+                pass
+            # در اینونتوری یک آیتم مجازی ثبت نمی‌کنیم مگر مدل داشته باشد؛ در persist نگه می‌داریم
+        except Exception:
+            pass
+        await session.commit()
+    await message.answer(
+        f"🏹 <b>کمان آرش به تو رسید!</b>" + chr(10)
+        + f"−{_ARASH_BOW_PRICE:,} سکه" + chr(10)
+        + f"سهمیه امروز: {len(bought)+1}/{_ARASH_DAILY_LIMIT}" + chr(10) + chr(10)
+        + "قدرت دوئل +۱۵٪ فعال شد. /arashstatus"
+    )
+
+@router.message(Command("arashstatus", "وضعیتآرش"))
+async def cmd_arash_status(message: Message):
+    from services.persist import get_dict
+    m = get_dict("arash_event")
+    bought = _arash_bought_today()
+    owners = m.get("owners") or {}
+    has = str(message.from_user.id) in owners
+    await message.answer(
+        "🏹 <b>وضعیت ایونت آرش</b>\n\n"
+        f"خرید امروز: {len(bought)}/{_ARASH_DAILY_LIMIT}\n"
+        f"تو کمان داری: {'✅ بله' if has else '❌ خیر'}\n"
+        f"کل مالکان ثبت‌شده: {len(owners)}\n\n"
+        "/arash | /buyarash"
+    )
+
+
 @router.message(Command("events", "رویدادها"))
 async def cmd_events(message: Message):
-    sale = "فعال ✅" if cs.sale_active() else "پایان ❌"
+    nl = chr(10)
     await message.answer(
-        "🌍 <b>رویدادها</b>\n\n"
-        f"⚔️ فروش عمومی شمشیر کوروش: {sale}\n"
-        "   /cyrussale | /buycyrus\n\n"
-        "🏕 جنگ قبایل: /declarewar | /tribewar | /tribewarfight\n\n"
-        "🎲 تاس شانس: /luckdice (هر ۳س)\n"
-        "🎁 پاداش روزانه: /dailycoin\n"
-        "💼 شغل: /jobs"
+        "🌍 <b>رویدادها و سیستم‌های جهان رزمی</b>" + nl + nl
+        + "🏹 آرش کمانگیر: /arash | /buyarash" + nl
+        + "📖 کمپین: /campaign | /claimcampaign" + nl
+        + "🏰 سیاه‌چال: /dungeon | /dungeonrun" + nl
+        + "🏆 لیگ فصلی: /league" + nl
+        + "⚔️ کمبو: /combos | 💎 آرتیفکت: /artifacts" + nl
+        + "🗡️ مأموریت: /quests | /claimquest" + nl
+        + "🏅 القاب: /titles" + nl
+        + "🏕 جنگ قبایل: /declarewar | /tribewar" + nl
+        + "🎲 تاس شانس: /luckdice" + nl
+        + "🎁 /dailycoin | 💱 /convert | 💼 /jobs"
     )
 
 
@@ -514,3 +636,164 @@ async def cmd_world_blade(message: Message):
         + f"خرید از آهنگری: <b>{ITEM_NAME}</b>" + chr(10)
         + f"قیمت: {PRICE:,} سکه"
     )
+
+
+@router.message(Command("quests", "مأموریت", "ماموریت", "مأموریتها", "dailyquest"))
+async def cmd_quests(message: Message):
+    from services.martial_quests import status_text, progress
+    try:
+        progress(message.from_user.id, "arash_view", 0)  # ensure day init
+    except Exception:
+        pass
+    await message.answer(status_text(message.from_user.id))
+
+
+@router.message(Command("claimquest", "دریافتمأموریت", "جایزهمأموریت"))
+async def cmd_claim_quest(message: Message):
+    from services.martial_quests import claim
+    msg, coins, xp = claim(message.from_user.id)
+    if coins or xp:
+        async with async_session() as session:
+            user = await get_or_create_user(
+                session, message.from_user.id,
+                message.from_user.full_name, message.from_user.username
+            )
+            w = await get_or_create_wallet(session, user.id)
+            w.coins = int(w.coins or 0) + int(coins)
+            user.xp = int(user.xp or 0) + int(xp)
+            await session.commit()
+    await message.answer(msg)
+
+
+@router.message(Command("titles", "القاب", "لقب"))
+async def cmd_titles(message: Message):
+    from services.titles import status_text, auto_check
+    try:
+        from services.persist import get_dict
+        has_arash = str(message.from_user.id) in ((get_dict("arash_event") or {}).get("owners") or {})
+        auto_check(message.from_user.id, has_arash=has_arash)
+    except Exception:
+        pass
+    await message.answer(status_text(message.from_user.id))
+
+
+@router.message(Command("settitle", "انتخابلقب"))
+async def cmd_set_title(message: Message):
+    from services.titles import set_active
+    parts = (message.text or "").split(maxsplit=1)
+    if len(parts) < 2:
+        await message.answer("فرمت: /settitle شناسه\nمثال: /settitle duelist\n/titles")
+        return
+    await message.answer(set_active(message.from_user.id, parts[1].strip()))
+
+
+# ========== سیستم‌های پیشرفته جهان رزمی ==========
+
+@router.message(Command("campaign", "کمپین", "داستان"))
+async def cmd_campaign(message: Message):
+    from services.campaign import status_text, progress
+    try:
+        progress(message.from_user.id, "view_city", 0)
+    except Exception:
+        pass
+    await message.answer(status_text(message.from_user.id))
+
+
+@router.message(Command("claimcampaign", "دریافتکمپین", "جایزهکمپین"))
+async def cmd_claim_campaign(message: Message):
+    from services.campaign import claim
+    from services.cultivation import add_energy
+    msg, rewards = claim(message.from_user.id)
+    if rewards:
+        async with async_session() as session:
+            user = await get_or_create_user(
+                session, message.from_user.id,
+                message.from_user.full_name, message.from_user.username
+            )
+            w = await get_or_create_wallet(session, user.id)
+            w.coins = int(w.coins or 0) + int(rewards.get("coins") or 0)
+            user.xp = int(user.xp or 0) + int(rewards.get("xp") or 0)
+            if rewards.get("energy"):
+                await add_energy(session, user.id, int(rewards["energy"]))
+            await session.commit()
+        try:
+            from services.season_league import add_score
+            add_score(message.from_user.id, 25, "campaign")
+        except Exception:
+            pass
+    await message.answer(msg)
+
+
+@router.message(Command("dungeon", "سیاهچال", "سیاه‌چال", "دنجن"))
+async def cmd_dungeon(message: Message):
+    from services.dungeon import status_text
+    from services.power import calc_power
+    async with async_session() as session:
+        user = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
+        p = await calc_power(session, user)
+    await message.answer(status_text(message.from_user.id, int(p.get("total") or 0)))
+
+
+@router.message(Command("dungeonrun", "حملهسیاهچال", "ورودسیاهچال"))
+async def cmd_dungeon_run(message: Message):
+    from services.dungeon import run
+    from services.power import calc_power
+    from services.artifacts import try_drop
+    from services.combo_combat import unlock_by_progress
+    from services.season_league import add_score
+    async with async_session() as session:
+        user = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
+        p = await calc_power(session, user)
+        power = int(p.get("total") or 0)
+        result = run(message.from_user.id, power)
+        if not result.get("ok"):
+            await message.answer(result.get("msg", "خطا"))
+            return
+        if result.get("coins") or result.get("xp"):
+            w = await get_or_create_wallet(session, user.id)
+            w.coins = int(w.coins or 0) + int(result.get("coins") or 0)
+            user.xp = int(user.xp or 0) + int(result.get("xp") or 0)
+            await session.commit()
+        msg = result.get("msg", "")
+        if result.get("won"):
+            floor = int(result.get("floor") or 0)
+            add_score(message.from_user.id, 10 * floor, "dungeon")
+            unlock_by_progress(message.from_user.id, dungeon_floor=floor)
+            drop = try_drop(message.from_user.id, luck=1.0 + floor * 0.1)
+            if drop:
+                msg += "\n\n" + drop
+        await message.answer(msg[:4000])
+
+
+@router.message(Command("artifacts", "آرتیفکت", "آرتیفکتها", "artifact"))
+async def cmd_artifacts(message: Message):
+    from services.artifacts import status_text
+    await message.answer(status_text(message.from_user.id))
+
+
+@router.message(Command("equipartifact", "تجهیزآرتیفکت", "equipart"))
+async def cmd_equip_artifact(message: Message):
+    from services.artifacts import equip
+    parts = (message.text or "").split(maxsplit=1)
+    if len(parts) < 2:
+        await message.answer("فرمت: /equipartifact شناسه\n/artifacts")
+        return
+    await message.answer(equip(message.from_user.id, parts[1].strip()))
+
+
+@router.message(Command("league", "لیگ", "فصل", "seasonleague"))
+async def cmd_league(message: Message):
+    from services.season_league import status_text
+    await message.answer(status_text(message.from_user.id))
+
+
+@router.message(Command("combos", "کمبو", "کمبوها", "combo"))
+async def cmd_combos(message: Message):
+    from services.combo_combat import status_text
+    await message.answer(status_text(message.from_user.id))
