@@ -64,12 +64,27 @@ async def create_sect(
         raise ValueError(msg)
 
     # جلوگیری از UniqueViolation روی sects_name_key
+    # فرقه‌های غیرفعال (مثلاً بعد از انتقال جهان) نام را قفل می‌کنند — آزادشان می‌کنیم
     name_clean = (name or "").strip()[:64]
     if not name_clean:
         raise ValueError("نام فرقه نمی‌تواند خالی باشد.")
-    existing_name = await session.execute(select(Sect).where(Sect.name == name_clean))
-    if existing_name.scalar_one_or_none():
-        raise ValueError(f"فرقه با نام «{name_clean}» از قبل وجود دارد. نام دیگری انتخاب کن.")
+    existing_rows = (
+        await session.execute(select(Sect).where(Sect.name == name_clean))
+    ).scalars().all()
+    for old_sect in existing_rows:
+        if getattr(old_sect, "is_active", True):
+            raise ValueError(
+                f"فرقه فعال با نام «{name_clean}» از قبل وجود دارد. نام دیگری انتخاب کن."
+            )
+        # غیرفعال: نام را آزاد کن تا unique constraint نشکند
+        try:
+            old_sect.name = f"بایگانی-{old_sect.id}-{name_clean}"[:64]
+            old_sect.is_active = False
+            await session.flush()
+        except Exception:
+            # اگر باز هم تداخل بود، نام کاملاً یکتا
+            old_sect.name = f"archived-{old_sect.id}"[:64]
+            await session.flush()
     
     from services.power import calc_power
     leader_power_data = await calc_power(session, leader)
@@ -109,7 +124,42 @@ async def create_sect(
     )
     session.add(territory)
     
-    await session.commit()
+    try:
+        await session.commit()
+    except Exception as e:
+        err = str(e).lower()
+        if "unique" in err or "sects_name" in err or "duplicate" in err:
+            await session.rollback()
+            rows = (await session.execute(select(Sect).where(Sect.name == name_clean))).scalars().all()
+            for old_sect in rows:
+                if not getattr(old_sect, "is_active", True) or old_sect.leader_id is None:
+                    old_sect.name = f"archived-{old_sect.id}"[:64]
+                    old_sect.is_active = False
+            await session.flush()
+            sect = Sect(
+                name=name_clean,
+                sect_type=sect_type,
+                description=description or f"فرقه {name_clean}",
+                leader_id=leader.id,
+                member_count=1,
+                parent_sect_id=(parent_sect.id if parent_sect else None),
+                leader_power=leader_power,
+                power_level=max(1, leader_power),
+            )
+            session.add(sect)
+            await session.flush()
+            member = SectMember(user_id=leader.id, sect_id=sect.id, status="رهبر")
+            session.add(member)
+            territory = Territory(
+                name=f"قلمرو {name_clean}",
+                description=f"سرزمین اصلی فرقه {name_clean}",
+                owner_sect_id=sect.id,
+                defense_points=100,
+            )
+            session.add(territory)
+            await session.commit()
+        else:
+            raise
     await session.refresh(sect)
     return sect
 
@@ -127,10 +177,8 @@ async def join_sect(session: AsyncSession, user: User, sect: Sect, tg_id: int | 
         raise
     except Exception:
         pass
-    existing = await session.execute(
-        select(SectMember).where(SectMember.user_id == user.id)
-    )
-    if existing.scalar_one_or_none():
+    existing = await get_user_sect(session, user.id)
+    if existing:
         raise ValueError("قبلاً عضو یک فرقه هستی")
     
     member = SectMember(
@@ -157,10 +205,27 @@ async def promote_sect_status(session: AsyncSession, member: SectMember) -> str 
 
 
 async def get_user_sect(session: AsyncSession, user_id: int) -> SectMember | None:
+    """عضویت فقط در فرقه فعال معتبر است؛ عضویت فرقه‌های بایگانی‌شده نادیده گرفته می‌شود."""
     result = await session.execute(
         select(SectMember).where(SectMember.user_id == user_id)
     )
-    return result.scalar_one_or_none()
+    members = result.scalars().all()
+    for m in members:
+        sect = await session.get(Sect, m.sect_id)
+        if sect is not None and getattr(sect, "is_active", True):
+            return m
+    # عضویت‌های مرده را پاک کن تا ساخت فرقه جدید ممکن شود
+    for m in members:
+        try:
+            await session.delete(m)
+        except Exception:
+            pass
+    if members:
+        try:
+            await session.commit()
+        except Exception:
+            pass
+    return None
 
 
 async def add_contribution(session: AsyncSession, user_id: int, points: int) -> int:

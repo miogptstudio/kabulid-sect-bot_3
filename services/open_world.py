@@ -448,6 +448,12 @@ async def launch_portal_once(session) -> bool:
             s.is_active = False
             s.member_count = 0
             s.leader_id = None
+            # آزاد کردن نام یکتا تا ساخت فرقه جدید ممکن باشد
+            try:
+                base = (s.name or "فرقه")[:40]
+                s.name = f"بایگانی-{s.id}-{base}"[:64]
+            except Exception:
+                s.name = f"archived-{s.id}"[:64]
     except Exception:
         pass
     # پاکسازی جهان‌های حافظه‌ای قدیمی؛ حساب، قدرت و کاراکتر بازیکن‌ها حفظ می‌شود.
