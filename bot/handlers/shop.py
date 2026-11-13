@@ -61,7 +61,7 @@ async def cmd_buildings(message: Message):
             builder.button(text=label, callback_data=f"building:{uid}:{b.id}")
         builder.adjust(1)
         text += chr(10) + "روی ساختمان بزن. خرید با همه ارزها. /wallet"
-        await message.answer_photo(FSInputFile(panel_url("shop", name=str(uid))), caption=text, reply_markup=builder.as_markup())
+        await safe_answer_photo(message, panel_url("shop", name=str(uid)), caption=text, reply_markup=builder.as_markup())
     except Exception as e:
         await message.answer(f"❌ خطای مغازه: {escape(type(e).__name__)}: {escape(str(e))}")
 

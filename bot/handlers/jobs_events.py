@@ -49,7 +49,7 @@ async def cmd_work(message: Message):
 @router.message(Command("jobs", "شغلها", "اشغال"))
 async def cmd_jobs(message: Message):
 
-    await message.answer_photo(FSInputFile(panel_url("job", name=str(message.from_user.id))), caption=jobs_svc.list_jobs())
+    await safe_answer_photo(message, panel_url("job", name=str(message.from_user.id)), caption=jobs_svc.list_jobs())
 
 
 @router.message(Command("job", "انتخابشغل"))

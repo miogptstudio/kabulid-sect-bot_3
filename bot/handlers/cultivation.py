@@ -58,7 +58,7 @@ async def cmd_cultivation_rules(message: Message):
         "⚠️ برای دیدن فهرست قلمروها: /realms\n"
         "⚠️ برای مسیرهای قدرت/سرعت/دفاع: /cultpath\n"
     )
-    await message.answer_photo(FSInputFile(panel_url("cultivation", name=str(message.from_user.id))), caption=text)
+    await safe_answer_photo(message, panel_url("cultivation", name=str(message.from_user.id)), caption=text)
 
 
 @router.message(Command("cultivation", "تذهیب", "cult", "tazhib"))

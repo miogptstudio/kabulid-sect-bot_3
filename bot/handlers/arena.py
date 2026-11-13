@@ -27,10 +27,7 @@ router = Router()
 
 @router.message(Command("arena", "آرنا"))
 async def cmd_arena(message: Message):
-    from aiogram.types import FSInputFile
-    from services.portraits import panel_url
-from bot.utils.media import safe_answer_photo
-    await safe_answer_photo(message, panel_url("arena"), caption="🏟️ <b>آرنا</b>"
+    await message.answer("🏟️ <b>آرنا</b>")
     async with async_session() as session:
         user = await get_or_create_user(
             session, message.from_user.id,
