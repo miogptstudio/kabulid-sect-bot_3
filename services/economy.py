@@ -15,9 +15,10 @@ DESTINY_PER_IMMORTAL = 1000     # ۱ جاودان = ۱۰۰۰ تقدیر
 IMMORTAL_PER_CREATION = 1000    # ۱ خلقت = ۱۰۰۰ جاودان
 CREATION_PER_ABSOLUTE = 1000    # ۱ مطلق = ۱۰۰۰ خلقت
 FAITH_PER_DRAGON = 100          # ۱ سکه اژدها = ۱۰۰ ایمان (ارز موازی)
-GOD_PER_CHAOS = 1000  # ۱ هرجومرج = ۱۰۰۰ خدا
-CHAOS_PER_VOID = 1000
-VOID_PER_ORIGIN = 1000
+INK_TO_COINS = 10_000           # ۱ جوهر ازلی → ۱۰٬۰۰۰ سکه
+KARMA_TO_COINS = 100            # ۱ کارما → ۱۰۰ سکه
+COINS_PER_INK = 10_000          # ساخت ۱ جوهر از سکه
+COINS_PER_KARMA = 100           # ساخت ۱ کارما از سکه
 
 
 async def get_or_create_wallet(session: AsyncSession, user_id: int) -> UserWallet:
@@ -84,6 +85,8 @@ async def exchange_up(session: AsyncSession, user_id: int, kind: str, amount: in
         "absolute": "absolute", "مطلق": "absolute",
         "faith": "faith", "ایمان": "faith",
         "dragon": "dragon", "اژدها": "dragon",
+        "ink": "ink", "eternal_ink": "ink", "جوهر": "ink", "جوهر ازلی": "ink", "جوهر_ازلی": "ink",
+        "karma": "karma", "کارما": "karma", "karma_points": "karma",
     }
     kind = aliases.get(kind, kind)
     if kind == "heavenly":
@@ -186,7 +189,25 @@ async def exchange_up(session: AsyncSession, user_id: int, kind: str, amount: in
         w.dragon_coins = int(getattr(w, "dragon_coins", 0) or 0) + amount
         await session.commit()
         return f"✅ +{amount} سکه اژدها"
-    return "نوع: heavenly celestial god chaos void origin destiny immortal creation absolute faith dragon"
+    if kind in ("ink", "eternal_ink"):
+        cost = amount * COINS_PER_INK
+        coins = int(w.coins or 0)
+        if coins < cost:
+            return f"❌ برای {amount} جوهر ازلی نیاز به {cost:,} سکه است (داری: {coins:,})"
+        w.coins = coins - cost
+        w.eternal_ink = int(getattr(w, "eternal_ink", 0) or 0) + amount
+        await session.commit()
+        return f"✅ +{amount:,} جوهر ازلی | سکه باقی: {int(w.coins or 0):,}"
+    if kind in ("karma", "karma_points"):
+        cost = amount * COINS_PER_KARMA
+        coins = int(w.coins or 0)
+        if coins < cost:
+            return f"❌ برای {amount} کارما نیاز به {cost:,} سکه است (داری: {coins:,})"
+        w.coins = coins - cost
+        w.karma_points = int(getattr(w, "karma_points", 0) or 0) + amount
+        await session.commit()
+        return f"✅ +{amount:,} کارما | سکه باقی: {int(w.coins or 0):,}"
+    return "نوع: heavenly celestial god chaos void origin destiny immortal creation absolute faith dragon ink karma"
 
 
 async def exchange_down(session: AsyncSession, user_id: int, kind: str, amount: int = 1) -> str:
@@ -212,6 +233,8 @@ async def exchange_down(session: AsyncSession, user_id: int, kind: str, amount: 
         "absolute": "absolute", "مطلق": "absolute", "absolute_stones": "absolute",
         "dragon": "dragon", "اژدها": "dragon", "dragon_coins": "dragon",
         "faith": "faith", "ایمان": "faith", "faith_stones": "faith",
+        "ink": "ink", "eternal_ink": "ink", "جوهر": "ink", "جوهر ازلی": "ink", "جوهر_ازلی": "ink",
+        "karma": "karma", "کارما": "karma", "karma_points": "karma",
         "coin": "spirit", "سکه": "spirit",
     }
     kind = aliases.get(kind, kind)
@@ -231,11 +254,13 @@ async def exchange_down(session: AsyncSession, user_id: int, kind: str, amount: 
         "absolute": ("absolute_stones", "creation_stones", CREATION_PER_ABSOLUTE, "سنگ مطلق", "سنگ خلقت"),
         "dragon": ("dragon_coins", "faith_stones", FAITH_PER_DRAGON, "سکه اژدها", "سنگ ایمان"),
         "faith": ("faith_stones", "coins", 1000, "سنگ ایمان", "سکه"),
+        "ink": ("eternal_ink", "coins", INK_TO_COINS, "جوهر ازلی", "سکه"),
+        "karma": ("karma_points", "coins", KARMA_TO_COINS, "کارما", "سکه"),
     }
     if kind not in chain:
         return (
             "نوع نامعتبر.\n"
-            "فرمت: /exchangedown spirit|heavenly|celestial|god|chaos|void|origin|destiny|immortal|creation|absolute|dragon|faith [n]\n"
+            "فرمت: /exchangedown spirit|heavenly|celestial|god|chaos|void|origin|destiny|immortal|creation|absolute|dragon|faith|ink|karma [n]\n"
             "مثال: /exchangedown absolute 1  → مطلق به خلقت"
         )
     attr, lower, rate, label, lower_label = chain[kind]
@@ -274,10 +299,12 @@ def wallet_text(w: UserWallet) -> str:
         f"💠 سنگ مطلق: <b>{int(getattr(w, 'absolute_stones', 0) or 0):,}</b>{nl}"
         f"🙏 سنگ ایمان: <b>{int(getattr(w, 'faith_stones', 0) or 0):,}</b>{nl}"
         f"🐉 سکه اژدها: <b>{int(getattr(w, 'dragon_coins', 0) or 0):,}</b>{nl}"
-        f"🪶 جوهر ازلی: <b>{int(getattr(w, 'eternal_ink', 0) or 0):,}</b>{nl}{nl}"
+        f"🪶 جوهر ازلی: <b>{int(getattr(w, 'eternal_ink', 0) or 0):,}</b>{nl}"
+        f"☯️ کارما: <b>{int(getattr(w, 'karma_points', 0) or 0):,}</b>{nl}{nl}"
         f"تبدیل: /convert up|down نوع تعداد{nl}"
         f"/exchangeup · /exchangedown{nl}"
-        f"زنجیره: سکه↔روحی↔بهشتی↔آسمانی↔خدا↔هرجومرج↔پوچی↔ازلی↔تقدیر↔جاودان↔خلقت↔مطلق"
+        f"زنجیره: سکه↔روحی↔بهشتی↔آسمانی↔خدا↔هرجومرج↔پوچی↔ازلی↔تقدیر↔جاودان↔خلقت↔مطلق{nl}"
+        f"موازی: ایمان↔اژدها | جوهر ازلی↔سکه | کارما↔سکه"
     )
 
 

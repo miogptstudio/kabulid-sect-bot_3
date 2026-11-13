@@ -40,8 +40,27 @@ T: dict[str, dict[str, str]] = {
         "tr": "Geçersiz dil. /lang",
     },
     "start": {
-        "fa": "سلام {name}!\nبه جهان تازه خوش آمدی؛ جهان قدیمی فرو ریخته و سفر از شهر آغازین شروع می‌شود.\nنسخه: {ver}\n\n/help راهنما | /lang زبان",
-        "en": "Hello {name}!\nWelcome to the Sect World.\nVersion: {ver}\n\n/help | /lang",
+        "fa": (
+            "⚔️ <b>سلام {name}</b>\n"
+            "به <b>جهان رزمی</b> خوش اومدی.\n\n"
+            "🎯 <b>از کجا شروع کنم؟</b>\n"
+            "۱. دکمه <b>👤 پروفایل</b> رو بزن — وضعیتت رو ببین\n"
+            "۲. دکمه <b>🧘 تزکیه</b> رو بزن — قوی‌تر شو\n"
+            "۳. دکمه <b>⚔️ نبرد</b> رو بزن — دوئل کن و رتبه بگیر\n\n"
+            "📖 راهنما: /help\n"
+            "📋 همه دستورات: /commands\n"
+            "نسخه: {ver}"
+        ),
+        "en": (
+            "⚔️ <b>Hello {name}</b>\n"
+            "Welcome to the Martial World.\n\n"
+            "🎯 <b>How to start?</b>\n"
+            "1. Tap <b>👤 Profile</b>\n"
+            "2. Tap <b>🧘 Cultivate</b>\n"
+            "3. Tap <b>⚔️ Battle</b> to duel\n\n"
+            "📖 /help | 📋 /commands\n"
+            "Version: {ver}"
+        ),
         "ar": "مرحباً {name}!\nأهلاً بك في عالم الطائفة.\nالإصدار: {ver}\n\n/help | /lang",
         "zh": "你好 {name}！\n欢迎来到宗门世界。\n版本：{ver}\n\n/help | /lang",
         "ru": "Привет, {name}!\nДобро пожаловать в мир сект.\nВерсия: {ver}\n\n/help | /lang",

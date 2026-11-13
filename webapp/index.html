@@ -1,131 +1,284 @@
 <!doctype html>
 <html lang="fa" dir="rtl">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>۹ آسمان — دنیای فرقه</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>جهان رزمی — وب‌اپ</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link rel="stylesheet" href="/app/static/style.css">
 </head>
 <body>
 <div id="app">
-<header class="hero">
-  <div class="brand">☁️ <b>۹ آسمان</b></div>
-  <div id="heroSub">اَبَرجهانِ هزار-هزار-هزار-دنیا</div>
-  <div class="hero-actions"><button class="iconbtn" onclick="refreshAll()">↻</button></div>
-</header>
-<div id="toast" class="toast"></div>
-<nav class="tabs" id="tabs">
-  <button class="tab active" data-tab="home">🏠 خانه</button>
-  <button class="tab" data-tab="world">🗺️ جهان</button>
-  <button class="tab" data-tab="sect">🏯 فرقه</button>
-  <button class="tab" data-tab="characters">🎭 کاراکتر</button>
-  <button class="tab" data-tab="shop">🛒 فروشگاه</button>
-  <button class="tab" data-tab="chests">🎁 گنجینه</button>
-  <button class="tab" data-tab="arena">⚔️ نبرد</button>
-  <button class="tab" data-tab="games">🎮 بازی</button>
-  <button class="tab staff-only" data-tab="admin" hidden>🛡️ مدیریت</button>
-</nav>
-<main id="view"></main>
-<footer>نسخه وب متصل به همان دیتابیس و منطق ربات</footer>
+  <header class="hero">
+    <div class="brand">⚔️ جهان رزمی</div>
+    <div class="hero-sub" id="heroSub">وب‌اپ رسمی ربات</div>
+    <div class="hero-actions"><button class="iconbtn" onclick="refreshAll()" title="بروزرسانی">↻</button></div>
+  </header>
+  <div id="toast" class="toast"></div>
+  <nav class="tabs" id="tabs">
+    <button class="tab active" data-tab="home">🏠 خانه</button>
+    <button class="tab" data-tab="world">🗺️ جهان</button>
+    <button class="tab" data-tab="sect">🏯 فرقه</button>
+    <button class="tab" data-tab="characters">🎭 کاراکتر</button>
+    <button class="tab" data-tab="shop">🛒 فروشگاه</button>
+    <button class="tab" data-tab="chests">🎁 گنجینه</button>
+    <button class="tab" data-tab="arena">⚔️ رتبه</button>
+    <button class="tab" data-tab="games">🎮 بازی</button>
+    <button class="tab staff-only" data-tab="admin" hidden>🛡️ مدیریت</button>
+  </nav>
+  <main id="view"><div class="loading">در حال بارگذاری…</div></main>
+  <footer>نسخه وب متصل به همان دیتابیس و منطق ربات · بدون عکس رندوم</footer>
 </div>
 <script>
-const tg=window.Telegram?.WebApp; tg?.ready(); tg?.expand();
-try{tg?.setHeaderColor?.('#0b1020'); tg?.setBackgroundColor?.('#080c16');}catch(e){}
-const tgUser=tg?.initDataUnsafe?.user||null;
-const tgId=tgUser?.id||null;
-const initData=tg?.initData||'';
-const $=s=>document.querySelector(s);
-const view=$('#view');
-const esc=v=>{const d=document.createElement('div');d.textContent=v??'';return d.innerHTML};
-function toast(msg,ok=true){const t=$('#toast');t.textContent=msg;t.className='toast show '+(ok?'ok':'bad');clearTimeout(window._toast);window._toast=setTimeout(()=>t.className='toast',2800)}
-async function api(path,opts={}){
-  const o={...opts,headers:{'Content-Type':'application/json','X-Telegram-Init-Data':initData,...(opts.headers||{})}};
-  let url=path; if(tgId) url+=(path.includes('?')?'&':'?')+'tg_id='+encodeURIComponent(tgId);
-  const r=await fetch(url,o); let j={}; try{j=await r.json()}catch(e){}
-  if(!r.ok||j.error){throw new Error(j.error||j.message||'خطا در ارتباط با سرور')}; return j;
+const tg = window.Telegram?.WebApp;
+tg?.ready(); tg?.expand();
+try { tg?.setHeaderColor?.('#0b1020'); tg?.setBackgroundColor?.('#070b14'); } catch(e){}
+const tgUser = tg?.initDataUnsafe?.user || null;
+const tgId = tgUser?.id || null;
+const initData = tg?.initData || '';
+const $ = s => document.querySelector(s);
+const view = $('#view');
+const esc = v => { const d=document.createElement('div'); d.textContent=v??''; return d.innerHTML; };
+function toast(msg, ok=true){
+  const t=$('#toast'); t.textContent=msg; t.className='toast show '+(ok?'ok':'bad');
+  clearTimeout(window._toast); window._toast=setTimeout(()=>t.className='toast', 2800);
 }
-function row(a,b,cls=''){return `<div class="statrow ${cls}"><span>${esc(a)}</span><b>${esc(b)}</b></div>`}
-function rowHtml(a,b,cls=''){return `<div class="statrow ${cls}"><span>${esc(a)}</span><b>${b}</b></div>`}
-function card(title,body,cls=''){return `<section class="card ${cls}"><h2>${title}</h2>${body}</section>`}
-function button(label,fn,cls=''){return `<button class="btn ${cls}" onclick="${fn}">${label}</button>`}
-function requireTelegram(){if(!tgId){toast('مینی‌اپ را از داخل تلگرام باز کن',false);return false}return true}
-function setTab(tab){document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));render(tab)}
-$('#tabs').addEventListener('click',e=>{const b=e.target.closest('.tab');if(b&&!b.hidden)setTab(b.dataset.tab)});
+async function api(path, opts={}){
+  const headers = {'Content-Type':'application/json','X-Telegram-Init-Data':initData,...(opts.headers||{})};
+  let url = path;
+  if (tgId) url += (path.includes('?')?'&':'?') + 'tg_id=' + encodeURIComponent(tgId);
+  const r = await fetch(url, {...opts, headers});
+  let j={}; try{ j=await r.json(); }catch(e){}
+  if(!r.ok) throw new Error(j.error||j.msg||('خطا '+r.status));
+  return j;
+}
+function card(title, body){ return `<div class="card"><h2>${title}</h2>${body}</div>`; }
+function row(a,b){ return `<div class="statrow"><span class="muted">${esc(a)}</span><span>${esc(b)}</span></div>`; }
+function button(label, onClick, cls=''){ return `<button class="btn ${cls}" onclick="${onClick}">${label}</button>`; }
+function walletName(k){
+  return ({coins:'سکه',spirit_stones:'سنگ روحی',heavenly_stones:'سنگ بهشتی',celestial_stones:'سنگ آسمانی',god_stones:'سنگ خدا',chaos_stones:'سنگ هرج‌ومرج',void_stones:'سنگ پوچی',origin_stones:'سنگ ازلی',karma_points:'کارما',destiny_stones:'سنگ تقدیر',immortal_stones:'سنگ جاودان',creation_stones:'سنگ خلقت',absolute_stones:'سنگ مطلق',faith_stones:'سنگ ایمان',dragon_coins:'سکه اژدها',eternal_ink:'جوهر ازلی'}[k]||k);
+}
+
+document.querySelectorAll('.tab').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    render(btn.dataset.tab);
+  });
+});
+function setTab(name){
+  const btn = document.querySelector(`.tab[data-tab="${name}"]`);
+  if(btn) btn.click();
+}
+async function refreshAll(){
+  const active = $('.tab.active')?.dataset.tab || 'home';
+  await render(active);
+}
 
 async function render(tab){
-  view.innerHTML='<div class="loading">در حال بارگذاری…</div>';
-  try{
-    if(tab==='home')await home(); else if(tab==='world')await world(); else if(tab==='sect')await sect(); else if(tab==='characters')await characters(); else if(tab==='shop')await shop(); else if(tab==='chests')await chests(); else if(tab==='arena')await arena(); else if(tab==='games')games(); else if(tab==='admin')await admin();
-  }catch(e){view.innerHTML=card('⚠️ خطا',`<p class="error">${esc(e.message)}</p>`);}
+  view.innerHTML = '<div class="loading">در حال بارگذاری…</div>';
+  try {
+    if(tab==='home') await home();
+    else if(tab==='world') await world();
+    else if(tab==='sect') await sect();
+    else if(tab==='characters') await characters();
+    else if(tab==='shop') await shop();
+    else if(tab==='chests') await chests();
+    else if(tab==='arena') await arena();
+    else if(tab==='games') await games();
+    else if(tab==='admin') await admin();
+  } catch(e){
+    view.innerHTML = `<div class="card"><div class="empty">⚠️ ${esc(e.message||e)}<br><br>اگر از تلگرام باز نکردی، اول ربات را /start کن.</div></div>`;
+  }
 }
+
 async function home(){
- const d=await api('/api/dashboard');
- $('#heroSub').textContent=`${d.sky_name} · 📍 (${d.world_x}, ${d.world_y})`;
- const w=d.wallet||{}; const c=d.cultivation||{};
- view.innerHTML=`<div class="hero-card"><div class="avatar">${esc((d.full_name||'پ')[0])}</div><div><h1>${esc(d.full_name)}</h1><p>${esc(d.rank)} · Lv.${d.level} · ${esc(c.realm||'بیداری')}</p></div><div class="power">⚡ ${Number(d.power||0).toLocaleString()}</div></div>
- ${card('📊 وضعیت',row('تذهیب',`${c.realm||'-'} · مرحله ${c.stage||1}`)+row('انرژی',c.energy||0)+row('فرقه',d.sect||'آزاد')+row('جهان',d.world||'-')+row('آسمان',d.sky||1)+row('مختصات',`(${d.world_x}, ${d.world_y})`)+row('🍖 گرسنگی',`${d.hunger}%`)+row('💧 تشنگی',`${d.thirst}%`))}
- ${card('💰 کیف پول',Object.entries(w).filter(([k,v])=>Number(v||0)!==0).map(([k,v])=>row(walletName(k),Number(v).toLocaleString())).join('')||row('سکه',0))}
- <div class="quick">${button('🎁 صندوق روزانه',"setTab('chests')")} ${button('🗺️ نقشه',"setTab('world')")} ${button('🎭 کاراکترها',"setTab('characters')")} ${button('🛒 فروشگاه',"setTab('shop')")}</div>`;
+  const d = await api('/api/dashboard');
+  const c = d.cultivation || {};
+  const w = d.wallet || {};
+  const walletRows = Object.entries(w).filter(([k,v])=>Number(v||0)!==0)
+    .map(([k,v])=>row(walletName(k), Number(v).toLocaleString('fa-IR'))).join('') || row('سکه','0');
+  view.innerHTML = `
+    <div class="hero-card">
+      <div class="avatar">${esc((d.full_name||'پ')[0])}</div>
+      <div>
+        <h1>${esc(d.full_name||'بازیکن')}</h1>
+        <p>${esc(d.rank||'-')} · Lv.${d.level||1} · ${esc(c.realm||'بیداری')}</p>
+      </div>
+      <div class="power">⚡ ${Number(d.power||0).toLocaleString('fa-IR')}</div>
+    </div>
+    ${card('📊 وضعیت',
+      row('تذهیب', `${c.realm||'-'} · مرحله ${c.stage||1}`) +
+      row('انرژی', Number(c.energy||0).toLocaleString('fa-IR')) +
+      row('فرقه', d.sect||'آزاد') +
+      row('جهان', d.world||'-') +
+      row('آسمان', d.sky||1) +
+      row('مختصات', `(${d.world_x||0}, ${d.world_y||0})`) +
+      row('🍖 گرسنگی', `${d.hunger??0}%`) +
+      row('💧 تشنگی', `${d.thirst??0}%`)
+    )}
+    ${card('💰 کیف پول', walletRows)}
+    <div class="quick">
+      ${button('🎁 روزانه', "claimDaily()")}
+      ${button('🗺️ جهان', "setTab('world')", 'secondary')}
+      ${button('🎭 کاراکتر', "setTab('characters')", 'secondary')}
+      ${button('🛒 فروشگاه', "setTab('shop')", 'secondary')}
+    </div>`;
+  // staff tab
+  if(d.role==='رهبر' || d.role==='ادمین' || (d.rank||'').includes('ادمین')){
+    document.querySelectorAll('.staff-only').forEach(el=>el.hidden=false);
+  }
 }
-function walletName(k){return ({coins:'سکه',spirit_stones:'سنگ روحی',heavenly_stones:'سنگ بهشتی',celestial_stones:'سنگ آسمانی',god_stones:'سنگ خدا',chaos_stones:'سنگ هرج‌ومرج',void_stones:'سنگ پوچی',origin_stones:'سنگ ازلی',karma_points:'کارما',destiny_stones:'سنگ تقدیر',immortal_stones:'سنگ جاودان',creation_stones:'سنگ خلقت',absolute_stones:'سنگ مطلق',faith_stones:'سنگ ایمان',dragon_coins:'سکه اژدها',eternal_ink:'جوهر ازلی'}[k]||k)}
+
+async function claimDaily(){
+  try{
+    const r = await api('/api/daily');
+    toast(r.msg || (r.ok?'پاداش گرفته شد':'قبلاً گرفتی'), !!r.ok);
+    await home();
+  }catch(e){ toast(e.message,false); }
+}
 
 async function world(){
- const d=await api('/api/world'); const b=d.boss; const ev=d.event; const skies=d.skies||[];
- const scale=Number(window.worldScale||1), radiusX=8, radiusY=5;
- const terrainEmoji={grass:'🌿',forest:'🌲',mountain:'⛰️',desert:'🏜️',swamp:'🪷',coast:'🌊',sea:'🌊',ruins:'🏚️',ice:'❄️',frontier:'🗿'};
- const cells=[];
- for(let dy=radiusY;dy>=-radiusY;dy--)for(let dx=-radiusX;dx<=radiusX;dx++){
-   const x=d.x+dx,y=d.y+dy; const seed=Math.abs(x*92821+y*68917+d.sky*31337); const types=['grass','forest','mountain','desert','swamp','coast','sea','ruins'];
-   let code=types[seed%types.length]; if(Math.abs(y)>=18) code='ice'; else if(Math.abs(x)>=28&&Math.abs(y)<18) code='frontier';
-   const city=(d.cities||[]).find(c=>c.x===x&&c.y===y), isMe=dx===0&&dy===0;
-   cells.push(`<div class="geo-cell ${isMe?'me':''} ${code}" title="مختصات (${x}, ${y})"><span>${city?'🏙️':(isMe?'🧙':terrainEmoji[code]||'·')}</span><small>${x},${y}</small>${city?`<b>${esc(city.name)}</b>`:''}</div>`);
- }
- const geo=d.geo||{}; const cityRows=(d.cities||[]).slice(0,20).map(c=>`<div class="rank-item"><span>🏙️</span><div><b>${esc(c.name)}</b><small>📍 (${c.x}, ${c.y}) · سطح ${c.level||1}</small></div></div>`).join('')||'<p class="muted">در این آسمان هنوز شهر بازیکنی ثبت نشده.</p>';
- view.innerHTML=`${card(`🌍 ${esc(d.world||'جهان')}`,`<p class="lore">${esc(d.lore)}</p><div class="worldstats">${row('آسمان',`${d.sky} — ${d.sky_name}`)}${row('مختصات',`(${d.x}, ${d.y})`)}${row('جغرافیا',geo.name||d.landmark)}${row('اقلیم',geo.climate||'—')}${row('ارتفاع',`${Number(geo.elevation||0).toLocaleString()} متر`)}${row('خطر',`${geo.danger||d.danger}%`)}</div>`)}
- ${card('🧭 ناوبری جغرافیایی',`<div class="compass"><button onclick="moveWorld('north')">⬆️<small>شمال</small></button><div><button onclick="moveWorld('west')">⬅️</button><button class="center" onclick="worldCenter()">📍</button><button onclick="moveWorld('east')">➡️</button></div><button onclick="moveWorld('south')">⬇️<small>جنوب</small></button></div><div class="maptools"><button class="btn" onclick="worldZoom(-1)">−</button><span>نمای نقشه ${scale.toFixed(1)}×</span><button class="btn" onclick="worldZoom(1)">+</button></div>`)}
- ${card('🗺️ نقشه جغرافیایی زنده',`<div class="geo-map" style="--zoom:${scale}">${cells.join('')}</div><div class="legend"><span>🧙 بازیکن</span><span>🏙️ شهر</span><span>🌲 جنگل</span><span>⛰️ کوه</span><span>🏜️ بیابان</span><span>🌊 آب</span><span>❄️ یخ</span></div><p class="hint">هر خانه یک مختصات واقعی در جهان بازی است. اقلیم، ارتفاع، آب، مرزها و شهرها با موقعیت تغییر می‌کنند.</p>`)}
- ${ev?card('⚠️ رویداد جهان',`<b>${esc(ev.name)}</b><p>${esc(ev.desc)}</p><p>📍 (${ev.x}, ${ev.y})</p>`):''}
- ${b?card('👑 باس مکان‌محور',`<div class="boss"><b>${esc(b.name)}</b><span>${Number(b.hp).toLocaleString()} / ${Number(b.max_hp).toLocaleString()}</span><small>📍 (${b.x}, ${b.y}) · فاز ${b.phase}</small></div>${button('⚔️ حمله به باس','bossAttack()','red')}`):''}
- ${card('🏙️ شهرهای این منطقه',cityRows)}
- ${card('🏙️ ساخت تمدن',`<input id="cityName" class="input" placeholder="نام شهر"><div>${button('ساخت شهر',"createCity()")}</div><input id="countryName" class="input" placeholder="نام کشور"><div>${button('ساخت کشور',"createCountry()",'gold')}</div>`)}
- ${card('⬆️ صعود',`${button('🪜 چالش پلکان بهشت','challengeStair()')} ${button('☁️ ۹ آسمان','showSkies()')}<div id="skyList">${skies.map(s=>`<div class="minirow">${s.number}. ${esc(s.name)}</div>`).join('')}</div>`)}
- ${card('📍 مکان‌های مهم',`<div class="chips">${(d.landmarks||[]).map(x=>`<span>${esc(x)}</span>`).join('')}</div>`)}`;
+  const d = await api('/api/world');
+  const radiusX=8, radiusY=5;
+  const types=['grass','forest','mountain','desert','swamp','coast','sea','ruins'];
+  const emoji={grass:'🌿',forest:'🌲',mountain:'⛰️',desert:'🏜️',swamp:'🪷',coast:'🌊',sea:'🌊',ruins:'🏚️',ice:'❄️',frontier:'🗿'};
+  let cells='';
+  for(let dy=radiusY; dy>=-radiusY; dy--){
+    for(let dx=-radiusX; dx<=radiusX; dx++){
+      const x=(d.x||0)+dx, y=(d.y||0)+dy;
+      const seed=Math.abs(x*92821+y*68917+(d.sky||1)*31337);
+      let code=types[seed%types.length];
+      if(Math.abs(y)>=18) code='ice';
+      else if(Math.abs(x)>=28 && Math.abs(y)<18) code='frontier';
+      const city=(d.cities||[]).find(c=>c.x===x&&c.y===y);
+      const isMe=dx===0&&dy===0;
+      const mark = isMe ? '🧍' : (city ? '🏰' : (emoji[code]||'·'));
+      cells += `<div class="geo-cell ${code}${isMe?' me':''}" title="(${x},${y})">${mark}</div>`;
+    }
+  }
+  const boss = d.boss ? `<div class="list-item"><span>👹 ${esc(d.boss.name||'باس')}</span><span class="badge">${esc(d.boss.hp||'')}</span></div>` : '';
+  const ev = d.event ? `<div class="list-item"><span>📣 ${esc(d.event.title||d.event)}</span></div>` : '';
+  view.innerHTML = `
+    ${card('🗺️ نقشه اطراف', `<div class="geo-map">${cells}</div>
+      <div class="statrow"><span class="muted">موقعیت</span><span>(${d.x||0}, ${d.y||0}) · آسمان ${d.sky||1}</span></div>
+      <div class="statrow"><span class="muted">شهر</span><span>${esc(d.city||'-')}</span></div>`)}
+    ${card('رویداد / باس', boss+ev || '<div class="empty">رویداد فعالی نیست</div>')}
+    <div class="actions">
+      ${button('⬆️', "moveWorld(0,1)", 'secondary')}
+      ${button('⬇️', "moveWorld(0,-1)", 'secondary')}
+      ${button('➡️', "moveWorld(1,0)", 'secondary')}
+      ${button('⬅️', "moveWorld(-1,0)", 'secondary')}
+    </div>`;
 }
-function worldZoom(delta){window.worldScale=Math.max(.7,Math.min(2,Number(window.worldScale||1)+delta*.15));world()}
-function worldCenter(){window.worldScale=1;world()}
 
-async function moveWorld(dir){try{const d=await api('/api/action',{method:'POST',body:JSON.stringify({action:'move',direction:dir})});toast(d.message||'حرکت انجام شد');await world()}catch(e){toast(e.message,false)}}
-async function createCity(){const n=$('#cityName')?.value?.trim();if(!n)return toast('نام شهر را وارد کن',false);try{toast((await api('/api/action',{method:'POST',body:JSON.stringify({action:'create_city',name:n})})).message);await world()}catch(e){toast(e.message,false)}}
-async function createCountry(){const n=$('#countryName')?.value?.trim();if(!n)return toast('نام کشور را وارد کن',false);try{toast((await api('/api/action',{method:'POST',body:JSON.stringify({action:'create_country',name:n})})).message);await world()}catch(e){toast(e.message,false)}}
-async function challengeStair(){try{toast((await api('/api/action',{method:'POST',body:JSON.stringify({action:'heaven_stair'})})).message);await world()}catch(e){toast(e.message,false)}}
-async function showSkies(){const d=await api('/api/world');toast(`آسمان فعلی: ${d.sky} — ${d.sky_name}`)}
-async function bossAttack(){try{toast((await api('/api/action',{method:'POST',body:JSON.stringify({action:'boss_attack'})})).message);await world()}catch(e){toast(e.message,false)}}
+async function moveWorld(dx,dy){
+  try{
+    const r = await api('/api/action',{method:'POST',body:JSON.stringify({action:'move',dx,dy})});
+    toast(r.msg||'حرکت انجام شد');
+    await world();
+  }catch(e){ toast(e.message,false); }
+}
 
-async function sect(){const d=await api('/api/sect');view.innerHTML=`${card('🏯 فرقه من',d.mine?row('نام',d.mine.name)+row('نوع',d.mine.sect_type)+row('قدرت رئیس',d.mine.leader_power)+row('قدرت فرقه',d.mine.power_level)+row('اعضا',d.mine.member_count)+row('فرقه مادر',d.mine.parent||'ندارد'):`<p class="muted">عضو فرقه نیستی.</p>`)}${card('🏆 فرقه‌های جهان',(d.all||[]).map((s,i)=>`<div class="rank-item"><span>${i+1}</span><div><b>${esc(s.name)}</b><small>${esc(s.sect_type)} · ${s.member_count} عضو · قدرت ${Number(s.power_level||0).toLocaleString()}</small></div></div>`).join('')||'خالی')}${card('⚔️ عملیات',d.mine?button('تازه‌سازی','sect()'):button('🏯 ساخت/پیدا کردن فرقه','toast(\'از سیستم فرقه ربات استفاده کن\')'))}`}
+async function sect(){
+  let d;
+  try{ d = await api('/api/sect'); }catch(e){ d = null; }
+  const list = await api('/api/sects').catch(()=>({sects:[]}));
+  const mine = d && !d.error ? `
+    ${card('فرقه من',
+      row('نام', d.name||'-') +
+      row('رتبه من', d.my_rank||'-') +
+      row('اعضا', d.members_count||'-') +
+      row('قدرت', d.power||'-')
+    )}` : card('فرقه من','<div class="empty">هنوز عضو فرقه‌ای نیستی. از ربات /sects بزن.</div>');
+  const rows = (list.sects||list||[]).slice(0,15).map(s=>{
+    const name = s.name||s[0]||'-';
+    const power = s.power||s[1]||'';
+    return `<div class="list-item"><span>${esc(name)}</span><span class="badge">${esc(power)}</span></div>`;
+  }).join('') || '<div class="empty">فرقه‌ای ثبت نشده</div>';
+  view.innerHTML = mine + card('🏯 فرقه‌های برتر', rows);
+}
 
-async function characters(){const d=await api('/api/characters');view.innerHTML=`${card('🎭 مجموعه کاراکتر',`<div class="charhead">${row('تعداد',d.characters.length)}${row('قدرت سه کاراکتر برتر',d.total_power)}</div>${button('✨ احضار کاراکتر','pullCharacter()')} ${button('🔀 ترکیب تکراری‌ها','mergeCharacters()')}`)}<div class="chargrid">${(d.characters||[]).map(c=>`<article class="char"><div class="rarity">${esc(c.emoji||'⭐')} ${esc(c.rarity)}</div><div class="portrait">${c.portrait?`<img src="/assets/characters/${esc(c.portrait)}" onerror="this.style.display='none'">`:''}<span>${esc((c.name||'؟')[0])}</span></div><b>${esc(c.name)}</b><small>${'⭐'.repeat(Math.min(5,c.stars||1))} · +${Number(c.power||0).toLocaleString()}</small><p>${esc(c.description||'')}</p></article>`).join('')}</div>`}
-async function pullCharacter(){try{toast((await api('/api/action',{method:'POST',body:JSON.stringify({action:'pull_character'})})).message);await characters()}catch(e){toast(e.message,false)}}
-async function mergeCharacters(){try{toast((await api('/api/action',{method:'POST',body:JSON.stringify({action:'merge_characters'})})).message);await characters()}catch(e){toast(e.message,false)}}
+async function characters(){
+  const d = await api('/api/characters');
+  const owned = d.owned || d.characters || [];
+  const rows = owned.slice(0,30).map((c,i)=>`
+    <div class="list-item">
+      <span>#${i+1} ${esc(c.name||c)} <span class="badge">${esc(c.rarity||'')}</span></span>
+      <span class="badge gold">⚔ ${esc(c.power||c.bonus||'')}</span>
+    </div>`).join('') || '<div class="empty">کاراکتری نداری. در ربات /pullchar بزن.</div>';
+  view.innerHTML = card('🎭 کاراکترهای من', rows) +
+    `<div class="actions">${button('بروزرسانی', "characters()")}</div>`;
+}
 
-async function shop(){const d=await api('/api/shop');view.innerHTML=`<div class="shopfilter">${(d.buildings||[]).map(b=>`<button onclick="filterShop(${b.id})">${esc(b.name)}</button>`).join('')}</div><div id="shopItems">${shopItems(d.items||[])}</div>`}
-function shopItems(items){return items.map(i=>`<article class="shopitem"><div><b>${esc(i.name)}</b><small>${esc(i.description||'')}</small></div><div class="price">💰 ${Number(i.price||0).toLocaleString()} ${esc(i.currency_name||'سکه')}</div><button class="btn" onclick="buyItem(${i.id})">خرید</button></article>`).join('')||'<p class="muted">فروشگاهی برای نمایش وجود ندارد.</p>'}
-async function filterShop(id){try{const d=await api('/api/shop?building_id='+id);$('#shopItems').innerHTML=shopItems(d.items||[])}catch(e){toast(e.message,false)}}
-async function buyItem(id){try{toast((await api('/api/action',{method:'POST',body:JSON.stringify({action:'buy_item',item_id:id,qty:1})})).message);await shop()}catch(e){toast(e.message,false)}}
+async function shop(){
+  const d = await api('/api/shop');
+  const items = d.items || d.shop || [];
+  const rows = items.slice(0,40).map(it=>`
+    <div class="list-item">
+      <span>${esc(it.name||it.title||'آیتم')} <span class="muted">${esc(it.item_type||'')}</span></span>
+      <span class="badge gold">${Number(it.price||it.cost||0).toLocaleString('fa-IR')}</span>
+    </div>`).join('') || '<div class="empty">فروشگاه خالی است یا از ربات /shop استفاده کن.</div>';
+  view.innerHTML = card('🛒 فروشگاه', rows) +
+    card('💡 نکته', '<div class="muted">خرید قطعی از داخل ربات انجام می‌شود. اینجا فقط مشاهده است.</div>');
+}
 
-async function chests(){const d=await api('/api/chests');view.innerHTML=`${card('🎁 صندوق روزانه',row('وضعیت',d.cooldown?`⏳ ${d.cooldown}`:'آماده')+row('آخرین رتبه',d.last_grade||'—')+row('تعداد بازکردن',d.opened||0)+button('🎲 باز کردن صندوق روزانه','openDailyChest','gold'))}${card('🧰 فروش صندوق با سکه',`<div class="chestgrid">${(d.shop||[]).map(c=>`<article><b>${esc(c.rank)}</b><small>پاداش: ${Number(c.low).toLocaleString()} تا ${Number(c.high).toLocaleString()} سکه</small><strong>🪙 ${Number(c.price).toLocaleString()} سکه</strong><button class="btn" onclick="buyChest('${esc(c.rank)}')">خرید</button></article>`).join('')}</div>`)}${card('🍀 شانس',`<p>صندوق روزانه رایگان است و رتبه‌اش شانسی تعیین می‌شود.</p>`)}${card('💳 فروشگاه ویژه — تومان',`<p class="muted">محصولات این بخش ثابت و غیرتصادفی‌اند. پرداخت واقعی پس از اتصال درگاه تأییدشده فعال می‌شود.</p><div id="realShop"></div>`)}`;await loadRealShop()}
-async function loadRealShop(){try{const d=await api('/api/real-shop');const el=document.getElementById('realShop');if(!el)return;el.innerHTML=(d.items||[]).map(p=>`<article class="shopitem"><div><b>${esc(p.name)}</b><small>${esc(p.description||'')}</small></div><div class="price">💵 ${Number(p.price_toman||0).toLocaleString()} تومان</div><button class="btn gold" onclick="orderReal('${esc(p.id)}')">ثبت سفارش</button></article>`).join('')}catch(e){toast(e.message,false)}}
-async function orderReal(id){try{const r=await api('/api/real-shop/order',{method:'POST',body:JSON.stringify({product_id:id})});alert(`سفارش ${r.order.id} ثبت شد.\n\nمبلغ: ${Number(r.order.amount_toman||0).toLocaleString()} تومان\nشماره کارت: ${r.card_number}\n\nپس از واریز، در ربات بزن: ${r.receipt_command}`);toast(r.message)}catch(e){toast(e.message,false)}}
+async function chests(){
+  const d = await api('/api/chests').catch(()=>({}));
+  const list = d.chests || d.items || [];
+  const rows = list.map(c=>`
+    <div class="list-item">
+      <span>${esc(c.name||c.title||'صندوق')}</span>
+      <span class="badge">${esc(c.price||c.cost||'—')}</span>
+    </div>`).join('') || '<div class="empty">برای صندوق روزانه از دکمه خانه استفاده کن یا در ربات /daily بزن.</div>';
+  view.innerHTML = card('🎁 گنجینه و صندوق', rows) +
+    `<div class="actions">${button('🎁 پاداش روزانه', "claimDaily()")}</div>`;
+}
 
-function games(){view.innerHTML=card('🎮 مرکز بازی',`<p>بازی‌های موجود: شطرنج، تخته‌نرد، سنگ‌کاغذقیچی، کازینو و حکم.</p>${button('باز کردن مرکز بازی','openGames()')}<p class="hint">اتاق‌های بازی وب از همان سرور ربات استفاده می‌کنند.</p>`)}
-function openGames(){window.location.href='/app/games.html'}
+async function arena(){
+  const rank = await api('/api/ranking').catch(()=>({players:[]}));
+  const arena = await api('/api/arena').catch(()=>({top:[]}));
+  const players = rank.players || rank.top || rank || [];
+  const rows = (Array.isArray(players)?players:[]).slice(0,20).map((p,i)=>`
+    <div class="list-item">
+      <span>${i+1}. ${esc(p.full_name||p.name||'?')}</span>
+      <span class="badge gold">⚡ ${Number(p.power||p.score||0).toLocaleString('fa-IR')}</span>
+    </div>`).join('') || '<div class="empty">رتبه‌بندی در دسترس نیست</div>';
+  const arows = (arena.top||[]).slice(0,10).map((p,i)=>`
+    <div class="list-item"><span>${i+1}. ${esc(p.full_name||p.name||'?')}</span>
+    <span class="badge">${esc(p.wins||p.score||'')}</span></div>`).join('');
+  view.innerHTML = card('📊 رتبه‌بندی قدرت', rows) + (arows?card('⚔️ برترین آرنا', arows):'');
+}
 
-async function admin(){const d=await api('/api/admin');view.innerHTML=`${card('🛡️ مدیریت',row('نقش',d.role)+row('بازیکنان',d.players)+row('بازیکنان فعال',d.active)+row('فرقه‌ها',d.sects))}${card('🧾 مدیریت خریدها',`<div class="adminstats" id="adminStats">در حال دریافت آمار...</div><div class="quick"><button class="btn" onclick="loadAdminOrders('all')">همه</button><button class="btn gold" onclick="loadAdminOrders('receipt_submitted')">🔎 در انتظار بررسی</button><button class="btn" onclick="loadAdminOrders('pending')">⏳ بدون رسید</button><button class="btn" onclick="loadAdminOrders('approved')">✅ تأییدشده</button><button class="btn" onclick="loadAdminOrders('rejected')">❌ ردشده</button></div><div id="adminOrders">در حال دریافت...</div>`)}${card('⚙️ عملیات امن',`<p class="hint">احراز هویت Telegram WebApp و نقش مدیریتی برای عملیات حساس الزامی است.</p>${button('🔄 همگام‌سازی داده‌ها','adminSync()')}`)}`;await loadAdminOrders('receipt_submitted')}
-async function loadAdminOrders(status='receipt_submitted'){try{const d=await api('/api/admin/real-orders?status='+encodeURIComponent(status)+'&limit=100');const st=d.stats||{};$('#adminStats').innerHTML=[['کل',st.total],['در انتظار',st.pending],['رسیدها',st.receipt_submitted],['تأیید',st.approved],['رد',st.rejected],['فروش تأییدشده',Number(st.revenue_toman||0).toLocaleString()+' تومان']].map(x=>row(x[0],x[1])).join('');const el=$('#adminOrders');if(!el)return;el.innerHTML=(d.orders||[]).map(o=>`<article class="shopitem"><div><b>${esc(o.id)}</b><small>کاربر: ${esc(String(o.tg_id))}</small><small>محصول: ${esc(o.product_id||'—')}</small><small>مبلغ: ${Number(o.amount_toman||0).toLocaleString()} تومان</small><small>وضعیت: ${esc(o.status||'—')} · ${esc(o.updated_at||o.created_at||'')}</small>${o.receipt_file_id?`<small>🧾 رسید ثبت شده · <a href="/api/admin/real-orders/${encodeURIComponent(o.id)}/receipt" target="_blank" rel="noopener">مشاهده رسید</a></small>`:''}${o.admin_note?`<small>یادداشت: ${esc(o.admin_note)}</small>`:''}</div><div><button class="btn" onclick="adminOrderDetail('${esc(o.id)}')">جزئیات</button>${o.status==='receipt_submitted'?`<button class="btn gold" onclick="adminOrderAction('${esc(o.id)}','approve')">تأیید</button><button class="btn" onclick="adminOrderReject('${esc(o.id)}')">رد</button>`:''}</div></article>`).join('')||'<p class="muted">سفارشی برای این فیلتر وجود ندارد.</p>'}catch(e){toast(e.message,false)}}
-async function adminOrderDetail(id){try{const d=await api('/api/admin/real-orders/'+encodeURIComponent(id));const o=d.order||{};const a=d.audit||[];let body=row('شناسه',o.id)+row('کاربر',o.tg_id)+row('محصول',o.product_id)+row('مبلغ',Number(o.amount_toman||0).toLocaleString()+' تومان')+row('وضعیت',o.status)+rowHtml('رسید',o.receipt_file_id?`<a href="/api/admin/real-orders/${encodeURIComponent(o.id)}/receipt" target="_blank" rel="noopener">مشاهده تصویر رسید</a>`:'ندارد')+row('ایجاد',o.created_at||'—')+row('به‌روزرسانی',o.updated_at||'—')+(o.admin_note?row('یادداشت ادمین',o.admin_note):'');if(o.status==='receipt_submitted'){body+=`<div class="quick"><button class="btn gold" data-order-action="approve" data-order-id="${esc(o.id)}">✅ تأیید</button><button class="btn" data-order-action="reject" data-order-id="${esc(o.id)}">❌ رد</button></div>`}body+=button('↩️ بازگشت','admin()');view.innerHTML=card('🧾 جزئیات سفارش',body)+card('📜 تاریخچه مدیریت',a.map(x=>row(x.action,`${x.admin_id} · ${x.created_at}${x.note?' · '+x.note:''}`)).join('')||'<p class="muted">تاریخچه‌ای ثبت نشده.</p>');document.querySelectorAll('[data-order-action]').forEach(el=>el.onclick=async()=>{if(el.dataset.orderAction==='reject'){const note=prompt('دلیل رد رسید را وارد کن:','رسید یا مبلغ قابل تأیید نبود.');if(note===null)return;await adminOrderAction(el.dataset.orderId,'reject',note)}else await adminOrderAction(el.dataset.orderId,'approve')})}catch(e){toast(e.message,false)}}
-async function adminOrderReject(id){const note=prompt('دلیل رد رسید را وارد کن:','رسید یا مبلغ قابل تأیید نبود.');if(note===null)return;await adminOrderAction(id,'reject',note)}
-async function adminOrderAction(id,action,note=''){if(action==='approve'&&!confirm('این سفارش تأیید و جایزه آن اعمال شود؟'))return;try{toast((await api('/api/admin/real-orders/action',{method:'POST',body:JSON.stringify({order_id:id,action,note})})).message);await admin()}catch(e){toast(e.message,false)}}
-async function adminSync(){try{toast((await api('/api/admin/sync',{method:'POST'})).message)}catch(e){toast(e.message,false)}}
-async function refreshAll(){const active=$('.tab.active')?.dataset.tab||'home';await render(active)}
+async function games(){
+  view.innerHTML = card('🎮 بازی‌ها', `
+    <div class="muted">مینی‌گیم‌ها از داخل ربات در دسترس‌اند:</div>
+    <div class="list-item"><span>سنگ کاغذ قیچی</span><span class="badge">/rps</span></div>
+    <div class="list-item"><span>تاس / تخته‌نرد</span><span class="badge">/dice</span></div>
+    <div class="list-item"><span>شطرنج</span><span class="badge">/chess</span></div>
+    <div class="list-item"><span>کازینو</span><span class="badge">/casino</span></div>
+    <div class="empty">یا صفحه اختصاصی بازی‌ها را باز کن.</div>
+  `) + `<div class="actions">${button('باز کردن games.html', "window.location.href='/app/static/games.html'", 'secondary')}</div>`;
+}
+
+async function admin(){
+  try{
+    const d = await api('/api/admin');
+    view.innerHTML = card('🛡️ مدیریت', `
+      ${row('کاربران', d.users||d.users_count||'-')}
+      ${row('سفارشات باز', d.open_orders||'-')}
+      ${row('نسخه', d.version||'-')}
+    `) + `<div class="actions">${button('همگام‌سازی', "adminSync()")}</div>`;
+  }catch(e){
+    view.innerHTML = card('🛡️ مدیریت', `<div class="empty">${esc(e.message)}</div>`);
+  }
+}
+async function adminSync(){
+  try{ toast((await api('/api/admin/sync',{method:'POST'})).message||'OK'); }
+  catch(e){ toast(e.message,false); }
+}
+
 render('home');
 </script>
-</body></html>
+</body>
+</html>
