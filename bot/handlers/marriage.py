@@ -19,7 +19,8 @@ router = Router()
 async def cmd_marry(message: Message):
     from aiogram.types import FSInputFile
     from services.portraits import panel_url
-    await message.answer_photo(FSInputFile(panel_url("marriage")), caption="💍 <b>ازدواج و خانواده</b>")
+from bot.utils.media import safe_answer_photo
+    await safe_answer_photo(message, panel_url("marriage"), caption="💍 <b>ازدواج و خانواده</b>"
     # /marry servant N must be handled before the player-to-player marriage flow.
     parts = (message.text or "").split()
     if len(parts) >= 3 and parts[1].lower() in ("servant", "خدمتکار"):
@@ -70,6 +71,7 @@ async def cmd_marry(message: Message):
         builder.adjust(1)
         from aiogram.types import FSInputFile
         from services.portraits import panel_url
+from bot.utils.media import safe_answer_photo
         caption=(
             f"💍 <b>پنل ازدواج بین دو بازیکن</b>\n\n"
             f"👤 نفر اول: <b>{proposer.full_name}</b> | Lv.{proposer.level} | {proposer.gender}\n"
@@ -78,7 +80,7 @@ async def cmd_marry(message: Message):
             f"{warn_text}\n\n"
             f"🤝 تصمیم نهایی فقط با رضایت طرف مقابل انجام میشود."
         )
-        await message.answer_photo(FSInputFile(panel_url("marriage")),caption=caption,reply_markup=builder.as_markup())
+        await safe_answer_photo(message, panel_url("marriage"), caption=caption,reply_markup=builder.as_markup()
 
 
 @router.callback_query(F.data.startswith("marryaccept:"))

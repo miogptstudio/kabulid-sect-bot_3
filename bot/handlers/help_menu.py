@@ -376,11 +376,13 @@ def _kb(uid: int = 0):
 async def cmd_help(message: Message):
     uid = message.from_user.id
     text = (
-        f"📖 <b>راهنمای بازی</b> — v{BOT_VERSION}\n\n"
-        "هر بخش را باز کن تا دستورهای همان بخش را ببینی.\n"
-        "💡 برای شروع: /start و بعد /guide\n"
-        "⚠️ قبل از خرید یا انتقال، پیام تأیید را بخوان.\n\n"
-        "یک بخش را انتخاب کن 👇"
+        f"📖 <b>راهنمای ساده</b> — v{BOT_VERSION}\n\n"
+        "🎯 <b>مسیر پیشنهادی برای تازه‌وارد:</b>\n"
+        "۱. /profile — وضعیتت رو ببین\n"
+        "۲. دکمه 🧘 تزکیه — قوی‌تر شو\n"
+        "۳. ریپلای روی کسی + /duel — بجنگ\n"
+        "۴. /daily — پاداش روزانه بگیر\n\n"
+        "بخش موردنظرت رو از دکمه‌های پایین انتخاب کن 👇"
     )
     await send_panel(message, "help", caption=text, reply_markup=_kb(uid))
 

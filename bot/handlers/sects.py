@@ -26,7 +26,8 @@ router = Router()
 async def cmd_sects(message: Message):
     from aiogram.types import FSInputFile
     from services.portraits import panel_url
-    await message.answer_photo(FSInputFile(panel_url("sect")), caption="🏛️ <b>فرقهها</b>")
+from bot.utils.media import safe_answer_photo
+    await safe_answer_photo(message, panel_url("sect"), caption="🏛️ <b>فرقهها</b>"
     async with async_session() as session:
         result = await session.execute(select(Sect).where(Sect.is_active == True))
         sects = result.scalars().all()

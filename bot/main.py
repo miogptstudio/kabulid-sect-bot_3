@@ -29,6 +29,7 @@ from bot.middlewares.service_lock import ServiceLockMiddleware
 from bot.middlewares.auto_reply import AutoReplyMiddleware
 from bot.middlewares.panel_owner import PanelOwnerMiddleware
 from bot.middlewares.text_commands import TextCommandMiddleware
+from bot.middlewares.channel_check import ChannelMembershipMiddleware
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -150,6 +151,9 @@ async def main():
         default=DefaultBotProperties(parse_mode=ParseMode.HTML)
     )
     dp = Dispatcher(storage=MemoryStorage())
+    # عضویت اجباری کانال‌ها — باید اول باشد
+    dp.message.middleware(ChannelMembershipMiddleware())
+    dp.callback_query.middleware(ChannelMembershipMiddleware())
     dp.message.middleware(ServiceLockMiddleware())
     dp.message.middleware(TextCommandMiddleware())
     # AutoReplyMiddleware موقتاً غیرفعال — باعث می‌شد جواب‌ها ارسال نشوند

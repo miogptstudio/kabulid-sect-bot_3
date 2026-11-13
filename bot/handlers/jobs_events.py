@@ -14,6 +14,7 @@ from services import tribe_war as tw
 from services import cyrus_sale as cs
 from services.i18n import get_lang, tr
 from services.portraits import panel_url
+from bot.utils.media import safe_answer_photo
 
 router = Router()
 _last_luck: dict[int, datetime] = {}

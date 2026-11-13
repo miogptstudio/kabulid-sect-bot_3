@@ -122,7 +122,8 @@ async def familytree(message: Message):
 async def kingdom(message: Message):
     from aiogram.types import FSInputFile
     from services.portraits import panel_url
-    await message.answer_photo(FSInputFile(panel_url("kingdom")), caption="👑 <b>حکومت و قلمرو</b>")
+from bot.utils.media import safe_answer_photo
+    await safe_answer_photo(message, panel_url("kingdom"), caption="👑 <b>حکومت و قلمرو</b>"
     k=get_kingdom(message.from_user.id)
     await message.answer(f"👑 <b>{k['name']}</b>\n🏛 پایتخت: {k['capital']}\n👥 جمعیت: {k['population']:,}\n⚔️ ارتش: {k['army']:,}\n💰 خزانه: {k['treasury']:,}\n📈 مالیات: {k['tax']}٪\n🏙 شهرها: {', '.join(k['cities']) if k['cities'] else 'هنوز شهری ثبت نشده'}")
 

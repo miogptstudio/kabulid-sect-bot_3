@@ -11,6 +11,7 @@ from database.crud import get_or_create_user, get_user_by_telegram_id
 from database.models_v3 import CultivationTechnique, UserTechnique
 from services.i18n import t_user, tr
 from services.portraits import panel_url
+from bot.utils.media import safe_answer_photo
 from services.cultivation import (
     get_or_create_cultivation, add_energy, energy_needed_for_stage,
     ensure_default_techniques, get_active_technique,

@@ -18,6 +18,7 @@ from services.economy import get_or_create_wallet
 from services.sects import add_contribution
 from services.i18n import tr
 from services.portraits import panel_url
+from bot.utils.media import safe_answer_photo
 import random as _rnd_dodge
 
 router = Router()
@@ -42,48 +43,99 @@ class DuelStates(StatesGroup):
 
 
 async def _resolve_duel(session, challenger: User, opponent: User, stake: int = 0) -> str:
-    """دوئل بر اساس قدرت — خون کم میشود، یکضرب مرگ نیست."""
-    from services.combat_blood import apply_damage, has_cyrus, ensure_blood
+    """دوئل پیشرفته v61: قدرت + سرعت + کریت + واریانس + کمبو — خون کم می‌شود، مرگ یک‌ضرب نیست."""
+    from services.combat_blood import apply_damage, ensure_blood, max_blood_async
+    import random as _rnd
+
     await ensure_blood(challenger)
     await ensure_blood(opponent)
+
+    # قدرت فقط یک‌بار در شروع محاسبه می‌شود (بهینه‌تر و پایدارتر)
     p1 = await calc_power(session, challenger)
     p2 = await calc_power(session, opponent)
-    logs = [f"قدرت: {challenger.full_name} {p1['total']} (سلاح {p1.get('weapon',0)}) vs {opponent.full_name} {p2['total']} (سلاح {p2.get('weapon',0)})"]
+    logs = [
+        f"⚡ قدرت: {challenger.full_name} <b>{p1['total']}</b> "
+        f"(سلاح {p1.get('weapon',0)} | سرعت {p1.get('speed',10)}) vs "
+        f"{opponent.full_name} <b>{p2['total']}</b> "
+        f"(سلاح {p2.get('weapon',0)} | سرعت {p2.get('speed',10)})"
+    ]
+
     a, b = challenger, opponent
+    pa, pb = p1, p2
     winner = loser = None
-    for rnd in range(1, 12):
-        pa = await calc_power(session, a)
-        pb = await calc_power(session, b)
-        if pa["total"] >= pb["total"]:
-            atk, dfn = a, b
-            dmg = 8 + (pa["total"] - pb["total"]) // 25
+    max_rounds = 14
+
+    for rnd in range(1, max_rounds + 1):
+        # ابتکار عمل بر اساس سرعت + کمی شانس
+        spd_a = int(pa.get("speed", 10) or 10) + _rnd.randint(0, 8)
+        spd_b = int(pb.get("speed", 10) or 10) + _rnd.randint(0, 8)
+        if spd_a >= spd_b:
+            atk, dfn, atk_p, dfn_p = a, b, pa, pb
         else:
-            atk, dfn = b, a
-            dmg = 8 + (pb["total"] - pa["total"]) // 25
-        # اگر کوروش مجهز است در دوئل عادی هم خطرناک است اما wipe فقط deathduel
-        res = await apply_damage(session, atk, dfn, dmg, is_cyrus_strike=False)
+            atk, dfn, atk_p, dfn_p = b, a, pb, pa
+
+        # آسیب پایه + واریانس + کریت
+        power_diff = max(0, atk_p["total"] - dfn_p["total"])
+        base_dmg = 10 + power_diff // 20 + _rnd.randint(0, 6)
+        # کریت بر اساس سرعت و dodge حریف
+        crit_chance = min(0.28, 0.06 + (atk_p.get("speed", 10) / 200) + (atk_p.get("penetration", 0) / 300))
+        is_crit = _rnd.random() < crit_chance
+        if is_crit:
+            base_dmg = int(base_dmg * 1.65) + 5
+
+        # شانس فعال شدن کمبو
+        combo_msg = ""
+        try:
+            from services.combo_combat import try_combo
+            # بررسی مالکیت آرش برای کمبوهای ویژه
+            has_arash = False
+            try:
+                from services.persist import get_dict
+                owners = (get_dict("arash_event") or {}).get("owners") or {}
+                has_arash = str(int(getattr(atk, "telegram_id", 0) or 0)) in owners
+            except Exception:
+                pass
+            combo_res = try_combo(int(getattr(atk, "telegram_id", 0) or 0), has_arash=has_arash)
+            if combo_res:
+                base_dmg = int(base_dmg * float(combo_res.get("mult", 1.3)))
+                combo_msg = f" | 🔥{combo_res.get('name', 'کمبو')}"
+        except Exception:
+            pass
+
+        res = await apply_damage(session, atk, dfn, base_dmg, is_cyrus_strike=False)
+        dmg_done = res.get("damage", base_dmg)
         if res.get("dodged"):
-            logs.append(f"راند {rnd}: {res.get('msg', 'جاخالی')}")
+            logs.append(f"راند {rnd}: 🛡️ {dfn.full_name} جاخالی داد!{combo_msg}")
         else:
-            logs.append(f"راند {rnd}: {atk.full_name} → {dfn.full_name} | آسیب {res.get('damage','?')} | خون {res.get('blood','?')}/{res.get('max_blood',100)} | نفوذ {res.get('penetration',0)}")
-        if res.get("killed"):
+            crit_tag = "💥کریت! " if is_crit else ""
+            logs.append(
+                f"راند {rnd}: {crit_tag}{atk.full_name} → {dfn.full_name} | "
+                f"آسیب <b>{dmg_done}</b> | خون {res.get('blood','?')}/{res.get('max_blood',100)}"
+                f"{combo_msg}"
+            )
+
+        if res.get("killed") or (getattr(dfn, "blood", 0) or 0) <= 0:
             winner, loser = atk, dfn
             break
+
         await session.refresh(a)
         await session.refresh(b)
-        if (a.blood or 0) <= 0:
-            winner, loser = b, a
-            break
-        if (b.blood or 0) <= 0:
-            winner, loser = a, b
-            break
+
     if not winner:
-        # هر که خون بیشتری دارد
-        if (a.blood or 0) >= (b.blood or 0):
+        # تصمیم نهایی با خون + کمی شانس قدرت
+        blood_a = int(getattr(a, "blood", 0) or 0)
+        blood_b = int(getattr(b, "blood", 0) or 0)
+        if blood_a > blood_b:
             winner, loser = a, b
-        else:
+        elif blood_b > blood_a:
             winner, loser = b, a
-        logs.append("زمان تمام — برنده از روی خون باقیمانده")
+        else:
+            # تساوی خون → شانس بر اساس قدرت
+            if _rnd.random() < win_chance(pa["total"], pb["total"]):
+                winner, loser = a, b
+            else:
+                winner, loser = b, a
+        logs.append("⏱ زمان تمام — برنده بر اساس خون باقیمانده و قدرت")
 
     await update_user_stats(session, winner, won=True)
     extra = []
@@ -159,31 +211,33 @@ async def _resolve_duel(session, challenger: User, opponent: User, stake: int = 
     if (loser.blood or 0) > 0 and not loser.is_dead:
         loser.blood = min(100, loser.blood + 10)
     await session.commit()
-    text = "🏁 <b>نتیجه دوئل (فقط قدرت — بدون شانس)</b>\n" + "\n".join(logs[-6:]) + f"\n\n🩸 خونها: {a.full_name} {a.blood} | {b.full_name} {b.blood}"
-    # لاگ کوتاه و خوانا
+
+    # خلاصه آسیب
     dmg_total = 0
     try:
         import re as _re
         for _ln in logs:
-            _m = _re.search(r"آسیب\s+(\d+)", _ln)
+            _m = _re.search(r"آسیب\s+(?:<b>)?(\d+)", _ln)
             if _m:
                 dmg_total += int(_m.group(1))
     except Exception:
         pass
+
+    blood_w = getattr(winner, "blood", 0) or 0
+    blood_l = getattr(loser, "blood", 0) or 0
     text = (
-        f"⚔️ <b>نتیجه دوئل</b>\n"
-        f"⚡ قدرت: {winner.full_name} vs {loser.full_name}\n"
-        f"💥 آسیب کل واردشده (تقریبی): {dmg_total or '—'}\n"
-        f"🏆 برنده: <b>{winner.full_name}</b>\n"
-        f"💀 بازنده: {loser.full_name}"
+        f"⚔️ <b>نتیجه دوئل پیشرفته</b>\n"
+        f"🏆 برنده: <b>{winner.full_name}</b> (خون {blood_w})\n"
+        f"💀 بازنده: {loser.full_name} (خون {blood_l})\n"
+        f"💥 آسیب کل تقریبی: {dmg_total or '—'}\n"
     )
-    if len(logs) <= 4:
-        text += "\n\n" + "\n".join(logs)
+    # لاگ کوتاه و خوانا
+    if len(logs) <= 5:
+        text += "\n" + "\n".join(logs)
     else:
-        text += "\n\n" + "\n".join(logs[:2] + ["…"] + logs[-1:])
-    _ = f"\n\n🏆 برنده: <b>{winner.full_name}</b>\nبازنده: {loser.full_name}"
+        text += "\n" + "\n".join(logs[:2] + ["…"] + logs[-2:])
     if extra:
-        text += "\n" + "\n".join(extra)
+        text += "\n\n" + "\n".join(extra)
     if rank_result.get("messages"):
         text += "\n" + "\n".join(rank_result["messages"])
     if xp_messages:
@@ -252,11 +306,11 @@ async def cmd_duel(message: Message, state: FSMContext):
         stake_line = f"\n🎰 شرط: <b>{stake}</b> سکه از هر طرف" if stake else "\nبدون شرط — برای شرط: /duel مبلغ"
         await message.answer_photo(
             FSInputFile(panel_url("duel", getattr(challenger, "gender", "مرد"), f"{challenger.id}-{opponent.id}")),
-            caption=f"⚔️ <b>درخواست دوئل</b>\n\n"
-            f"از: {challenger.full_name} — قدرت {p1['total']}\n"
-            f"به: {opponent.full_name} — قدرت {p2['total']}\n"
-            f"برتری قدرت: {'چالشگر' if p1['total']>=p2['total'] else 'حریف'} (بدون شانس){stake_line}\n\n"
-            f"قدرت شامل تکنیک و سلاح است.\n"
+            caption=f"⚔️ <b>درخواست دوئل پیشرفته</b>\n\n"
+            f"از: {challenger.full_name} — قدرت <b>{p1['total']}</b> (سرعت {p1.get('speed',10)})\n"
+            f"به: {opponent.full_name} — قدرت <b>{p2['total']}</b> (سرعت {p2.get('speed',10)})\n"
+            f"شانس تقریبی چالشگر: <b>{chance:.0f}%</b>{stake_line}\n\n"
+            f"نبرد نوبتی با کریت، جاخالی، کمبو و خون.\n"
             f"فقط <b>{opponent.full_name}</b> دکمه بزند.",
             reply_markup=builder.as_markup(),
         )

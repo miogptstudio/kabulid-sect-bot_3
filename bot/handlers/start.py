@@ -1,6 +1,6 @@
 from aiogram import Router, F
 from bot.utils.safe_telegram import safe_edit_text
-from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
+from aiogram.types import Message, CallbackQuery, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
 from aiogram.filters import CommandStart, Command
 
 from database.engine import async_session
@@ -14,19 +14,18 @@ router = Router()
 
 
 def main_keyboard(lang: str = "fa"):
-    """منوی اصلی شبیه رباتهای تزکیه"""
+    """منوی اصلی ساده و واضح"""
     return ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text="👤 پروفایل"), KeyboardButton(text="🧘 تزکیه")],
-            [KeyboardButton(text="⚔️ نبرد"), KeyboardButton(text="🎒 کولهبار")],
-            [KeyboardButton(text="⚗ کیمیاگری"), KeyboardButton(text="🏛 فرقه")],
-            [KeyboardButton(text="🏪 بازار"), KeyboardButton(text="🎁 گنجینه")],
-            [KeyboardButton(text="📜 مأموریتها"), KeyboardButton(text="🏆 دستاوردها")],
-            [KeyboardButton(text="📊 رتبهبندی"), KeyboardButton(text="🌍 رویدادها")],
-            [KeyboardButton(text="🎁 پاداش روزانه"), KeyboardButton(text="🎲 تاس شانس")],
-            [KeyboardButton(text="💼 شغل"), KeyboardButton(text="📖 راهنما")],
+            [KeyboardButton(text="⚔️ نبرد"), KeyboardButton(text="📊 رتبه")],
+            [KeyboardButton(text="🏛 فرقه"), KeyboardButton(text="🏪 بازار")],
+            [KeyboardButton(text="📜 مأموریت"), KeyboardButton(text="🎒 کوله")],
+            [KeyboardButton(text="🎁 روزانه"), KeyboardButton(text="🌍 جهان")],
+            [KeyboardButton(text="📖 راهنما"), KeyboardButton(text="⚙️ بیشتر")],
         ],
         resize_keyboard=True,
+        input_field_placeholder="دکمه بزن یا دستور بنویس…",
     )
 
 
@@ -54,16 +53,11 @@ async def cmd_start(message: Message):
             text = t(
                 "start",
                 lang,
-                name=user.full_name or "Player",
+                name=user.full_name or "بازیکن",
                 ver=__import__("bot.config", fromlist=["BOT_VERSION"]).BOT_VERSION,
             )
-            text += chr(10) + chr(10) + t("help_hint", lang)
             await message.answer(text, reply_markup=main_keyboard(lang))
-            try:
-                await message.answer(CREATOR_NOTICE)
-            except Exception:
-                pass
-            # کارت وضعیت کوتاه
+            # کارت وضعیت کوتاه (اگر موجود باشد)
             try:
                 from bot.handlers.jobs_events import cmd_status_card
                 await cmd_status_card(message)
@@ -270,15 +264,19 @@ async def kb_cult(message: Message):
 @router.message(F.text.in_({"⚔️ نبرد", "نبرد", "دوئل"}))
 async def kb_battle(message: Message):
     await message.answer(
-        "⚔️ <b>نبرد</b>" + chr(10)
-        + "• ریپلای روی حریف + /duel" + chr(10)
-        + "• /randomduel — صف رندوم" + chr(10)
-        + "• /arena — آرنا" + chr(10)
-        + "• /guardian — نگهبان"
+        "⚔️ <b>نبرد — چطور بازی کنم؟</b>\n\n"
+        "۱. روی پیام حریف <b>ریپلای</b> کن و بنویس:\n"
+        "   <code>/duel</code>\n"
+        "۲. یا برای دوئل تصادفی:\n"
+        "   <code>/randomduel</code>\n\n"
+        "سایر گزینه‌ها:\n"
+        "• /arena — آرنا\n"
+        "• /guardian — نگهبان\n"
+        "• /ranking — جدول رتبه"
     )
 
 
-@router.message(F.text.in_({"🎒 کولهبار", "کولهبار", "اینونتوری"}))
+@router.message(F.text.in_({"🎒 کولهبار", "🎒 کوله", "کولهبار", "کوله", "اینونتوری"}))
 async def kb_inv(message: Message):
     try:
         from bot.handlers.shop import cmd_inventory
@@ -327,7 +325,7 @@ async def kb_treasure(message: Message):
         await message.answer(f"خطا: {e}")
 
 
-@router.message(F.text.in_({"📜 مأموریتها", "مأموریتها"}))
+@router.message(F.text.in_({"📜 مأموریتها", "📜 مأموریت", "مأموریتها", "مأموریت"}))
 async def kb_missions(message: Message):
     try:
         from bot.handlers.missions import cmd_missions
@@ -345,7 +343,7 @@ async def kb_ach(message: Message):
         await message.answer(f"خطا دستاورد: {e}")
 
 
-@router.message(F.text.in_({"📊 رتبهبندی", "رتبهبندی"}))
+@router.message(F.text.in_({"📊 رتبهبندی", "📊 رتبه", "رتبهبندی", "رتبه"}))
 async def kb_rank(message: Message):
     try:
         from bot.handlers.ranking import cmd_ranking
@@ -354,13 +352,20 @@ async def kb_rank(message: Message):
         await message.answer("/ranking")
 
 
-@router.message(F.text.in_({"🌍 رویدادها", "رویدادها"}))
+@router.message(F.text.in_({"🌍 رویدادها", "🌍 جهان", "رویدادها", "جهان"}))
 async def kb_events(message: Message):
-    from bot.handlers.jobs_events import cmd_events
-    await cmd_events(message)
+    try:
+        from bot.handlers.open_world import cmd_world_panel
+        await cmd_world_panel(message)
+    except Exception:
+        try:
+            from bot.handlers.jobs_events import cmd_events
+            await cmd_events(message)
+        except Exception:
+            await message.answer("🌍 /world | /events | /arash")
 
 
-@router.message(F.text.in_({"🎁 پاداش روزانه", "پاداش روزانه"}))
+@router.message(F.text.in_({"🎁 پاداش روزانه", "🎁 روزانه", "پاداش روزانه", "روزانه"}))
 async def kb_daily(message: Message):
     try:
         from bot.handlers.retention import cmd_daily
@@ -394,8 +399,91 @@ async def kb_help(message: Message):
     await cmd_help_menu(message)
 
 
+@router.message(F.text.in_({"⚙️ بیشتر", "بیشتر"}))
+async def kb_more(message: Message):
+    await message.answer(
+        "⚙️ <b>بخش‌های بیشتر</b>\n\n"
+        "• /jobs — شغل و کار\n"
+        "• /inventory — کوله و آیتم‌ها\n"
+        "• /craft — کیمیاگری\n"
+        "• /pets — حیوانات خانگی\n"
+        "• /marriage — ازدواج\n"
+        "• /titles — القاب\n"
+        "• /quests — مأموریت روزانه\n"
+        "• /league — لیگ فصلی\n"
+        "• /dungeon — سیاه‌چال\n"
+        "• /campaign — کمپین داستانی\n"
+        "• /games — بازی‌های مینی\n"
+        "• /lang — تغییر زبان\n\n"
+        "📖 راهنمای کامل: /help"
+    )
+
 
 @router.message(Command("notice", "پیامسازنده", "اعلامیه"))
 async def cmd_notice(message: Message):
     from bot.config import CREATOR_NOTICE
     await message.answer(CREATOR_NOTICE)
+
+
+@router.callback_query(F.data == "check_channels")
+async def cb_check_channels(callback: CallbackQuery):
+    """دکمه «عضو شدم» — بررسی دوباره عضویت در کانال‌های اجباری"""
+    from aiogram.enums import ChatMemberStatus
+    from bot.config import REQUIRED_CHANNELS, ADMIN_IDS
+    from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+
+    user = callback.from_user
+    if not user:
+        await callback.answer()
+        return
+
+    if user.id in ADMIN_IDS:
+        await callback.answer("✅ ادمین هستی — دسترسی کامل", show_alert=True)
+        return
+
+    channels = [c.strip().lstrip("@") for c in (REQUIRED_CHANNELS or []) if c]
+    if not channels:
+        await callback.answer("✅ مشکلی نیست", show_alert=False)
+        return
+
+    missing = []
+    errors = []
+    ok_statuses = {
+        ChatMemberStatus.MEMBER,
+        ChatMemberStatus.ADMINISTRATOR,
+        ChatMemberStatus.CREATOR,
+        ChatMemberStatus.RESTRICTED,
+    }
+    for uname in channels:
+        try:
+            member = await callback.bot.get_chat_member(chat_id=f"@{uname}", user_id=user.id)
+            if member.status not in ok_statuses:
+                missing.append(uname)
+        except Exception:
+            errors.append(uname)
+
+    if not missing and not errors:
+        await callback.answer("✅ عضویت تأیید شد! حالا /start بزن.", show_alert=True)
+        try:
+            await callback.message.answer(
+                "✅ عضویت در کانال‌ها تأیید شد.\nحالا دستور /start را بزن تا وارد بازی شوی."
+            )
+        except Exception:
+            pass
+        return
+
+    all_needed = list(dict.fromkeys(missing + errors))
+    links = "\n".join(f"👉 https://t.me/{c}" for c in all_needed)
+    text = (
+        "⛔️ هنوز عضو همه کانال‌ها نشدی:\n\n"
+        f"{links}\n\n"
+        "بعد از عضویت دوباره روی دکمه بزن."
+    )
+    rows = [[InlineKeyboardButton(text=f"📢 عضویت در @{c}", url=f"https://t.me/{c}")] for c in all_needed]
+    rows.append([InlineKeyboardButton(text="✅ عضو شدم — بررسی دوباره", callback_data="check_channels")])
+    kb = InlineKeyboardMarkup(inline_keyboard=rows)
+    await callback.answer("هنوز عضو همه کانال‌ها نیستی", show_alert=True)
+    try:
+        await callback.message.answer(text, reply_markup=kb)
+    except Exception:
+        pass

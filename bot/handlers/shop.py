@@ -17,6 +17,7 @@ from database.models_v3 import ShopItem, Building
 from bot.utils.panels import ensure_owner, parse_owner_data
 from services.i18n import tr
 from services.portraits import panel_url
+from bot.utils.media import safe_answer_photo
 
 router = Router()
 

@@ -575,7 +575,7 @@ async def cmd_daily_coin(message: Message):
 async def cmd_exchange_up(message: Message):
     parts = (message.text or "").split()
     if len(parts) < 2:
-        await message.answer(tr(message.from_user.id, "فرمت: /exchangeup heavenly|celestial|god|chaos|void|origin|destiny|immortal|creation|absolute|faith|dragon [n]\nیا /convert up god 1"))
+        await message.answer(tr(message.from_user.id, "فرمت: /exchangeup heavenly|celestial|god|chaos|void|origin|destiny|immortal|creation|absolute|faith|dragon|ink|karma [n]\nیا /convert up god 1"))
         return
     kind = parts[1]
     try:
@@ -602,9 +602,9 @@ async def cmd_convert(message: Message):
         await message.answer(
             "💱 <b>صرافی جهان رزمی</b>" + nl + nl
             + "بالا بردن:" + nl
-            + "/convert up heavenly|celestial|god|chaos|void|origin|destiny|immortal|creation|absolute|dragon [n]" + nl + nl
+            + "/convert up heavenly|celestial|god|chaos|void|origin|destiny|immortal|creation|absolute|dragon|ink|karma [n]" + nl + nl
             + "پایین آوردن:" + nl
-            + "/convert down spirit|heavenly|celestial|god|chaos|void|origin|destiny|immortal|creation|absolute|dragon|faith [n]" + nl + nl
+            + "/convert down spirit|heavenly|celestial|god|chaos|void|origin|destiny|immortal|creation|absolute|dragon|faith|ink|karma [n]" + nl + nl
             + "مثال:" + nl
             + "/convert up god 1" + nl
             + "/convert down absolute 1" + nl
@@ -653,7 +653,7 @@ async def cmd_exchange_down(message: Message):
             + "زنجیره کامل:" + chr(10)
             + "absolute → creation → immortal → destiny → origin → void → chaos → god → celestial → heavenly → spirit → سکه" + chr(10)
             + "dragon → faith → سکه" + chr(10) + chr(10)
-            + "/exchangedown spirit|heavenly|celestial|god|chaos|void|origin|destiny|immortal|creation|absolute|dragon|faith [n]" + chr(10)
+            + "/exchangedown spirit|heavenly|celestial|god|chaos|void|origin|destiny|immortal|creation|absolute|dragon|faith|ink|karma [n]" + chr(10)
             + "مثال: /exchangedown absolute 1" + chr(10)
             + "مثال: /exchangedown god 2" + chr(10)
             + "یا /convert down god 2"

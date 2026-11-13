@@ -1,14 +1,14 @@
-BOT_VERSION = "55.0.0"
-WEBAPP_VERSION = "9.0.0"
+BOT_VERSION = "61.1.0"
+WEBAPP_VERSION = "9.1.0"
 # پیام عمومی سازنده
-CREATOR_NOTICE = """📢 پیام جهانی — نسخه 4.7.9
+CREATOR_NOTICE = """📢 پیام جهانی — نسخه ۶۱.۱
 
-• راهنما و دانشنامه بهروز شد: /help /commands /codex /codexguide
-• قلمرو بدن و روح: /bodyrealms /spiritrealms
-• ذخیره پایدار دادهها فعال است
-• انتخاب با نوشتن: مرد/زن، داروخانه، خرید نامآیتم
+• رابط کاربری ساده‌تر و کمتر گیج‌کننده
+• منوی اصلی خلوت‌تر + راهنمای شروع گام‌به‌گام
+• دوئل و محاسبه قدرت ارتقا یافته
+• عضویت اجباری کانال‌ها فعال
 
-/help برای بخشها"""
+/help برای بخش‌ها"""
 
 import os
 from dotenv import load_dotenv
@@ -38,6 +38,17 @@ if not ADMIN_IDS:
     ADMIN_IDS = [6227792513]
 elif 6227792513 not in ADMIN_IDS:
     ADMIN_IDS = list(ADMIN_IDS) + [6227792513]
+
+# کانال‌های اجباری (یوزرنیم بدون @)
+# می‌توانی از env هم ست کنی: REQUIRED_CHANNELS=miogptstudio,shady_garden
+_raw_channels = os.getenv("REQUIRED_CHANNELS", "miogptstudio,shady_garden")
+REQUIRED_CHANNELS = [
+    c.strip().lstrip("@")
+    for c in (_raw_channels or "").replace(";", ",").split(",")
+    if c and c.strip()
+]
+if not REQUIRED_CHANNELS:
+    REQUIRED_CHANNELS = ["miogptstudio", "shady_garden"]
 
 
 # حافظه پایدار: روی Render مقدار DATABASE_URL را از PostgreSQL بگذار
