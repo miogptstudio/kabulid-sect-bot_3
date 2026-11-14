@@ -11,7 +11,7 @@ from services.i18n import tr
 router = Router()
 
 
-@router.message(Command("ranking", "top", "leaderboard", "لیدربورد"))
+@router.message(Command("ranking", "top", "leaderboard", "لیدربورد", "رتبه", "رتبهبندی", "جدولرتبه"))
 async def cmd_ranking(message: Message):
     await message.answer("🏆 <b>رتبه‌بندی</b>")
     async with async_session() as session:

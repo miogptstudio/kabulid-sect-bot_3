@@ -16,7 +16,14 @@ router = Router()
 
 
 def is_config_admin(user_id: int) -> bool:
-    return user_id in ADMIN_IDS
+    """سازنده env یا مقام ادمین staff."""
+    if user_id in ADMIN_IDS:
+        return True
+    try:
+        from services.staff import has_perm, STAFF_ADMIN
+        return has_perm(user_id, STAFF_ADMIN)
+    except Exception:
+        return False
 
 
 def _staff_ok(user_id: int, min_rank: str) -> bool:
@@ -24,7 +31,7 @@ def _staff_ok(user_id: int, min_rank: str) -> bool:
     return has_perm(user_id, min_rank)
 
 
-@router.message(Command("admin"))
+@router.message(Command("admin", "ادمین", "پنلمدیریت", "پنل"))
 async def cmd_admin(message: Message):
     async with async_session() as session:
         user = await get_or_create_user(
@@ -401,7 +408,7 @@ async def cmd_set_cult(message: Message):
     )
 
 
-@router.message(Command("givemoney", "بدهپول"))
+@router.message(Command("givemoney", "بدهپول", "پولبده", "دادنپول"))
 async def cmd_give_money(message: Message):
     from services.staff import has_perm, PERM_GIVEMONEY, check_money_amount, money_limit
     if not has_perm(message.from_user.id, PERM_GIVEMONEY):
@@ -471,7 +478,7 @@ async def cmd_give_money(message: Message):
     await message.answer(f"✅ به {target.full_name}: +{amount} {kind}")
 
 
-@router.message(Command("takemoney", "بگیرپول"))
+@router.message(Command("takemoney", "بگیرپول", "پولبگیر", "گرفتنپول"))
 async def cmd_take_money(message: Message):
     from services.staff import has_perm, PERM_GIVEMONEY, check_money_amount, money_limit
     if not has_perm(message.from_user.id, PERM_GIVEMONEY):
@@ -513,7 +520,7 @@ async def cmd_take_money(message: Message):
 
 
 
-@router.message(Command("ban"))
+@router.message(Command("ban", "بن", "مسدود"))
 async def cmd_ban(message: Message):
     from services.staff import has_perm, PERM_BAN
     if not has_perm(message.from_user.id, PERM_BAN):
@@ -542,7 +549,7 @@ async def cmd_ban(message: Message):
     await message.answer(f"🚫 بن شد: {target.full_name}")
 
 
-@router.message(Command("unban"))
+@router.message(Command("unban", "آنبن", "رفعبن", "رفعمسدود"))
 async def cmd_unban(message: Message):
     from services.staff import has_perm, PERM_BAN
     if not has_perm(message.from_user.id, PERM_BAN):
@@ -574,8 +581,7 @@ async def cmd_unban(message: Message):
 @router.message(Command("unlockconsume", "بازقفلمصرف"))
 async def cmd_unlock_consume(message: Message):
     """ادمین: برداشتن قفل مصرف برای خود یا آیدی"""
-    from bot.config import ADMIN_IDS
-    if message.from_user.id not in ADMIN_IDS:
+    if not is_config_admin(message.from_user.id):
         await message.answer("فقط ادمین.")
         return
     parts = (message.text or "").split()
@@ -621,7 +627,7 @@ async def cmd_unlock_consume(message: Message):
 
 
 
-@router.message(Command("givepower", "قدرتبده", "setpower"))
+@router.message(Command("givepower", "قدرتبده", "setpower", "بدهقدرت", "دادنقدرت"))
 async def cmd_give_power(message: Message):
     """ادمین: /givepower telegram_id مقدار [total|power|speed|defense|body]"""
     from services.staff import has_perm, PERM_GIVEPOWER
@@ -875,7 +881,7 @@ async def cmd_unset_immortal(message: Message):
 
 # ===== مقامات ربات (سازنده / ادمین / معاون / مدیر / ویژه) =====
 
-@router.message(Command("setstaff", "مقام", "setrank"))
+@router.message(Command("setstaff", "مقام", "setrank", "تعیینمقام", "ادمینکن"))
 async def cmd_setstaff(message: Message):
     """فقط سازنده و ادمین: /setstaff TELEGRAM_ID مقام"""
     from services.staff import set_staff, list_staff, STAFF_ADMIN, has_perm, PERM_GIVE_STAFF

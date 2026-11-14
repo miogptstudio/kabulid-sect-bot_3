@@ -425,7 +425,7 @@ async def cmd_notice(message: Message):
     await message.answer(CREATOR_NOTICE)
 
 
-@router.callback_query(F.data == "check_channels")
+
 async def cb_check_channels(callback: CallbackQuery):
     """دکمه «عضو شدم» — بررسی دوباره عضویت در کانال‌های اجباری"""
     from aiogram.enums import ChatMemberStatus
@@ -487,3 +487,71 @@ async def cb_check_channels(callback: CallbackQuery):
         await callback.message.answer(text, reply_markup=kb)
     except Exception:
         pass
+
+@router.callback_query(F.data == "check_channels")
+async def cb_check_channels(callback: CallbackQuery):
+    """دکمه «عضو شدم» — بررسی دوباره عضویت در کانال‌های اجباری"""
+    from aiogram.enums import ChatMemberStatus
+    from bot.config import REQUIRED_CHANNELS, ADMIN_IDS
+    from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+    from bot.middlewares.channel_check import mark_verified
+
+    user = callback.from_user
+    if not user:
+        await callback.answer()
+        return
+
+    if user.id in ADMIN_IDS:
+        mark_verified(user.id)
+        await callback.answer("✅ ادمین هستی — دسترسی کامل", show_alert=True)
+        return
+
+    channels = [c.strip().lstrip("@") for c in (REQUIRED_CHANNELS or []) if c]
+    if not channels:
+        mark_verified(user.id)
+        await callback.answer("✅ مشکلی نیست", show_alert=False)
+        return
+
+    missing = []
+    errors = []
+    ok_statuses = {
+        ChatMemberStatus.MEMBER,
+        ChatMemberStatus.ADMINISTRATOR,
+        ChatMemberStatus.CREATOR,
+        ChatMemberStatus.RESTRICTED,
+    }
+    for uname in channels:
+        try:
+            member = await callback.bot.get_chat_member(chat_id=f"@{uname}", user_id=user.id)
+            if member.status not in ok_statuses:
+                missing.append(uname)
+        except Exception:
+            errors.append(uname)
+
+    if not missing and not errors:
+        mark_verified(user.id)
+        await callback.answer("✅ عضویت تأیید شد! حالا /start بزن.", show_alert=True)
+        try:
+            await callback.message.answer(
+                "✅ عضویت در کانال‌ها تأیید شد.\nحالا /start را بزن تا وارد بازی شوی."
+            )
+        except Exception:
+            pass
+        return
+
+    all_needed = list(dict.fromkeys(missing + errors))
+    links = "\n".join(f"👉 https://t.me/{c}" for c in all_needed)
+    text = (
+        "⛔️ هنوز عضو همه کانال‌ها نشدی:\n\n"
+        f"{links}\n\n"
+        "بعد از عضویت دوباره روی دکمه بزن."
+    )
+    rows = [[InlineKeyboardButton(text=f"📢 عضویت در @{c}", url=f"https://t.me/{c}")] for c in all_needed]
+    rows.append([InlineKeyboardButton(text="✅ عضو شدم — بررسی دوباره", callback_data="check_channels")])
+    kb = InlineKeyboardMarkup(inline_keyboard=rows)
+    await callback.answer("هنوز عضو همه کانال‌ها نیستی", show_alert=True)
+    try:
+        await callback.message.answer(text, reply_markup=kb)
+    except Exception:
+        pass
+

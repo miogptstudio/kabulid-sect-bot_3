@@ -112,6 +112,9 @@ WALLET_COLUMNS = [
     ("faith_stones", "BIGINT DEFAULT 0"),
     ("dragon_coins", "BIGINT DEFAULT 0"),
     ("eternal_ink", "BIGINT DEFAULT 0"),
+    ("soul_shards", "BIGINT DEFAULT 0"),
+    ("star_dust", "BIGINT DEFAULT 0"),
+    ("nexus_cores", "BIGINT DEFAULT 0"),
 ]
 
 BUILDING_COLUMNS = [
@@ -196,7 +199,7 @@ async def migrate_schema():
                 "coins", "spirit_stones", "heavenly_stones", "celestial_stones",
                 "god_stones", "chaos_stones", "void_stones", "origin_stones",
                 "karma_points", "destiny_stones", "immortal_stones",
-                "creation_stones", "absolute_stones", "faith_stones", "dragon_coins", "eternal_ink"
+                "creation_stones", "absolute_stones", "faith_stones", "dragon_coins", "eternal_ink", "soul_shards", "star_dust", "nexus_cores"
             ):
                 try:
                     await conn.execute(text(

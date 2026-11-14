@@ -22,7 +22,7 @@ from services.i18n import tr
 router = Router()
 
 
-@router.message(Command("sects", "فرقهها", "فرقه"))
+@router.message(Command("sects", "فرقه", "فرقهها", "لیستفرقه", "فرقهها", "فرقه"))
 async def cmd_sects(message: Message):
     await message.answer("🏛️ <b>فرقه‌ها</b>")
     async with async_session() as session:

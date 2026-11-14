@@ -14,7 +14,7 @@ from services.portraits import panel_url
 router = Router()
 
 
-@router.message(Command("profile", "me", "پروفایل"))
+@router.message(Command("profile", "پروفایل", "وضعیت", "من", "me", "پروفایل"))
 async def cmd_profile(message: Message):
     async with async_session() as session:
         user = await get_or_create_user(

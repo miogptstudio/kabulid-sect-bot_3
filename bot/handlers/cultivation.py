@@ -61,7 +61,7 @@ async def cmd_cultivation_rules(message: Message):
     await safe_answer_photo(message, panel_url("cultivation", name=str(message.from_user.id)), caption=text)
 
 
-@router.message(Command("cultivation", "تذهیب", "cult", "tazhib"))
+@router.message(Command("cultivation", "تزکیه", "تذهیب", "مدیتیشن", "تذهیب", "cult", "tazhib"))
 async def cmd_cultivation(message: Message):
     try:
         from services.cultivation import energy_needed_for_stage

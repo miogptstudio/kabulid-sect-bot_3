@@ -245,7 +245,7 @@ async def _resolve_duel(session, challenger: User, opponent: User, stake: int = 
     return text
 
 
-@router.message(Command("duel", "دوئل"))
+@router.message(Command("duel", "دوئل", "نبرد", "دعوا", "دوئل"))
 async def cmd_duel(message: Message, state: FSMContext):
     # /duel [مبلغ شرط] با ریپلای
     stake = 0
