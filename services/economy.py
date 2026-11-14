@@ -19,6 +19,9 @@ INK_TO_COINS = 10_000           # ۱ جوهر ازلی → ۱۰٬۰۰۰ سکه
 KARMA_TO_COINS = 100            # ۱ کارما → ۱۰۰ سکه
 COINS_PER_INK = 10_000          # ساخت ۱ جوهر از سکه
 COINS_PER_KARMA = 100           # ساخت ۱ کارما از سکه
+COINS_PER_SOUL = 5000           # ۱ تکه روح از سکه
+SOUL_PER_STAR = 100             # ۱ غبار ستاره = ۱۰۰ تکه روح
+STAR_PER_NEXUS = 100            # ۱ هسته پیوند = ۱۰۰ غبار ستاره
 
 
 async def get_or_create_wallet(session: AsyncSession, user_id: int) -> UserWallet:
@@ -87,6 +90,9 @@ async def exchange_up(session: AsyncSession, user_id: int, kind: str, amount: in
         "dragon": "dragon", "اژدها": "dragon",
         "ink": "ink", "eternal_ink": "ink", "جوهر": "ink", "جوهر ازلی": "ink", "جوهر_ازلی": "ink",
         "karma": "karma", "کارما": "karma", "karma_points": "karma",
+        "soul": "soul", "تکهروح": "soul", "تکه روح": "soul", "soul_shards": "soul",
+        "star": "star", "غبار": "star", "غبارستاره": "star", "star_dust": "star",
+        "nexus": "nexus", "هسته": "nexus", "هستهپیوند": "nexus", "nexus_cores": "nexus",
     }
     kind = aliases.get(kind, kind)
     if kind == "heavenly":
@@ -207,7 +213,32 @@ async def exchange_up(session: AsyncSession, user_id: int, kind: str, amount: in
         w.karma_points = int(getattr(w, "karma_points", 0) or 0) + amount
         await session.commit()
         return f"✅ +{amount:,} کارما | سکه باقی: {int(w.coins or 0):,}"
-    return "نوع: heavenly celestial god chaos void origin destiny immortal creation absolute faith dragon ink karma"
+    if kind == "soul":
+        cost = amount * COINS_PER_SOUL
+        coins = int(w.coins or 0)
+        if coins < cost:
+            return f"❌ برای {amount} تکه روح نیاز به {cost:,} سکه است (داری: {coins:,})"
+        w.coins = coins - cost
+        w.soul_shards = int(getattr(w, "soul_shards", 0) or 0) + amount
+        await session.commit()
+        return f"✅ +{amount:,} تکه روح | سکه باقی: {int(w.coins or 0):,}"
+    if kind == "star":
+        cost = amount * SOUL_PER_STAR
+        if int(getattr(w, "soul_shards", 0) or 0) < cost:
+            return f"نیاز {cost} تکه روح"
+        w.soul_shards = int(w.soul_shards or 0) - cost
+        w.star_dust = int(getattr(w, "star_dust", 0) or 0) + amount
+        await session.commit()
+        return f"✅ +{amount} غبار ستاره"
+    if kind == "nexus":
+        cost = amount * STAR_PER_NEXUS
+        if int(getattr(w, "star_dust", 0) or 0) < cost:
+            return f"نیاز {cost} غبار ستاره"
+        w.star_dust = int(w.star_dust or 0) - cost
+        w.nexus_cores = int(getattr(w, "nexus_cores", 0) or 0) + amount
+        await session.commit()
+        return f"✅ +{amount} هسته پیوند"
+    return "نوع: heavenly celestial god chaos void origin destiny immortal creation absolute faith dragon ink karma soul star nexus"
 
 
 async def exchange_down(session: AsyncSession, user_id: int, kind: str, amount: int = 1) -> str:
@@ -256,6 +287,9 @@ async def exchange_down(session: AsyncSession, user_id: int, kind: str, amount: 
         "faith": ("faith_stones", "coins", 1000, "سنگ ایمان", "سکه"),
         "ink": ("eternal_ink", "coins", INK_TO_COINS, "جوهر ازلی", "سکه"),
         "karma": ("karma_points", "coins", KARMA_TO_COINS, "کارما", "سکه"),
+        "soul": ("soul_shards", "coins", 5000, "تکه روح", "سکه"),
+        "star": ("star_dust", "soul_shards", 100, "غبار ستاره", "تکه روح"),
+        "nexus": ("nexus_cores", "star_dust", 100, "هسته پیوند", "غبار ستاره"),
     }
     if kind not in chain:
         return (
@@ -300,11 +334,14 @@ def wallet_text(w: UserWallet) -> str:
         f"🙏 سنگ ایمان: <b>{int(getattr(w, 'faith_stones', 0) or 0):,}</b>{nl}"
         f"🐉 سکه اژدها: <b>{int(getattr(w, 'dragon_coins', 0) or 0):,}</b>{nl}"
         f"🪶 جوهر ازلی: <b>{int(getattr(w, 'eternal_ink', 0) or 0):,}</b>{nl}"
-        f"☯️ کارما: <b>{int(getattr(w, 'karma_points', 0) or 0):,}</b>{nl}{nl}"
+        f"☯️ کارما: <b>{int(getattr(w, 'karma_points', 0) or 0):,}</b>{nl}"
+        f"🔮 تکه روح: <b>{int(getattr(w, 'soul_shards', 0) or 0):,}</b>{nl}"
+        f"✨ غبار ستاره: <b>{int(getattr(w, 'star_dust', 0) or 0):,}</b>{nl}"
+        f"🔷 هسته پیوند: <b>{int(getattr(w, 'nexus_cores', 0) or 0):,}</b>{nl}{nl}"
         f"تبدیل: /convert up|down نوع تعداد{nl}"
         f"/exchangeup · /exchangedown{nl}"
         f"زنجیره: سکه↔روحی↔بهشتی↔آسمانی↔خدا↔هرجومرج↔پوچی↔ازلی↔تقدیر↔جاودان↔خلقت↔مطلق{nl}"
-        f"موازی: ایمان↔اژدها | جوهر ازلی↔سکه | کارما↔سکه"
+        f"موازی: ایمان↔اژدها | جوهر↔سکه | کارما↔سکه | تکه روح↔غبار ستاره↔هسته پیوند"
     )
 
 

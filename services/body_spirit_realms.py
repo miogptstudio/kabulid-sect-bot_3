@@ -1,46 +1,88 @@
-"""قلمروهای پرورش بدن و روح"""
+"""قلمروهای پرورش بدن و روح — نسخه پاک و منسجم"""
 from __future__ import annotations
 
+# فقط قلمروهای فعال و کامل (قلمروهای قدیمی/ناقص حذف شدند)
 BODY_REALMS = [
-    "جسم خام", "پوستآهن", "استخوانفولاد", "عضلهٔ حیوان", "خونجاری",
-    "تاندونابریشم", "مغز استخوان بیدار", "اندام درونی محکم", "بدن اژدها",
-    "بدن ققنوس", "بدن تایتان", "بدن نیمهخدا", "بدن خدا", "بدن ازلی", "بدن مطلق",
+    "جسم خام",
+    "پوست آهن",
+    "استخوان فولاد",
+    "عضله حیوان",
+    "خون جاری",
+    "تاندون ابریشم",
+    "مغز استخوان بیدار",
+    "اندام درونی محکم",
+    "بدن اژدها",
+    "بدن ققنوس",
+    "بدن تایتان",
+    "بدن نیمه‌خدا",
+    "بدن خدا",
+    "بدن ازلی",
+    "بدن مطلق",
 ]
 
 SPIRIT_REALMS = [
-    "روح خفته", "جرقه آگاهی", "شعله درون", "رود روح", "اقیانوس ذهن",
-    "آسمان روحی", "ستارهروان", "کهکشان روان", "روح جاودان", "روح ابدی",
-    "روح پوچی", "روح خالق", "روح واحد", "روح بینام", "روح مطلق",
+    "روح خفته",
+    "جرقه آگاهی",
+    "شعله درون",
+    "رود روح",
+    "اقیانوس ذهن",
+    "آسمان روحی",
+    "ستاره روان",
+    "کهکشان روان",
+    "روح جاودان",
+    "روح ابدی",
+    "روح پوچی",
+    "روح خالق",
+    "روح واحد",
+    "روح بی‌نام",
+    "روح مطلق",
 ]
 
-# tg -> {realm_index, stage, xp}
 from services.persist import get_dict, save as _psave
+
+
 def _bp():
     return get_dict("body_prog")
+
+
 def _sp():
     return get_dict("spirit_prog")
 
 
 STAGES = 10
-# XP لازم برای هر مرحله در قلمرو i
+
+
 def xp_need(realm_i: int, stage: int) -> int:
     return int(100 * (1.5 ** realm_i) * (1 + stage * 0.4))
 
 
 def get_body_prog(tg: int) -> dict:
-    m = _bp(); sk = str(int(tg))
+    m = _bp()
+    sk = str(int(tg))
     if sk not in m:
         m[sk] = {"realm": 0, "stage": 1, "xp": 0}
         _psave("body_prog")
-    return m[sk]
+    # clamp به قلمروهای موجود
+    prog = m[sk]
+    if int(prog.get("realm") or 0) >= len(BODY_REALMS):
+        prog["realm"] = len(BODY_REALMS) - 1
+        prog["stage"] = STAGES
+        _psave("body_prog")
+    return prog
 
 
 def get_spirit_prog(tg: int) -> dict:
-    m = _sp(); sk = str(int(tg))
+    m = _sp()
+    sk = str(int(tg))
     if sk not in m:
         m[sk] = {"realm": 0, "stage": 1, "xp": 0}
         _psave("spirit_prog")
-    return m[sk]
+    prog = m[sk]
+    if int(prog.get("realm") or 0) >= len(SPIRIT_REALMS):
+        prog["realm"] = len(SPIRIT_REALMS) - 1
+        prog["stage"] = STAGES
+        _psave("spirit_prog")
+    return prog
 
 
 def _advance(prog: dict, realms: list, amount: int) -> list[str]:
@@ -58,82 +100,59 @@ def _advance(prog: dict, realms: list, amount: int) -> list[str]:
             prog["stage"] = 1
             if ri < len(realms) - 1:
                 prog["realm"] = ri + 1
-                msgs.append(f"🌟 قلمرو → «{realms[prog['realm']]}»")
+                msgs.append(f"⬆ ورود به قلمرو: <b>{realms[prog['realm']]}</b>")
             else:
                 prog["stage"] = STAGES
-                prog["xp"] = need - 1
+                prog["xp"] = 0
+                msgs.append("✨ به نهایت این مسیر رسیدی.")
                 break
-        msgs.append(f"⬆️ مرحله {prog['stage']}/{STAGES} | {realms[int(prog['realm'])]}")
-    # caller saves via get_* which shares dict in map — save both
-    _psave("body_prog"); _psave("spirit_prog")
+        else:
+            msgs.append(f"📈 مرحله {prog['stage']}/{STAGES} در {realms[ri]}")
     return msgs
 
 
-def add_body_realm_xp(tg: int, amount: int = 15) -> str:
-    p = get_body_prog(tg)
-    msgs = _advance(p, BODY_REALMS, amount)
-    ri, st = int(p["realm"]), int(p["stage"])
-    need = xp_need(ri, st)
-    lines = [
-        f"💪 قلمرو بدن: <b>{BODY_REALMS[ri]}</b> | مرحله {st}/{STAGES}",
-        f"XP: {p['xp']}/{need} (+{amount})",
-    ]
-    if msgs:
-        lines += msgs
-    return chr(10).join(lines)
+def train_body(tg: int, amount: int = 20) -> str:
+    prog = get_body_prog(tg)
+    msgs = _advance(prog, BODY_REALMS, amount)
+    _psave("body_prog")
+    ri = int(prog.get("realm") or 0)
+    st = int(prog.get("stage") or 1)
+    head = f"💪 بدن: <b>{BODY_REALMS[ri]}</b> — مرحله {st}/{STAGES} | XP {prog.get('xp', 0)}"
+    return head + (("\n" + "\n".join(msgs)) if msgs else "")
 
 
-def add_spirit_realm_xp(tg: int, amount: int = 15) -> str:
-    p = get_spirit_prog(tg)
-    msgs = _advance(p, SPIRIT_REALMS, amount)
-    ri, st = int(p["realm"]), int(p["stage"])
-    need = xp_need(ri, st)
-    lines = [
-        f"👻 قلمرو روح: <b>{SPIRIT_REALMS[ri]}</b> | مرحله {st}/{STAGES}",
-        f"XP: {p['xp']}/{need} (+{amount})",
-    ]
-    if msgs:
-        lines += msgs
-    return chr(10).join(lines)
+def train_spirit(tg: int, amount: int = 20) -> str:
+    prog = get_spirit_prog(tg)
+    msgs = _advance(prog, SPIRIT_REALMS, amount)
+    _psave("spirit_prog")
+    ri = int(prog.get("realm") or 0)
+    st = int(prog.get("stage") or 1)
+    head = f"🌀 روح: <b>{SPIRIT_REALMS[ri]}</b> — مرحله {st}/{STAGES} | XP {prog.get('xp', 0)}"
+    return head + (("\n" + "\n".join(msgs)) if msgs else "")
 
 
-def body_realm_status(tg: int) -> str:
-    p = get_body_prog(tg)
-    ri, st = int(p["realm"]), int(p["stage"])
-    lines = [
-        "💪 <b>قلمروهای پرورش بدن</b>",
-        f"فعلی: <b>{BODY_REALMS[ri]}</b> — مرحله {st}/{STAGES}",
-        f"XP: {p['xp']}/{xp_need(ri, st)}",
-        "",
-    ]
-    for i, name in enumerate(BODY_REALMS):
-        mark = " ←" if i == ri else ""
-        lines.append(f"{i+1}. {name}{mark}")
-    lines += ["", "با /bodycult یا «پرورش پوست» XP قلمرو بدن میگیری."]
-    return chr(10).join(lines)
+def body_power_bonus(tg: int) -> int:
+    prog = get_body_prog(tg)
+    ri = int(prog.get("realm") or 0)
+    st = int(prog.get("stage") or 1)
+    return int(ri * 120 + st * 15)
 
 
-def spirit_realm_status(tg: int) -> str:
-    p = get_spirit_prog(tg)
-    ri, st = int(p["realm"]), int(p["stage"])
-    lines = [
-        "👻 <b>قلمروهای پرورش روح</b>",
-        f"فعلی: <b>{SPIRIT_REALMS[ri]}</b> — مرحله {st}/{STAGES}",
-        f"XP: {p['xp']}/{xp_need(ri, st)}",
-        "",
-    ]
-    for i, name in enumerate(SPIRIT_REALMS):
-        mark = " ←" if i == ri else ""
-        lines.append(f"{i+1}. {name}{mark}")
-    lines += ["", "با /trainspirit XP قلمرو روح میگیری."]
-    return chr(10).join(lines)
+def spirit_power_bonus(tg: int) -> int:
+    prog = get_spirit_prog(tg)
+    ri = int(prog.get("realm") or 0)
+    st = int(prog.get("stage") or 1)
+    return int(ri * 100 + st * 12)
 
 
-def body_realm_power_bonus(tg: int) -> int:
-    p = get_body_prog(tg)
-    return int(p.get("realm", 0)) * 15 + int(p.get("stage", 1)) * 2
-
-
-def spirit_realm_power_bonus(tg: int) -> int:
-    p = get_spirit_prog(tg)
-    return int(p.get("realm", 0)) * 12 + int(p.get("stage", 1)) * 2
+def status_text(tg: int) -> str:
+    bp = get_body_prog(tg)
+    sp = get_spirit_prog(tg)
+    br = BODY_REALMS[int(bp.get("realm") or 0)]
+    sr = SPIRIT_REALMS[int(sp.get("realm") or 0)]
+    return (
+        f"💪 بدن: <b>{br}</b> — مرحله {bp.get('stage', 1)}/{STAGES}\n"
+        f"🌀 روح: <b>{sr}</b> — مرحله {sp.get('stage', 1)}/{STAGES}\n"
+        f"⚡ بونوس قدرت بدن: +{body_power_bonus(tg):,}\n"
+        f"✨ بونوس قدرت روح: +{spirit_power_bonus(tg):,}"
+    )

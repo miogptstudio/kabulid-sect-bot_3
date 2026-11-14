@@ -8,13 +8,13 @@ WORLD_NAME = "هشت جهان اولیه"
 REGION_ORDER = [
     {"id": 1, "label": "1", "name": "نیک"},
     {"id": 2, "label": "2", "name": "مین"},
-    {"id": 3, "label": "3", "name": "والا مقام"},
-    {"id": 4, "label": "4", "name": "بلند مرتبه"},
-    {"id": 5, "label": "5", "name": None},
-    {"id": 6, "label": "6", "name": None},
-    {"id": 7, "label": "7", "name": None},
-    {"id": 8, "label": "ایتری", "name": None},  # عدد/اسلات بین ۷ و ۸ — نام منطقه نیست
-    {"id": 9, "label": "8", "name": None},
+    {"id": 3, "label": "3", "name": "والامقام"},
+    {"id": 4, "label": "4", "name": "بلندمرتبه"},
+    {"id": 5, "label": "5", "name": "سپیدمهر"},
+    {"id": 6, "label": "6", "name": "شعله‌گاه"},
+    {"id": 7, "label": "7", "name": "سایه‌بان"},
+    {"id": 8, "label": "ایتری", "name": "ایتری"},
+    {"id": 9, "label": "8", "name": "افق نهایی"},
 ]
 
 MAX_INDEX = len(REGION_ORDER) - 1  # 0-based last index
