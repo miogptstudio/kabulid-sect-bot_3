@@ -137,7 +137,7 @@ async def cmd_iamadmin(message: Message):
         f"تعداد ادمینهای تنظیمشده: {len(ADMIN_IDS)}"
     )
 
-@router.message(Command("ping", "تست"))
+@router.message(Command("ping", "تست", "پینگ"))
 async def cmd_ping(message: Message):
     try:
         await message.answer("pong ✅ ربات آنلاین است.")
@@ -228,7 +228,7 @@ async def cmd_remove_kb(message: Message):
     await message.answer("کیبورد حذف شد. از /help برای دستورات استفاده کن.", reply_markup=ReplyKeyboardRemove())
 
 
-@router.message(Command("version"))
+@router.message(Command("version", "نسخه", "ورژن"))
 async def cmd_version(message: Message):
     try:
         from bot.config import BOT_VERSION, CREATOR_NOTICE, WEBAPP_VERSION

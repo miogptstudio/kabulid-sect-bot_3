@@ -463,7 +463,7 @@ async def cmd_commands(message: Message):
         await message.answer(current)
 
 
-@router.message(Command("rules", "قوانین"))
+@router.message(Command("rules", "قوانین", "قانون"))
 async def cmd_rules(message: Message):
     await message.answer(
         "📜 <b>قوانین بازی</b>\n"
