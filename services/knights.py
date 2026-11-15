@@ -1,5 +1,6 @@
 """شوالیهها — محافظت از بازیکن/فرقه"""
 from __future__ import annotations
+from services.persist import PersistentMap, save as _psave
 
 KNIGHTS = [
     {"id": 1, "name": "شوالیه آهنی", "price": 2000, "protect": 15},
@@ -9,8 +10,7 @@ KNIGHTS = [
     {"id": 5, "name": "شوالیه بهشتی", "price": 200000, "protect": 90},
 ]
 
-# tg_id -> list of knight ids
-_owned: dict[int, list[int]] = {}
+_owned = PersistentMap("knights_owned")  # tg -> list[int]
 
 
 def list_text() -> str:
@@ -22,7 +22,7 @@ def list_text() -> str:
 
 
 def protect_percent(tg: int) -> int:
-    ids = _owned_map().get(str(int(tg)), [])
+    ids = list(_owned.get(int(tg), []) or [])
     total = 0
     for k in KNIGHTS:
         if k["id"] in ids:
@@ -34,16 +34,18 @@ def buy(tg: int, kid: int, coins: int) -> tuple[bool, str, int]:
     k = next((x for x in KNIGHTS if x["id"] == kid), None)
     if not k:
         return False, "شوالیه پیدا نشد.", coins
-    if kid in _owned_map().get(str(int(tg)), []):
+    ids = list(_owned.get(int(tg), []) or [])
+    if kid in ids:
         return False, "قبلاً این شوالیه را داری.", coins
     if coins < k["price"]:
         return False, "سکه کافی نیست.", coins
-    (_owned_map().setdefault(str(int(tg)), []), _psave("knights"))[0].append(kid)
+    ids.append(kid)
+    _owned[int(tg)] = ids
     return True, f"✅ {k['name']} استخدام شد. محافظت کل: {protect_percent(tg)}٪", coins - k["price"]
 
 
 def my_knights(tg: int) -> str:
-    ids = _owned_map().get(str(int(tg)), [])
+    ids = list(_owned.get(int(tg), []) or [])
     if not ids:
         return "شوالیهای نداری. /knights"
     lines = ["⚔️ <b>شوالیههای تو</b>", ""]

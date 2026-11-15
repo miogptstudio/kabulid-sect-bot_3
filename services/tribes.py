@@ -2,8 +2,9 @@
 from datetime import datetime
 
 # tribe_id -> data
-_tribes: dict[str, dict] = {}
-_member: dict[int, str] = {}  # tg_id -> tribe_id
+from services.persist import PersistentMap
+_tribes = PersistentMap("tribes_data")
+_member = PersistentMap("tribes_member")  # tg_id -> tribe_id
 _counter = 1000
 
 

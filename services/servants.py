@@ -176,34 +176,73 @@ def married_uids(tg: int) -> list[str]:
     return [str(x) for x in (data.get(str(int(tg))) or [])]
 
 
-def is_married(tg: int, servant: dict) -> bool:
-    return str(servant.get("uid")) in set(married_uids(tg))
-
-
 def marry_servant(tg: int, selector: int) -> tuple[bool, str, dict | None]:
-    """ازدواج پایدار با خدمتکار؛ selector هم شمارهٔ لیست و هم id بازار است."""
-    servant, _ = _servant_by_selector(tg, selector)
+    """ازدواج پایدار با خدمتکار؛ selector = شماره لیست /myservants یا base_id بازار."""
+    servant, idx = _servant_by_selector(tg, selector)
     if not servant:
-        return False, "خدمتکار پیدا نشد. شمارهٔ /myservants را وارد کن.", None
+        return False, "خدمتکار پیدا نشد. شماره را از /myservants بردار (مثل: 1).", None
+
+    # اطمینان از uid پایدار
+    if not servant.get("uid"):
+        servant["uid"] = f"{servant.get('base_id', selector)}_{int(tg)}_{idx}"
+        bag = list_owned(tg)
+        if idx is not None and 0 <= idx < len(bag):
+            bag[idx] = servant
+            save_owned(tg, bag)
 
     uid = str(servant.get("uid"))
     data = _marriages()
     key = str(int(tg))
     married = [str(x) for x in (data.get(key) or [])]
 
-    if uid in married:
-        return False, f"قبلاً با «{servant.get('name')}» ازدواج کردهای.", servant
+    if uid in married or servant.get("married"):
+        return False, f"قبلاً با «{servant.get('name')}» ازدواج کرده‌ای.", servant
 
     married.append(uid)
     data[key] = married
     _psave("servant_marriages")
+    try:
+        from services.persist import save_and_sync
+        save_and_sync("servant_marriages")
+    except Exception:
+        pass
 
-    return True, (
-        f"💍 با خدمتکار «{servant.get('name')}» ازدواج کردی!\n"
-        f"نژاد: {servant.get('race', '—')} | وفاداری: {servant.get('loyalty', 0)}%\n"
-        f"از این به بعد این ازدواج بعد از ریاستارت هم باقی میمونه.\n"
-        f"/myservants — مشاهدهٔ خانواده"
-    ), servant
+    # فلگ روی خود نمونه خدمتکار
+    servant["married"] = True
+    bag = list_owned(tg)
+    if idx is not None and 0 <= idx < len(bag):
+        bag[idx] = servant
+        save_owned(tg, bag)
+    else:
+        # جستجو با uid
+        for i, x in enumerate(bag):
+            if str(x.get("uid")) == uid:
+                bag[i]["married"] = True
+                save_owned(tg, bag)
+                break
+
+    idx_show = (idx if idx is not None else 0) + 1
+    msg = (
+        f"💍 با خدمتکار «{servant.get('name')}» ازدواج کردی!" + chr(10)
+        + f"نژاد: {servant.get('race', '—')} | جنسیت: {servant.get('gender', '—')} | وفاداری: {servant.get('loyalty', 0)}%" + chr(10)
+        + f"شماره لیست: <b>{idx_show}</b>" + chr(10)
+        + "حالا می‌توانی:" + chr(10)
+        + f"• /dualservant {idx_show} — تذهیب دوگانه" + chr(10)
+        + f"• /childservant {idx_show} — تلاش برای فرزند" + chr(10)
+        + "• /myservants — خانواده"
+    )
+    return True, msg, servant
+
+
+def is_married(tg: int, servant: dict) -> bool:
+    if not servant:
+        return False
+    if servant.get("married"):
+        return True
+    uid = str(servant.get("uid") or "")
+    if uid and uid in set(married_uids(tg)):
+        return True
+    return False
 
 
 SPECIAL_MONTHLY_IDS = {int(s["id"]) for s in MARKET if s.get("special_monthly")}
@@ -410,6 +449,11 @@ def save_owned(tg: int, bag: list) -> None:
     m = _owned()
     m[str(int(tg))] = bag
     _psave("servants_v2")
+    try:
+        from services.persist import save_and_sync
+        save_and_sync("servants_v2")
+    except Exception:
+        pass
 
 
 
@@ -837,3 +881,87 @@ def accept_servant_duel(key: str, acceptor_tg: int) -> tuple[bool, str]:
         f"{result}\n"
         "📌 محاسبه بر اساس قدرت، سرعت، دفاع، تذهیب، وفاداری و عمر خدمتکار انجام شد."
     )
+
+
+# ===== فرزندان خدمتکار (پایدار) =====
+def _children() -> dict:
+    return get_dict("servant_children")
+
+
+def list_children(tg: int) -> list:
+    return list(_children().get(str(int(tg))) or [])
+
+
+def add_child(tg: int, child: dict) -> dict:
+    d = _children()
+    key = str(int(tg))
+    kids = list(d.get(key) or [])
+    child = dict(child)
+    if not child.get("id"):
+        child["id"] = f"c{int(tg)}_{len(kids)+1}_{random.randint(10,99)}"
+    kids.append(child)
+    d[key] = kids
+    _psave("servant_children")
+    try:
+        from services.persist import save_and_sync
+        save_and_sync("servant_children")
+    except Exception:
+        pass
+    return child
+
+
+def rename_child(tg: int, index: int, name: str) -> tuple[bool, str]:
+    kids = list_children(tg)
+    if index < 1 or index > len(kids):
+        return False, "شماره فرزند نامعتبر. /mychildren"
+    kids[index - 1]["name"] = (name or "").strip()[:32] or kids[index - 1].get("name")
+    _children()[str(int(tg))] = kids
+    _psave("servant_children")
+    return True, f"✅ نام فرزند به «{kids[index-1]['name']}» تغییر کرد."
+
+
+def teach_child(tg: int, index: int, tech: str) -> tuple[bool, str]:
+    kids = list_children(tg)
+    if index < 1 or index > len(kids):
+        return False, "شماره فرزند نامعتبر. /mychildren"
+    techs = list(kids[index - 1].get("techs") or [])
+    tech = (tech or "").strip()[:40]
+    if not tech:
+        return False, "نام تکنیک را بنویس."
+    if tech in techs:
+        return False, "این تکنیک را از قبل بلد است."
+    if len(techs) >= 5:
+        return False, "حداکثر ۵ تکنیک برای هر فرزند."
+    techs.append(tech)
+    kids[index - 1]["techs"] = techs
+    _children()[str(int(tg))] = kids
+    _psave("servant_children")
+    return True, f"✅ تکنیک «{tech}» به {kids[index-1].get('name')} آموزش داده شد."
+
+
+def _cd_map(ns: str) -> dict:
+    return get_dict(ns)
+
+
+def check_cd(ns: str, key: str, minutes: int) -> tuple[bool, int]:
+    """True اگر هنوز در کولداون؛ دقیقه باقی‌مانده"""
+    from datetime import datetime, timedelta
+    data = _cd_map(ns)
+    raw = data.get(str(key))
+    if not raw:
+        return False, 0
+    try:
+        last = datetime.fromisoformat(raw) if isinstance(raw, str) else raw
+        left = timedelta(minutes=minutes) - (datetime.utcnow() - last)
+        if left.total_seconds() > 0:
+            return True, int(left.total_seconds() // 60) + 1
+    except Exception:
+        pass
+    return False, 0
+
+
+def set_cd(ns: str, key: str) -> None:
+    from datetime import datetime
+    data = _cd_map(ns)
+    data[str(key)] = datetime.utcnow().isoformat()
+    _psave(ns)

@@ -1,8 +1,9 @@
 """گروه بازرگانی — چند نفر با هم"""
 from datetime import datetime
 
-_guilds: dict[str, dict] = {}
-_member: dict[int, str] = {}
+from services.persist import PersistentMap
+_guilds = PersistentMap("trade_guilds")
+_member = PersistentMap("trade_guild_member")
 _counter = 500
 
 

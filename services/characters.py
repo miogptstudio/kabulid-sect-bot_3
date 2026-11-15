@@ -97,6 +97,11 @@ class _D:
         m = self._m()
         m[str(k)] = v
         _psave(self._ns)
+        try:
+            from services.persist import save_and_sync
+            save_and_sync(self._ns)
+        except Exception:
+            pass
     def __contains__(self, k):
         m = self._m()
         return str(k) in m or k in m

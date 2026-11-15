@@ -225,3 +225,112 @@ def preload_all() -> None:
             load(p.stem)
         except Exception:
             pass
+
+
+def save_and_sync(ns: str, data=None) -> None:
+    """ذخیره روی دیسک + تلاش برای sync به دیتابیس (ضد از دست رفتن بعد از ریستارت)."""
+    save(ns, data)
+    try:
+        import asyncio
+        loop = None
+        try:
+            loop = asyncio.get_event_loop()
+        except Exception:
+            loop = None
+        if loop and loop.is_running():
+            loop.create_task(sync_to_db())
+        else:
+            # اگر loop نیست، فعلاً فقط دیسک کافی است
+            pass
+    except Exception as e:
+        logger.warning("save_and_sync schedule failed: %s", e)
+
+
+class PersistentMap:
+    """دیکشنری پایدار با کلید رشته‌ای — جایگزین dictهای فقط‌حافظه‌ای."""
+
+    def __init__(self, ns: str):
+        self._ns = ns
+
+    def _m(self) -> dict:
+        return get_dict(self._ns)
+
+    def get(self, key, default=None):
+        m = self._m()
+        sk = str(key)
+        if sk in m:
+            return m[sk]
+        if key in m:
+            return m[key]
+        return default
+
+    def __getitem__(self, key):
+        m = self._m()
+        sk = str(key)
+        if sk in m:
+            return m[sk]
+        return m[key]
+
+    def __setitem__(self, key, value):
+        m = self._m()
+        m[str(key)] = value
+        save(self._ns)
+
+    def __contains__(self, key):
+        m = self._m()
+        return str(key) in m or key in m
+
+    def __delitem__(self, key):
+        m = self._m()
+        m.pop(str(key), None)
+        m.pop(key, None)
+        save(self._ns)
+
+    def pop(self, key, *args):
+        m = self._m()
+        sk = str(key)
+        if sk in m:
+            v = m.pop(sk)
+            save(self._ns)
+            return v
+        if args:
+            return m.pop(key, args[0]) if key in m else args[0]
+        v = m.pop(key)
+        save(self._ns)
+        return v
+
+    def setdefault(self, key, default=None):
+        m = self._m()
+        sk = str(key)
+        if sk not in m:
+            m[sk] = default if default is not None else {}
+            save(self._ns)
+        return m[sk]
+
+    def items(self):
+        return self._m().items()
+
+    def keys(self):
+        return self._m().keys()
+
+    def values(self):
+        return self._m().values()
+
+    def clear(self):
+        set_dict(self._ns, {})
+
+    def to_dict(self):
+        return dict(self._m())
+
+    def __bool__(self):
+        return bool(self._m())
+
+    def __len__(self):
+        return len(self._m())
+
+
+    def update(self, other: dict):
+        m = self._m()
+        for k, v in (other or {}).items():
+            m[str(k)] = v
+        save(self._ns)

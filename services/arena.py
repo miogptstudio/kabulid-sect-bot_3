@@ -234,7 +234,9 @@ async def arena_leaderboard(session: AsyncSession, limit: int = 10) -> str:
 
 
 # --- آرنای چندنفره باز ---
-_open_rooms: dict[int, dict] = {}  # room_id -> {host, players: [user_ids], names: {}, tier, started}
+from services.persist import PersistentMap
+_open_rooms = PersistentMap("arena_open_rooms")
+
 
 
 def create_open_room(host_id: int, host_name: str, tier: str = "برنز") -> int:
