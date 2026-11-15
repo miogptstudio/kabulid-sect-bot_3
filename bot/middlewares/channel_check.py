@@ -100,7 +100,9 @@ def _is_bot_related_message(message: Message, bot: Bot) -> bool:
             "رتبه", "لیدربورد", "فرقه", "فروشگاه", "بازار", "کوله", "روزانه",
             "پاداش", "مأموریت", "ماموریت", "راهنما", "منو", "آرنا", "شغل",
             "کیف پول", "موجودی", "قدرت", "سیاه چال", "سیاهچال", "کمپین", "لیگ",
-            "بازی", "ازدواج", "خدمتکار", "شکار", "جهان", "نقشه",
+            "بازی", "ازدواج", "خدمتکار", "شکار", "جهان", "نقشه", "کاراکتر",
+            "بدن", "روح", "ادمین", "پنل", "صندوق", "تاس", "شانس", "بیشتر",
+            "کیمیاگری", "کیمیا", "گنجینه", "دستاورد", "رویداد", "پلکان",
         )
         # فقط اگر کل پیام تقریباً همان دستور باشد (نه جمله بلند چت)
         if len(low) <= 40:
@@ -125,26 +127,20 @@ class ChannelMembershipMiddleware(BaseMiddleware):
 
         if isinstance(event, Message):
             user = event.from_user
-            # در گروه/سوپرگروه: اصلاً عضویت کانال را چک نکن (ضد اسپم کامل)
             try:
                 chat_type = getattr(event.chat, "type", None)
-                if chat_type in ("group", "supergroup"):
-                    return await handler(event, data)
             except Exception:
-                # اگر نوع چت معلوم نشد، در گروه فرض نکن — ادامه بده فقط برای private
-                pass
+                chat_type = None
+            # فقط وقتی پیام دستور/مربوط به ربات است چک کن (گروه و خصوصی)
+            # چت عادی → هیچ پیام عضویت نده
+            if not _is_bot_related_message(event, bot):
+                return await handler(event, data)
         elif isinstance(event, CallbackQuery):
             user = event.from_user
             is_callback = True
             if event.data == "check_channels":
                 return await handler(event, data)
-            # کال‌بک داخل گروه هم چک عضویت نداشته باشد
-            try:
-                chat = event.message.chat if event.message else None
-                if chat and getattr(chat, "type", None) in ("group", "supergroup"):
-                    return await handler(event, data)
-            except Exception:
-                pass
+            # کال‌بک‌های ربات همیشه مربوط به ربات‌اند → چک عضویت انجام شود
 
         if not user:
             return await handler(event, data)

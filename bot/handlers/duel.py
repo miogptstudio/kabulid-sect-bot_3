@@ -22,7 +22,8 @@ from bot.utils.media import safe_answer_photo
 import random as _rnd_dodge
 
 router = Router()
-_reject_counts: dict[tuple, int] = {}  # (user_id, date) -> count
+from services.persist import PersistentMap
+_reject_counts = PersistentMap("duel_reject_counts")
 
 def _reject_key(uid: int):
     from datetime import date
@@ -30,11 +31,11 @@ def _reject_key(uid: int):
 
 def _can_reject(uid: int) -> bool:
     from bot.config import DUEL_REJECT_LIMIT_PER_DAY
-    return _reject_counts.get(_reject_key(uid), 0) < DUEL_REJECT_LIMIT_PER_DAY
+    return _reject_counts.get(str(_reject_key(uid)), 0) < DUEL_REJECT_LIMIT_PER_DAY
 
 def _inc_reject(uid: int):
     k = _reject_key(uid)
-    _reject_counts[k] = _reject_counts.get(k, 0) + 1
+    _reject_counts[str(k)] = int(_reject_counts.get(str(k), 0) or 0) + 1
 
 
 
@@ -446,7 +447,7 @@ async def cmd_accept_servant_duel(message: Message):
     await message.answer(text)
 
 # ---- صف دوئل رندوم ----
-_random_queue: dict[int, float] = {}  # tg_id -> timestamp
+_random_queue = PersistentMap("duel_random_queue")
 _QUEUE_TTL = 120  # ثانیه
 
 

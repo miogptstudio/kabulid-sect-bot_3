@@ -17,6 +17,7 @@
   <div id="toast" class="toast"></div>
   <nav class="tabs" id="tabs">
     <button class="tab active" data-tab="home">🏠 خانه</button>
+    <button class="tab" data-tab="wallet">💰 کیف</button>
     <button class="tab" data-tab="world">🗺️ جهان</button>
     <button class="tab" data-tab="sect">🏯 فرقه</button>
     <button class="tab" data-tab="characters">🎭 کاراکتر</button>
@@ -24,6 +25,7 @@
     <button class="tab" data-tab="chests">🎁 گنجینه</button>
     <button class="tab" data-tab="arena">⚔️ رتبه</button>
     <button class="tab" data-tab="games">🎮 بازی</button>
+    <button class="tab" data-tab="guide">📖 راهنما</button>
     <button class="tab staff-only" data-tab="admin" hidden>🛡️ مدیریت</button>
   </nav>
   <main id="view"><div class="loading">در حال بارگذاری…</div></main>
@@ -56,7 +58,7 @@ function card(title, body){ return `<div class="card"><h2>${title}</h2>${body}</
 function row(a,b){ return `<div class="statrow"><span class="muted">${esc(a)}</span><span>${esc(b)}</span></div>`; }
 function button(label, onClick, cls=''){ return `<button class="btn ${cls}" onclick="${onClick}">${label}</button>`; }
 function walletName(k){
-  return ({coins:'سکه',spirit_stones:'سنگ روحی',heavenly_stones:'سنگ بهشتی',celestial_stones:'سنگ آسمانی',god_stones:'سنگ خدا',chaos_stones:'سنگ هرج‌ومرج',void_stones:'سنگ پوچی',origin_stones:'سنگ ازلی',karma_points:'کارما',destiny_stones:'سنگ تقدیر',immortal_stones:'سنگ جاودان',creation_stones:'سنگ خلقت',absolute_stones:'سنگ مطلق',faith_stones:'سنگ ایمان',dragon_coins:'سکه اژدها',eternal_ink:'جوهر ازلی'}[k]||k);
+  return ({coins:'سکه',spirit_stones:'سنگ روحی',heavenly_stones:'سنگ بهشتی',celestial_stones:'سنگ آسمانی',god_stones:'سنگ خدا',chaos_stones:'سنگ هرج‌ومرج',void_stones:'سنگ پوچی',origin_stones:'سنگ ازلی',karma_points:'کارما',destiny_stones:'سنگ تقدیر',immortal_stones:'سنگ جاودان',creation_stones:'سنگ خلقت',absolute_stones:'سنگ مطلق',faith_stones:'سنگ ایمان',dragon_coins:'سکه اژدها',eternal_ink:'جوهر ازلی',soul_shards:'تکه روح',star_dust:'غبار ستاره',nexus_cores:'هسته پیوند'}[k]||k);
 }
 
 document.querySelectorAll('.tab').forEach(btn=>{
@@ -79,6 +81,7 @@ async function render(tab){
   view.innerHTML = '<div class="loading">در حال بارگذاری…</div>';
   try {
     if(tab==='home') await home();
+    else if(tab==='wallet') await walletTab();
     else if(tab==='world') await world();
     else if(tab==='sect') await sect();
     else if(tab==='characters') await characters();
@@ -86,6 +89,7 @@ async function render(tab){
     else if(tab==='chests') await chests();
     else if(tab==='arena') await arena();
     else if(tab==='games') await games();
+    else if(tab==='guide') await guide();
     else if(tab==='admin') await admin();
   } catch(e){
     view.innerHTML = `<div class="card"><div class="empty">⚠️ ${esc(e.message||e)}<br><br>اگر از تلگرام باز نکردی، اول ربات را /start کن.</div></div>`;
@@ -123,6 +127,8 @@ async function home(){
       ${button('🗺️ جهان', "setTab('world')", 'secondary')}
       ${button('🎭 کاراکتر', "setTab('characters')", 'secondary')}
       ${button('🛒 فروشگاه', "setTab('shop')", 'secondary')}
+      ${button('💰 کیف', "setTab('wallet')", 'secondary')}
+      ${button('📖 راهنما', "setTab('guide')", 'secondary')}
     </div>`;
   // staff tab
   if(d.role==='رهبر' || d.role==='ادمین' || (d.rank||'').includes('ادمین')){
@@ -130,6 +136,13 @@ async function home(){
   }
 }
 
+async function walletTab(){
+  const d = await api('/api/dashboard');
+  const w = d.wallet || {};
+  const rows = Object.entries(w).filter(([k,v])=>typeof v!=='object')
+    .map(([k,v])=>row(walletName(k), Number(v||0).toLocaleString('fa-IR'))).join('') || row('سکه','0');
+  view.innerHTML = card('💰 کیف پول کامل', rows) + card('🔗 تبدیل', '<div class="muted" style="font-size:12px">در ربات: /wallet · /exchangeup · /exchangedown<br>تکه روح ↔ غبار ستاره ↔ هسته پیوند</div>');
+}
 async function claimDaily(){
   try{
     const r = await api('/api/daily');
@@ -261,6 +274,17 @@ async function games(){
   `) + `<div class="actions">${button('باز کردن games.html', "window.location.href='/app/static/games.html'", 'secondary')}</div>`;
 }
 
+async function guide(){
+  view.innerHTML = card('📖 راهنمای فارسی', `
+    <div class="list-item"><b>شروع · منو · راهنما</b></div>
+    <div class="list-item"><b>پروفایل · وضعیت · قدرت · کیف پول</b></div>
+    <div class="list-item"><b>تزکیه · تذهیب · بدن · روح</b></div>
+    <div class="list-item"><b>دوئل · نبرد · آرنا · رتبه</b></div>
+    <div class="list-item"><b>فرقه · فروشگاه · روزانه · مأموریت</b></div>
+    <div class="list-item"><b>کاراکتر شانسی · خدمتکار · جهان · نقشه</b></div>
+    <div class="list-item"><b>شمال/جنوب/شرق/غرب · سیاه‌چال · لیگ · بازی</b></div>
+  `) + card('نکته', '<div class="muted" style="font-size:12px">دستورها با / و بدون / کار می‌کنند. عضویت کانال فقط هنگام دستور چک می‌شود.</div>');
+}
 async function admin(){
   try{
     const d = await api('/api/admin');

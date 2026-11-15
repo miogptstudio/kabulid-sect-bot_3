@@ -7,11 +7,11 @@ router = Router()
 
 def _norm(text: str) -> str:
     t = (text or "").strip().lower()
-    # حذف فاصله‌های صفرعرض و نرمال‌سازی ساده
-    for ch in ("\u200c", "\u200f", "\u200e", "\ufeff"):
+    for ch in ("\u200c", "\u200f", "\u200e", "\ufeff", "\u200d"):
         t = t.replace(ch, "")
+    for em in ("👤","🧘","⚔️","🎒","⚗","🏛","🏪","🎁","📜","🏆","📊","🌍","🎲","💼","📖","⚙️","🐾","💍","🪙","💎","🛠","🎮","🗺","⭐"):
+        t = t.replace(em, "")
     return " ".join(t.split())
-
 
 # نامهای قابل تایپ برای ورود مستقیم به بخشها
 ALIASES = {
@@ -221,6 +221,87 @@ ALIASES = {
     "تغییر زبان": "lang",
     "نسخه": "version",
     "ورژن": "version",
+    "ازدواج خدمتکار": "marryservant",
+    "ازدواج با خدمتکار": "marryservant",
+    "تذهیب خدمتکار": "dualservant",
+    "دوگانه خدمتکار": "dualservant",
+    "بچه خدمتکار": "childservant",
+    "فرزند خدمتکار": "childservant",
+    "فرزندان من": "mychildren",
+    "بچه های من": "mychildren",
+    "نام فرزند": "namechild",
+    "آموزش فرزند": "teachchild",
+
+    "کمک": "help",
+    "راهنمای ربات": "help",
+    "راهنمای بازی": "help",
+    "لیست دستورات": "commands",
+    "همه دستورات": "commands",
+    "دستورات فارسی": "commands",
+    "نسخه ربات": "version",
+    "ورژن ربات": "version",
+    "چه نسخه‌ای": "version",
+    "شروع کن": "start",
+    "بزن بریم": "start",
+    "وضعیتم": "profile",
+    "اطلاعات من": "profile",
+    "قوی شدن": "cultivation",
+    "مدیتیشن کن": "cultivation",
+    "بجنگ": "duel",
+    "دعوا کنیم": "duel",
+    "پاداش روزانه": "daily",
+    "جایزه روزانه": "daily",
+    "بازار خدمتکارها": "servants",
+    "عکس پروفایل خدمتکار": "setavatar",
+    "عکس پروفایل": "setavatar",
+    "تنظیم عکس پروفایل": "setavatar",
+    "حذف عکس پروفایل": "clearavatar",
+    "پاک کردن عکس پروفایل": "clearavatar",
+    "عکس پیشفرض": "clearavatar",
+    "عکس پیش‌فرض": "clearavatar",
+    "وضعیت عکس": "myavatar",
+    "عکس من": "myavatar",
+
+    "وب اپ": "help",
+    "وب‌اپ": "help",
+    "اپ": "help",
+    "تبدیل": "wallet",
+    "تبدیل ارز": "wallet",
+    "بالا بردن ارز": "wallet",
+    "سنگ روحی": "wallet",
+    "مدیتیت": "cultivation",
+    "جمع‌آوری چی": "cultivation",
+    "نبرد کن": "duel",
+    "دعوا کن": "duel",
+    "جدول": "ranking",
+    "جدول رتبه‌ها": "ranking",
+    "بازار خدمتکارها": "servants",
+    "خرید کاراکتر": "pullchar",
+    "شانس کاراکتر": "pullchar",
+    "رفتن شمال": "north",
+    "رفتن جنوب": "south",
+    "رفتن شرق": "east",
+    "رفتن غرب": "west",
+    "تغذیه": "eat",
+    "آب بنوش": "drink",
+    "دستورات فارسی": "commands",
+    "لیست دستورات فارسی": "commands",
+    "کاراکتر شانسی": "pullchar",
+    "شانسی": "pullchar",
+    "گacha": "pullchar",
+    "گچاخ": "pullchar",
+    "لیست کاراکتر من": "mychars",
+    "کاراکترام": "mychars",
+    "خرید خدمتکار": "servants",
+    "بازار خدمتکار": "servants",
+    "خدمتکار بخر": "servants",
+    "خدمتکار های من": "myservants",
+    "خدمتکارهام": "myservants",
+    "پرورش خدمتکار": "trainservant",
+    "شکار خدمتکار": "huntservant",
+    "رتبه کاراکتر": "charrates",
+    "ترکیب کاراکتر": "mergechar",
+    "ادغام کاراکتر": "mergechar",
 
     # دستورات فارسی بیشتر
     "کیف": "wallet",
@@ -383,6 +464,10 @@ async def text_section_navigation(message: Message):
         return
 
     key = ALIASES.get(norm)
+    if not key:
+        # تطبیق بدون فاصله: «کیف پول» ↔ «کیفپول»
+        compact = {k.replace(' ', ''): v for k, v in ALIASES.items()}
+        key = compact.get(norm.replace(' ', ''))
     if not key:
         return
 
@@ -566,6 +651,64 @@ async def text_section_navigation(message: Message):
         elif key == "bank":
             from bot.handlers.advanced_systems import bank_cmd
             await bank_cmd(message)
+        elif key == "wallet":
+            from bot.handlers.pets import cmd_wallet
+            await cmd_wallet(message)
+        elif key == "body":
+            from bot.handlers.cultivation import cmd_body
+            await cmd_body(message)
+        elif key == "spirit":
+            from bot.handlers.spirit import cmd_spirit
+            await cmd_spirit(message)
+        elif key == "start":
+            from bot.handlers.start import cmd_start
+            await cmd_start(message)
+        elif key == "admin":
+            from bot.handlers.admin import cmd_admin
+            await cmd_admin(message)
+        elif key == "pets":
+            from bot.handlers.pets import cmd_pets
+            await cmd_pets(message)
+        elif key == "quests":
+            from bot.handlers.jobs_events import cmd_quests
+            await cmd_quests(message)
+        elif key == "world":
+            from bot.handlers.open_world import cmd_world
+            await cmd_world(message)
+        elif key == "more":
+            await message.answer("⚙️ بخش بیشتر: /jobs /inventory /craft /pets /marriage /titles /quests /league /dungeon /games")
+        elif key == "north":
+            from bot.handlers.open_world import cmd_move
+            msg = message.model_copy(update={"text": "/north"})
+            await cmd_move(msg)
+        elif key == "south":
+            from bot.handlers.open_world import cmd_move
+            msg = message.model_copy(update={"text": "/south"})
+            await cmd_move(msg)
+        elif key == "east":
+            from bot.handlers.open_world import cmd_move
+            msg = message.model_copy(update={"text": "/east"})
+            await cmd_move(msg)
+        elif key == "west":
+            from bot.handlers.open_world import cmd_move
+            msg = message.model_copy(update={"text": "/west"})
+            await cmd_move(msg)
+        elif key == "mystaff":
+            from bot.handlers.admin import cmd_mystaff
+            await cmd_mystaff(message)
+        elif key == "stafflist":
+            from bot.handlers.admin import cmd_stafflist
+            await cmd_stafflist(message)
+        elif key == "version":
+            from bot.handlers.start import cmd_version
+            await cmd_version(message)
+        elif key == "ping":
+            from bot.handlers.start import cmd_ping
+            await cmd_ping(message)
+        else:
+            # آخرین تلاش: راهنمایی دستور اسلش‌دار
+            await message.answer(f"دستور شناسایی شد: <code>/{key}</code>\nاگر کار نکرد همین را با / بفرست.")
+
     except Exception as e:
         import logging, traceback
         logging.getLogger(__name__).exception("text_nav error key=%s: %s", key, e)

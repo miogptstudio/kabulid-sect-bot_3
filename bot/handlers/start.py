@@ -236,9 +236,11 @@ async def cmd_version(message: Message):
     except Exception:
         v = w = "4.4.0"
     await message.answer(
-        f"🤖 ربات: <b>{v}</b>" + chr(10)
-        + f"🌐 وباپ: <b>{w}</b>" + chr(10)
-        + "🗓️ /season"
+        f"🤖 نسخه ربات: <b>v{v}</b>" + chr(10)
+        + f"🌐 نسخه وب‌اپ: <b>v{w}</b>" + chr(10)
+        + "📖 راهنما: <b>راهنما</b> یا /help" + chr(10)
+        + "📋 دستورات: <b>دستورات</b> یا /commands" + chr(10)
+        + "🗓️ فصل: /season"
     )
 
 

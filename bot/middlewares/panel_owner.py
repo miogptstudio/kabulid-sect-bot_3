@@ -27,7 +27,7 @@ class PanelOwnerMiddleware(BaseMiddleware):
         "setgender": 1,
         "servmarket": 1, "servpage": 1, "servownpage": 1, "servmylist": 1,
         "servbuy": 1, "servstatus": 1, "servloyal": 1, "servtrain": 1,
-        "servmarry": 1, "servduelguide": 1,
+        "servmarry": 1, "servavatar": 1, "servduelguide": 1,
         "chars": 2,
     }
 

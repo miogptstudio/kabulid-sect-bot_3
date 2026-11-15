@@ -1,6 +1,12 @@
 """شغل، جنگ قبایل، فروش کوروش، تاس شانس، رویداد"""
 import random
 from datetime import datetime, timedelta
+
+def _pdt(v):
+    if v is None: return None
+    if isinstance(v, datetime): return v
+    try: return datetime.fromisoformat(str(v))
+    except Exception: return None
 from aiogram import Router, F
 from aiogram.types import Message, FSInputFile, CallbackQuery, URLInputFile
 from aiogram.filters import Command
@@ -17,8 +23,9 @@ from services.portraits import panel_url
 from bot.utils.media import safe_answer_photo
 
 router = Router()
-_last_luck: dict[int, datetime] = {}
-_last_daily: dict[int, datetime] = {}
+from services.persist import PersistentMap
+_last_luck = PersistentMap("jobs_last_luck")
+_last_daily = PersistentMap("jobs_last_daily")
 
 
 @router.message(Command("work", "کار", "کارشغل"))
@@ -139,12 +146,12 @@ async def cmd_buy_cyrus(message: Message):
 @router.message(Command("luckdice", "تاسشانس", "شانس"))
 async def cmd_luck_dice(message: Message):
     now = datetime.utcnow()
-    last = _last_luck.get(message.from_user.id)
+    last = _pdt(_last_luck.get(message.from_user.id))
     if last and now - last < timedelta(hours=3):
         left = int((timedelta(hours=3) - (now - last)).total_seconds() // 60) + 1
         await message.answer(f"⏳ تاس شانس هر ۳ ساعت — حدود {left} دقیقه دیگر")
         return
-    _last_luck[message.from_user.id] = now
+    _last_luck[message.from_user.id] = now.isoformat()
     roll = random.randint(1, 6)
     async with async_session() as session:
         user = await get_or_create_user(

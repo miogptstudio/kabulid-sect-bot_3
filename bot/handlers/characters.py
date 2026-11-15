@@ -58,36 +58,47 @@ async def cmd_rates(message: Message):
     await message.answer(chars.rarity_guide())
 
 
-async def _pull_character(message: Message):
+async def _pull_character(message: Message, tg_id: int | None = None, full_name: str | None = None, username: str | None = None):
+    """tg_id را صریح بده (مخصوصاً از callback)؛ وگرنه از message.from_user."""
+    uid = int(tg_id or (message.from_user.id if message.from_user else 0))
+    fname = full_name if full_name is not None else (message.from_user.full_name if message.from_user else "")
+    uname = username if username is not None else (message.from_user.username if message.from_user else None)
     async with async_session() as session:
-        user = await get_or_create_user(
-            session, message.from_user.id,
-            message.from_user.full_name, message.from_user.username,
-        )
+        user = await get_or_create_user(session, uid, fname, uname)
         wallet = await get_or_create_wallet(session, user.id)
         cost = chars.PULL_COST_COINS
         if (wallet.coins or 0) < cost:
             await message.answer(f"🪙 سکه کافی نیست؛ نیاز: {cost}\nاز /dailycoin یا دوئل استفاده کن.")
             return
-        ok, msg, card = chars.pull(message.from_user.id)
+        ok, msg, card = chars.pull(uid)
         if not ok:
             await message.answer(msg)
             return
         wallet.coins -= cost
         await session.commit()
 
+    # اطمینان از ذخیره پایدار
+    try:
+        from services.persist import save as _psave
+        _psave("chars_owned")
+        _psave("chars_last_pull")
+    except Exception:
+        pass
+
     if card:
         try:
             from services.portraits import character_url
-            await message.answer_photo(
-                photo=character_url(card.get("name", "؟"), card.get("rarity", "معمولی")),
-                caption=msg,
-                reply_markup=character_list_keyboard(message.from_user.id),
-            )
-            return
+            url = character_url(card.get("name", "؟"), card.get("rarity", "معمولی"))
+            if url:
+                await message.answer_photo(
+                    photo=url,
+                    caption=msg,
+                    reply_markup=character_list_keyboard(uid),
+                )
+                return
         except Exception:
             pass
-    await message.answer(msg, reply_markup=character_list_keyboard(message.from_user.id))
+    await message.answer(msg, reply_markup=character_list_keyboard(uid))
 
 
 @router.message(Command("pullchar", "کاراکتر", "کاراکترشانسی", "gacha", "شانسی"))
@@ -143,15 +154,17 @@ async def cb_char_view(callback: CallbackQuery):
     if not card:
         await callback.message.answer("❌ کاراکتر پیدا نشد. /mychars")
         return
+    text = character_detail_text(card, idx)
+    kb = character_detail_keyboard(idx, callback.from_user.id)
     try:
         from services.portraits import character_url
-        await callback.message.answer_photo(
-            photo=character_url(card.get("name", "کاراکتر"), card.get("rarity", "معمولی")),
-            caption=character_detail_text(card, idx),
-            reply_markup=character_detail_keyboard(idx, callback.from_user.id),
-        )
+        url = character_url(card.get("name", "کاراکتر"), card.get("rarity", "معمولی"))
+        if url:
+            await callback.message.answer_photo(photo=url, caption=text, reply_markup=kb)
+            return
     except Exception:
-        await callback.message.answer(character_detail_text(card, idx), reply_markup=character_detail_keyboard(idx, callback.from_user.id))
+        pass
+    await callback.message.answer(text, reply_markup=kb)
 
 
 @router.callback_query(F.data.startswith("chars:merge:"))
@@ -187,7 +200,12 @@ async def cb_chars_pull(callback: CallbackQuery):
         await callback.answer("⛔ این پنل برای صاحبش است.", show_alert=True)
         return
     await callback.answer()
-    await _pull_character(callback.message)
+    await _pull_character(
+        callback.message,
+        tg_id=callback.from_user.id,
+        full_name=callback.from_user.full_name,
+        username=callback.from_user.username,
+    )
 
 
 @router.callback_query(F.data.startswith("chars:best:"))

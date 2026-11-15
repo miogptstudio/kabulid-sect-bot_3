@@ -13,7 +13,9 @@ from services.i18n import tr
 router = Router()
 
 # in-memory streak store (با دیتابیس پایدار بهتر است؛ فعلاً همراه user.xp)
-_streaks: dict[int, dict] = {}
+from services.persist import PersistentMap
+_streaks = PersistentMap("engagement_streaks")
+
 
 
 # daily به retention منتقل شد

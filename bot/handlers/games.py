@@ -8,6 +8,18 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from datetime import datetime, timedelta
 
+def _pdt(v):
+    if v is None: return None
+    if isinstance(v, datetime): return v
+    try: return datetime.fromisoformat(str(v))
+    except Exception:
+        try:
+            from datetime import timedelta
+            # maybe stored timestamp float
+            return datetime.utcfromtimestamp(float(v))
+        except Exception:
+            return None
+
 from database.engine import async_session
 from database.crud import get_or_create_user
 from services.economy import get_or_create_wallet
@@ -27,23 +39,24 @@ async def cmd_webapp(message: Message):
     await message.answer("🌌 <b>مرکز فرماندهی ۹ آسمان</b>\n\nتمام بخش‌های اصلی بازی از همین مینی‌اپ به همان حساب تلگرام متصل هستند.", reply_markup=kb.as_markup())
 
 GAME_COOLDOWN = timedelta(minutes=2)
-_last_game: dict[int, datetime] = {}
+from services.persist import PersistentMap
+_last_game = PersistentMap("games_last")
 
 def check_game_cooldown(user_id: int, mark: bool = True):
     """اگر هنوز کولداون دارد، متن پیام برمیگردد؛ وگرنه None و در صورت mark زمان ثبت میشود"""
     now = datetime.utcnow()
-    last = _last_game.get(user_id)
+    last = _pdt(_last_game.get(user_id))
     if last and now - last < GAME_COOLDOWN:
         left = int((GAME_COOLDOWN - (now - last)).total_seconds())
         m, s = left // 60, left % 60
         return f"⏳ محدودیت بازی: {m} دقیقه و {s} ثانیه دیگر صبر کن."
     if mark:
-        _last_game[user_id] = now
+        _last_game[user_id] = now.isoformat() if hasattr(now, "isoformat") else now
     return None
 
 
 # سنگ کاغذ قیچی در انتظار
-_rps_pending: dict[int, dict] = {}
+_rps_pending = PersistentMap("games_rps_pending")
 
 
 @router.message(Command("games", "بازی", "بازیها"))
@@ -306,7 +319,7 @@ async def cmd_casino(message: Message):
     await message.answer(f"🎰 {msg}\nموجودی: {coins}")
 
 
-_guess: dict[int, int] = {}
+_guess = PersistentMap("games_guess")
 
 @router.message(Command("guess", "حدسعدد"))
 async def cmd_guess(message: Message):
@@ -562,7 +575,7 @@ async def cb_nard_online(callback: CallbackQuery):
 
 
 # ========== فکری و پازل ==========
-_pending_puzzle: dict[int, dict] = {}
+_pending_puzzle = PersistentMap("games_puzzle")
 
 RIDDLES = [
     ("چیزی که هرچه بیشتر از آن برداری بزرگتر میشود؟", ["حفره", "چاله", "سوراخ"]),

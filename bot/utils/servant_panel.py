@@ -42,8 +42,9 @@ def owned_browse_keyboard(position: int, total: int, bag_index: int, owner_id: i
     kb.button(text="❤️ وفاداری", callback_data=f"servloyal:{owner_id}:{bag_index}")
     kb.button(text="🧘 پرورش", callback_data=f"servtrain:{owner_id}:{bag_index}")
     kb.button(text="💍 ازدواج", callback_data=f"servmarry:{owner_id}:{bag_index}")
+    kb.button(text="🖼 عکس پروفایل", callback_data=f"servavatar:{owner_id}:{bag_index}")
     kb.button(text="🏪 بازگشت به بازار", callback_data=f"servmarket:{owner_id}")
-    kb.adjust(3, 2, 2, 1)
+    kb.adjust(3, 2, 2, 1, 1)
     return kb.as_markup()
 
 

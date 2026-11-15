@@ -372,17 +372,23 @@ def _kb(uid: int = 0):
     return b.as_markup()
 
 
-@router.message(Command("help", "راهنما", "منو", "menu"))
+@router.message(Command("help", "راهنما", "منو", "menu", "راهنمایبازی", "دستوراتفارسی", "راهنمایربات", "کمک"))
 async def cmd_help(message: Message):
     uid = message.from_user.id
     text = (
-        f"📖 <b>راهنمای ساده</b> — v{BOT_VERSION}\n\n"
-        "🎯 <b>مسیر پیشنهادی برای تازه‌وارد:</b>\n"
-        "۱. /profile — وضعیتت رو ببین\n"
-        "۲. دکمه 🧘 تزکیه — قوی‌تر شو\n"
-        "۳. ریپلای روی کسی + /duel — بجنگ\n"
-        "۴. /daily — پاداش روزانه بگیر\n\n"
-        "بخش موردنظرت رو از دکمه‌های پایین انتخاب کن 👇"
+        f"📖 <b>راهنمای ربات</b> — v{BOT_VERSION}\n\n"
+        "این ربات <b>تذهیب، دوئل، فرقه و جهان رزمی</b> است.\n"
+        "دستورها هم با <code>/</code> و هم <b>بدون اسلش فارسی</b> کار می‌کنند.\n\n"
+        "🎯 <b>شروع سریع (۴ قدم):</b>\n"
+        "۱) <b>پروفایل</b> — وضعیتت\n"
+        "۲) <b>تزکیه</b> — قوی شو\n"
+        "۳) <b>دوئل</b> — ریپلای روی حریف + بنویس دوئل\n"
+        "۴) <b>روزانه</b> — پاداش بگیر\n\n"
+        "📌 بخش‌های مهم:\n"
+        "• فرقه / فروشگاه / کاراکتر / خدمتکار\n"
+        "• جهان / نقشه / آرنا / مأموریت\n"
+        "• کیف پول / عکس پروفایل\n\n"
+        "دکمه پایین را بزن یا بنویس: <b>دستورات</b>"
     )
     await send_panel(message, "help", caption=text, reply_markup=_kb(uid))
 
@@ -450,7 +456,8 @@ async def cb_help_section(callback: CallbackQuery):
 async def cmd_commands(message: Message):
     # فهرست کوتاه است؛ برای توضیح هر دستور، /help و بخش مربوطه را باز کن.
     chunks = [f"📋 <b>دستورات بازی</b> — v{BOT_VERSION}\n"
-              "برای توضیح هر دستور، /help را باز کن.\n"]
+              "می‌توانی فارسی بدون / بنویسی (مثل: پروفایل، تزکیه، روزانه).\n"
+              "برای راهنمای ساده: <b>راهنما</b> یا /help\n"]
     current = "\n".join(chunks)
     for _, (title, items) in SECTIONS.items():
         block = f"\n<b>{escape(title)}</b>\n{_render_commands_only(items)}\n"

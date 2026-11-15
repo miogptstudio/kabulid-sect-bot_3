@@ -82,6 +82,16 @@ async def cmd_profile(message: Message):
             f"└ باخت متوالی: {user.loss_streak}\n"
         )
         try:
+            from services.profile_avatar import resolve_photo_path, status_text as avatar_status
+            text = text + "\n" + avatar_status(message.from_user.id)
+            path = resolve_photo_path(message.from_user.id)
+            if path:
+                from aiogram.types import FSInputFile
+                await message.answer_photo(FSInputFile(path), caption=text)
+                return
+        except Exception:
+            pass
+        try:
             from bot.panel_sender import send_panel
             await send_panel(
                 message,
@@ -91,3 +101,60 @@ async def cmd_profile(message: Message):
             )
         except Exception:
             await message.answer(text)
+
+
+@router.message(Command("setavatar", "عکسپروفایل", "تنظیمعکس", "avatar"))
+async def cmd_set_avatar(message: Message):
+    """تنظیم عکس پروفایل روی خدمتکار: /setavatar شماره"""
+    parts = (message.text or "").split()
+    from services.profile_avatar import set_servant_avatar, set_character_avatar, status_text
+    if len(parts) < 2:
+        await message.answer(
+            status_text(message.from_user.id) + "\n\n"
+            "🖼 <b>تنظیم عکس پروفایل</b>\n"
+            "/setavatar شماره_خدمتکار\n"
+            "/setcharavatar شماره_کاراکتر\n"
+            "/clearavatar — برگشت به پیش‌فرض\n"
+            "یا از پنل خدمتکار دکمه «عکس پروفایل» را بزن."
+        )
+        return
+    # optional: setavatar servant 1 / setavatar char 1
+    if len(parts) >= 3 and parts[1].lower() in ("char", "character", "کاراکتر"):
+        ok, msg = set_character_avatar(message.from_user.id, int(parts[2]))
+    elif len(parts) >= 3 and parts[1].lower() in ("servant", "خدمتکار"):
+        ok, msg = set_servant_avatar(message.from_user.id, int(parts[2]))
+    else:
+        ok, msg = set_servant_avatar(message.from_user.id, int(parts[1]))
+    await message.answer(msg)
+
+
+@router.message(Command("setcharavatar", "عکسکاراکتر"))
+async def cmd_set_char_avatar(message: Message):
+    parts = (message.text or "").split()
+    from services.profile_avatar import set_character_avatar
+    if len(parts) < 2 or not parts[1].isdigit():
+        await message.answer("فرمت: /setcharavatar شماره\nشماره از /mychars")
+        return
+    ok, msg = set_character_avatar(message.from_user.id, int(parts[1]))
+    await message.answer(msg)
+
+
+@router.message(Command("clearavatar", "حذفعکسپروفایل", "پاککردنعکس", "resetavatar"))
+async def cmd_clear_avatar(message: Message):
+    from services.profile_avatar import clear_avatar
+    await message.answer(clear_avatar(message.from_user.id))
+
+
+@router.message(Command("myavatar", "عکسم", "وضعیتعکس"))
+async def cmd_my_avatar(message: Message):
+    from services.profile_avatar import status_text, resolve_photo_path
+    from aiogram.types import FSInputFile
+    text = status_text(message.from_user.id)
+    path = resolve_photo_path(message.from_user.id)
+    if path:
+        try:
+            await message.answer_photo(FSInputFile(path), caption=text)
+            return
+        except Exception:
+            pass
+    await message.answer(text)

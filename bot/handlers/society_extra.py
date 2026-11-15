@@ -282,7 +282,8 @@ async def cmd_unlock_vein(message: Message):
 
 
 # ---- بچه زن و شوهر ----
-_couple_child_cd: dict = {}
+from services.persist import PersistentMap
+_couple_child_cd = PersistentMap("couple_child_cd")
 
 @router.message(Command("havechild", "بچه", "فرزندآوری"))
 async def cmd_have_child(message: Message):

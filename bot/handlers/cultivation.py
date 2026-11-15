@@ -1,4 +1,16 @@
-from datetime import datetime, timedelta
+from datetime import datetime
+
+def _pdt(v):
+    if v is None: return None
+    if isinstance(v, datetime): return v
+    try: return datetime.fromisoformat(str(v))
+    except Exception:
+        try:
+            from datetime import timedelta
+            # maybe stored timestamp float
+            return datetime.utcfromtimestamp(float(v))
+        except Exception:
+            return None
 from aiogram import Router, F
 from bot.utils.safe_telegram import safe_edit_text
 from aiogram.types import Message, FSInputFile, CallbackQuery, URLInputFile
@@ -20,7 +32,8 @@ from services.cultivation import (
 
 router = Router()
 
-_last_gather: dict[int, datetime] = {}
+from services.persist import PersistentMap
+_last_gather = PersistentMap("cult_last_gather")
 COOLDOWN_SECONDS = 60
 
 GATHER_PHRASES = [
@@ -256,13 +269,13 @@ async def do_gather(message: Message, amount: int = 5000):
         except Exception:
             pass
 
-    last = _last_gather.get(user_id)
+    last = _pdt(_last_gather.get(user_id))
     if last and (now - last).total_seconds() < COOLDOWN_SECONDS:
         remaining = int(COOLDOWN_SECONDS - (now - last).total_seconds())
         await message.answer(f"⏳ {remaining} ثانیه دیگه صبر کن.")
         return
     
-    _last_gather[user_id] = now
+    _last_gather[user_id] = now.isoformat() if hasattr(now,"isoformat") else now
     
     async with async_session() as session:
         await ensure_default_techniques(session)
@@ -826,7 +839,7 @@ async def text_body_train(message: Message):
 
 
 # --- بازگرداندن یانگ / متعادل کردن یین با تمرین ---
-_recover_cd: dict[int, datetime] = {}
+_recover_cd = PersistentMap("cult_recover_cd")
 RECOVER_CD_SEC = 180  # هر ۳ دقیقه یکبار
 RECOVER_YANG = 3      # مرد: +یانگ
 RECOVER_YIN = 3       # زن: −یین (به سمت تعادل)
@@ -841,7 +854,7 @@ async def cmd_recover_yang(message: Message):
     """با تمرین، یانگ ازدسترفته برمیگردد (مرد) یا یین اضافه کم میشود (زن)"""
     tg = message.from_user.id
     now = datetime.utcnow()
-    last = _recover_cd.get(tg)
+    last = _pdt(_recover_cd.get(tg))
     if last and (now - last).total_seconds() < RECOVER_CD_SEC:
         left = int(RECOVER_CD_SEC - (now - last).total_seconds())
         await message.answer(f"⏳ تمرین تعادل هر {RECOVER_CD_SEC // 60} دقیقه. {left}ث صبر کن.")
@@ -901,7 +914,7 @@ async def cmd_recover_yang(message: Message):
             pass
 
         await session.commit()
-        _recover_cd[tg] = now
+        _recover_cd[tg] = now.isoformat() if hasattr(now,"isoformat") else now
         if result.get("messages"):
             lines.append(" | ".join(result["messages"][:2]))
         await message.answer(chr(10).join(lines))

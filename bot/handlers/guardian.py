@@ -14,19 +14,30 @@ from database.crud import get_or_create_user
 from services.xp import add_xp
 from bot.config import XP_PER_GUARDIAN_WIN, GUARDIAN_TIMEOUT_SEC, GUARDIAN_COOLDOWN_SEC
 from datetime import datetime, timedelta
+
+def _pdt(v):
+    if v is None: return None
+    if isinstance(v, datetime): return v
+    try: return datetime.fromisoformat(str(v))
+    except Exception:
+        try:
+            from datetime import timedelta
+            # maybe stored timestamp float
+            return datetime.utcfromtimestamp(float(v))
+        except Exception:
+            return None
 from services.sects import add_contribution
 from services.economy import get_or_create_wallet
 from services.i18n import tr
 
 router = Router()
 
-# سوالاتی که هر کاربر دیده (تا ریست سرور)
-_seen: dict[int, set[str]] = {}
-# جلسه فعال نگهبان: user_id -> {qid, correct, task}
-_active: dict[int, dict] = {}
-_last_guardian: dict[int, datetime] = {}
-# دوئل نگهبان دو نفره
-_gduel: dict[str, dict] = {}
+from services.persist import PersistentMap
+# پایدار — بعد از ریستارت پاک نمی‌شود
+_seen = PersistentMap("guardian_seen")  # values: list[str]
+_active = PersistentMap("guardian_active")
+_last_guardian = PersistentMap("guardian_last")
+_gduel = PersistentMap("guardian_duel")
 
 SAMPLE_QUESTIONS = [
     {"category": "منطق", "difficulty": 1, "question_text": "اگر همه گربهها حیوان باشند و برخی حیوانها سیاه، آیا همه گربهها سیاهاند؟", "options": ["بله", "خیر", "نمیتوان گفت", "بستگی دارد"], "correct_answer": 1},
@@ -115,7 +126,7 @@ def _qid(q: dict) -> str:
 
 
 def _pick_question(user_id: int) -> dict | None:
-    seen = _seen.setdefault(user_id, set())
+    seen = _seen.setdefault(user_id, [])
     available = [q for q in SAMPLE_QUESTIONS if _qid(q) not in seen]
     # ترجیح سوال سختتر
     hard = [q for q in available if int(q.get('difficulty') or 1) >= 3]
@@ -125,7 +136,7 @@ def _pick_question(user_id: int) -> dict | None:
         seen.clear()
         available = SAMPLE_QUESTIONS[:]
     q = random.choice(available)
-    seen.add(_qid(q))
+    seen.append(_qid(q))
     return q
 
 
@@ -154,12 +165,12 @@ async def cmd_guardian(message: Message):
     if uid in _active:
         await message.answer(tr(message.from_user.id, "اول سوال فعلی را جواب بده یا صبر کن تا تمام شود."))
         return
-    last = _last_guardian.get(uid)
+    last = _pdt(_last_guardian.get(uid))
     if last and (datetime.utcnow() - last).total_seconds() < GUARDIAN_COOLDOWN_SEC:
         left = int(GUARDIAN_COOLDOWN_SEC - (datetime.utcnow() - last).total_seconds())
         await message.answer(f"⏳ نگهبان هر ۵ دقیقه یکبار. {left} ثانیه صبر کن.")
         return
-    _last_guardian[uid] = datetime.utcnow()
+    _last_guardian[uid] = datetime.utcnow().isoformat()
 
     q = _pick_question(uid)
     qid = _qid(q)
