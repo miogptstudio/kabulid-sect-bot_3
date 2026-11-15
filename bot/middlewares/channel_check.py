@@ -125,19 +125,26 @@ class ChannelMembershipMiddleware(BaseMiddleware):
 
         if isinstance(event, Message):
             user = event.from_user
-            # در گروه/سوپرگروه: فقط اگر پیام مربوط به ربات باشد چک کن
+            # در گروه/سوپرگروه: اصلاً عضویت کانال را چک نکن (ضد اسپم کامل)
             try:
                 chat_type = getattr(event.chat, "type", None)
                 if chat_type in ("group", "supergroup"):
-                    if not _is_bot_related_message(event, bot):
-                        return await handler(event, data)
+                    return await handler(event, data)
             except Exception:
+                # اگر نوع چت معلوم نشد، در گروه فرض نکن — ادامه بده فقط برای private
                 pass
         elif isinstance(event, CallbackQuery):
             user = event.from_user
             is_callback = True
             if event.data == "check_channels":
                 return await handler(event, data)
+            # کال‌بک داخل گروه هم چک عضویت نداشته باشد
+            try:
+                chat = event.message.chat if event.message else None
+                if chat and getattr(chat, "type", None) in ("group", "supergroup"):
+                    return await handler(event, data)
+            except Exception:
+                pass
 
         if not user:
             return await handler(event, data)
