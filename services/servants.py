@@ -177,33 +177,68 @@ def married_uids(tg: int) -> list[str]:
 
 
 def is_married(tg: int, servant: dict) -> bool:
-    return str(servant.get("uid")) in set(married_uids(tg))
+    if not servant:
+        return False
+    if servant.get("married") is True:
+        return True
+    uid = str(servant.get("uid") or "")
+    if uid and uid in set(married_uids(tg)):
+        return True
+    # سازگاری: اگر uid ذخیره نشده بود، با base_id چک کن
+    try:
+        bid = int(servant.get("base_id") or 0)
+    except Exception:
+        bid = 0
+    if bid:
+        for x in list_owned(tg):
+            if int(x.get("base_id") or 0) == bid and (x.get("married") or str(x.get("uid") or "") in set(married_uids(tg))):
+                return True
+    return False
 
 
 def marry_servant(tg: int, selector: int) -> tuple[bool, str, dict | None]:
-    """ازدواج پایدار با خدمتکار؛ selector هم شمارهٔ لیست و هم id بازار است."""
-    servant, _ = _servant_by_selector(tg, selector)
+    """ازدواج پایدار؛ selector = شماره لیست /myservants یا base_id بازار."""
+    servant, idx = _servant_by_selector(tg, selector)
     if not servant:
-        return False, "خدمتکار پیدا نشد. شمارهٔ /myservants را وارد کن.", None
+        return False, "خدمتکار پیدا نشد. شماره را از /myservants بردار (مثل: 1).", None
+
+    if not servant.get("uid"):
+        servant["uid"] = f"{servant.get('base_id', selector)}_{int(tg)}_{idx}"
+
+    if is_married(tg, servant):
+        return False, f"قبلاً با «{servant.get('name')}» ازدواج کرده‌ای.", servant
 
     uid = str(servant.get("uid"))
     data = _marriages()
     key = str(int(tg))
     married = [str(x) for x in (data.get(key) or [])]
+    if uid not in married:
+        married.append(uid)
+        data[key] = married
+        _psave("servant_marriages")
 
-    if uid in married:
-        return False, f"قبلاً با «{servant.get('name')}» ازدواج کردهای.", servant
+    # فلگ روی خود خدمتکار + ذخیره لیست
+    servant["married"] = True
+    bag = list_owned(tg)
+    if idx is not None and 0 <= idx < len(bag):
+        bag[idx] = servant
+        save_owned(tg, bag)
+    else:
+        for i, x in enumerate(bag):
+            if str(x.get("uid")) == uid or int(x.get("base_id") or -1) == int(servant.get("base_id") or -2):
+                bag[i]["married"] = True
+                bag[i]["uid"] = bag[i].get("uid") or uid
+                save_owned(tg, bag)
+                break
 
-    married.append(uid)
-    data[key] = married
-    _psave("servant_marriages")
-
-    return True, (
-        f"💍 با خدمتکار «{servant.get('name')}» ازدواج کردی!\n"
-        f"نژاد: {servant.get('race', '—')} | وفاداری: {servant.get('loyalty', 0)}%\n"
-        f"از این به بعد این ازدواج بعد از ریاستارت هم باقی میمونه.\n"
-        f"/myservants — مشاهدهٔ خانواده"
-    ), servant
+    n = (idx if idx is not None else 0) + 1
+    msg = (
+        f"💍 با خدمتکار «{servant.get('name')}» ازدواج کردی!" + chr(10)
+        + f"نژاد: {servant.get('race', '—')} | جنسیت: {servant.get('gender', '—')}" + chr(10)
+        + f"شماره لیست: <b>{n}</b>" + chr(10)
+        + f"حالا: /dualservant {n}  یا  /childservant {n}"
+    )
+    return True, msg, servant
 
 
 SPECIAL_MONTHLY_IDS = {int(s["id"]) for s in MARKET if s.get("special_monthly")}
