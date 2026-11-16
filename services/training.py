@@ -9,19 +9,8 @@ TRAIN_MIN_MINUTES = 10
 ENERGY_PER_MINUTE = 6000
 POWER_XP_PER_MINUTE = 15
 
-from services.persist import PersistentMap
-_train_minutes = PersistentMap("train_minutes")
-_train_start = PersistentMap("train_start")
-
-def _parse_dt(v):
-    if v is None:
-        return None
-    if isinstance(v, datetime):
-        return v
-    try:
-        return datetime.fromisoformat(str(v))
-    except Exception:
-        return None
+_train_minutes: dict[int, int] = {}
+_train_start: dict[int, datetime] = {}
 
 
 async def start_training(session: AsyncSession, user: User, minutes: int) -> str:
@@ -42,7 +31,7 @@ async def start_training(session: AsyncSession, user: User, minutes: int) -> str
     user.restricted_until = now + timedelta(minutes=minutes)
     user.restriction_reason = "تمرین"
     _train_minutes[user.id] = minutes
-    _train_start[user.id] = now.isoformat()
+    _train_start[user.id] = now
     await session.commit()
     total_e = minutes * ENERGY_PER_MINUTE
     return (
@@ -66,7 +55,7 @@ def is_training(user: User) -> bool:
 
 
 def _elapsed_minutes(user: User) -> int:
-    started = _parse_dt(_train_start.get(user.id))
+    started = _train_start.get(user.id)
     if not started:
         return 0
     sec = (datetime.utcnow() - started).total_seconds()
@@ -139,7 +128,7 @@ async def claim_training(session: AsyncSession, user: User) -> str:
             + "اگر میخواهی الان خارج شوی: /trainstop"
         )
     planned = _train_minutes.get(user.id)
-    started = _parse_dt(_train_start.get(user.id))
+    started = _train_start.get(user.id)
     if planned:
         minutes = planned
     elif started and until:

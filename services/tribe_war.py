@@ -3,9 +3,8 @@ import random
 from datetime import datetime, timedelta
 from services import tribes as T
 
-from services.persist import PersistentMap
-_wars = PersistentMap("tribe_wars")
-_last_declare = PersistentMap("tribe_war_declare")
+_wars: dict[str, dict] = {}
+_last_declare: dict[int, datetime] = {}
 
 
 def declare(attacker_tg: int, target_tribe_name: str) -> str:

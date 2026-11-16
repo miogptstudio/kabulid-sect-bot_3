@@ -21,15 +21,7 @@ CAVE_TYPES = [
 def city_cave_name(city_name: str) -> str:
     return f"غار {city_name}"
 
-from services.persist import PersistentMap
-_last_cave = PersistentMap("caves_last")
-
-def _parse_dt(v):
-    if v is None: return None
-    if isinstance(v, datetime): return v
-    try: return datetime.fromisoformat(str(v))
-    except Exception: return None
-
+_last_cave: dict[int, datetime] = {}
 CD = timedelta(minutes=30)  # کمی سریعتر
 
 
@@ -42,12 +34,12 @@ _MARTIAL_FINDS = [
 def explore(tg_id: int, city_name: str):
     """همیشه غنیمت — غار پر از چیزهای مختلف"""
     now = datetime.utcnow()
-    last = _parse_dt(_last_cave.get(tg_id))
+    last = _last_cave.get(tg_id)
     if last and now - last < CD:
         left = int((CD - (now - last)).total_seconds() // 60) + 1
         return f"⏳ تا غار بعدی حدود {left} دقیقه"
 
-    _last_cave[tg_id] = now.isoformat().isoformat()
+    _last_cave[tg_id] = now
     # غار اختصاصی شهر + نوع تصادفی
     dedicated = city_cave_name(city_name)
     cave, rarity = random.choice(CAVE_TYPES)

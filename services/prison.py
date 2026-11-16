@@ -6,9 +6,7 @@ PRISON_HOURS = 5
 KILL_LIMIT_PER_DAY = 3
 BAIL_HEAVENLY = 50
 
-from services.persist import PersistentMap
-_daily_kills = PersistentMap("prison_daily_kills")
-
+_daily_kills: dict = {}
 
 
 def _day_key(uid: int):
