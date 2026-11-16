@@ -17,8 +17,6 @@ from database.models_v3 import ShopItem, Building
 from bot.utils.panels import ensure_owner, parse_owner_data
 from services.i18n import tr
 from services.portraits import panel_url
-from services.persist import PersistentMap
-_tea_cd = PersistentMap("tea_cd")
 from bot.utils.media import safe_answer_photo
 
 router = Router()
@@ -483,14 +481,14 @@ async def cmd_use_item(message: Message):
             # چای تذهیب + انرژی با کولداون ۱۰ دقیقه
             if item.item_type == "tea" or effect.get("cooldown_min") or "چای" in item.name:
                 from datetime import datetime, timedelta
-                def _pdt(v):
-                    if v is None: return None
-                    if isinstance(v, datetime): return v
-                    try: return datetime.fromisoformat(str(v))
-                    except Exception: return None
+                global _tea_cd
+                try:
+                    _tea_cd
+                except NameError:
+                    _tea_cd = {}
                 uid = message.from_user.id
                 wait = int(effect.get("cooldown_min") or 10)
-                last = _pdt(_tea_cd.get(uid))
+                last = _tea_cd.get(uid)
                 now = datetime.utcnow()
                 if last and now < last:
                     left = int((last - now).total_seconds() // 60) + 1
@@ -499,7 +497,7 @@ async def cmd_use_item(message: Message):
                 from services.cultivation import add_energy
                 gain = int(effect.get("energy") or 8000) * use_qty
                 res = await add_energy(session, user.id, gain)
-                _tea_cd[uid] = (now + timedelta(minutes=wait)).isoformat()
+                _tea_cd[uid] = now + timedelta(minutes=wait)
                 msg_parts.append(f"🍵 +{gain} انرژی تذهیب")
                 if res.get("messages"):
                     msg_parts.extend(res["messages"])

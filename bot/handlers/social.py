@@ -75,10 +75,9 @@ from services.persist import get_dict as _sg, save as _ss
 def _servants_map():
     return _sg("servants")
 
-from services.persist import PersistentMap
-_servant_children = PersistentMap("social_servant_children_legacy")
-_dual_servant_cd = PersistentMap("social_dual_servant_cd_legacy")
-_rps_challenges = PersistentMap("social_rps_challenges")
+_servant_children: dict = {}  # telegram_id -> list of child dicts
+_dual_servant_cd: dict = {}  # telegram_id -> last dual datetime
+_rps_challenges: dict[int, dict] = {}
 
 
 @router.message(Command("pay", "ارسالپول", "بفرستپول", "انتقالارز", "transfer"))
@@ -362,125 +361,66 @@ async def cmd_market_buy(message: Message):
     await message.answer(f"✅ «{listing['item']}» خریداری شد.{suffix}")
 
 
-
-@router.message(Command("servants", "خدمتکار", "خدمتکاران", "بازارخدمتکار"))
-async def cmd_servants_v2(message: Message):
-    """بازار خدمتکار — نسخه فعال."""
-    try:
-        text = servmod.market_list()
-    except Exception:
-        text = "👤 <b>بازار خدمتکار</b>\n/buyservant شماره\n/myservants"
-    await message.answer(
-        text + "\n\n"
-        "🛒 /buyservant شماره — خرید\n"
-        "📦 /myservants — خدمتکارهای من\n"
-        "💍 /marryservant شماره — ازدواج\n"
-        "🧘 /trainservant شماره — پرورش\n"
-        "☯️ /dualservant شماره — تذهیب دوگانه\n"
-        "👶 /childservant شماره — فرزند"
-    )
+# LEGACY disabled
+async def cmd_servants_legacy(message: Message):
+    text = "👤 <b>بازار خدمتکار</b>\n\n"
+    text += "⚠️ آسیب به خدمتکار = مرگ و حذف اکانت تو\n\n"
+    for s in SERVANTS:
+        text += f"{s['id']}. {s['name']} ({s['gender']}) — {s['price']} سکه\n  {s['desc']}\n"
+    text += ("\n/buyservant شماره\n/myservants\n/marryservant شماره\n/dualservant شماره — تذهیب دوگانه با خدمتکار\n/childservant شماره — تلاش برای بچه با خدمتکار همسر\n/mychildren — لیست فرزندان")
+    await message.answer(text)
 
 
-@router.message(Command("buyservant", "خریدخدمتکار", "خدمتکاربخر"))
-async def cmd_buy_servant(message: Message):
+# LEGACY - shadowed buy removed
+async def cmd_buy_servant_legacy(message: Message):
     parts = (message.text or "").split()
-    if len(parts) < 2 or not parts[1].lstrip("-").isdigit():
-        await message.answer("🛒 فرمت: /buyservant شماره\nشماره را از /servants ببین.")
+    if len(parts) < 2:
+        await message.answer(tr(message.from_user.id, "/buyservant شماره"))
         return
     sid = int(parts[1])
+    s = next((x for x in SERVANTS if x["id"] == sid), None)
+    if not s:
+        await message.answer(tr(message.from_user.id, "پیدا نشد."))
+        return
     async with async_session() as session:
         user = await get_or_create_user(
             session, message.from_user.id,
-            message.from_user.full_name, message.from_user.username,
+            message.from_user.full_name, message.from_user.username
         )
-        from services.economy import get_or_create_wallet
         w = await get_or_create_wallet(session, user.id)
-        karma = int(getattr(w, "karma_points", 0) or 0)
-        ok, msg, left, karma_left = servmod.buy(
-            message.from_user.id, sid, int(w.coins or 0), karma
-        )
-        if not ok:
-            await message.answer(msg)
+        if w.coins < s["price"]:
+            await message.answer(tr(message.from_user.id, "سکه کافی نیست."))
             return
-        w.coins = left
-        w.karma_points = karma_left
+        w.coins -= s["price"]
         await session.commit()
-    await message.answer(msg + "\n/myservants")
+    (_servants_map().setdefault(str(message.from_user.id), []).append(s["id"]), _ss("servants"))
+    await message.answer(
+        f"✅ {s['name']} را خریدی.\n"
+        f"⚠️ آسیب زدن به خدمتکار ممنوع است و باعث مرگ و حذف اکانت میشود."
+    )
 
 
-@router.message(Command("myservants", "خدمتکارهام", "خدمتکارهایمن", "لیستخدمتکار"))
-async def cmd_my_servants_v2(message: Message):
-    bag = servmod.list_owned(message.from_user.id)
-    if not bag:
+async def cmd_my_servants_legacy(message: Message):
+    ids = _servants_map().get(str(message.from_user.id), [])
+    if not ids:
         await message.answer(
-            "خدمتکاری نداری.\n/servants — بازار\n/buyservant شماره — خرید\n/huntservant — شکار"
+            "خدمتکاری نداری." + chr(10)
+            + "/servants — بازار" + chr(10)
+            + "/buyservant شماره — خرید"
         )
         return
-    text = "👤 <b>خدمتکارهای تو</b>\n\n"
-    for i, s in enumerate(bag, 1):
-        married = " 💍" if servmod.is_married(message.from_user.id, s) else ""
-        tr = " 🦋" if s.get("transformed") else ""
-        text += (
-            f"{i}. <b>{s.get('name','—')}</b>{married}{tr}\n"
-            f"   {s.get('gender','—')} | {s.get('race','—')} | "
-            f"❤️{s.get('loyalty',0)}% | ⚔{s.get('power',0)} | تذهیب {s.get('cult',1)}\n"
-        )
+    married = set(servmod.married_uids(message.from_user.id))
+    text = "👤 <b>خدمتکارهای تو</b>" + chr(10) + chr(10)
+    for i in ids:
+        s = next((x for x in SERVANTS if x["id"] == i), None)
+        if s:
+            tag = " 💍 همسر" if any(str(x.get("base_id")) == str(i) and str(x.get("uid")) in married for x in servmod.list_owned(message.from_user.id)) else ""
+            text += f"• #{s['id']} {s['name']} ({s['gender']}){tag}" + chr(10)
     text += (
-        "\n/marryservant شماره · /trainservant شماره\n"
-        "/dualservant شماره · /childservant شماره\n"
-        "/showservant شماره · /transformservant شماره"
+        chr(10) + "/marryservant شماره — ازدواج با خدمتکار زن"
+        + chr(10) + "/servants — بازار دوباره"
     )
     await message.answer(text)
-
-
-@router.message(Command("showservant", "نمایشخدمتکار", "وضعیتخدمتکار"))
-async def cmd_show_servant(message: Message):
-    parts = (message.text or "").split()
-    if len(parts) < 2 or not parts[1].isdigit():
-        await message.answer("فرمت: /showservant شماره\nشماره از /myservants")
-        return
-    idx = int(parts[1])
-    bag = servmod.list_owned(message.from_user.id)
-    if idx < 1 or idx > len(bag):
-        await message.answer("شماره نامعتبر. /myservants")
-        return
-    s = bag[idx - 1]
-    try:
-        text = servmod.servant_panel_text(s, idx)
-    except Exception:
-        text = (
-            f"👤 <b>{s.get('name')}</b>\n"
-            f"جنسیت: {s.get('gender')} | نژاد: {s.get('race')}\n"
-            f"وفاداری: {s.get('loyalty')}% | قدرت: {s.get('power')}\n"
-            f"تذهیب: {s.get('cult')}"
-        )
-    await message.answer(text)
-
-
-@router.message(Command("trainservant", "پرورشخدمتکار", "تربیتخدمتکار"))
-async def cmd_train_servant(message: Message):
-    parts = (message.text or "").split()
-    if len(parts) < 2 or not parts[1].isdigit():
-        await message.answer("فرمت: /trainservant شماره")
-        return
-    await message.answer(servmod.train(message.from_user.id, int(parts[1])))
-
-
-@router.message(Command("huntservant", "شکارخدمتکار", "تسخیرنژاد"))
-async def cmd_hunt_servant(message: Message):
-    async with async_session() as session:
-        user = await get_or_create_user(
-            session, message.from_user.id,
-            message.from_user.full_name, message.from_user.username,
-        )
-        try:
-            from services.power import calc_power
-            p = await calc_power(session, user)
-            power = int(p.get("total") or 20)
-        except Exception:
-            power = 20 + int(user.level or 1) * 3
-        msg = servmod.hunt(message.from_user.id, power)
-    await message.answer(msg)
 
 
 @router.message(Command("marryservant", "ازدواجخدمتکار"))
@@ -529,200 +469,701 @@ async def cmd_marry_servant_text(message: Message):
         await message.answer(msg)
 
 
-
 @router.message(Command("dualservant", "تذهیبخدمتکار", "دوگانهخدمتکار"))
 async def cmd_dual_servant(message: Message):
+    from datetime import datetime, timedelta
     import random
-    from datetime import datetime
     parts = (message.text or "").split()
     if len(parts) < 2:
         await message.answer(
-            "☯️ <b>تذهیب دوگانه با خدمتکار</b>\n"
-            "فرمت: /dualservant شماره\n"
-            "شماره = شماره لیست /myservants\n\n"
-            "نیاز: خرید + ازدواج + جنسیت مخالف\n"
-            "پاداش: +۵۰ انرژی | شانس فرزند | کولداون ۳۰ دقیقه"
+            "☯️ /dualservant شماره" + chr(10)
+            + "نیاز: خرید + ازدواج با خدمتکار + /gender مخالف" + chr(10)
+            + "پاداش: +۵۰ انرژی | شانس نادر بچه | کولداون ۳۰ دقیقه"
         )
         return
     try:
-        selector = int(parts[1])
+        sid = int(parts[1])
     except ValueError:
-        await message.answer("شماره نامعتبر. از /myservants شماره را بردار.")
+        await message.answer(tr(message.from_user.id, "شماره نامعتبر."))
         return
-
-    servant, idx = servmod._servant_by_selector(message.from_user.id, selector)
+    s = next((x for x in SERVANTS if x["id"] == sid), None)
+    if not s:
+        await message.answer(tr(message.from_user.id, "خدمتکار پیدا نشد. /servants"))
+        return
+    servant = next(
+        (x for x in servmod.list_owned(message.from_user.id)
+         if int(x.get("base_id") or -1) == sid),
+        None,
+    )
     if not servant:
-        await message.answer("خدمتکار پیدا نشد. اول /buyservant و /myservants")
+        await message.answer("اول بخر: /buyservant " + str(sid))
         return
     if not servmod.is_married(message.from_user.id, servant):
-        await message.answer(f"اول ازدواج کن: /marryservant {(idx or 0)+1}")
+        await message.answer("اول ازدواج: /marryservant " + str(sid))
         return
-
-    busy, left = servmod.check_cd("servant_dual_cd", str(message.from_user.id), 30)
-    if busy:
-        await message.answer(f"⏳ کولداون تذهیب دوگانه: {left} دقیقه")
+    last = _dual_servant_cd.get(message.from_user.id)
+    if last and datetime.utcnow() - last < timedelta(minutes=30):
+        left = int((timedelta(minutes=30) - (datetime.utcnow() - last)).total_seconds() // 60) + 1
+        await message.answer(f"⏳ کولداون تذهیب دوگانه خدمتکار: {left} دقیقه")
         return
-
     async with async_session() as session:
         user = await get_or_create_user(
             session, message.from_user.id,
             message.from_user.full_name, message.from_user.username
         )
         if user.gender not in ("مرد", "زن"):
-            await message.answer("اول /gender بزن.")
+            await message.answer(tr(message.from_user.id, "اول /gender بزن."))
             return
-        sg = servant.get("gender") or ""
-        if user.gender == sg:
+        if user.gender == s["gender"]:
             await message.answer(
-                f"باید جنسیت مخالف باشد.\nتو: {user.gender} | خدمتکار: {sg}"
+                f"باید جنسیت مخالف باشد. تو: {user.gender} | خدمتکار: {s['gender']}"
             )
             return
         from services.cultivation import get_or_create_cultivation, add_energy, get_active_technique
         cult = await get_or_create_cultivation(session, user.id)
         if getattr(cult, "spiritual_root", None) == "بدون ریشه":
-            await message.answer("هنوز ریشه معنوی نداری.")
+            await message.answer(tr(message.from_user.id, "هنوز ریشه معنوی نداری."))
             return
         tech = await get_active_technique(session, user.id)
         if not tech:
-            await message.answer("تکنیک فعال نداری. /learntech")
+            await message.answer(tr(message.from_user.id, "تکنیک فعال نداری. /learntech"))
             return
         user.is_virgin = False
         res = await add_energy(session, user.id, 50)
         await session.commit()
-
-    servmod.set_cd("servant_dual_cd", str(message.from_user.id))
-    name = servant.get("name", "خدمتکار")
-    msg = f"☯️ تذهیب دوگانه با «{name}» انجام شد.\n+۵۰ انرژی\n"
+    _dual_servant_cd[message.from_user.id] = datetime.utcnow()
+    msg = f"☯️ تذهیب دوگانه با «{s['name']}» انجام شد." + chr(10) + "+۵۰ انرژی" + chr(10)
     if res.get("messages"):
-        msg += "\n".join(res["messages"]) + "\n"
+        msg += chr(10).join(res["messages"]) + chr(10)
     from services.dual import CHILD_CHANCE
     if random.random() < CHILD_CHANCE:
         child = {
-            "name": f"فرزند {message.from_user.full_name[:10]} و {name}",
+            "name": f"فرزند {message.from_user.full_name[:10]} و {s['name']}",
             "techs": [],
             "gender": random.choice(["مرد", "زن"]),
-            "servant": name,
-            "servant_uid": servant.get("uid"),
-            "base_id": servant.get("base_id"),
-            "at": datetime.utcnow().isoformat(),
+            "servant": s["name"],
+            "servant_id": sid,
         }
-        child = servmod.add_child(message.from_user.id, child)
-        msg += f"\n👶✨ معجزه! فرزند: {child['name']} ({child['gender']})\n/mychildren"
+        _servant_children.setdefault(message.from_user.id, []).append(child)
+        msg += chr(10) + "👶✨ معجزه! فرزند: " + child["name"] + f" ({child['gender']})"
     else:
-        msg += f"\nفرزندی نبود. بعداً: /childservant {(idx or 0)+1}"
+        msg += chr(10) + "فرزندی نبود. /childservant " + str(sid)
     await message.answer(msg)
 
 
 @router.message(Command("childservant", "بچهخدمتکار", "فرزندخدمتکار"))
 async def cmd_child_servant(message: Message):
     import random
-    from datetime import datetime
+    from datetime import datetime, timedelta
     from services.dual import CHILD_CHANCE
     parts = (message.text or "").split()
     if len(parts) < 2:
         await message.answer(
-            "👶 <b>فرزند با خدمتکار</b>\n"
-            "فرمت: /childservant شماره\n"
-            "شماره از /myservants (همسر شده)\n"
-            f"شانس: {int(CHILD_CHANCE*100)}٪ | کولداون ۶۰ دقیقه"
+            "👶 /childservant شماره" + chr(10)
+            + "با خدمتکار همسر و جنسیت مخالف" + chr(10)
+            + f"شانس نادر ({CHILD_CHANCE}) | هر ۱ ساعت یکبار"
         )
         return
     try:
-        selector = int(parts[1])
+        sid = int(parts[1])
     except ValueError:
-        await message.answer("شماره نامعتبر.")
+        await message.answer(tr(message.from_user.id, "شماره نامعتبر."))
         return
-    servant, idx = servmod._servant_by_selector(message.from_user.id, selector)
-    if not servant:
-        await message.answer("خدمتکار پیدا نشد. /myservants")
+    s = next((x for x in SERVANTS if x["id"] == sid), None)
+    if not s:
+        await message.answer(tr(message.from_user.id, "پیدا نشد."))
         return
-    if not servmod.is_married(message.from_user.id, servant):
-        await message.answer(f"باید اول ازدواج کنی: /marryservant {(idx or 0)+1}")
+    owned_ids = [x.get("base_id") for x in servmod.list_owned(message.from_user.id)]
+    owned = owned_ids
+    servant = next((x for x in servmod.list_owned(message.from_user.id) if int(x.get("base_id") or -1) == sid), None)
+    if not servant or not servmod.is_married(message.from_user.id, servant):
+        await message.answer(tr(message.from_user.id, "باید /buyservant و /marryservant کرده باشی."))
         return
-
-    cd_key = f"child_{message.from_user.id}"
-    busy, left = servmod.check_cd("servant_child_cd", cd_key, 60)
-    if busy:
-        await message.answer(f"⏳ کولداون فرزند: {left} دقیقه")
+    key = f"child_{message.from_user.id}"
+    last = _dual_servant_cd.get(key)
+    if last and datetime.utcnow() - last < timedelta(hours=1):
+        await message.answer(tr(message.from_user.id, "⏳ هر ۱ ساعت یکبار."))
         return
-
     async with async_session() as session:
         user = await get_or_create_user(
             session, message.from_user.id,
             message.from_user.full_name, message.from_user.username
         )
         if user.gender not in ("مرد", "زن"):
-            await message.answer("اول /gender بزن.")
+            await message.answer(tr(message.from_user.id, "اول /gender"))
             return
-        sg = servant.get("gender") or ""
-        if user.gender == sg:
-            await message.answer(
-                f"برای فرزند باید جنسیت مخالف باشد.\nتو: {user.gender} | خدمتکار: {sg}"
-            )
+        if user.gender == s["gender"]:
+            await message.answer(tr(message.from_user.id, "جنسیت باید مخالف باشد."))
             return
-
-    servmod.set_cd("servant_child_cd", cd_key)
-    name = servant.get("name", "خدمتکار")
+        user.is_virgin = False
+        await session.commit()
+    _dual_servant_cd[key] = datetime.utcnow()
     if random.random() < CHILD_CHANCE:
         child = {
-            "name": f"فرزند {message.from_user.full_name[:10]} و {name}",
+            "name": f"فرزند {message.from_user.full_name[:10]} و {s['name']}",
             "techs": [],
             "gender": random.choice(["مرد", "زن"]),
-            "servant": name,
-            "servant_uid": servant.get("uid"),
-            "base_id": servant.get("base_id"),
-            "at": datetime.utcnow().isoformat(),
+            "servant": s["name"],
+            "servant_id": sid,
         }
-        child = servmod.add_child(message.from_user.id, child)
+        _servant_children.setdefault(message.from_user.id, []).append(child)
         await message.answer(
-            f"👶✨ فرزند به دنیا آمد!\n{child['name']} ({child['gender']})\n/mychildren"
+            "👶✨ معجزه!" + chr(10)
+            + f"{child['name']} ({child['gender']})" + chr(10)
+            + "/mychildren"
         )
     else:
         await message.answer(
-            f"این بار فرزندی نشد.\nشانس حدود {int(CHILD_CHANCE*100)}٪ است. یک ساعت دیگر دوباره تلاش کن."
+            "این بار فرزندی نشد." + chr(10)
+            + f"شانس بسیار نادر ({CHILD_CHANCE})."
         )
 
 
-@router.message(Command("mychildren", "فرزندانمن", "بچهها", "فرزندان"))
+@router.message(Command("mychildren", "فرزندانمن", "بچهها"))
 async def cmd_my_children(message: Message):
-    kids = servmod.list_children(message.from_user.id)
+    kids = _servant_children.get(message.from_user.id, [])
     if not kids:
         await message.answer(
-            "هنوز فرزندی نداری.\n"
-            "۱) خدمتکار بخر /buyservant\n"
-            "۲) ازدواج /marryservant شماره\n"
-            "۳) /dualservant یا /childservant"
+            "فرزندی نیست." + chr(10)
+            + "تذهیب دوگانه / خدمتکار شانس بچه دارد." + chr(10)
+            + "/childservant شماره | /namechild | /teachchild"
         )
         return
-    text = "👶 <b>فرزندان تو</b>\n\n"
+    text = "👶 <b>فرزندان</b>" + chr(10) + chr(10)
     for i, c in enumerate(kids, 1):
         techs = c.get("techs") or []
-        text += f"{i}. <b>{c.get('name','—')}</b> ({c.get('gender','—')})\n"
+        text += f"{i}. <b>{c.get('name')}</b> ({c.get('gender')})" + chr(10)
         if c.get("servant"):
-            text += f"   والد خدمتکار: {c['servant']}\n"
-        text += f"   تکنیک‌ها: {', '.join(techs) if techs else '—'}\n"
-    text += "\n/namechild شماره نام_جدید\n/teachchild شماره نام_تکنیک"
+            text += f"   مادر/پدر خدمتکار: {c['servant']}" + chr(10)
+        text += f"   تکنیکها: {', '.join(techs) if techs else '—'}" + chr(10)
+    text += chr(10) + "/namechild شماره نامجدید" + chr(10) + "/teachchild شماره نامتکنیک"
     await message.answer(text)
 
 
-@router.message(Command("namechild", "نامفرزند", "اسمبچه"))
+@router.message(Command("namechild", "اسمبچه", "نامفرزند"))
 async def cmd_name_child(message: Message):
+    """ /namechild شماره نام """
     parts = (message.text or "").split(maxsplit=2)
-    if len(parts) < 3 or not parts[1].isdigit():
-        await message.answer("فرمت: /namechild شماره نام_جدید\nمثال: /namechild 1 آرش")
+    if len(parts) < 3:
+        await message.answer("فرمت: /namechild شماره نامجدید" + chr(10) + "مثال: /namechild 1 آریا")
         return
-    ok, msg = servmod.rename_child(message.from_user.id, int(parts[1]), parts[2])
-    await message.answer(msg)
+    try:
+        idx = int(parts[1]) - 1
+    except ValueError:
+        await message.answer("شماره نامعتبر.")
+        return
+    new_name = parts[2].strip()[:32]
+    if not new_name:
+        await message.answer("نام خالی است.")
+        return
+    kids = _servant_children.get(message.from_user.id, [])
+    if idx < 0 or idx >= len(kids):
+        await message.answer("فرزندی با این شماره نیست. /mychildren")
+        return
+    old = kids[idx].get("name", "?")
+    kids[idx]["name"] = new_name
+    await message.answer(f"✅ نام فرزند عوض شد:" + chr(10) + f"{old} → <b>{new_name}</b>")
 
 
 @router.message(Command("teachchild", "آموزشبچه", "تکنیکفرزند"))
 async def cmd_teach_child(message: Message):
+    """ /teachchild شماره نامتکنیک — از تکنیکهای خودت به فرزند یاد بده """
     parts = (message.text or "").split(maxsplit=2)
-    if len(parts) < 3 or not parts[1].isdigit():
-        await message.answer("فرمت: /teachchild شماره نام_تکنیک\nمثال: /teachchild 1 شعله درونی")
+    if len(parts) < 3:
+        await message.answer(
+            "فرمت: /teachchild شماره نامتکنیک" + chr(10)
+            + "باید خودت آن تکنیک را بلد باشی." + chr(10)
+            + "مثال: /teachchild 1 تنفس پایه"
+        )
         return
-    ok, msg = servmod.teach_child(message.from_user.id, int(parts[1]), parts[2])
-    await message.answer(msg)
+    try:
+        idx = int(parts[1]) - 1
+    except ValueError:
+        await message.answer("شماره نامعتبر.")
+        return
+    tech_name = parts[2].strip()
+    kids = _servant_children.setdefault(message.from_user.id, [])
+    if idx < 0 or idx >= len(kids):
+        await message.answer("فرزند پیدا نشد. /mychildren")
+        return
+    # چک تکنیک بازیکن
+    known = False
+    async with async_session() as session:
+        user = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
+        try:
+            from sqlalchemy import select
+            from database.models_v2 import UserTechnique, CultivationTechnique
+            rows = await session.execute(
+                select(CultivationTechnique.name)
+                .join(UserTechnique, UserTechnique.technique_id == CultivationTechnique.id)
+                .where(UserTechnique.user_id == user.id)
+            )
+            names = [r[0] for r in rows.all()]
+            for n in names:
+                if tech_name in n or n in tech_name:
+                    tech_name = n
+                    known = True
+                    break
+        except Exception:
+            # fallback: accept any short name
+            known = len(tech_name) >= 2
+    if not known:
+        await message.answer(
+            f"تکنیک «{tech_name}» را بلد نیستی." + chr(10)
+            + "/techniques — لیست تکنیکهای خودت"
+        )
+        return
+    child = kids[idx]
+    techs = child.setdefault("techs", [])
+    if tech_name in techs:
+        await message.answer(f"{child.get('name')} قبلاً «{tech_name}» را بلد است.")
+        return
+    if len(techs) >= 8:
+        await message.answer("این فرزند حداکثر ۸ تکنیک میتواند یاد بگیرد.")
+        return
+    techs.append(tech_name)
+    await message.answer(
+        f"📚 به <b>{child.get('name')}</b> تکنیک «{tech_name}» یاد دادی." + chr(10)
+        + f"تکنیکهای فرزند: {', '.join(techs)}"
+    )
+
+
+
+@router.message(Command("harmservant", "آسیبخدمتکار"))
+async def cmd_harm_servant(message: Message):
+    """آسیب = مرگ + حذف اکانت"""
+    ids = _servants_map().get(str(message.from_user.id), [])
+    if not ids:
+        await message.answer(tr(message.from_user.id, "خدمتکاری نداری."))
+        return
+    async with async_session() as session:
+        user = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
+        user.is_dead = True
+        await session.commit()
+        from services.death import erase_existence
+        msg = await erase_existence(session, user)
+    (_servants_map().pop(str(message.from_user.id), None), _ss("servants"))
+    await message.answer(
+        "💀 آسیب به خدمتکار ممنوع بود.\n"
+        "اکانت تو برای همیشه پاک شد.\n" + msg
+    )
+
+
+@router.message(Command("rpsduel", "سنگدوئل"))
+async def cmd_rps_duel(message: Message):
+    if not message.reply_to_message:
+        await message.answer(tr(message.from_user.id, "روی حریف ریپلای کن و /rpsduel بزن."))
+        return
+    opp = message.reply_to_message.from_user
+    if opp.id == message.from_user.id:
+        await message.answer(tr(message.from_user.id, "با خودت نه."))
+        return
+    _rps_challenges[opp.id] = {
+        "from": message.from_user.id,
+        "from_name": message.from_user.full_name,
+    }
+    builder = InlineKeyboardBuilder()
+    for name, em in [("سنگ", "✊"), ("کاغذ", "✋"), ("قیچی", "✌")]:
+        builder.button(
+            text=f"{em} {name}",
+            callback_data=f"rpspv:{message.from_user.id}:{opp.id}:{name}",
+        )
+    builder.adjust(3)
+    await message.answer(
+        f"✊✋✌ چالش سنگکاغذقیچی از {message.from_user.full_name}\n"
+        f"فقط {opp.full_name} انتخاب کند:",
+        reply_markup=builder.as_markup(),
+    )
+
+
+@router.callback_query(F.data.startswith("rpspv:"))
+async def cb_rps_pv(callback: CallbackQuery):
+    parts = callback.data.split(":")
+    challenger_tg, opp_tg, choice = int(parts[1]), int(parts[2]), parts[3]
+    if callback.from_user.id != opp_tg:
+        await callback.answer()
+        return
+    opts = ["سنگ", "کاغذ", "قیچی"]
+    # challenger picks random for simplicity if not stored - store both later
+    # For fairness: challenger must also have chosen - use random for challenger stored challenge
+    ch_choice = random.choice(opts)
+    if choice == ch_choice:
+        result = "مساوی!"
+    elif (choice == "سنگ" and ch_choice == "قیچی") or \
+         (choice == "کاغذ" and ch_choice == "سنگ") or \
+         (choice == "قیچی" and ch_choice == "کاغذ"):
+        result = f"{callback.from_user.full_name} برد! 🎉"
+    else:
+        result = f"حریف برد! (انتخاب حریف: {ch_choice})"
+    await safe_edit_text(callback, 
+        f"تو: {choice}\nحریف: {ch_choice}\n\n{result}"
+    )
+    await callback.answer()
+
+
+@router.message(Command("leaders", "برترها"))
+async def cmd_leaders(message: Message):
+    async with async_session() as session:
+        # global by level
+        r = await session.execute(
+            select(User).where(User.is_active == True).order_by(desc(User.level), desc(User.xp)).limit(10)
+        )
+        users = r.scalars().all()
+        text = "🌍 <b>لیدربورد جهانی (سطح)</b>\n\n"
+        for i, u in enumerate(users, 1):
+            text += f"{i}. {u.full_name} — Lv.{u.level} | {u.rank}\n"
+
+        r2 = await session.execute(
+            select(Sect).where(Sect.is_active == True).order_by(desc(Sect.total_points)).limit(10)
+        )
+        sects = r2.scalars().all()
+        text += "\n🏛️ <b>لیدربورد فرقهها</b>\n\n"
+        if not sects:
+            text += "فرقهای نیست.\n"
+        for i, s in enumerate(sects, 1):
+            text += f"{i}. {s.name} ({s.sect_type}) — {s.total_points} امتیاز\n"
+
+        r3 = await session.execute(
+            select(Cultivation, User)
+            .join(User, Cultivation.user_id == User.id)
+            .order_by(desc(Cultivation.energy))
+            .limit(10)
+        )
+        text += "\n🧘 <b>لیدربورد تذهیب</b>\n\n"
+        for i, (c, u) in enumerate(r3.all(), 1):
+            text += f"{i}. {u.full_name} — {c.realm} {c.stage} | انرژی {c.energy}\n"
+
+    await message.answer(text)
+
+@router.message(Command("solotop", "لیدرجق", "برترخودارضایی"))
+async def cmd_solo_top(message: Message):
+    async with async_session() as session:
+        result = await session.execute(select(User).where(User.is_active == True))
+        users = list(result.scalars().all())
+        users.sort(key=lambda u: getattr(u, "solo_count", 0) or 0, reverse=True)
+        lines = ["🔥 <b>لیدربورد جهانی خودارضایی</b>", ""]
+        shown = 0
+        for u in users:
+            c = getattr(u, "solo_count", 0) or 0
+            if c <= 0:
+                continue
+            shown += 1
+            lines.append(f"{shown}. {u.full_name} — <b>{c}</b> بار")
+            if shown >= 15:
+                break
+        if shown == 0:
+            lines.append("هنوز آماری نیست. با /solo ثبت میشود.")
+        await message.answer(chr(10).join(lines))
+
+
+
+
+@router.message(Command("servants", "خدمتکار", "برده", "بازارخدمتکار"))
+async def cmd_servants_v2(message: Message):
+    """بازار خدمتکاران به سبک فروشگاه: یک پنل با دکمه‌های قبلی/بعدی."""
+    await _send_market_panel(message, position=0, owner_id=message.from_user.id)
+
+
+async def _send_market_panel(target, position: int = 0, *, owner_id: int, edit: bool = False):
+    """نمایش یک خدمتکار از بازار. target می‌تواند Message یا CallbackQuery.message باشد."""
+    from bot.utils.servant_panel import (
+        servant_image, market_keyboard, market_caption,
+    )
+    market = list(servmod.MARKET)
+    if not market:
+        await target.answer("بازار خدمتکار خالی است.")
+        return
+    total = len(market)
+    position = position % total
+    item = market[position]
+    sid = int(item["id"])
+    caption = market_caption(item, position, total)
+    kb = market_keyboard(position, total, sid, owner_id)
+    img = servant_image(sid)
+
+    if edit:
+        try:
+            from aiogram.types import InputMediaPhoto
+            if img:
+                await target.edit_media(
+                    media=InputMediaPhoto(media=img, caption=caption),
+                    reply_markup=kb,
+                )
+            else:
+                await target.edit_caption(caption=caption, reply_markup=kb)
+            return
+        except Exception:
+            pass  # fallback: send new message
+
+    try:
+        if img:
+            await target.answer_photo(img, caption=caption, reply_markup=kb)
+        else:
+            await target.answer(caption, reply_markup=kb)
+    except Exception:
+        await target.answer(caption, reply_markup=kb)
+
+
+@router.message(Command("buyservant", "خریدخدمتکار", "خریدخدمتکار"))
+async def cmd_buy_servant_v2(message: Message):
+    parts=(message.text or "").split()
+    if len(parts)<2 or not parts[1].isdigit():
+        await message.answer("فرمت: /buyservant شماره")
+        return
+    async with async_session() as session:
+        user=await get_or_create_user(session,message.from_user.id,message.from_user.full_name,message.from_user.username)
+        from services.economy import get_or_create_wallet
+        w=await get_or_create_wallet(session,user.id)
+        sid=int(parts[1])
+        karma=int(getattr(w,"karma_points",0) or 0)
+        ok,msg,left,karma_left=servmod.buy(message.from_user.id,sid,int(w.coins or 0),karma)
+        if ok:
+            w.coins=left
+            w.karma_points=karma_left
+            await session.commit()
+            bag=servmod.list_owned(message.from_user.id)
+            idx=len(bag)
+            s0=bag[-1]
+            from bot.utils.servant_panel import servant_keyboard, servant_image
+            img=servant_image(sid)
+            caption=servmod.servant_panel_text(s0, idx, purchased=True)
+            if img:
+                await message.answer_photo(img,caption=caption,reply_markup=servant_keyboard(idx, callback.from_user.id))
+            else:
+                await message.answer(caption,reply_markup=servant_keyboard(idx, callback.from_user.id))
+        else:
+            await message.answer(msg)
+
+
+@router.message(Command("myservants", "خدمتکارهایمن", "لیستخدمتکار", "خدمتکارمن"))
+async def cmd_my_servants_v2(message: Message):
+    """لیست خدمتکارهای من — مرور تکی با قبلی/بعدی."""
+    await _send_owned_panel(message, position=0, user_id=message.from_user.id)
+
+
+async def _send_owned_panel(target, position: int, user_id: int, *, edit: bool = False):
+    from bot.utils.servant_panel import servant_image, owned_browse_keyboard
+    bag = servmod.list_owned(user_id)
+    if not bag:
+        text = servmod.owned_text(user_id)
+        if edit:
+            try:
+                await target.edit_caption(caption=text)
+                return
+            except Exception:
+                pass
+        await target.answer(text)
+        return
+    total = len(bag)
+    position = position % total
+    bag_index = position + 1
+    s0 = bag[position]
+    img = servant_image(int(s0.get("base_id") or 0))
+    caption = servmod.servant_panel_text(s0, bag_index)
+    caption = f"📦 <b>خدمتکارهای من</b> — {bag_index}/{total}\n\n" + caption
+    kb = owned_browse_keyboard(position, total, bag_index, user_id)
+
+    if edit:
+        try:
+            from aiogram.types import InputMediaPhoto
+            if img:
+                await target.edit_media(
+                    media=InputMediaPhoto(media=img, caption=caption),
+                    reply_markup=kb,
+                )
+            else:
+                await target.edit_caption(caption=caption, reply_markup=kb)
+            return
+        except Exception:
+            pass
+    try:
+        if img:
+            await target.answer_photo(img, caption=caption, reply_markup=kb)
+        else:
+            await target.answer(caption, reply_markup=kb)
+    except Exception:
+        await target.answer(caption, reply_markup=kb)
+
+
+@router.message(Command("showservant", "عکسخدمتکار", "پرترهخدمتکار"))
+async def cmd_show_servant(message: Message):
+    parts=(message.text or "").split()
+    if len(parts)<2 or not parts[1].isdigit():
+        await message.answer("فرمت: /showservant شماره")
+        return
+    bag=servmod.list_owned(message.from_user.id); idx=int(parts[1])
+    if idx<1 or idx>len(bag):
+        await message.answer("شماره نامعتبر."); return
+    from bot.utils.servant_panel import servant_keyboard, servant_image
+    s0=bag[idx-1]; img=servant_image(int(s0.get("base_id") or 0))
+    caption=servmod.servant_panel_text(s0,idx)
+    if img:
+        await message.answer_photo(img,caption=caption,reply_markup=servant_keyboard(idx, callback.from_user.id))
+    else:
+        await message.answer(caption,reply_markup=servant_keyboard(idx, callback.from_user.id))
+
+
+@router.callback_query(F.data.startswith("servmarket:"))
+async def cb_serv_market(callback: CallbackQuery):
+    await callback.answer()
+    await _send_market_panel(callback.message, position=0, owner_id=callback.from_user.id, edit=True)
+
+
+@router.callback_query(F.data.startswith("servpage:"))
+async def cb_serv_page(callback: CallbackQuery):
+    """ورق زدن بازار خدمتکاران با ◀️ ▶️"""
+    try:
+        pos = int(callback.data.split(":")[2])
+    except Exception:
+        await callback.answer("صفحه نامعتبر", show_alert=True)
+        return
+    await callback.answer()
+    await _send_market_panel(callback.message, position=pos, owner_id=callback.from_user.id, edit=True)
+
+
+@router.callback_query(F.data.startswith("servownpage:"))
+async def cb_serv_own_page(callback: CallbackQuery):
+    """ورق زدن خدمتکارهای من"""
+    try:
+        pos = int(callback.data.split(":")[2])
+    except Exception:
+        await callback.answer("صفحه نامعتبر", show_alert=True)
+        return
+    await callback.answer()
+    await _send_owned_panel(callback.message, position=pos, user_id=callback.from_user.id, edit=True)
+
+
+@router.callback_query(F.data.startswith("servmylist:"))
+async def cb_serv_mylist(callback: CallbackQuery):
+    await callback.answer()
+    await _send_owned_panel(callback.message, position=0, user_id=callback.from_user.id, edit=False)
+
+@router.callback_query(F.data.startswith("servbuy:"))
+async def cb_serv_buy(callback: CallbackQuery):
+    parts = callback.data.split(":")
+    if len(parts) != 3 or int(parts[1]) != callback.from_user.id:
+        await callback.answer("⛔ این دکمه برای صاحب پنل نیست.", show_alert=True)
+        return
+    sid=int(parts[2])
+    # Reuse purchase command logic without requiring text parsing.
+    async with async_session() as session:
+        user=await get_or_create_user(session,callback.from_user.id,callback.from_user.full_name,callback.from_user.username)
+        from services.economy import get_or_create_wallet
+        w=await get_or_create_wallet(session,user.id)
+        karma=int(getattr(w,"karma_points",0) or 0)
+        ok,msg,left,karma_left=servmod.buy(callback.from_user.id,sid,int(w.coins or 0),karma)
+        if not ok:
+            await callback.answer(msg,show_alert=True); return
+        w.coins=left
+        w.karma_points=karma_left
+        await session.commit()
+        bag=servmod.list_owned(callback.from_user.id); idx=len(bag); s0=bag[-1]
+        from bot.utils.servant_panel import servant_keyboard, servant_image
+        img=servant_image(sid); caption=servmod.servant_panel_text(s0,idx,purchased=True)
+        if img:
+            await callback.message.answer_photo(img,caption=caption,reply_markup=servant_keyboard(idx, callback.from_user.id))
+        else:
+            await callback.message.answer(caption,reply_markup=servant_keyboard(idx, callback.from_user.id))
+    await callback.answer("خرید انجام شد")
+
+@router.callback_query(F.data.startswith("servstatus:"))
+async def cb_serv_status(callback: CallbackQuery):
+    parts=callback.data.split(":")
+    if len(parts) != 3 or int(parts[1]) != callback.from_user.id:
+        await callback.answer("⛔ این دکمه برای صاحب پنل نیست.", show_alert=True); return
+    idx=int(parts[2]); bag=servmod.list_owned(callback.from_user.id)
+    if idx<1 or idx>len(bag): await callback.answer("خدمتکار پیدا نشد",show_alert=True); return
+    from bot.utils.servant_panel import servant_keyboard, servant_image
+    s0=bag[idx-1]; img=servant_image(int(s0.get("base_id") or 0)); caption=servmod.servant_panel_text(s0,idx)
+    if img:
+        await callback.message.answer_photo(img,caption=caption,reply_markup=servant_keyboard(idx, callback.from_user.id))
+    else:
+        await callback.message.answer(caption,reply_markup=servant_keyboard(idx, callback.from_user.id))
+    await callback.answer()
+
+@router.callback_query(F.data.startswith("servloyal:"))
+async def cb_serv_loyal(callback: CallbackQuery):
+    parts=callback.data.split(":")
+    if len(parts) != 3 or int(parts[1]) != callback.from_user.id:
+        await callback.answer("⛔ این دکمه برای صاحب پنل نیست.", show_alert=True); return
+    idx=int(parts[2]); bag=servmod.list_owned(callback.from_user.id)
+    if idx<1 or idx>len(bag): await callback.answer("خدمتکار پیدا نشد",show_alert=True); return
+    s0=bag[idx-1]
+    await callback.answer(f"❤️ وفاداری: {s0.get('loyalty',0)}٪",show_alert=True)
+
+@router.callback_query(F.data.startswith("servtrain:"))
+async def cb_serv_train(callback: CallbackQuery):
+    parts=callback.data.split(":")
+    if len(parts) != 3 or int(parts[1]) != callback.from_user.id:
+        await callback.answer("⛔ این دکمه برای صاحب پنل نیست.", show_alert=True); return
+    idx=int(parts[2]); msg=servmod.train(callback.from_user.id,idx)
+    await callback.message.answer(msg); await callback.answer("انجام شد")
+
+@router.callback_query(F.data.startswith("servmarry:"))
+async def cb_serv_marry(callback: CallbackQuery):
+    parts=callback.data.split(":")
+    if len(parts) != 3 or int(parts[1]) != callback.from_user.id:
+        await callback.answer("⛔ این دکمه برای صاحب پنل نیست.", show_alert=True); return
+    idx=int(parts[2])
+    ok,msg,_=servmod.marry_servant(callback.from_user.id,idx)
+    await callback.answer(msg,show_alert=True)
+
+
+
+@router.callback_query(F.data.startswith("servavatar:"))
+async def cb_serv_avatar(callback: CallbackQuery):
+    parts = callback.data.split(":")
+    if len(parts) != 3 or int(parts[1]) != callback.from_user.id:
+        await callback.answer("⛔ این دکمه برای صاحب پنل نیست.", show_alert=True)
+        return
+    idx = int(parts[2])
+    from services.profile_avatar import set_servant_avatar
+    ok, msg = set_servant_avatar(callback.from_user.id, idx)
+    await callback.answer(msg if len(msg) < 180 else ("✅ تنظیم شد" if ok else "خطا"), show_alert=True)
+    try:
+        await callback.message.answer(msg)
+    except Exception:
+        pass
+
+@router.message(Command("huntservant", "شکارخدمتکار", "تسخیرنژاد"))
+async def cmd_hunt_servant(message: Message):
+    async with async_session() as session:
+        user = await get_or_create_user(session, message.from_user.id, message.from_user.full_name, message.from_user.username)
+        try:
+            from services.power import calc_power
+            p = await calc_power(session, user)
+            power = int(p.get("total") or 20)
+        except Exception:
+            power = 20 + int(user.level or 1) * 3
+        msg = servmod.hunt(message.from_user.id, power)
+        await message.answer(msg)
+        if 'تسخیر موفق' in msg:
+            bag = servmod.list_owned(message.from_user.id)
+            if bag:
+                s = bag[-1]
+                try:
+                    from services.portraits import portrait_url, servant_caption
+                    await message.answer_photo(
+                        photo=portrait_url(s.get('name','?'), s.get('gender','زن'), s.get('race','انسان')),
+                        caption=servant_caption(s),
+                    )
+                except Exception:
+                    pass
+
+
+@router.message(Command("trainservant", "پرورشخدمتکار"))
+async def cmd_train_servant(message: Message):
+    parts = (message.text or "").split()
+    if len(parts) < 2 or not parts[1].isdigit():
+        await message.answer("فرمت: /trainservant شماره")
+        return
+    await message.answer(servmod.train(message.from_user.id, int(parts[1])))
 
 
 @router.message(Command("transformservant", "دگرگونیخدمتکار"))

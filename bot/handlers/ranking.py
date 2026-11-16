@@ -11,7 +11,7 @@ from services.i18n import tr
 router = Router()
 
 
-@router.message(Command("ranking", "top", "leaderboard", "leaders", "لیدربورد", "رتبه", "رتبهبندی", "جدولرتبه"))
+@router.message(Command("ranking", "top", "leaderboard", "لیدربورد", "رتبه", "رتبهبندی", "جدولرتبه"))
 async def cmd_ranking(message: Message):
     await message.answer("🏆 <b>رتبه‌بندی</b>")
     async with async_session() as session:
@@ -102,35 +102,6 @@ async def cmd_richest(message: Message):
     await message.answer(chr(10).join(lines))
 
 
-
-
-
-@router.message(Command("poorest", "فقیرترین", "کمپول", "toppoor"))
-async def cmd_poorest(message: Message):
-    """کم‌پول‌ترین بازیکنان (معادل سکه)"""
-    from database.models_v3 import UserWallet
-    from services.economy import currency_to_coins, get_or_create_wallet
-    async with async_session() as session:
-        result = await session.execute(
-            select(User).where(User.is_active == True, User.is_banned == False)
-        )
-        users = list(result.scalars().all())
-        scored = []
-        for u in users:
-            try:
-                w = await get_or_create_wallet(session, u.id)
-                total = currency_to_coins(w)
-                scored.append((total, u))
-            except Exception:
-                continue
-        scored.sort(key=lambda x: x[0])
-    if not scored:
-        await message.answer("هنوز کیف پولی ثبت نشده.")
-        return
-    text = "🪙 <b>کم‌پول‌ترین بازیکنان</b>\n\n"
-    for i, (total, u) in enumerate(scored[:10], 1):
-        text += f"{i}. {u.full_name} — {total:,}\n"
-    await message.answer(text)
 
 @router.message(Command("achievements", "دستاوردها", "مدالها"))
 async def cmd_achievements(message: Message):

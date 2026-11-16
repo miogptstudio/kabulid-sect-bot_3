@@ -1,7 +1,7 @@
 from aiogram import Router, F
 from bot.utils.safe_telegram import safe_edit_text
 from aiogram.types import Message, CallbackQuery, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
-from aiogram.filters import Command, CommandStart, Command
+from aiogram.filters import CommandStart, Command
 
 from database.engine import async_session
 from bot.config import BOT_VERSION, CREATOR_NOTICE
@@ -32,7 +32,6 @@ def main_keyboard(lang: str = "fa"):
 
 
 @router.message(CommandStart())
-@router.message(Command("start", "شروع", "شروعبازی"))
 async def cmd_start(message: Message):
     try:
         async with async_session() as session:
