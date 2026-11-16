@@ -864,7 +864,7 @@ async def cmd_solo_top(message: Message):
 
 
 
-@router.message(Command("servants", "خدمتکار", "برده", "بازارخدمتکار"))
+@router.message(Command("servants", "خدمتکار", "خدمتکارها", "خدمتکاران", "برده", "بازارخدمتکار", "بازارخدمتکاران"))
 async def cmd_servants_v2(message: Message):
     """بازار خدمتکاران به سبک فروشگاه: یک پنل با دکمه‌های قبلی/بعدی."""
     await _send_market_panel(message, position=0, owner_id=message.from_user.id)
@@ -910,7 +910,7 @@ async def _send_market_panel(target, position: int = 0, *, owner_id: int, edit: 
         await target.answer(caption, reply_markup=kb)
 
 
-@router.message(Command("buyservant", "خریدخدمتکار", "خریدخدمتکار"))
+@router.message(Command("buyservant", "خریدخدمتکار", "خدمتکاربخر", "بخرخدمتکار"))
 async def cmd_buy_servant_v2(message: Message):
     parts=(message.text or "").split()
     if len(parts)<2 or not parts[1].isdigit():
@@ -941,7 +941,7 @@ async def cmd_buy_servant_v2(message: Message):
             await message.answer(msg)
 
 
-@router.message(Command("myservants", "خدمتکارهایمن", "لیستخدمتکار", "خدمتکارمن"))
+@router.message(Command("myservants", "خدمتکارهایمن", "خدمتکارهام", "لیستخدمتکار", "لیستخدمتکاران", "خدمتکارمن", "خدمتکارهای‌من"))
 async def cmd_my_servants_v2(message: Message):
     """لیست خدمتکارهای من — مرور تکی با قبلی/بعدی."""
     await _send_owned_panel(message, position=0, user_id=message.from_user.id)
@@ -991,7 +991,24 @@ async def _send_owned_panel(target, position: int, user_id: int, *, edit: bool =
         await target.answer(caption, reply_markup=kb)
 
 
-@router.message(Command("showservant", "عکسخدمتکار", "پرترهخدمتکار"))
+
+
+# میانبر فارسی بدون / برای خدمتکار
+@router.message(F.text.in_({
+    "خدمتکارها", "خدمتکاران", "خدمت کارها", "خدمت کاران",
+    "بازار خدمتکار", "بازار خدمتکارها", "بازار خدمتکاران",
+}))
+async def fa_servants(message: Message):
+    await cmd_servants_v2(message)
+
+@router.message(F.text.in_({
+    "خدمتکارهای من", "خدمتکار هام", "خدمتکارهام", "لیست خدمتکار",
+    "لیست خدمتکارها", "لیست خدمتکاران", "خدمتکار من",
+}))
+async def fa_myservants(message: Message):
+    await cmd_my_servants_v2(message)
+
+@router.message(Command("showservant", "عکسخدمتکار", "پرترهخدمتکار", "نمایشخدمتکار", "وضعیتخدمتکار"))
 async def cmd_show_servant(message: Message):
     parts=(message.text or "").split()
     if len(parts)<2 or not parts[1].isdigit():
@@ -1131,7 +1148,7 @@ async def cb_serv_avatar(callback: CallbackQuery):
     except Exception:
         pass
 
-@router.message(Command("huntservant", "شکارخدمتکار", "تسخیرنژاد"))
+@router.message(Command("huntservant", "شکارخدمتکار", "تسخیرنژاد", "شکارنژاد"))
 async def cmd_hunt_servant(message: Message):
     async with async_session() as session:
         user = await get_or_create_user(session, message.from_user.id, message.from_user.full_name, message.from_user.username)
@@ -1157,7 +1174,7 @@ async def cmd_hunt_servant(message: Message):
                     pass
 
 
-@router.message(Command("trainservant", "پرورشخدمتکار"))
+@router.message(Command("trainservant", "پرورشخدمتکار", "تربیتخدمتکار"))
 async def cmd_train_servant(message: Message):
     parts = (message.text or "").split()
     if len(parts) < 2 or not parts[1].isdigit():
