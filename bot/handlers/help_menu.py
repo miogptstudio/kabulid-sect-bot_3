@@ -390,7 +390,11 @@ async def cmd_help(message: Message):
         "• کیف پول / عکس پروفایل\n\n"
         "دکمه پایین را بزن یا بنویس: <b>دستورات</b>"
     )
-    await send_panel(message, "help", caption=text, reply_markup=_kb(uid))
+    kb = _kb(uid)
+    try:
+        await send_panel(message, "help", caption=text, reply_markup=kb)
+    except Exception:
+        await message.answer(text, reply_markup=kb)
 
 
 @router.callback_query(F.data.startswith("helpsec:"))

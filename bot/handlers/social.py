@@ -482,25 +482,19 @@ async def cmd_dual_servant(message: Message):
         )
         return
     try:
-        sid = int(parts[1])
+        selector = int(parts[1])
     except ValueError:
-        await message.answer(tr(message.from_user.id, "شماره نامعتبر."))
+        await message.answer("شماره نامعتبر. از /myservants شماره را بردار.")
         return
-    s = next((x for x in SERVANTS if x["id"] == sid), None)
-    if not s:
-        await message.answer(tr(message.from_user.id, "خدمتکار پیدا نشد. /servants"))
-        return
-    servant = next(
-        (x for x in servmod.list_owned(message.from_user.id)
-         if int(x.get("base_id") or -1) == sid),
-        None,
-    )
+    servant, idx = servmod._servant_by_selector(message.from_user.id, selector)
     if not servant:
-        await message.answer("اول بخر: /buyservant " + str(sid))
+        await message.answer("خدمتکار پیدا نشد. اول /buyservant و /myservants")
         return
     if not servmod.is_married(message.from_user.id, servant):
-        await message.answer("اول ازدواج: /marryservant " + str(sid))
+        await message.answer(f"اول ازدواج کن: /marryservant {(idx or 0)+1}")
         return
+    s = servant  # برای سازگاری با کد پایین (gender/name)
+    sid = int(servant.get("base_id") or selector)
     last = _dual_servant_cd.get(message.from_user.id)
     if last and datetime.utcnow() - last < timedelta(minutes=30):
         left = int((timedelta(minutes=30) - (datetime.utcnow() - last)).total_seconds() // 60) + 1
@@ -514,7 +508,7 @@ async def cmd_dual_servant(message: Message):
         if user.gender not in ("مرد", "زن"):
             await message.answer(tr(message.from_user.id, "اول /gender بزن."))
             return
-        if user.gender == s["gender"]:
+        if user.gender == (s.get("gender") if isinstance(s, dict) else s["gender"]):
             await message.answer(
                 f"باید جنسیت مخالف باشد. تو: {user.gender} | خدمتکار: {s['gender']}"
             )
@@ -560,50 +554,58 @@ async def cmd_child_servant(message: Message):
     if len(parts) < 2:
         await message.answer(
             "👶 /childservant شماره" + chr(10)
-            + "با خدمتکار همسر و جنسیت مخالف" + chr(10)
+            + "شماره از /myservants (همسر شده)" + chr(10)
             + f"شانس نادر ({CHILD_CHANCE}) | هر ۱ ساعت یکبار"
         )
         return
     try:
-        sid = int(parts[1])
+        selector = int(parts[1])
     except ValueError:
-        await message.answer(tr(message.from_user.id, "شماره نامعتبر."))
+        await message.answer("شماره نامعتبر.")
         return
-    s = next((x for x in SERVANTS if x["id"] == sid), None)
-    if not s:
-        await message.answer(tr(message.from_user.id, "پیدا نشد."))
+    servant, idx = servmod._servant_by_selector(message.from_user.id, selector)
+    if not servant:
+        await message.answer("خدمتکار پیدا نشد. /myservants")
         return
-    owned_ids = [x.get("base_id") for x in servmod.list_owned(message.from_user.id)]
-    owned = owned_ids
-    servant = next((x for x in servmod.list_owned(message.from_user.id) if int(x.get("base_id") or -1) == sid), None)
-    if not servant or not servmod.is_married(message.from_user.id, servant):
-        await message.answer(tr(message.from_user.id, "باید /buyservant و /marryservant کرده باشی."))
+    if not servmod.is_married(message.from_user.id, servant):
+        await message.answer(f"باید اول ازدواج کنی: /marryservant {(idx or 0)+1}")
         return
-    key = f"child_{message.from_user.id}"
-    last = _dual_servant_cd.get(key)
-    if last and datetime.utcnow() - last < timedelta(hours=1):
-        await message.answer(tr(message.from_user.id, "⏳ هر ۱ ساعت یکبار."))
-        return
+    s = servant
+    sid = int(servant.get("base_id") or selector)
+
     async with async_session() as session:
         user = await get_or_create_user(
             session, message.from_user.id,
             message.from_user.full_name, message.from_user.username
         )
         if user.gender not in ("مرد", "زن"):
-            await message.answer(tr(message.from_user.id, "اول /gender"))
+            await message.answer("اول /gender بزن.")
             return
-        if user.gender == s["gender"]:
-            await message.answer(tr(message.from_user.id, "جنسیت باید مخالف باشد."))
+        sg = servant.get("gender") or ""
+        if user.gender == sg:
+            await message.answer(f"باید جنسیت مخالف باشد. تو: {user.gender} | خدمتکار: {sg}")
             return
+
+    key = f"child_{message.from_user.id}"
+    last = _dual_servant_cd.get(key)
+    if last and datetime.utcnow() - last < timedelta(hours=1):
+        await message.answer("⏳ هر ۱ ساعت یکبار.")
+        return
+    async with async_session() as session:
+        user = await get_or_create_user(
+            session, message.from_user.id,
+            message.from_user.full_name, message.from_user.username
+        )
         user.is_virgin = False
         await session.commit()
     _dual_servant_cd[key] = datetime.utcnow()
+    name = s.get("name") if isinstance(s, dict) else s["name"]
     if random.random() < CHILD_CHANCE:
         child = {
-            "name": f"فرزند {message.from_user.full_name[:10]} و {s['name']}",
+            "name": f"فرزند {message.from_user.full_name[:10]} و {name}",
             "techs": [],
             "gender": random.choice(["مرد", "زن"]),
-            "servant": s["name"],
+            "servant": name,
             "servant_id": sid,
         }
         _servant_children.setdefault(message.from_user.id, []).append(child)
@@ -934,9 +936,9 @@ async def cmd_buy_servant_v2(message: Message):
             img=servant_image(sid)
             caption=servmod.servant_panel_text(s0, idx, purchased=True)
             if img:
-                await message.answer_photo(img,caption=caption,reply_markup=servant_keyboard(idx, callback.from_user.id))
+                await message.answer_photo(img,caption=caption,reply_markup=servant_keyboard(idx, message.from_user.id))
             else:
-                await message.answer(caption,reply_markup=servant_keyboard(idx, callback.from_user.id))
+                await message.answer(caption,reply_markup=servant_keyboard(idx, message.from_user.id))
         else:
             await message.answer(msg)
 
@@ -1021,9 +1023,9 @@ async def cmd_show_servant(message: Message):
     s0=bag[idx-1]; img=servant_image(int(s0.get("base_id") or 0))
     caption=servmod.servant_panel_text(s0,idx)
     if img:
-        await message.answer_photo(img,caption=caption,reply_markup=servant_keyboard(idx, callback.from_user.id))
+        await message.answer_photo(img,caption=caption,reply_markup=servant_keyboard(idx, message.from_user.id))
     else:
-        await message.answer(caption,reply_markup=servant_keyboard(idx, callback.from_user.id))
+        await message.answer(caption,reply_markup=servant_keyboard(idx, message.from_user.id))
 
 
 @router.callback_query(F.data.startswith("servmarket:"))
