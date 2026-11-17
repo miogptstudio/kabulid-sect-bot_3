@@ -55,51 +55,48 @@ async def cmd_ranking(message: Message):
 ))
 async def cmd_richest(message: Message):
     """لیست پولدارترین بازیکنان بر اساس معادل سکه همه ارزها"""
-    from database.models_v3 import UserWallet
+    from html import escape
     from services.economy import currency_to_coins, get_or_create_wallet
 
-    async with async_session() as session:
-        result = await session.execute(
-            select(User).where(User.is_active == True, User.is_banned == False)
-        )
-        users = list(result.scalars().all())
-        scored = []
-        for u in users:
-            try:
-                w = await get_or_create_wallet(session, u.id)
-                total = currency_to_coins(w)
-                scored.append((total, u, w))
-            except Exception:
-                continue
-        scored.sort(key=lambda x: -x[0])
+    try:
+        async with async_session() as session:
+            result = await session.execute(
+                select(User).where(User.is_active == True, User.is_banned == False).limit(500)
+            )
+            users = list(result.scalars().all())
+            scored = []
+            for u in users:
+                try:
+                    w = await get_or_create_wallet(session, u.id)
+                    total = int(currency_to_coins(w) or 0)
+                    scored.append((total, u, w))
+                except Exception:
+                    continue
+            scored.sort(key=lambda x: -x[0])
 
-    if not scored:
-        await message.answer("هنوز کیف پولی ثبت نشده.")
-        return
+        if not scored:
+            await message.answer("هنوز کیف پولی ثبت نشده.")
+            return
 
-    medals = ["🥇", "🥈", "🥉"]
-    lines = ["💰 <b>پولدارترینها</b> (معادل همه ارزها به سکه)", ""]
-    for i, (total, u, w) in enumerate(scored[:15]):
-        medal = medals[i] if i < 3 else f"{i+1}."
-        name = u.full_name or u.username or str(u.telegram_id)
-        lines.append(
-            f"{medal} <b>{name}</b>" + chr(10)
-            + f"   💎 مجموع ≈ {total:,} سکه" + chr(10)
-            + f"   🪙{int(w.coins or 0):,} | روحی {int(w.spirit_stones or 0):,} | "
-            + f"بهشتی {int(getattr(w,'heavenly_stones',0) or 0):,} | "
-            + f"آسمانی {int(getattr(w,'celestial_stones',0) or 0):,} | "
-            + f"خدا {int(getattr(w,'god_stones',0) or 0):,}"
-        )
-    # رتبه خود کاربر
-    me_tg = message.from_user.id
-    my_rank = None
-    for i, (total, u, w) in enumerate(scored):
-        if u.telegram_id == me_tg:
-            my_rank = i + 1
-            lines.append("")
-            lines.append(f"📍 رتبه تو: <b>#{my_rank}</b> از {len(scored)} | ≈ {total:,} سکه")
-            break
-    await message.answer(chr(10).join(lines))
+        medals = ["🥇", "🥈", "🥉"]
+        lines = ["💰 <b>پولدارترین‌ها</b> (معادل همه ارزها به سکه)", ""]
+        for i, (total, u, w) in enumerate(scored[:15]):
+            medal = medals[i] if i < 3 else f"{i+1}."
+            name = escape(str(u.full_name or u.username or u.telegram_id or "?"))
+            lines.append(
+                f"{medal} <b>{name}</b>" + chr(10)
+                + f"   💎 مجموع ≈ {total:,} سکه" + chr(10)
+                + f"   🪙{int(w.coins or 0):,} | روحی {int(w.spirit_stones or 0):,}"
+            )
+        me_tg = message.from_user.id
+        for i, (total, u, w) in enumerate(scored):
+            if getattr(u, "telegram_id", None) == me_tg:
+                lines.append("")
+                lines.append(f"📍 رتبه تو: <b>#{i+1}</b> از {len(scored)} | ≈ {total:,} سکه")
+                break
+        await message.answer(chr(10).join(lines))
+    except Exception as e:
+        await message.answer(f"⚠️ خطا در لیست پولدارها: {type(e).__name__}")
 
 
 

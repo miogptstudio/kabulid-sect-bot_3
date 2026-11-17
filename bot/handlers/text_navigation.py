@@ -230,6 +230,10 @@ ALIASES = {
     "تغییر زبان": "lang",
     "نسخه": "version",
     "ورژن": "version",
+    "پولدار": "richest",
+    "پولدارترین": "richest",
+    "ثروتمند": "richest",
+    "لیدر پول": "richest",
 
     "کمک": "help",
     "راهنمای ربات": "help",
@@ -526,6 +530,9 @@ async def text_section_navigation(message: Message):
         elif key == "achievements":
             from bot.handlers.ranking import cmd_achievements
             await cmd_achievements(message)
+        elif key == "richest":
+            from bot.handlers.ranking import cmd_richest
+            await cmd_richest(message)
         elif key == "ranking":
             from bot.handlers.ranking import cmd_ranking
             await cmd_ranking(message)
