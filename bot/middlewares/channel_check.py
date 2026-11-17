@@ -66,49 +66,41 @@ def clear_verified(user_id: int) -> None:
 
 
 def _is_bot_related_message(message: Message, bot: Bot) -> bool:
-    """در گروه فقط پیام‌های مربوط به ربات را چک کن (دستور / منشن / ریپلای به ربات)."""
+    """فقط دستور واقعی ربات — نه چت عادی و نه هر ریپلای به ربات."""
     text = (message.text or message.caption or "").strip()
+    if not text:
+        return False
+
     # دستور با /
     if text.startswith("/"):
         return True
-    # منشن ربات
-    try:
-        me = getattr(bot, "id", None)
-        if message.entities:
-            for e in message.entities:
-                if e.type == "mention" and text:
-                    # @BotUsername
-                    mention = text[e.offset : e.offset + e.length]
-                    if "bot" in mention.lower():
-                        return True
-                if e.type == "text_mention" and getattr(e, "user", None) and me:
-                    if e.user.id == me:
-                        return True
-        # ریپلای به پیام ربات
-        if message.reply_to_message and message.reply_to_message.from_user:
-            if message.reply_to_message.from_user.id == getattr(bot, "id", None):
+
+    # نرمال‌سازی دکمه/فارسی
+    low = text.lower().replace("\u200c", "").replace("‌", "")
+    for ch in ("👤", "🧘", "⚔️", "📊", "🏛", "🏪", "📜", "🎒", "🎁", "🌍", "📖", "⚙️", "🪙", "💰", " "):
+        low = low.replace(ch, "")
+
+    exact = {
+        "پروفایل", "تزکیه", "تذهیب", "نبرد", "دوئل", "رتبه", "فرقه", "بازار",
+        "ماموریت", "مأموریت", "کوله", "روزانه", "جهان", "راهنما", "بیشتر",
+        "شروع", "منو", "کیفپول", "کیف", "خدمتکار", "خدمتکارها", "خدمتکاران",
+        "کاراکتر", "پولدار", "پولدارترین", "ثروتمند", "richest", "leaders",
+        "دستورات", "قوانین", "وضعیت", "قدرت", "فروشگاه", "آرنا", "جمعآوریچی",
+        "جمعاور یچی", "تذهیبکردن",
+    }
+    # بدون فاصله
+    low2 = "".join(low.split())
+    if low2 in exact or low in exact:
+        return True
+
+    # پیام خیلی کوتاه که دقیقاً دستور است
+    if len(text) <= 24:
+        compact = text.lower().replace("‌", "").strip()
+        for s in ("تزکیه", "تذهیب", "دوئل", "پروفایل", "فرقه", "فروشگاه", "روزانه",
+                  "خدمتکار", "کاراکتر", "رتبه", "راهنما", "بازار", "جهان", "نبرد", "پولدار"):
+            if compact == s or compact.startswith(s + " "):
                 return True
-            if message.reply_to_message.from_user.is_bot:
-                return True
-    except Exception:
-        pass
-    # متن‌های شناخته‌شده دستور فارسی (کوتاه)
-    if text:
-        low = text.replace("\u200c", "").strip().lower()
-        known = (
-            "شروع", "پروفایل", "وضعیت", "تزکیه", "تذهیب", "دوئل", "نبرد", "دعوا",
-            "رتبه", "لیدربورد", "فرقه", "فروشگاه", "بازار", "کوله", "روزانه",
-            "پاداش", "مأموریت", "ماموریت", "راهنما", "منو", "آرنا", "شغل",
-            "کیف پول", "موجودی", "قدرت", "سیاه چال", "سیاهچال", "کمپین", "لیگ",
-            "بازی", "ازدواج", "خدمتکار", "شکار", "جهان", "نقشه", "کاراکتر",
-            "بدن", "روح", "ادمین", "پنل", "صندوق", "تاس", "شانس", "بیشتر",
-            "کیمیاگری", "کیمیا", "گنجینه", "دستاورد", "رویداد", "پلکان",
-        )
-        # فقط اگر کل پیام تقریباً همان دستور باشد (نه جمله بلند چت)
-        if len(low) <= 40:
-            for k in known:
-                if low == k or low.startswith(k + " "):
-                    return True
+
     return False
 
 
@@ -203,19 +195,67 @@ class ChannelMembershipMiddleware(BaseMiddleware):
         last = _last_warn_at.get(user.id, 0)
         should_warn = (now - last) >= WARN_COOLDOWN_SEC
 
+        # تشخیص گروه / خصوصی
+        chat_type = None
+        try:
+            if isinstance(event, Message):
+                chat_type = getattr(event.chat, "type", None)
+            elif isinstance(event, CallbackQuery) and event.message:
+                chat_type = getattr(event.message.chat, "type", None)
+        except Exception:
+            chat_type = None
+        is_group = chat_type in ("group", "supergroup")
+
         if should_warn:
             _last_warn_at[user.id] = now
             links = "\n".join(f"👉 https://t.me/{c}" for c in all_needed)
-            text = (
-                "⛔️ برای استفاده از ربات باید در کانال‌های زیر عضو باشی:\n\n"
-                f"{links}\n\n"
-                "بعد از عضویت روی «عضو شدم» بزن."
-            )
-            kb = _join_keyboard(all_needed)
+            # لینک پیوی ربات
+            bot_link = "ربات"
+            try:
+                me = await bot.get_me()
+                if me.username:
+                    bot_link = f"https://t.me/{me.username}"
+            except Exception:
+                pass
+
+            if is_group:
+                # در گروه: فقط بگو برو پیوی تأیید کن
+                text = (
+                    f"⛔️ {user.full_name or 'کاربر'} برای استفاده از دستورات بازی\n"
+                    "باید اول در <b>چت خصوصی ربات</b> عضویت کانال را تأیید کنی.\n\n"
+                    f"1️⃣ برو پیوی ربات: {bot_link}\n"
+                    "2️⃣ عضو کانال‌ها شو و روی «عضو شدم» بزن\n"
+                    "3️⃣ بعد دوباره همین دستور را بزن\n\n"
+                    f"کانال‌ها:\n{links}"
+                )
+                kb = None
+                try:
+                    if isinstance(bot_link, str) and bot_link.startswith("http"):
+                        from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+                        kb = InlineKeyboardMarkup(inline_keyboard=[
+                            [InlineKeyboardButton(text="💬 رفتن به پیوی ربات", url=bot_link)],
+                            *[
+                                [InlineKeyboardButton(text=f"📢 @{c}", url=f"https://t.me/{c}")]
+                                for c in all_needed
+                            ],
+                        ])
+                except Exception:
+                    kb = _join_keyboard(all_needed)
+            else:
+                text = (
+                    "⛔️ برای استفاده از ربات باید در کانال‌های زیر عضو باشی:\n\n"
+                    f"{links}\n\n"
+                    "بعد از عضویت روی «عضو شدم» بزن."
+                )
+                kb = _join_keyboard(all_needed)
+
             if isinstance(event, Message):
                 await event.answer(text, reply_markup=kb)
             elif isinstance(event, CallbackQuery):
-                await event.answer("اول عضو کانال‌ها شو", show_alert=True)
+                await event.answer(
+                    "اول در پیوی ربات عضویت را تأیید کن" if is_group else "اول عضو کانال‌ها شو",
+                    show_alert=True,
+                )
                 try:
                     await event.message.answer(text, reply_markup=kb)
                 except Exception:
@@ -223,7 +263,10 @@ class ChannelMembershipMiddleware(BaseMiddleware):
         else:
             if is_callback:
                 try:
-                    await event.answer("اول عضو کانال‌ها شو", show_alert=False)
+                    await event.answer(
+                        "اول در پیوی ربات تأیید کن" if is_group else "اول عضو کانال‌ها شو",
+                        show_alert=False,
+                    )
                 except Exception:
                     pass
 
